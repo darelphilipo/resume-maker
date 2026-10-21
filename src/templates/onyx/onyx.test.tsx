@@ -47,6 +47,44 @@ describe("OnyxTemplate", () => {
     expect(screen.queryByText("nope")).toBeNull();
   });
 
+  it("renders the header only when the page includes the header block", () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Ada Lovelace";
+
+    const withHeader = render(
+      <OnyxTemplate
+        doc={doc}
+        pages={[["__header", "summary"]]}
+        pageIndex={0}
+      />,
+    );
+
+    expect(withHeader.container.querySelector("header")).not.toBeNull();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Ada Lovelace" }),
+    ).toBeInTheDocument();
+
+    withHeader.unmount();
+
+    const withoutHeader = render(
+      <OnyxTemplate doc={doc} pages={[["summary"]]} pageIndex={0} />,
+    );
+
+    expect(withoutHeader.container.querySelector("header")).toBeNull();
+  });
+
+  it("never renders the header block id as a section heading", () => {
+    const doc = createEmptyResume();
+    const { container } = render(
+      <OnyxTemplate doc={doc} pages={[["__header"]]} pageIndex={0} />,
+    );
+
+    expect(container.textContent).not.toContain("__header");
+    expect(
+      screen.queryByRole("heading", { name: "__header" }),
+    ).toBeNull();
+  });
+
   it("falls back to the canonical order when the page is missing", () => {
     const doc = createEmptyResume();
     doc.summary.content = "<p>Summary body</p>";

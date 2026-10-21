@@ -1,0 +1,25 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.page {
+  width: var(--page-width, 210mm);
+  min-height: var(--page-height, 297mm);
+  padding: var(--page-margin-y, 12pt) var(--page-margin-x, 14pt);
+  box-sizing: border-box;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+}
+
+@media print {
+  .root {
+    display: block;
+  }
+
+  .page {
+    box-shadow: none;
+  }
+}

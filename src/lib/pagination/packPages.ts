@@ -5,9 +5,14 @@ export type PackedPages = { pages: string[][]; overflowPx: number };
 export function packPages(
   blocks: ReadonlyArray<PackBlock>,
   contentHeightPx: number,
+  gapPx: number = 0,
 ): PackedPages {
   if (contentHeightPx <= 0) {
     throw new RangeError("Content height must be positive.");
+  }
+
+  if (gapPx < 0) {
+    throw new RangeError("Page gap must be non-negative.");
   }
 
   for (const block of blocks) {
@@ -34,9 +39,11 @@ export function packPages(
       flush();
     }
 
-    if (currentHeight + block.heightPx <= contentHeightPx) {
+    const gap = currentPage.length > 0 ? gapPx : 0;
+
+    if (currentHeight + gap + block.heightPx <= contentHeightPx) {
       currentPage.push(block.id);
-      currentHeight += block.heightPx;
+      currentHeight += gap + block.heightPx;
       continue;
     }
 

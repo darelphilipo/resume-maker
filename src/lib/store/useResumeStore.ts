@@ -28,6 +28,8 @@ export type ResumeStore = {
   patchDoc(patch: DeepPartial<ResumeDocument>): void;
   createResume(template?: TemplateId): Promise<string>;
   loadResume(id: string): Promise<boolean>;
+  saveNow(): Promise<void>;
+  importResume(doc: ResumeDocument): Promise<string>;
   setSaveState(state: SaveState): void;
   markHydrated(): void;
 };
@@ -110,6 +112,37 @@ export const useResumeStore = create<ResumeStore>()(
         history.resume();
 
         return true;
+      },
+
+      saveNow: async () => {
+        const { doc, resumeId } = get();
+
+        if (!resumeId) {
+          return;
+        }
+
+        set({ saveState: "saving" });
+
+        try {
+          await putResume({ id: resumeId, updatedAt: Date.now(), doc });
+          set({ lastSavedAt: Date.now(), saveState: "idle" });
+        } catch {
+          set({ saveState: "error" });
+        }
+      },
+
+      importResume: async (doc) => {
+        const id = newId();
+
+        await putResume({ id, updatedAt: Date.now(), doc });
+
+        const history = getTemporal();
+        history.pause();
+        set({ doc, resumeId: id, hydrated: true });
+        history.clear();
+        history.resume();
+
+        return id;
       },
 
       setSaveState: (state) => set({ saveState: state }),

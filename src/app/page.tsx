@@ -1,13 +1,20 @@
+import { Launcher } from "@/components/launcher/Launcher";
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-page-gap-y bg-background p-8 text-center text-text">
-      <h1 className="font-serif text-3xl font-semibold tracking-tight">
-        Resume Maker
-      </h1>
-      <p className="max-w-md text-sm opacity-70">
-        Build a professional resume locally in your browser, then print it to
-        PDF.
-      </p>
+    <main className="min-h-screen bg-background px-4 py-10 text-text sm:px-6">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
+        <header className="flex flex-col gap-3">
+          <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
+            Resume Maker
+          </h1>
+          <p className="max-w-lg text-sm opacity-70 sm:text-base">
+            Build a resume from a role preset or a JSON backup, then print a
+            clean PDF. Everything stays in your browser.
+          </p>
+        </header>
+        <Launcher />
+      </div>
     </main>
   );
 }

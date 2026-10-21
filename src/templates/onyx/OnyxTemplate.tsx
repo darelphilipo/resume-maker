@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 
+import { HEADER_BLOCK_ID } from "@/lib/pagination/constants";
 import {
   DEFAULT_SECTION_ORDER,
   type ResumeDocument,
@@ -16,8 +17,9 @@ export type OnyxTemplateProps = {
 };
 
 export function OnyxTemplate({ doc, pages, pageIndex }: OnyxTemplateProps) {
-  const page = pages[pageIndex];
-  const sectionIds = page ?? [...DEFAULT_SECTION_ORDER];
+  const ids = pages[pageIndex] ?? [...DEFAULT_SECTION_ORDER];
+  const hasHeader = ids.includes(HEADER_BLOCK_ID);
+  const sectionIds = ids.filter((id) => id !== HEADER_BLOCK_ID);
   const { metadata } = doc;
 
   const themeStyle = {
@@ -38,7 +40,7 @@ export function OnyxTemplate({ doc, pages, pageIndex }: OnyxTemplateProps) {
 
   return (
     <div className={styles.onyx} style={themeStyle}>
-      <HeaderSlot doc={doc} />
+      {hasHeader ? <HeaderSlot doc={doc} /> : null}
       <main className="page-stack">
         <SectionRenderer doc={doc} pageSectionIds={sectionIds} />
       </main>

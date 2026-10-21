@@ -87,6 +87,43 @@ describe("autosave", () => {
   });
 });
 
+describe("saveNow", () => {
+  it("persists the current doc immediately without waiting for the debounce", async () => {
+    const id = await useResumeStore.getState().createResume();
+    useResumeStore.getState().patchDoc({ basics: { name: "Immediate Save" } });
+
+    await useResumeStore.getState().saveNow();
+
+    const row = await getResume(id);
+    expect(row?.doc.basics.name).toBe("Immediate Save");
+    expect(useResumeStore.getState().saveState).toBe("idle");
+    expect(useResumeStore.getState().lastSavedAt).toEqual(expect.any(Number));
+  });
+
+  it("does nothing when no resume is active", async () => {
+    await expect(useResumeStore.getState().saveNow()).resolves.toBeUndefined();
+    expect(useResumeStore.getState().saveState).toBe("idle");
+    expect(await listResumes()).toHaveLength(0);
+  });
+});
+
+describe("importResume", () => {
+  it("persists the imported doc under a new id and clears history", async () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Imported Person";
+
+    const id = await useResumeStore.getState().importResume(doc);
+
+    expect(useResumeStore.getState().resumeId).toBe(id);
+    expect(useResumeStore.getState().doc.basics.name).toBe("Imported Person");
+    expect(useResumeStore.getState().hydrated).toBe(true);
+    expect(await getResume(id)).toBeDefined();
+    expect((await getResume(id))?.doc.basics.name).toBe("Imported Person");
+    expect(canUndo()).toBe(false);
+    expect(canRedo()).toBe(false);
+  });
+});
+
 describe("undo/redo", () => {
   it("restores the previous doc and reapplies on redo", () => {
     const base = createEmptyResume();

@@ -89,6 +89,56 @@ describe("packPages", () => {
     expect(() => packPages(blocks({ id: "a", heightPx: -1 }), 1080)).toThrow(RangeError);
   });
 
+  it("breaks when the gap is what pushes the content over the limit", () => {
+    const result = packPages(
+      blocks({ id: "a", heightPx: 481 }, { id: "b", heightPx: 481 }),
+      1000,
+      40,
+    );
+
+    expect(result.pages).toEqual([["a"], ["b"]]);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("keeps two 480px blocks with a 40px gap together when they fit exactly", () => {
+    const result = packPages(
+      blocks({ id: "a", heightPx: 480 }, { id: "b", heightPx: 480 }),
+      1000,
+      40,
+    );
+
+    expect(result.pages).toEqual([["a", "b"]]);
+  });
+
+  it("keeps a gap-inclusive exact fit on one page", () => {
+    const result = packPages(
+      blocks({ id: "a", heightPx: 500 }, { id: "b", heightPx: 460 }),
+      1000,
+      40,
+    );
+
+    expect(result.pages).toEqual([["a", "b"]]);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("does not charge a gap before the first block on a page", () => {
+    const result = packPages(
+      blocks(
+        { id: "a", heightPx: 1000 },
+        { id: "b", heightPx: 1000, startOnNewPage: true },
+      ),
+      1000,
+      40,
+    );
+
+    expect(result.pages).toEqual([["a"], ["b"]]);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("throws a RangeError for a negative gap", () => {
+    expect(() => packPages([], 1000, -1)).toThrow(RangeError);
+  });
+
   it("does not mutate the input array", () => {
     const input = blocks(
       { id: "a", heightPx: 600 },
