@@ -66,12 +66,12 @@ src/templates/{registry.ts, shared/{HeaderSlot.tsx, AvatarSlot.tsx, SectionRende
 
 **Produces:** design tokens (`--color-primary`, `--color-text`, `--color-background`, `--page-gap-y`, `--page-gap-x`, `--page-margin-x`, `--page-margin-y`, `--page-width`, `--page-height`), `npm run {dev,build,lint,typecheck,test,e2e}` scripts.
 
-- [ ] **Step 1:** `git init`; scaffold Next 16 + TS + Tailwind 4 + App Router + `src/`; strip boilerplate; set `output: 'export'`, `images: { unoptimized: true }`.
-- [ ] **Step 2:** Pin all versions from Global Constraints; `npm install`; commit lockfile. Vendor Inter + Source Serif 4 woff2 (OFL) into `src/app/fonts/` and load with `next/font/local` (no build-time network).
-- [ ] **Step 3:** Write `src/app/page.test.tsx` asserting a stub heading renders; run `npm run test` → FAIL (no config).
-- [ ] **Step 4:** Add Vitest (jsdom, RTL, `fake-indexeddb`, setup file) and Playwright config (`webServer: npm run dev`, projects: chromium + mobile-safari). Re-run → PASS.
-- [ ] **Step 5:** Add tokens to `globals.css` via Tailwind 4 `@theme`; add `print.css` (`@page { size: A4 portrait; margin: 0 }`, `#print-portal` hidden on screen, `body > *:not(#print-portal)` hidden in print, `print-color-adjust: exact`, `break-inside` rules) and import it in `layout.tsx`.
-- [ ] **Step 6:** Run `lint`, `typecheck`, `test`, `build` → all pass. Commit.
+- [x] **Step 1:** `git init`; scaffold Next 16 + TS + Tailwind 4 + App Router + `src/`; strip boilerplate; set `output: 'export'`, `images: { unoptimized: true }`.
+- [x] **Step 2:** Pin all versions from Global Constraints; `npm install`; commit lockfile. Vendor Inter + Source Serif 4 woff2 (OFL) into `src/app/fonts/` and load with `next/font/local` (no build-time network).
+- [x] **Step 3:** Write `src/app/page.test.tsx` asserting a stub heading renders; run `npm run test` → FAIL (no config).
+- [x] **Step 4:** Add Vitest (jsdom, RTL, `fake-indexeddb`, setup file) and Playwright config (`webServer: npm run dev`, projects: chromium + mobile-safari). Re-run → PASS.
+- [x] **Step 5:** Add tokens to `globals.css` via Tailwind 4 `@theme`; add `print.css` (`@page { size: A4 portrait; margin: 0 }`, `#print-portal` hidden on screen, `body > *:not(#print-portal)` hidden in print, `print-color-adjust: exact`, `break-inside` rules) and import it in `layout.tsx`.
+- [x] **Step 6:** Run `lint`, `typecheck`, `test`, `build` → all pass. Commit.
 
 ---
 
@@ -89,11 +89,11 @@ export function parseResumeJson(input: unknown):
 export function serializeResume(doc: ResumeDocument): string
 ```
 
-- [ ] **Step 1:** Test `createEmptyResume()` satisfies the schema and pins defaults: `picture {hidden:true,size:64,aspectRatio:1,borderRadius:0,fit:'cover'}`, `page {format:'a4',marginX:14,marginY:12,gapX:8,gapY:12,hideIcons:false}`, `body {fontSize:11,lineHeight:1.4}`, `layout.sidebarWidth:35`, `layout.sidebarSide:'left'`, `metadata.schemaVersion:1`.
-- [ ] **Step 2:** Test that a partial object (`{ basics: { name: 'Ada' } }`) parses with all other fields defaulted, and that unknown keys are stripped.
-- [ ] **Step 3:** Test `JSON.parse(serializeResume(doc))` round-trips deep-equal; `parseResumeJson('{bad')` and `parseResumeJson({basics: 1})` return `ok:false` with a message and never throw.
-- [ ] **Step 4:** Implement schema. `ListSection<T> = SectionConfig & { items: T[] }`; `SectionConfig = { title, icon, columns: 1|2|3|4, hidden, showHeading, keepTogether, startOnNewPage }`; item base `{ id, hidden }`. Include all 13 spec sections plus `customSections` — render-only for the 7 not edited in MVP. Use lenient strings (no hard email/URL validation) so real resumes never fail to import. Add `metadata.schemaVersion` default `1` (needed for migrations).
-- [ ] **Step 5:** Tests pass. Commit.
+- [x] **Step 1:** Test `createEmptyResume()` satisfies the schema and pins defaults: `picture {hidden:true,size:64,aspectRatio:1,borderRadius:0,fit:'cover'}`, `page {format:'a4',marginX:14,marginY:12,gapX:8,gapY:12,hideIcons:false}`, `body {fontSize:11,lineHeight:1.4}`, `layout.sidebarWidth:35`, `layout.sidebarSide:'left'`, `metadata.schemaVersion:1`.
+- [x] **Step 2:** Test that a partial object (`{ basics: { name: 'Ada' } }`) parses with all other fields defaulted, and that unknown keys are stripped.
+- [x] **Step 3:** Test `JSON.parse(serializeResume(doc))` round-trips deep-equal; `parseResumeJson('{bad')` and `parseResumeJson({basics: 1})` return `ok:false` with a message and never throw.
+- [x] **Step 4:** Implement schema. `ListSection<T> = SectionConfig & { items: T[] }`; `SectionConfig = { title, icon, columns: 1|2|3|4, hidden, showHeading, keepTogether, startOnNewPage }`; item base `{ id, hidden }`. Include all 13 spec sections plus `customSections` — render-only for the 7 not edited in MVP. Use lenient strings (no hard email/URL validation) so real resumes never fail to import. Add `metadata.schemaVersion` default `1` (needed for migrations).
+- [x] **Step 5:** Tests pass. Commit.
 
 ---
 
@@ -111,11 +111,11 @@ export function packPages(blocks: PackBlock[], contentHeightPx: number):
 ```
 `overflowPx` is the total height of content that could not fit its page (0 when clean).
 
-- [ ] **Step 1:** Test geometry: A4 page `793.7008 × 1122.5197px`; content box at `marginX=14pt, marginY=12pt` = `756.3675 × 1090.5197px`. Letter page `816.0000 × 1056.0000px`; content `778.6667 × 1024.0000px` (assert to 4dp; `MM_TO_PX = 96/25.4`, `PT_TO_PX = 4/3`).
-- [ ] **Step 2:** Write packer tests: empty input → `{pages:[[]], overflowPx:0}`; exact fit (sum === contentHeight) stays on one page; sum + 1px → two pages; `startOnNewPage` forces a break; oversized single block occupies its own page and reports its excess in `overflowPx`; order is preserved; `contentHeightPx <= 0` throws.
-- [ ] **Step 3:** Test sub-pixel boundary: blocks `[600.25, 479.75]` at `1080` fit one page; `[600.25, 479.76]` produce two.
-- [ ] **Step 4:** Implement both. Packer is pure — no DOM, no store, no React.
-- [ ] **Step 5:** Tests pass. Commit.
+- [x] **Step 1:** Test geometry: A4 page `793.7008 × 1122.5197px`; content box at `marginX=14pt, marginY=12pt` = `756.3675 × 1090.5197px`. Letter page `816.0000 × 1056.0000px`; content `778.6667 × 1024.0000px` (assert to 4dp; `MM_TO_PX = 96/25.4`, `PT_TO_PX = 4/3`).
+- [x] **Step 2:** Write packer tests: empty input → `{pages:[[]], overflowPx:0}`; exact fit (sum === contentHeight) stays on one page; sum + 1px → two pages; `startOnNewPage` forces a break; oversized single block occupies its own page and reports its excess in `overflowPx`; order is preserved; `contentHeightPx <= 0` throws.
+- [x] **Step 3:** Test sub-pixel boundary: blocks `[600.25, 479.75]` at `1080` fit one page; `[600.25, 479.76]` produce two.
+- [x] **Step 4:** Implement both. Packer is pure — no DOM, no store, no React.
+- [x] **Step 5:** Tests pass. Commit.
 
 ---
 
@@ -140,12 +140,12 @@ export const selectVisibleSectionIds: (s: StoreState) => string[]
 export function isDraft(sectionId: string, item: unknown): boolean
 ```
 
-- [ ] **Step 1:** Test with `fake-indexeddb`: `createResume` writes a row; `loadResume` restores it; autosave fires once after rapid `patchDoc` calls (fake timers, 300ms).
-- [ ] **Step 2:** Test undo/redo: two `patchDoc` calls then `undo()` restores the first doc; `redo()` reapplies; `canUndo()` false on a fresh store. Assert that changing `saveState`/`hydrated` does **not** create an undo entry (temporal `partialize` → `{ doc }` only).
-- [ ] **Step 3:** Test hydration does not pollute history: `loadResume` then `canUndo()` is `false`.
-- [ ] **Step 4:** Test `isDraft`: experience with empty `company` is draft; skills with empty `name` is draft; education with empty `school` is draft. `selectVisibleSectionIds` excludes hidden sections and sections whose items are all drafts, preserving `pages[0].main` then `sidebar` order.
-- [ ] **Step 5:** Implement `db.ts` (`Dexie` subclass, `resumes: 'id, updatedAt'`), store with `temporal` (`limit: 100`, `partialize`, `equality` on doc reference), debounced autosave 300ms, flush on `visibilitychange`/`pagehide`, and `pause()` during load then `clear()`.
-- [ ] **Step 6:** Tests pass. Commit.
+- [x] **Step 1:** Test with `fake-indexeddb`: `createResume` writes a row; `loadResume` restores it; autosave fires once after rapid `patchDoc` calls (fake timers, 300ms).
+- [x] **Step 2:** Test undo/redo: two `patchDoc` calls then `undo()` restores the first doc; `redo()` reapplies; `canUndo()` false on a fresh store. Assert that changing `saveState`/`hydrated` does **not** create an undo entry (temporal `partialize` → `{ doc }` only).
+- [x] **Step 3:** Test hydration does not pollute history: `loadResume` then `canUndo()` is `false`.
+- [x] **Step 4:** Test `isDraft`: experience with empty `company` is draft; skills with empty `name` is draft; education with empty `school` is draft. `selectVisibleSectionIds` excludes hidden sections and sections whose items are all drafts, preserving `pages[0].main` then `sidebar` order.
+- [x] **Step 5:** Implement `db.ts` (`Dexie` subclass, `resumes: 'id, updatedAt'`), store with `temporal` (`limit: 100`, `partialize`, `equality` on doc reference), debounced autosave 300ms, flush on `visibilitychange`/`pagehide`, and `pause()` during load then `clear()`.
+- [x] **Step 6:** Tests pass. Commit.
 
 ---
 
@@ -155,12 +155,12 @@ export function isDraft(sectionId: string, item: unknown): boolean
 
 **Produces:** `ARCHETYPES: Archetype[]` — `{ id, label, description, build(): ResumeDocument }` for *Software Engineer, Product Manager, UX/UI Designer, Finance & Operations, Fresh Graduate*. Each seeds 2 experience entries, 1–2 projects, education, and 6 skills; every experience bullet follows "Accomplished [X] as measured by [Y] by doing [Z]" with a real metric.
 
-- [ ] **Step 1:** Test that every archetype's `build()` passes `ResumeDocumentSchema` and that no bullet lacks a digit (the XYZ metric rule).
-- [ ] **Step 2:** Test launcher renders exactly two cards — "Import existing resume (JSON)" and "Start from scratch" — and that **no** AI-related text exists in the DOM (`expect(container.textContent).not.toMatch(/ai|assistant|refine|score/i)`).
-- [ ] **Step 3:** Test JSON file import: valid file seeds the store and navigates to `/editor?id=…`; invalid file shows an inline error and creates nothing.
-- [ ] **Step 4:** Implement launcher. PDF import is present in code behind `PDF_IMPORT_ENABLED = false` (parser arrives in a later plan) and the card is not rendered while false. Add per-section "Clear sample data".
-- [ ] **Step 5:** Add "Download JSON backup" on the editor top bar.
-- [ ] **Step 6:** Tests + `lint` + `typecheck` pass. Commit.
+- [x] **Step 1:** Test that every archetype's `build()` passes `ResumeDocumentSchema` and that no bullet lacks a digit (the XYZ metric rule).
+- [x] **Step 2:** Test launcher renders exactly two cards — "Import existing resume (JSON)" and "Start from scratch" — and that **no** AI-related text exists in the DOM (`expect(container.textContent).not.toMatch(/ai|assistant|refine|score/i)`).
+- [x] **Step 3:** Test JSON file import: valid file seeds the store and navigates to `/editor?id=…`; invalid file shows an inline error and creates nothing.
+- [x] **Step 4:** Implement launcher. PDF import is present in code behind `PDF_IMPORT_ENABLED = false` (parser arrives in a later plan) and the card is not rendered while false. Add per-section "Clear sample data".
+- [x] **Step 5:** Add "Download JSON backup" on the editor top bar.
+- [x] **Step 6:** Tests + `lint` + `typecheck` pass. Commit.
 
 ---
 
@@ -170,10 +170,10 @@ export function isDraft(sectionId: string, item: unknown): boolean
 
 **Produces:** `/editor?id=` client page (wrapped in `Suspense`); three mobile tabs (`content | design | preview`); Vaul drawers with `snapPoints={[0.6, 0.95]}`; desktop three-zone grid at `lg`.
 
-- [ ] **Step 1:** Test: mobile nav switches visible panel; default tab is `content`; desktop (`matchMedia` stub) renders section list + canvas + design panel simultaneously.
-- [ ] **Step 2:** Test: opening an entry mounts a drawer; drawer uses `visualViewport` resize listener to offset above the keyboard (assert listener attached/removed).
-- [ ] **Step 3:** Implement shell. Tabs are real buttons with `aria-selected`; panels are `<section role="tabpanel">`. Preview tab is a placeholder until Task 9.
-- [ ] **Step 4:** Commit.
+- [x] **Step 1:** Test: mobile nav switches visible panel; default tab is `content`; desktop (`matchMedia` stub) renders section list + canvas + design panel simultaneously.
+- [x] **Step 2:** Test: opening an entry mounts a drawer; drawer uses `visualViewport` resize listener to offset above the keyboard (assert listener attached/removed).
+- [x] **Step 3:** Implement shell. Tabs are real buttons with `aria-selected`; panels are `<section role="tabpanel">`. Preview tab is a placeholder until Task 9.
+- [x] **Step 4:** Commit.
 
 ---
 
@@ -183,11 +183,11 @@ export function isDraft(sectionId: string, item: unknown): boolean
 
 **Produces:** `<RichTextField value={html} onChange={(html: string) => void} ariaLabel={string} />`; `sanitizeRichText(html: string): string`.
 
-- [ ] **Step 1:** Sanitizer tests: keeps `p,strong,em,ul,ol,li,a[href],br`; strips `<script>`, `<img onerror>`, `onclick`, `style`; forces `rel="noopener noreferrer"` and `target="_blank"` on links; is idempotent.
-- [ ] **Step 2:** Test: typing in a field updates the store after 50ms (fake timers) and exactly one render of that section occurs (spy selector).
-- [ ] **Step 3:** Test: an entry with an empty primary key is not rendered in preview (draft filtering) but remains in the form.
-- [ ] **Step 4:** Implement forms with React Hook Form + `zodResolver`, debounced 50ms commit, Tiptap (StarterKit minus headings, plus Link) restricted to the allowlist, sanitize on JSON import and before print. Add/remove/reorder entries within a section.
-- [ ] **Step 5:** Tests pass. Commit.
+- [x] **Step 1:** Sanitizer tests: keeps `p,strong,em,ul,ol,li,a[href],br`; strips `<script>`, `<img onerror>`, `onclick`, `style`; forces `rel="noopener noreferrer"` and `target="_blank"` on links; is idempotent.
+- [x] **Step 2:** Test: typing in a field updates the store after 50ms (fake timers) and exactly one render of that section occurs (spy selector).
+- [x] **Step 3:** Test: an entry with an empty primary key is not rendered in preview (draft filtering) but remains in the form.
+- [x] **Step 4:** Implement forms with React Hook Form + `zodResolver`, debounced 50ms commit, Tiptap (StarterKit minus headings, plus Link) restricted to the allowlist, sanitize on JSON import and before print. Add/remove/reorder entries within a section.
+- [x] **Step 5:** Tests pass. Commit.
 
 ---
 
@@ -202,11 +202,11 @@ export const TEMPLATES: Record<TemplateId, { id: TemplateId; label: string; colu
 export type TemplateProps = { doc: ResumeDocument; pages: string[][]; pageIndex: number }
 ```
 
-- [ ] **Step 1:** Test header collapse: `picture.hidden` or empty `url` → zero `<img>` in DOM and `AvatarSlot` returns `null`.
-- [ ] **Step 2:** Test section suppression: `hidden: true` or all-draft items → section heading and wrapper absent from DOM (not `display:none`).
-- [ ] **Step 3:** Test single-column order: `pages[0] = {main:['experience'], sidebar:['skills']}` renders experience before skills; unknown section IDs are ignored without throwing.
-- [ ] **Step 4:** Implement shared slots using intrinsic `grid-template-columns: auto 1fr` and flex `gap` containers; implement `onyx` (single column, avatar beside contact metadata, monospace skill pills, compact). Apply `data-keep-together` / `data-start-new-page` attributes from `SectionConfig`.
-- [ ] **Step 5:** Tests pass. Commit.
+- [x] **Step 1:** Test header collapse: `picture.hidden` or empty `url` → zero `<img>` in DOM and `AvatarSlot` returns `null`.
+- [x] **Step 2:** Test section suppression: `hidden: true` or all-draft items → section heading and wrapper absent from DOM (not `display:none`).
+- [x] **Step 3:** Test single-column order: `pages[0] = {main:['experience'], sidebar:['skills']}` renders experience before skills; unknown section IDs are ignored without throwing.
+- [x] **Step 4:** Implement shared slots using intrinsic `grid-template-columns: auto 1fr` and flex `gap` containers; implement `onyx` (single column, avatar beside contact metadata, monospace skill pills, compact). Apply `data-keep-together` / `data-start-new-page` attributes from `SectionConfig`.
+- [x] **Step 5:** Tests pass. Commit.
 
 ---
 
@@ -216,10 +216,10 @@ export type TemplateProps = { doc: ResumeDocument; pages: string[][]; pageIndex:
 
 **Produces:** `usePageLayout(doc) => { pages: string[][]; overflowPx: number; isMeasuring: boolean; contentHeightPx: number }`.
 
-- [ ] **Step 1:** Test `usePageLayout` with injected stub heights (dependency-injected measurer): section heights pack into 2 pages when total exceeds capacity by 1px; `isMeasuring` true for one tick then false.
-- [ ] **Step 2:** Test banner copy: `overflowPx > 0` renders "Runs onto page N by ~X lines" and a disabled **Fit to 1 Page** button (feature lands in the pagination plan) — no AI wording.
-- [ ] **Step 3:** Implement `MeasureLayer`: `position: fixed; left: -10000px; top: 0; width: <contentWidth mm>; visibility: hidden; transform: none` rendering the **same** template at paper width, with a `ResizeObserver` per section. Preview scales via `transform` on a wrapper only, so measured widths stay true to print.
-- [ ] **Step 4:** Wire `react-zoom-pan-pinch` (pinch + pan enabled, controls hidden on mobile, disabled > `lg`). Render `PageStack` with Page N of M.
+- [x] **Step 1:** Test `usePageLayout` with injected stub heights (dependency-injected measurer): section heights pack into 2 pages when total exceeds capacity by 1px; `isMeasuring` true for one tick then false.
+- [x] **Step 2:** Test banner copy: `overflowPx > 0` renders "Runs onto page N by ~X lines" and a disabled **Fit to 1 Page** button (feature lands in the pagination plan) — no AI wording.
+- [x] **Step 3:** Implement `MeasureLayer`: `position: fixed; left: -10000px; top: 0; width: <contentWidth mm>; visibility: hidden; transform: none` rendering the **same** template at paper width, with a `ResizeObserver` per section. Preview scales via `transform` on a wrapper only, so measured widths stay true to print.
+- [x] **Step 4:** Wire `react-zoom-pan-pinch` (pinch + pan enabled, controls hidden on mobile, disabled > `lg`). Render `PageStack` with Page N of M.
 - [ ] **Step 5:** Tests pass; Playwright sanity: changing a font size changes page count. Commit.
 
 ---
@@ -237,13 +237,13 @@ export async function printResume(opts: {
 }): Promise<void>
 ```
 
-- [ ] **Step 1:** Unit-test `detectInAppBrowser` against: Facebook iOS (`FBAN`/`FBAV`), Instagram, Android WebView (`; wv)`), Slack, iOS Safari (`Safari/`), Android Chrome, desktop Chrome. Assert no false positive on plain iOS Safari.
-- [ ] **Step 2:** Playwright test: click **Save PDF** with `window.print` stubbed via `addInitScript`; assert `#print-portal` exists, is a direct child of `<body>`, contains exactly `pages.length` `.resume-page` nodes, and that `document.title === "Ada-Lovelace-Resume"`.
-- [ ] **Step 3:** Playwright test: stub `print` dispatches `afterprint`; assert portal is removed and the original title restored.
-- [ ] **Step 4:** Playwright print-media test: `emulateMedia({ media: 'print' })` → `#app-root` computed `display: none`; `.resume-page` width ≈ 793.7px (210mm) and padding equals `marginY marginX`; `print-color-adjust: exact`; `.resume-page:last-child { break-after: auto }`.
-- [ ] **Step 5:** Implement `printResume`: mount portal state → `await document.fonts.ready` → `await Promise.all(imgs.map(i => i.decode()))` → two `requestAnimationFrame` → set title → `window.print()` → on `afterprint` unmount and restore title (plus 60s safety timeout).
-- [ ] **Step 6:** Implement `InAppBrowserNotice` (detected at mount) with **Copy link** and **Download JSON backup**; export still attempts if tapped.
-- [ ] **Step 7:** All tests pass on chromium + mobile-safari projects. Commit.
+- [x] **Step 1:** Unit-test `detectInAppBrowser` against: Facebook iOS (`FBAN`/`FBAV`), Instagram, Android WebView (`; wv)`), Slack, iOS Safari (`Safari/`), Android Chrome, desktop Chrome. Assert no false positive on plain iOS Safari.
+- [x] **Step 2:** Playwright test: click **Save PDF** with `window.print` stubbed via `addInitScript`; assert `#print-portal` exists, is a direct child of `<body>`, contains exactly `pages.length` `.resume-page` nodes, and that `document.title === "Ada-Lovelace-Resume"`.
+- [x] **Step 3:** Playwright test: stub `print` dispatches `afterprint`; assert portal is removed and the original title restored.
+- [x] **Step 4:** Playwright print-media test: `emulateMedia({ media: 'print' })` → `#app-root` computed `display: none`; `.resume-page` width ≈ 793.7px (210mm) and padding equals `marginY marginX`; `print-color-adjust: exact`; `.resume-page:last-child { break-after: auto }`.
+- [x] **Step 5:** Implement `printResume`: mount portal state → `await document.fonts.ready` → `await Promise.all(imgs.map(i => i.decode()))` → two `requestAnimationFrame` → set title → `window.print()` → on `afterprint` unmount and restore title (plus 60s safety timeout).
+- [x] **Step 6:** Implement `InAppBrowserNotice` (detected at mount) with **Copy link** and **Download JSON backup**; export still attempts if tapped.
+- [x] **Step 7:** All tests pass on chromium + mobile-safari projects. Commit.
 
 ---
 
@@ -251,12 +251,12 @@ export async function printResume(opts: {
 
 **Files:** `e2e/flow.spec.ts`, `e2e/a11y.spec.ts`
 
-- [ ] **Step 1:** E2E: launcher → Software Engineer preset → rename → edit a bullet → reorder entries → preview shows 1 page → reload page → data persists → undo restores previous bullet.
-- [ ] **Step 2:** E2E: hide the profile photo → assert `img` count is 0 and the name element's bounding box starts within `marginX` of the page edge (dead-space regression).
-- [ ] **Step 3:** E2E: hide a section → subsequent sections close the gap (next section's `y` decreases).
-- [ ] **Step 4:** E2E: import a JSON with a `<script>` bullet → assert no script node and no dialog executes; invalid JSON shows an error and leaves the current doc intact.
-- [ ] **Step 5:** A11y: axe scan on launcher and editor tabs → no critical violations; keyboard-only can reach every form field and run undo (`Ctrl+Z`).
-- [ ] **Step 6:** Bundle check: `npm run build`; assert no chunk contains `@ai-sdk`/`ai/react`; record main-route JS size. Commit.
+- [x] **Step 1:** E2E: launcher → Software Engineer preset → rename → edit a bullet → reorder entries → preview shows 1 page → reload page → data persists → undo restores previous bullet.
+- [x] **Step 2:** E2E: hide the profile photo → assert `img` count is 0 and the name element's bounding box starts within `marginX` of the page edge (dead-space regression).
+- [x] **Step 3:** E2E: hide a section → subsequent sections close the gap (next section's `y` decreases).
+- [x] **Step 4:** E2E: import a JSON with a `<script>` bullet → assert no script node and no dialog executes; invalid JSON shows an error and leaves the current doc intact.
+- [x] **Step 5:** A11y: axe scan on launcher and editor tabs → no critical violations; keyboard-only can reach every form field and run undo (`Ctrl+Z`).
+- [x] **Step 6:** Bundle check: `npm run build`; assert no chunk contains `@ai-sdk`/`ai/react`; record main-route JS size. Commit.
 
 ---
 
@@ -276,3 +276,12 @@ export async function printResume(opts: {
 - PDF import card hidden behind `PDF_IMPORT_ENABLED = false` until the parser plan lands, rather than shipping a dead button.
 - Rich text sanitized with DOMPurify on import and before print (extra dependency, justified by XSS risk).
 - Pagination is block-level in the MVP: individual sections never split across pages. Mid-entry splitting is Deferred Plan 2.
+
+## Implementation notes
+
+- CSS Modules are not used. `next.config.ts` applies `@tailwindcss/turbopack` to every `*.css`, which also matches `*.module.css`, empties its class exports, and emits `:global(...)` verbatim. Styles are global stylesheets with prefixed classes (`src/templates/onyx/onyx.css`, `src/components/preview/preview.css`); `src/templates/css-modules.test.ts` fails if a module is reintroduced.
+- `usePageLayout` is owned by `EditorWorkspace` and passed to `LiveCanvasViewport`. The preview renders pages at true paper width inside a scaled frame (`computeCanvasFrame`), so measured widths match print.
+- The print job freezes `{doc, pages}` when clicked: `@media print` hides `#app-root`, which zeroes the measurement layer and would otherwise collapse the printed document to the header.
+- Draft filtering happens in `computePages` (zero-height/hidden sections are dropped), not only in `selectVisibleSectionIds`.
+- The Software Engineer preset was trimmed to fit one A4 page; all five presets render as one page at default margins.
+- Undo history is in-memory only. Persistence across reload comes from Dexie autosave, not the undo stack.
