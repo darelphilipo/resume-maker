@@ -6,6 +6,7 @@ import { useState, type ChangeEvent } from "react";
 
 import { PDF_IMPORT_ENABLED } from "@/lib/features";
 import { ARCHETYPES, type Archetype } from "@/lib/presets/archetypes";
+import { sanitizeResumeDocument } from "@/lib/richtext/sanitize";
 import { parseResumeJson } from "@/lib/schema/serialize";
 import { useResumeStore } from "@/lib/store/useResumeStore";
 
@@ -42,7 +43,8 @@ export function Launcher() {
         return;
       }
 
-      const id = await useResumeStore.getState().importResume(parsed.doc);
+      const safeDoc = sanitizeResumeDocument(parsed.doc);
+      const id = await useResumeStore.getState().importResume(safeDoc);
       router.push(`/editor?id=${id}`);
     } catch {
       setError(INVALID_FILE_MESSAGE);

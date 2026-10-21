@@ -70,17 +70,23 @@ describe("ARCHETYPES", () => {
     "%s uses quantified XYZ bullets and valid start dates",
     (_id, archetype) => {
       const doc = archetype.build();
-      const htmlBlocks = [
-        ...doc.sections.experience.items.map((item) => item.summary),
-        ...doc.sections.projects.items.map((item) => item.description),
-      ];
+      const experienceBlocks = doc.sections.experience.items.map(
+        (item) => item.summary,
+      );
+      const projectBlocks = doc.sections.projects.items.map(
+        (item) => item.description,
+      );
 
-      for (const html of htmlBlocks) {
-        const lines = bulletLines(html);
+      for (const html of experienceBlocks) {
+        expect(bulletLines(html).length).toBeGreaterThanOrEqual(3);
+      }
 
-        expect(lines.length).toBeGreaterThanOrEqual(3);
+      for (const html of projectBlocks) {
+        expect(bulletLines(html).length).toBeGreaterThanOrEqual(2);
+      }
 
-        for (const line of lines) {
+      for (const html of [...experienceBlocks, ...projectBlocks]) {
+        for (const line of bulletLines(html)) {
           expect(line).toMatch(/\d/);
         }
       }

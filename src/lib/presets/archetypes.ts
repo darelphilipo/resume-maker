@@ -124,7 +124,7 @@ const SOFTWARE_ENGINEER: Archetype = {
       summary: {
         ...doc.summary,
         content:
-          "<p>Backend engineer with 6 years of experience building payment and data platforms. Known for turning brittle services into measurable, well-instrumented systems. Mentors engineers and partners closely with product and security teams.</p>",
+          "<p>Backend engineer with 6 years of experience building payment and data platforms. Known for turning brittle services into measurable, well-instrumented systems.</p>",
       },
       sections: {
         ...doc.sections,
@@ -193,7 +193,6 @@ const SOFTWARE_ENGINEER: Archetype = {
               bullets: [
                 "Processed 1.2 million ledger entries per day with idempotent writes and a 99.98% success rate.",
                 "Cut reconciliation time by 73% by streaming balance snapshots into a queryable audit log.",
-                "Documented 24 endpoints and shipped a typed SDK adopted by 5 internal teams.",
               ],
               keywords: ["TypeScript", "PostgreSQL", "Redis"],
             }),
@@ -205,7 +204,6 @@ const SOFTWARE_ENGINEER: Archetype = {
               bullets: [
                 "Monitored 80 endpoints every 30 seconds with a 9-second median alert delay.",
                 "Grew to 1,400 weekly checks after launching a public status page in 6 weeks.",
-                "Trimmed infrastructure costs by 31% by batching probes into 4 regional workers.",
               ],
               keywords: ["Go", "SQLite", "Grafana"],
             }),

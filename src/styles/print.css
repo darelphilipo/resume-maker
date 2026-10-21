@@ -22,6 +22,10 @@
   }
 
   /* Hide the entire app (editor, preview, drawers) and show only the unscaled print portal */
+  #app-root {
+    display: none !important;
+  }
+
   body > *:not(#print-portal) {
     display: none !important;
   }
@@ -34,7 +38,10 @@
   .editor-chrome,
   .mobile-bottom-bar,
   .page-overflow-warning,
-  .ai-inline-wand {
+  .ai-inline-wand,
+  [data-radix-portal],
+  [data-vaul-drawer],
+  [data-vaul-overlay] {
     display: none !important;
   }
 

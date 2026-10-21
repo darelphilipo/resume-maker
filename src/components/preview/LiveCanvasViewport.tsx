@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { HTMLAttributes } from "react";
 import {
   TransformComponent,
   TransformWrapper,
   useControls,
 } from "react-zoom-pan-pinch";
 
-import { usePageLayout } from "@/lib/pagination/usePageLayout";
+import { computeCanvasFrame } from "@/lib/pagination/canvasFrame";
+import type { PageLayout } from "@/lib/pagination/usePageLayout";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
-import { PT_TO_PX } from "@/lib/units/pageGeometry";
+import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
 
 import { PageOverflowBanner } from "./PageOverflowBanner";
 import { PageStack } from "./PageStack";
@@ -30,7 +32,7 @@ function CanvasControls({ fitScale }: { fitScale: number }) {
   const { zoomIn, zoomOut, setTransform } = useControls();
 
   return (
-    <div className="editor-chrome absolute right-3 top-3 z-10 flex items-center gap-1 rounded-lg bg-white/90 p-1 shadow-sm">
+    <div className="hidden items-center gap-1 rounded-lg bg-white/90 p-1 shadow-sm lg:flex">
       <button
         type="button"
         aria-label="Zoom out"
@@ -65,8 +67,23 @@ function CanvasControls({ fitScale }: { fitScale: number }) {
   );
 }
 
-export function LiveCanvasViewport({ doc }: { doc: ResumeDocument }) {
-  const layout = usePageLayout(doc);
+function FitTransform({ fitScale }: { fitScale: number }) {
+  const { setTransform } = useControls();
+
+  useEffect(() => {
+    void setTransform(0, 0, fitScale, 0);
+  }, [fitScale, setTransform]);
+
+  return null;
+}
+
+export function LiveCanvasViewport({
+  doc,
+  layout,
+}: {
+  doc: ResumeDocument;
+  layout: PageLayout;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
 
@@ -99,14 +116,30 @@ export function LiveCanvasViewport({ doc }: { doc: ResumeDocument }) {
     };
   }, []);
 
+  const geometry = pageGeometry(
+    doc.metadata.page.format,
+    doc.metadata.page.marginX,
+    doc.metadata.page.marginY,
+  );
+
   const fitScale =
     containerWidth === null
       ? null
       : clamp(
-          (containerWidth - VIEWPORT_PADDING_PX) / layout.contentWidthPx,
+          (containerWidth - VIEWPORT_PADDING_PX) / geometry.widthPx,
           MIN_SCALE,
           FIT_MAX_SCALE,
         );
+
+  const frame =
+    fitScale === null
+      ? null
+      : computeCanvasFrame({
+          pageCount: layout.pages.length,
+          pageWidthPx: geometry.widthPx,
+          pageHeightPx: geometry.heightPx,
+          fitScale,
+        });
 
   const lineHeightPx =
     doc.metadata.typography.body.fontSize *
@@ -124,7 +157,7 @@ export function LiveCanvasViewport({ doc }: { doc: ResumeDocument }) {
         pageCount={layout.pages.length}
         lineHeightPx={lineHeightPx}
       />
-      {fitScale === null || layout.isMeasuring ? (
+      {frame === null || layout.isMeasuring ? (
         <div
           aria-busy="true"
           data-canvas-placeholder=""
@@ -132,16 +165,34 @@ export function LiveCanvasViewport({ doc }: { doc: ResumeDocument }) {
         />
       ) : (
         <TransformWrapper
-          minScale={MIN_SCALE}
+          initialScale={fitScale!}
+          initialPositionX={0}
+          initialPositionY={0}
+          minScale={Math.min(MIN_SCALE, fitScale!)}
           maxScale={MAX_SCALE}
-          initialScale={fitScale}
-          centerOnInit
+          centerOnInit={false}
+          limitToBounds
           doubleClick={{ disabled: true }}
           wheel={{ step: 0.1 }}
           pinch={{ step: 5 }}
         >
-          <CanvasControls fitScale={fitScale} />
-          <TransformComponent wrapperStyle={{ width: "100%" }}>
+          <div className="editor-chrome flex items-center justify-between gap-2 px-1">
+            <span aria-live="polite" className="text-xs opacity-60">
+              {layout.pages.length}{" "}
+              {layout.pages.length === 1 ? "page" : "pages"}
+            </span>
+            <CanvasControls fitScale={fitScale!} />
+          </div>
+          <FitTransform fitScale={fitScale!} />
+          <TransformComponent
+            wrapperStyle={{ width: "100%", height: `${frame.height}px` }}
+            contentStyle={{ width: `${frame.width / frame.scale}px` }}
+            wrapperProps={
+              {
+                "data-canvas-height": String(frame.height),
+              } as unknown as HTMLAttributes<HTMLDivElement>
+            }
+          >
             <PageStack doc={doc} pages={layout.pages} />
           </TransformComponent>
         </TransformWrapper>

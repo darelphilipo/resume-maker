@@ -1,0 +1,166 @@
+import { render, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  PAGE_STACK_GAP_PX,
+  computeCanvasFrame,
+} from "@/lib/pagination/canvasFrame";
+import type { PageLayout } from "@/lib/pagination/usePageLayout";
+import { createEmptyResume } from "@/lib/schema/defaults";
+import { pageGeometry } from "@/lib/units/pageGeometry";
+
+import { LiveCanvasViewport } from "./LiveCanvasViewport";
+
+vi.mock("./PageStack", () => ({
+  PageStack: () => <div data-testid="page-stack" />,
+}));
+
+function createLayout(pageCount: number): PageLayout {
+  return {
+    pages: Array.from({ length: pageCount }, (_, index) => [
+      `section-${index}`,
+    ]),
+    overflowPx: 0,
+    isMeasuring: false,
+    contentWidthPx: 1,
+    contentHeightPx: 1,
+    gapPx: 16,
+    measureLayer: null,
+  };
+}
+
+const CONTAINER_WIDTH = 326;
+
+class ResizeObserverStub {
+  private callback: ResizeObserverCallback;
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+  }
+
+  observe = (): void => {
+    this.callback([], this as unknown as ResizeObserver);
+  };
+
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
+
+const clientWidthDescriptor = Object.getOwnPropertyDescriptor(
+  HTMLElement.prototype,
+  "clientWidth",
+);
+const originalResizeObserver = globalThis.ResizeObserver;
+
+beforeEach(() => {
+  Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+    configurable: true,
+    get: () => CONTAINER_WIDTH,
+  });
+  globalThis.ResizeObserver =
+    ResizeObserverStub as unknown as typeof ResizeObserver;
+});
+
+afterEach(() => {
+  if (clientWidthDescriptor) {
+    Object.defineProperty(
+      HTMLElement.prototype,
+      "clientWidth",
+      clientWidthDescriptor,
+    );
+  } else {
+    delete (HTMLElement.prototype as { clientWidth?: number }).clientWidth;
+  }
+
+  globalThis.ResizeObserver = originalResizeObserver;
+});
+
+async function renderCanvas(pageCount = 1) {
+  const doc = createEmptyResume();
+  const view = render(
+    <LiveCanvasViewport doc={doc} layout={createLayout(pageCount)} />,
+  );
+
+  const wrapper = await waitFor(() => {
+    const element = view.container.querySelector<HTMLDivElement>(
+      ".react-transform-wrapper",
+    );
+
+    expect(element).not.toBeNull();
+
+    return element as HTMLDivElement;
+  });
+
+  const geometry = pageGeometry(
+    doc.metadata.page.format,
+    doc.metadata.page.marginX,
+    doc.metadata.page.marginY,
+  );
+  const fitScale = (CONTAINER_WIDTH - 32) / geometry.widthPx;
+
+  return { geometry, fitScale, view, wrapper, doc };
+}
+
+describe("LiveCanvasViewport", () => {
+  it("sizes the transform wrapper to the scaled page stack height", async () => {
+    const { geometry, fitScale, wrapper } = await renderCanvas();
+    const frame = computeCanvasFrame({
+      pageCount: 1,
+      pageWidthPx: geometry.widthPx,
+      pageHeightPx: geometry.heightPx,
+      fitScale,
+    });
+
+    expect(wrapper.style.width).toBe("100%");
+    expect(Number.parseFloat(wrapper.style.height)).toBeGreaterThan(0);
+    expect(Number.parseFloat(wrapper.style.height)).toBeCloseTo(
+      frame.height,
+      1,
+    );
+    expect(Number.parseFloat(wrapper.style.height)).toBeLessThan(
+      geometry.heightPx,
+    );
+    expect(wrapper).toHaveAttribute(
+      "data-canvas-height",
+      String(frame.height),
+    );
+  });
+
+  it("includes the scaled stack gap when a second page is added", async () => {
+    const { geometry, fitScale, wrapper } = await renderCanvas(2);
+    const onePage = computeCanvasFrame({
+      pageCount: 1,
+      pageWidthPx: geometry.widthPx,
+      pageHeightPx: geometry.heightPx,
+      fitScale,
+    });
+    const twoPages = computeCanvasFrame({
+      pageCount: 2,
+      pageWidthPx: geometry.widthPx,
+      pageHeightPx: geometry.heightPx,
+      fitScale,
+    });
+
+    expect(Number.parseFloat(wrapper.style.height)).toBeCloseTo(
+      twoPages.height,
+      1,
+    );
+    expect(twoPages.height - onePage.height).toBeCloseTo(
+      (geometry.heightPx + PAGE_STACK_GAP_PX) * fitScale,
+      6,
+    );
+  });
+
+  it("gives the content its unscaled paper width", async () => {
+    const { geometry, wrapper } = await renderCanvas();
+    const content = wrapper.querySelector<HTMLDivElement>(
+      ".react-transform-component",
+    );
+
+    expect(content).not.toBeNull();
+    expect(Number.parseFloat((content as HTMLDivElement).style.width)).toBeCloseTo(
+      geometry.widthPx,
+      1,
+    );
+  });
+});
