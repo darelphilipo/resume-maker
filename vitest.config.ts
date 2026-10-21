@@ -9,5 +9,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     exclude: ["e2e/**", "node_modules/**"],
+    // One jsdom per worker instead of one per file keeps the suite fast while
+    // preserving per-file isolation.
+    pool: "vmThreads",
   },
 });
