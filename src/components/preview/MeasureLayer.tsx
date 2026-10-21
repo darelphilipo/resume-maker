@@ -11,7 +11,7 @@ import { HEADER_BLOCK_ID } from "@/lib/pagination/constants";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { HeaderSlot } from "@/templates/shared/HeaderSlot";
 import { SectionRenderer } from "@/templates/shared/SectionRenderer";
-import styles from "@/templates/onyx/onyx.module.css";
+import "@/templates/onyx/onyx.css";
 
 export type MeasureLayerProps = {
   doc: ResumeDocument;
@@ -55,6 +55,15 @@ export function MeasureLayer({
       const id = element.dataset.measureId;
 
       if (!id || disposed) {
+        return;
+      }
+
+      // A hidden tree (for example during print media) reports zero width.
+      // Keep the last good measurements instead of overwriting them with zeros.
+      if (
+        root.clientWidth === 0 ||
+        root.getBoundingClientRect().width === 0
+      ) {
         return;
       }
 
@@ -119,7 +128,7 @@ export function MeasureLayer({
       ref={rootRef}
       aria-hidden="true"
       data-measure-layer=""
-      className={styles.onyx}
+      className="onyx"
       style={{
         position: "fixed",
         left: -10000,

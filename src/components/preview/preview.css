@@ -1,11 +1,16 @@
-.root {
+/* Screen preview of the measured page stack.
+   Plain global CSS: Turbopack's Tailwind loader treats every "*.css" file as
+   plain CSS, so CSS Modules cannot be used in this project. */
+
+.resume-pages {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* Keep in sync with PAGE_STACK_GAP_PX in src/lib/pagination/canvasFrame.ts. */
   gap: 24px;
 }
 
-.page {
+.resume-page {
   width: var(--page-width, 210mm);
   min-height: var(--page-height, 297mm);
   padding: var(--page-margin-y, 12pt) var(--page-margin-x, 14pt);
@@ -15,11 +20,11 @@
 }
 
 @media print {
-  .root {
+  .resume-pages {
     display: block;
   }
 
-  .page {
+  .resume-page {
     box-shadow: none;
   }
 }

@@ -4,7 +4,7 @@ import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { pageGeometry } from "@/lib/units/pageGeometry";
 import { getTemplate } from "@/templates/registry";
 
-import styles from "./PageStack.module.css";
+import "./preview.css";
 
 export function PageStack({
   doc,
@@ -28,11 +28,14 @@ export function PageStack({
   } as CSSProperties;
 
   return (
-    <div className={`resume-print-root ${styles.root}`} style={pageVariables}>
+    <div
+      className="resume-print-root resume-pages"
+      style={pageVariables}
+    >
       {pages.map((_, index) => (
         <div
           key={index}
-          className={`resume-page ${styles.page}`}
+          className="resume-page"
           data-page={index + 1}
         >
           <Template doc={doc} pages={pages} pageIndex={index} />

@@ -13,20 +13,20 @@
   overflow-wrap: anywhere;
 }
 
-.onyx :global(h1),
-.onyx :global(h2),
-.onyx :global(h3),
-.onyx :global(p),
-.onyx :global(ul),
-.onyx :global(ol) {
+.onyx h1,
+.onyx h2,
+.onyx h3,
+.onyx p,
+.onyx ul,
+.onyx ol {
   margin: 0;
 }
 
-.onyx :global(.resume-header) {
+.onyx .resume-header {
   min-width: 0;
 }
 
-.onyx :global(.resume-name) {
+.onyx .resume-name {
   font-family: var(--resume-heading-font, inherit);
   font-size: calc(var(--resume-heading-size, 14pt) * 1.5);
   font-weight: 700;
@@ -34,12 +34,12 @@
   letter-spacing: -0.01em;
 }
 
-.onyx :global(.resume-headline) {
+.onyx .resume-headline {
   font-size: 1.02em;
   opacity: 0.8;
 }
 
-.onyx :global(.resume-contact) {
+.onyx .resume-contact {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -47,24 +47,24 @@
   font-size: 0.9em;
 }
 
-.onyx :global(.resume-contact-item) {
+.onyx .resume-contact-item {
   display: inline-flex;
   align-items: center;
   gap: 3pt;
   min-width: 0;
 }
 
-.onyx :global(.resume-contact-separator) {
+.onyx .resume-contact-separator {
   opacity: 0.45;
 }
 
-.onyx :global(.page-stack) {
+.onyx .page-stack {
   display: flex;
   flex-direction: column;
   gap: var(--page-gap-y, 12pt);
 }
 
-.onyx :global(.resume-section) {
+.onyx .resume-section {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -72,7 +72,7 @@
   min-width: 0;
 }
 
-.onyx :global(.resume-section-heading) {
+.onyx .resume-section-heading {
   font-family: var(--resume-heading-font, inherit);
   font-size: var(--resume-heading-size, 14pt);
   font-weight: 700;
@@ -87,21 +87,21 @@
   break-inside: avoid;
 }
 
-.onyx :global(.resume-section-items) {
+.onyx .resume-section-items {
   display: grid;
   grid-template-columns: repeat(var(--section-columns, 1), minmax(0, 1fr));
   gap: var(--item-gap, 6pt);
   align-items: start;
 }
 
-.onyx :global(.resume-entry) {
+.onyx .resume-entry {
   display: flex;
   flex-direction: column;
   gap: 2pt;
   min-width: 0;
 }
 
-.onyx :global(.resume-entry-header) {
+.onyx .resume-entry-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -110,24 +110,24 @@
   page-break-inside: avoid;
 }
 
-.onyx :global(.resume-entry-leading) {
+.onyx .resume-entry-leading {
   min-width: 0;
 }
 
-.onyx :global(.resume-entry-title) {
+.onyx .resume-entry-title {
   font-size: 1em;
   font-weight: 700;
   line-height: 1.25;
 }
 
-.onyx :global(.resume-entry-subtitle),
-.onyx :global(.resume-entry-extra),
-.onyx :global(.resume-keywords) {
+.onyx .resume-entry-subtitle,
+.onyx .resume-entry-extra,
+.onyx .resume-keywords {
   font-size: 0.9em;
   opacity: 0.8;
 }
 
-.onyx :global(.resume-entry-aside) {
+.onyx .resume-entry-aside {
   display: inline-flex;
   align-items: center;
   gap: 6pt;
@@ -135,49 +135,57 @@
   text-align: right;
 }
 
-.onyx :global(.resume-date-range) {
+.onyx .resume-date-range {
   font-size: 0.9em;
   font-variant-numeric: tabular-nums;
   opacity: 0.75;
   white-space: nowrap;
 }
 
-.onyx :global(.resume-rich-text) {
+.onyx .resume-rich-text {
   min-width: 0;
   font-size: 1em;
 }
 
-.onyx :global(.resume-rich-text ul),
-.onyx :global(.resume-rich-text ol) {
+.onyx .resume-rich-text ul,
+.onyx .resume-rich-text ol {
   padding-left: 1.15em;
 }
 
-.onyx :global(.resume-rich-text li) {
+.onyx .resume-rich-text ul {
+  list-style: disc outside;
+}
+
+.onyx .resume-rich-text ol {
+  list-style: decimal outside;
+}
+
+.onyx .resume-rich-text li {
   margin: 0;
 }
 
-.onyx :global(.resume-rich-text a) {
+.onyx .resume-rich-text a {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 1px;
 }
 
-.onyx :global(.resume-skill-heading) {
+.onyx .resume-skill-heading {
   align-items: center;
 }
 
-.onyx :global(.resume-skill-keywords) {
+.onyx .resume-skill-keywords {
   display: flex;
   flex-wrap: wrap;
   gap: 3pt;
 }
 
-.onyx :global(.resume-skill-keywords-list) {
+.onyx .resume-skill-keywords-list {
   font-size: 0.9em;
   opacity: 0.85;
 }
 
-.onyx :global(.resume-skill-pill) {
+.onyx .resume-skill-pill {
   background: color-mix(
     in srgb,
     var(--brand-primary, #1f2937) 10%,
@@ -193,34 +201,34 @@
   white-space: nowrap;
 }
 
-.onyx :global(.resume-section[data-keep-together="true"]) {
+.onyx .resume-section[data-keep-together="true"] {
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-.onyx :global(.resume-section[data-start-new-page="true"]) {
+.onyx .resume-section[data-start-new-page="true"] {
   break-before: page;
   page-break-before: always;
 }
 
-.onyx :global(.resume-section-heading) {
+.onyx .resume-section-heading {
   break-after: avoid;
   page-break-after: avoid;
   break-inside: avoid;
 }
 
-.onyx :global(.resume-entry-header),
-.onyx :global(.resume-entry-compact) {
+.onyx .resume-entry-header,
+.onyx .resume-entry-compact {
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-.onyx :global(.resume-entry-bullets > li) {
+.onyx .resume-entry-bullets > li {
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
-.onyx :global(.resume-rich-text p) {
+.onyx .resume-rich-text p {
   orphans: 3;
   widows: 3;
 }

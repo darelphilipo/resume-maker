@@ -8,7 +8,7 @@ import {
 
 import { HeaderSlot } from "../shared/HeaderSlot";
 import { SectionRenderer } from "../shared/SectionRenderer";
-import styles from "./onyx.module.css";
+import "./onyx.css";
 
 export type OnyxTemplateProps = {
   doc: ResumeDocument;
@@ -39,7 +39,7 @@ export function OnyxTemplate({ doc, pages, pageIndex }: OnyxTemplateProps) {
   } as CSSProperties;
 
   return (
-    <div className={styles.onyx} style={themeStyle}>
+    <div className="onyx" style={themeStyle}>
       {hasHeader ? <HeaderSlot doc={doc} /> : null}
       <main className="page-stack">
         <SectionRenderer doc={doc} pageSectionIds={sectionIds} />
