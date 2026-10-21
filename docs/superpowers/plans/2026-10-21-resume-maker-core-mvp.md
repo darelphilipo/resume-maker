@@ -111,7 +111,7 @@ export function packPages(blocks: PackBlock[], contentHeightPx: number):
 ```
 `overflowPx` is the total height of content that could not fit its page (0 when clean).
 
-- [ ] **Step 1:** Test geometry: A4 content width at `marginX=14` ≈ `756.9px`; content height at `marginY=12` ≈ `1079.3px` (assert to 0.1px). Letter values likewise.
+- [ ] **Step 1:** Test geometry: A4 page `793.7008 × 1122.5197px`; content box at `marginX=14pt, marginY=12pt` = `756.3675 × 1090.5197px`. Letter page `816.0000 × 1056.0000px`; content `778.6667 × 1024.0000px` (assert to 4dp; `MM_TO_PX = 96/25.4`, `PT_TO_PX = 4/3`).
 - [ ] **Step 2:** Write packer tests: empty input → `{pages:[[]], overflowPx:0}`; exact fit (sum === contentHeight) stays on one page; sum + 1px → two pages; `startOnNewPage` forces a break; oversized single block occupies its own page and reports its excess in `overflowPx`; order is preserved; `contentHeightPx <= 0` throws.
 - [ ] **Step 3:** Test sub-pixel boundary: blocks `[600.25, 479.75]` at `1080` fit one page; `[600.25, 479.76]` produce two.
 - [ ] **Step 4:** Implement both. Packer is pure — no DOM, no store, no React.
