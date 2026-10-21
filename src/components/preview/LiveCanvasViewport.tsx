@@ -177,7 +177,7 @@ export function LiveCanvasViewport({
           pinch={{ step: 5 }}
         >
           <div className="editor-chrome flex items-center justify-between gap-2 px-1">
-            <span aria-live="polite" className="text-xs opacity-60">
+            <span aria-live="polite" className="text-xs opacity-70">
               {layout.pages.length}{" "}
               {layout.pages.length === 1 ? "page" : "pages"}
             </span>

@@ -19,7 +19,7 @@ export function DesignPanel() {
     <div className="flex flex-col gap-5">
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-medium">Paper size</legend>
-        <p className="text-xs opacity-60">
+        <p className="text-xs opacity-70">
           The preview and printed PDF use this page size.
         </p>
         <div className="mt-1 grid gap-2">
@@ -49,7 +49,7 @@ export function DesignPanel() {
                 />
                 <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
                   <span className="font-medium">{pageFormat.label}</span>
-                  <span className="text-xs opacity-60">{pageFormat.detail}</span>
+                  <span className="text-xs opacity-70">{pageFormat.detail}</span>
                 </span>
               </label>
             );
@@ -73,7 +73,7 @@ export function DesignPanel() {
             Current
           </span>
         </div>
-        <p className="text-xs opacity-60">
+        <p className="text-xs opacity-70">
           More templates and design controls arrive in the templates update.
         </p>
       </section>

@@ -81,7 +81,19 @@ export const useResumeStore = create<ResumeStore>()(
 
       setDoc: (next) => set({ doc: next }),
 
-      patchDoc: (patch) => set({ doc: deepMerge(get().doc, patch) }),
+      patchDoc: (patch) => {
+        const current = get().doc;
+        const next = deepMerge(current, patch);
+
+        // Forms resync their watched values after an external change such as
+        // undo, then debounce a patch with the same content. Skip that no-op so
+        // it cannot replace the document reference or clear redo history.
+        if (JSON.stringify(next) === JSON.stringify(current)) {
+          return;
+        }
+
+        set({ doc: next });
+      },
 
       createResume: async (template) => {
         const doc = createEmptyResume(template);

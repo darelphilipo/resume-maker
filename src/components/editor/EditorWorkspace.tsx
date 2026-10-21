@@ -132,6 +132,47 @@ export function EditorWorkspace() {
     };
   }, [id, loadResume]);
 
+  useEffect(() => {
+    function handleUndoShortcut(event: KeyboardEvent): void {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey) {
+        return;
+      }
+
+      if (event.key.toLowerCase() !== "z") {
+        return;
+      }
+
+      const target = event.target;
+
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+
+        if (
+          target.isContentEditable ||
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          tag === "SELECT"
+        ) {
+          return;
+        }
+      }
+
+      event.preventDefault();
+
+      if (event.shiftKey) {
+        redo();
+      } else {
+        undo();
+      }
+    }
+
+    window.addEventListener("keydown", handleUndoShortcut);
+
+    return () => {
+      window.removeEventListener("keydown", handleUndoShortcut);
+    };
+  }, []);
+
   const status: LoadStatus = !id
     ? "missing"
     : loadResult?.id === id

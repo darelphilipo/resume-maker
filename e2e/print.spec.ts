@@ -1,55 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 
-type PrintCall = {
-  title: string;
-  portalExists: boolean;
-  directChild: boolean;
-  pageCount: number;
-};
-
-type PrintWindow = Window & { __printCalls: PrintCall[] };
+import {
+  createPresetResume,
+  readPrintCalls,
+  stubPrint,
+} from "./helpers";
 
 test.describe.configure({ timeout: 120_000 });
 
-async function stubPrint(page: Page, dispatchAfterPrint: boolean): Promise<void> {
-  await page.addInitScript((shouldDispatch: boolean) => {
-    const win = window as unknown as PrintWindow;
-
-    win.__printCalls = [];
-    window.print = () => {
-      const portal = document.getElementById("print-portal");
-
-      win.__printCalls.push({
-        title: document.title,
-        portalExists: portal !== null,
-        directChild: portal?.parentElement === document.body,
-        pageCount: portal
-          ? portal.querySelectorAll(".resume-page").length
-          : 0,
-      });
-
-      if (shouldDispatch) {
-        window.setTimeout(() => {
-          window.dispatchEvent(new Event("afterprint"));
-        }, 0);
-      }
-    };
-  }, dispatchAfterPrint);
-}
-
-async function readPrintCalls(page: Page): Promise<PrintCall[]> {
-  return page.evaluate(
-    () => (window as unknown as PrintWindow).__printCalls,
-  );
-}
-
 async function openSoftwareEngineerResume(page: Page): Promise<void> {
-  await page.goto("/");
-  await page.getByRole("button", { name: /Software Engineer/ }).click();
-  await page.waitForURL(/\/editor\?id=/);
-  await expect(
-    page.getByRole("button", { name: "Save PDF" }),
-  ).toBeVisible();
+  await createPresetResume(page);
 }
 
 async function showPreview(page: Page): Promise<void> {

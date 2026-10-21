@@ -24,12 +24,12 @@ export function SkillLevelIndicator({
         className="skill-level skill-level-progress"
         style={{
           display: "inline-flex",
-          width: "42pt",
-          height: "4pt",
+          width: "26pt",
+          height: "2.5pt",
           overflow: "hidden",
           borderRadius: "999px",
           backgroundColor:
-            "color-mix(in srgb, var(--brand-primary, #1f2937) 18%, transparent)",
+            "color-mix(in srgb, var(--brand-primary, #1f2937) 10%, transparent)",
         }}
       >
         <span
@@ -40,7 +40,8 @@ export function SkillLevelIndicator({
             height: "100%",
             width: `${(safeLevel / 5) * 100}%`,
             borderRadius: "inherit",
-            backgroundColor: "var(--brand-primary, #1f2937)",
+            backgroundColor:
+              "color-mix(in srgb, var(--brand-primary, #1f2937) 55%, transparent)",
           }}
         />
       </span>
@@ -70,8 +71,8 @@ export function SkillLevelIndicator({
             className={`${isCircle ? "skill-level-dot" : "skill-level-bar"}${filled ? " filled" : ""}`}
             style={{
               display: "block",
-              width: isCircle ? "5pt" : "7pt",
-              height: isCircle ? "5pt" : "3pt",
+              width: "5pt",
+              height: isCircle ? "5pt" : "2.5pt",
               borderRadius: isCircle ? "50%" : "1pt",
               backgroundColor: isCircle
                 ? filled
