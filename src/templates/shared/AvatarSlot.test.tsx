@@ -1,0 +1,106 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+
+import { createEmptyResume } from "@/lib/schema/defaults";
+import type { PictureConfig } from "@/lib/schema/resume.schema";
+
+import { AvatarSlot } from "./AvatarSlot";
+import { HeaderSlot } from "./HeaderSlot";
+
+function makePicture(overrides: Partial<PictureConfig> = {}): PictureConfig {
+  return { ...createEmptyResume().picture, ...overrides };
+}
+
+describe("AvatarSlot", () => {
+  it("renders nothing when the picture is hidden", () => {
+    const { container } = render(
+      <AvatarSlot
+        picture={makePicture({
+          hidden: true,
+          url: "data:image/png;base64,abc",
+        })}
+      />,
+    );
+
+    expect(container.querySelector("img")).toBeNull();
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders nothing when visible but the url is empty", () => {
+    const { container } = render(
+      <AvatarSlot picture={makePicture({ hidden: false, url: "   " })} />,
+    );
+
+    expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("renders a decorative avatar with point-based sizing when visible", () => {
+    const { container } = render(
+      <AvatarSlot
+        picture={makePicture({
+          hidden: false,
+          url: "data:image/png;base64,abc",
+          size: 72,
+          aspectRatio: 1.5,
+          borderRadius: 8,
+          fit: "contain",
+        })}
+      />,
+    );
+
+    const img = container.querySelector("img");
+
+    expect(img).not.toBeNull();
+    expect(img).toHaveAttribute("alt", "");
+    expect(img).toHaveAttribute("loading", "eager");
+    expect(img).toHaveAttribute("decoding", "sync");
+    expect(img?.style.width).toBe("72pt");
+    expect(img?.style.height).toBe("108pt");
+    expect(img?.style.borderRadius).toBe("8pt");
+    expect(img?.style.objectFit).toBe("contain");
+  });
+});
+
+describe("HeaderSlot", () => {
+  it("collapses the avatar column when the picture is hidden", () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Ada Lovelace";
+    doc.basics.headline = "Mathematician";
+
+    const { container } = render(<HeaderSlot doc={doc} />);
+
+    expect(container.querySelector("img")).toBeNull();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Ada Lovelace" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows contact metadata and suppresses icons when hideIcons is true", () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Ada";
+    doc.basics.email = "ada@example.com";
+    doc.basics.phone = "+1 555 0100";
+    doc.basics.location = "London";
+    doc.basics.website.label = "ada.dev";
+    doc.basics.customFields = [
+      { id: "cf1", icon: "", text: "Pronouns: she/her" },
+    ];
+    doc.metadata.page.hideIcons = true;
+
+    const { container } = render(<HeaderSlot doc={doc} />);
+
+    expect(screen.getByText(/ada@example\.com/)).toBeInTheDocument();
+    expect(screen.getByText(/Pronouns: she\/her/)).toBeInTheDocument();
+    expect(container.querySelectorAll("svg")).toHaveLength(0);
+  });
+
+  it("renders contact icons when hideIcons is false", () => {
+    const doc = createEmptyResume();
+    doc.basics.email = "ada@example.com";
+    doc.metadata.page.hideIcons = false;
+
+    const { container } = render(<HeaderSlot doc={doc} />);
+
+    expect(container.querySelectorAll("svg").length).toBeGreaterThan(0);
+  });
+});
