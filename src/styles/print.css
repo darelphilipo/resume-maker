@@ -1,0 +1,104 @@
+/* Force exact paper geometry and strip browser URL/date/page-number headers & footers */
+@page {
+  size: A4 portrait;
+  margin: 0mm;
+}
+
+/* Print-only portal: hidden on screen, the only visible subtree when printing */
+#print-portal {
+  display: none;
+}
+
+@media print {
+  html,
+  body {
+    width: 100%;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide the entire app (editor, preview, drawers) and show only the unscaled print portal */
+  body > *:not(#print-portal) {
+    display: none !important;
+  }
+
+  #print-portal {
+    display: block !important;
+  }
+
+  /* Hide all editor UI, mobile drawers, zoom controls, and overflow banners */
+  .editor-chrome,
+  .mobile-bottom-bar,
+  .page-overflow-warning,
+  .ai-inline-wand {
+    display: none !important;
+  }
+
+  /* Reset any pan/zoom transforms on the print container */
+  .resume-print-root {
+    transform: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Each logical page renders with exact physical padding and clean page breaks */
+  .resume-page {
+    width: var(--page-width, 210mm);
+    min-height: var(--page-height, 297mm);
+    padding: var(--page-margin-y, 12pt) var(--page-margin-x, 14pt);
+    box-sizing: border-box;
+    break-after: page;
+    page-break-after: always;
+    box-shadow: none !important;
+    border: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .resume-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  /* Keep hyperlinks clickable in the exported PDF without URL expansion */
+  a {
+    text-decoration: inherit;
+    color: inherit;
+  }
+
+  a[href]::after {
+    content: none !important;
+  }
+}
+
+/* Fragmentation utilities */
+.resume-section[data-keep-together="true"],
+.resume-section-heading,
+.resume-entry-header,
+.resume-entry-compact,
+.resume-entry-bullets > li,
+.resume-rich-text p {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.resume-section[data-start-new-page="true"] {
+  break-before: page;
+  page-break-before: always;
+}
+
+.resume-section[data-keep-together="true"],
+.resume-section[data-start-new-page="true"],
+.resume-section-heading,
+.resume-entry-header,
+.resume-entry-compact,
+.resume-entry-bullets > li,
+.resume-rich-text p {
+  orphans: 3;
+  widows: 3;
+}

@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+:root {
+  --brand-primary: #1f2937;
+  --brand-text: #111827;
+  --brand-background: #ffffff;
+  --page-width: 210mm;
+  --page-height: 297mm;
+  --page-margin-x: 14pt;
+  --page-margin-y: 12pt;
+  --page-gap-x: 8pt;
+  --page-gap-y: 12pt;
+  --item-gap: 6pt;
+  --section-columns: 1;
+  --font-sans: var(--font-sans-loaded), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif-loaded), ui-serif, Georgia, serif;
+}
+
+@theme inline {
+  --color-primary: var(--brand-primary);
+  --color-text: var(--brand-text);
+  --color-background: var(--brand-background);
+  --spacing-page-width: var(--page-width);
+  --spacing-page-height: var(--page-height);
+  --spacing-page-margin-x: var(--page-margin-x);
+  --spacing-page-margin-y: var(--page-margin-y);
+  --spacing-page-gap-x: var(--page-gap-x);
+  --spacing-page-gap-y: var(--page-gap-y);
+  --spacing-item-gap: var(--item-gap);
+  --font-sans: var(--font-sans-loaded), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif-loaded), ui-serif, Georgia, serif;
+}
+
+body {
+  background: var(--brand-background);
+  color: var(--brand-text);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
