@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { HTMLAttributes } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 import {
   TransformComponent,
   TransformWrapper,
@@ -12,6 +12,10 @@ import { computeCanvasFrame } from "@/lib/pagination/canvasFrame";
 import type { PageLayout } from "@/lib/pagination/usePageLayout";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
+import {
+  normalizeWheelDelta,
+  wheelZoomTarget,
+} from "@/lib/zoom/wheelZoom";
 
 import { PageOverflowBanner } from "./PageOverflowBanner";
 import { PageStack } from "./PageStack";
@@ -28,8 +32,27 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function CanvasControls({ fitScale }: { fitScale: number }) {
-  const { zoomIn, zoomOut, setTransform } = useControls();
+const ZOOM_BUTTON_FACTOR = 1.15;
+const ZOOM_BUTTON_ANIMATION_MS = 150;
+
+function CanvasControls({
+  fitScale,
+  minScale,
+  maxScale,
+}: {
+  fitScale: number;
+  minScale: number;
+  maxScale: number;
+}) {
+  const { centerView, setTransform, state } = useControls();
+
+  const zoomTo = (scale: number): void => {
+    void centerView(
+      clamp(scale, minScale, maxScale),
+      ZOOM_BUTTON_ANIMATION_MS,
+      "easeOut",
+    );
+  };
 
   return (
     <div className="hidden items-center gap-1 rounded-lg bg-white/90 p-1 shadow-sm lg:flex">
@@ -37,7 +60,7 @@ function CanvasControls({ fitScale }: { fitScale: number }) {
         type="button"
         aria-label="Zoom out"
         onClick={() => {
-          void zoomOut(0.1);
+          zoomTo(state.scale / ZOOM_BUTTON_FACTOR);
         }}
         className="flex h-7 w-7 items-center justify-center rounded-md text-sm font-medium hover:bg-black/5"
       >
@@ -47,7 +70,7 @@ function CanvasControls({ fitScale }: { fitScale: number }) {
         type="button"
         aria-label="Zoom in"
         onClick={() => {
-          void zoomIn(0.1);
+          zoomTo(state.scale * ZOOM_BUTTON_FACTOR);
         }}
         className="flex h-7 w-7 items-center justify-center rounded-md text-sm font-medium hover:bg-black/5"
       >
@@ -75,6 +98,94 @@ function FitTransform({ fitScale }: { fitScale: number }) {
   }, [fitScale, setTransform]);
 
   return null;
+}
+
+function WheelZoom({
+  minScale,
+  maxScale,
+  children,
+}: {
+  minScale: number;
+  maxScale: number;
+  children: ReactNode;
+}) {
+  const { state, zoomToPoint } = useControls();
+  const hostRef = useRef<HTMLDivElement>(null);
+  const deltaRef = useRef(0);
+  const frameRef = useRef<number | null>(null);
+  const scaleRef = useRef(state.scale);
+  const zoomToPointRef = useRef(zoomToPoint);
+
+  useEffect(() => {
+    scaleRef.current = state.scale;
+    zoomToPointRef.current = zoomToPoint;
+  }, [state.scale, zoomToPoint]);
+
+  useEffect(() => {
+    const element = hostRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const flush = (clientX: number, clientY: number): void => {
+      frameRef.current = null;
+
+      const deltaPx = deltaRef.current;
+
+      deltaRef.current = 0;
+
+      if (deltaPx === 0) {
+        return;
+      }
+
+      const target = wheelZoomTarget(
+        scaleRef.current,
+        deltaPx,
+        minScale,
+        maxScale,
+      );
+
+      scaleRef.current = target;
+      void zoomToPointRef.current(target, clientX, clientY, 0);
+    };
+
+    const handleWheel = (event: WheelEvent): void => {
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+
+      const deltaPx = normalizeWheelDelta(event.deltaY, event.deltaMode);
+
+      if (deltaPx === 0) {
+        return;
+      }
+
+      deltaRef.current += deltaPx;
+
+      if (frameRef.current === null) {
+        const { clientX, clientY } = event;
+
+        frameRef.current = requestAnimationFrame(() => {
+          flush(clientX, clientY);
+        });
+      }
+    };
+
+    element.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      element.removeEventListener("wheel", handleWheel);
+      deltaRef.current = 0;
+
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+    };
+  }, [minScale, maxScale]);
+
+  return <div ref={hostRef}>{children}</div>;
 }
 
 export function LiveCanvasViewport({
@@ -173,7 +284,7 @@ export function LiveCanvasViewport({
           centerOnInit={false}
           limitToBounds
           doubleClick={{ disabled: true }}
-          wheel={{ step: 0.1 }}
+          wheel={{ disabled: true }}
           pinch={{ step: 5 }}
         >
           <div className="editor-chrome flex items-center justify-between gap-2 px-1">
@@ -181,20 +292,29 @@ export function LiveCanvasViewport({
               {layout.pages.length}{" "}
               {layout.pages.length === 1 ? "page" : "pages"}
             </span>
-            <CanvasControls fitScale={fitScale!} />
+            <CanvasControls
+              fitScale={fitScale!}
+              minScale={Math.min(MIN_SCALE, fitScale!)}
+              maxScale={MAX_SCALE}
+            />
           </div>
           <FitTransform fitScale={fitScale!} />
-          <TransformComponent
-            wrapperStyle={{ width: "100%", height: `${frame.height}px` }}
-            contentStyle={{ width: `${frame.width / frame.scale}px` }}
-            wrapperProps={
-              {
-                "data-canvas-height": String(frame.height),
-              } as unknown as HTMLAttributes<HTMLDivElement>
-            }
+          <WheelZoom
+            minScale={Math.min(MIN_SCALE, fitScale!)}
+            maxScale={MAX_SCALE}
           >
-            <PageStack doc={doc} pages={layout.pages} />
-          </TransformComponent>
+            <TransformComponent
+              wrapperStyle={{ width: "100%", height: `${frame.height}px` }}
+              contentStyle={{ width: `${frame.width / frame.scale}px` }}
+              wrapperProps={
+                {
+                  "data-canvas-height": String(frame.height),
+                } as unknown as HTMLAttributes<HTMLDivElement>
+              }
+            >
+              <PageStack doc={doc} pages={layout.pages} />
+            </TransformComponent>
+          </WheelZoom>
         </TransformWrapper>
       )}
     </div>
