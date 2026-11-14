@@ -54,6 +54,19 @@ describe("loadResume", () => {
     expect(useResumeStore.getState().hydrated).toBe(true);
   });
 
+  it("records the row's updatedAt as lastSavedAt", async () => {
+    const id = "persisted-resume";
+    const updatedAt = 1_700_000_000_000;
+    const doc = createEmptyResume();
+    doc.basics.name = "Persisted Person";
+    await putResume({ id, updatedAt, doc });
+
+    const loaded = await useResumeStore.getState().loadResume(id);
+
+    expect(loaded).toBe(true);
+    expect(useResumeStore.getState().lastSavedAt).toBe(updatedAt);
+  });
+
   it("returns false for an unknown id and leaves the doc untouched", async () => {
     const doc = createEmptyResume();
     doc.basics.name = "Keep me";
@@ -121,6 +134,18 @@ describe("importResume", () => {
     expect((await getResume(id))?.doc.basics.name).toBe("Imported Person");
     expect(canUndo()).toBe(false);
     expect(canRedo()).toBe(false);
+  });
+
+  it("records the persisted row's timestamp as lastSavedAt", async () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Imported Person";
+
+    const id = await useResumeStore.getState().importResume(doc);
+    const row = await getResume(id);
+
+    expect(useResumeStore.getState().hydrated).toBe(true);
+    expect(useResumeStore.getState().lastSavedAt).toEqual(expect.any(Number));
+    expect(useResumeStore.getState().lastSavedAt).toBe(row?.updatedAt);
   });
 });
 

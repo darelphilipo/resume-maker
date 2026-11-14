@@ -2,12 +2,16 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createEmptyResume } from "@/lib/schema/defaults";
+import { putResume } from "@/lib/store/db";
 import {
   resetResumeStore,
   useResumeStore,
 } from "@/lib/store/useResumeStore";
 
 import { EditorWorkspace } from "./EditorWorkspace";
+
+const realLoadResume = useResumeStore.getState().loadResume;
 
 const searchParamsState = vi.hoisted(() => ({
   id: "resume-1" as string | null,
@@ -147,6 +151,23 @@ describe("EditorWorkspace", () => {
     });
 
     expect(screen.getByText("Saved")).toBeInTheDocument();
+  });
+
+  it("shows Saved for a resume already persisted in IndexedDB", async () => {
+    const updatedAt = 1_700_000_000_000;
+    await putResume({
+      id: "resume-1",
+      updatedAt,
+      doc: createEmptyResume(),
+    });
+
+    // Use the real loader so the store hydrates lastSavedAt from the row.
+    useResumeStore.setState({ loadResume: realLoadResume });
+
+    render(<EditorWorkspace />);
+
+    expect(await screen.findByText("Saved")).toBeInTheDocument();
+    expect(screen.queryByText("Not saved")).not.toBeInTheDocument();
   });
 
   it("starts autosave after loading and stops it on unmount", async () => {

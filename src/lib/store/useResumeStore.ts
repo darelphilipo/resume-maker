@@ -119,7 +119,12 @@ export const useResumeStore = create<ResumeStore>()(
 
         const history = getTemporal();
         history.pause();
-        set({ doc: row.doc, resumeId: id, hydrated: true });
+        set({
+          doc: row.doc,
+          resumeId: id,
+          hydrated: true,
+          lastSavedAt: row.updatedAt,
+        });
         history.clear();
         history.resume();
 
@@ -145,12 +150,13 @@ export const useResumeStore = create<ResumeStore>()(
 
       importResume: async (doc) => {
         const id = newId();
+        const updatedAt = Date.now();
 
-        await putResume({ id, updatedAt: Date.now(), doc });
+        await putResume({ id, updatedAt, doc });
 
         const history = getTemporal();
         history.pause();
-        set({ doc, resumeId: id, hydrated: true });
+        set({ doc, resumeId: id, hydrated: true, lastSavedAt: updatedAt });
         history.clear();
         history.resume();
 
