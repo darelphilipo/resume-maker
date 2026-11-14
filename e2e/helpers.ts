@@ -17,7 +17,7 @@ export async function createPresetResume(
 ): Promise<void> {
   await page.goto("/");
   await page.getByRole("button", { name: label }).click();
-  await page.waitForURL(/\/editor\?id=/);
+  await page.waitForURL(/\/editor\/?\?id=/);
   await expect(page.getByRole("button", { name: "Save PDF" })).toBeVisible();
   await expect(page.getByLabel("Name")).not.toHaveValue("");
 }

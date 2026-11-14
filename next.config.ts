@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  basePath: process.env.PAGES_BASE_PATH || undefined,
+  trailingSlash: true,
   output: "export",
   images: {
     unoptimized: true,

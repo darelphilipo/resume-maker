@@ -265,7 +265,7 @@ test("sanitizes a hostile JSON import", async ({ page }) => {
     buffer: Buffer.from(JSON.stringify(hostile)),
   });
 
-  await page.waitForURL(/\/editor\?id=/);
+  await page.waitForURL(/\/editor\/?\?id=/);
   await expect(page.getByRole("button", { name: "Save PDF" })).toBeVisible();
   await showPreview(page);
 

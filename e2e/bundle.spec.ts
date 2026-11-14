@@ -5,7 +5,12 @@ import { expect, test } from "@playwright/test";
 
 const OUT_DIR = path.join(process.cwd(), "out");
 const CHUNKS_DIR = path.join(OUT_DIR, "_next", "static", "chunks");
-const EDITOR_HTML = path.join(OUT_DIR, "editor.html");
+const EDITOR_HTML =
+  [
+    path.join(OUT_DIR, "editor", "index.html"),
+    path.join(OUT_DIR, "editor.html"),
+  ].find((candidate) => existsSync(candidate)) ??
+  path.join(OUT_DIR, "editor", "index.html");
 const JS_BUDGET_BYTES = 1.5 * 1024 * 1024;
 const FORBIDDEN_MARKERS = ["@ai-sdk", "ai/react", "generateText"];
 
@@ -51,9 +56,13 @@ test("keeps the editor route JavaScript within budget", () => {
     (match) => match[1],
   );
   const uniqueSources = Array.from(new Set(scriptSources));
-  const files = uniqueSources.map((source) =>
-    path.join(OUT_DIR, source.replace(/^\//, "")),
-  );
+  const files = uniqueSources.map((source) => {
+    // Chunk URLs carry the deploy base path (e.g. /resume-maker/_next/...), which
+    // is not part of the export directory layout, so anchor on /_next/ instead.
+    const assetPath = source.replace(/^.*?\/_next\//, "_next/");
+
+    return path.join(OUT_DIR, ...assetPath.split("/"));
+  });
 
   expect(files.length).toBeGreaterThan(0);
 

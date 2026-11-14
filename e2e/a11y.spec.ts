@@ -103,7 +103,7 @@ for (const viewport of VIEWPORTS) {
       );
 
       await page.keyboard.press("Enter");
-      await page.waitForURL(/\/editor\?id=/);
+      await page.waitForURL(/\/editor\/?\?id=/);
       await expect(
         page.getByRole("button", { name: "Save PDF" }),
       ).toBeVisible();
