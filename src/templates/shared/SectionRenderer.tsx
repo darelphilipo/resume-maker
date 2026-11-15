@@ -256,17 +256,12 @@ function SkillEntry({
   item: ItemRecord;
 }) {
   const keywords = keywordList(item);
-  const level = typeof item.level === "number" ? item.level : 0;
   const keywordLayout = doc.sections.skills.keywordLayout;
 
   return (
     <article className="resume-entry resume-entry-compact">
       <div className="resume-entry-header resume-skill-heading">
         <h3 className="resume-entry-title">{text(item, "name")}</h3>
-        <SkillLevelIndicator
-          level={level}
-          type={doc.metadata.design.levelType}
-        />
       </div>
       {keywords.length > 0 ? (
         keywordLayout === "list" ? (

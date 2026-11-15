@@ -38,7 +38,9 @@ in control of every line, and your data stays on your device.
   Publications, and References.
 - Rich-text descriptions with bold, italic, bullet/numbered lists, links, and
   editor undo.
-- Comma-separated keyword tags for skills, projects, and interests.
+- Skills grouped by category with comma-separated keywords (for example
+  `Languages: Python, SQL`), with no self-ratings to maintain; projects and
+  interests use the same comma-separated tags.
 - Month pickers for dates, so `2023-10` stays consistent everywhere.
 - Add, delete, hide, and reorder entries inside each section.
 - Show, hide, and reorder whole sections; empty sections stay out of the PDF.

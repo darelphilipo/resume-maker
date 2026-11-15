@@ -165,6 +165,9 @@ describe("SectionRenderer", () => {
     expect(inlineRender.container.querySelectorAll(".resume-skill-pill")).toHaveLength(
       2,
     );
+    expect(
+      screen.queryByRole("img", { name: /Proficiency/ }),
+    ).toBeNull();
     inlineRender.unmount();
 
     doc.sections.skills.keywordLayout = "list";

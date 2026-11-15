@@ -100,7 +100,10 @@ rediscover.
     date formatting, and section order used by `SectionRenderer`, `HeaderSlot`,
     and `usePageLayout` (first layout page `main` + `sidebar`). Any change to
     what those components render must be mirrored there or the ATS preview
-    silently drifts from the PDF. Skills deliberately omit the 1–5 level.
+    silently drifts from the PDF. Skills are category + comma-separated
+    keywords; the 1–5 level stays in the schema only so imported JSON parses,
+    and `SkillEntry` no longer renders a proficiency indicator (Languages still
+    do).
 12. **JD keyword matching runs on the ATS text, locally.** The matcher in
     `src/lib/keywords/jdMatch.ts` extracts lowercase tokens from the pasted
     posting (drops boilerplate stopwords, ranks by frequency, tolerates trailing
@@ -157,6 +160,19 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — Skills are category + keywords
+- Task: remove the 1–5 proficiency slider from the skills form and make skills
+  read as `Category: keyword, keyword`.
+- `SkillsForm` now shows `Category` (stored in `name`) and `Keywords` with no
+  slider. The form still carries `level` as a pass-through so editing an
+  imported resume does not silently reset its stored values.
+- `SkillEntry` in `SectionRenderer` no longer renders `SkillLevelIndicator`;
+  Languages keep theirs. Levels remain in `SkillItemSchema` for import
+  compatibility.
+- Added `SkillsForm.test.tsx` and extended the skills render test; README tour
+  updated.
+- Verified: `npm run typecheck`, `npm test` (320 pass), `npm run lint`.
 
 ### 2026-11-15 — JD keyword matcher drawer
 - Task: add a client-side JD keyword matcher drawer showing Matched vs Missing

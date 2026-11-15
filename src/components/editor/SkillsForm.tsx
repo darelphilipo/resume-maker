@@ -17,7 +17,6 @@ import {
   EntryActions,
   EntryCard,
   FormActions,
-  LevelInput,
   TextInput,
 } from "./SectionFormControls";
 import { useDebouncedCommit } from "./useDebouncedCommit";
@@ -146,23 +145,18 @@ export function SkillsForm() {
         <EntryCard key={item.id} index={index}>
           <TextInput
             id={`skills-${item.id}-name`}
-            label="Name"
+            label="Category"
             value={item.name}
             onChange={(value) => updateItem(index, "name", value)}
-            placeholder="TypeScript"
-          />
-          <LevelInput
-            id={`skills-${item.id}-level`}
-            label="Level"
-            value={item.level}
-            onChange={(value) => updateItem(index, "level", value)}
+            placeholder="Languages"
+            hint="Group related skills under one heading."
           />
           <TextInput
             id={`skills-${item.id}-keywords`}
             label="Keywords"
             value={item.keywords}
             onChange={(value) => updateItem(index, "keywords", value)}
-            placeholder="React, Node.js, testing"
+            placeholder="Python, SQL, TypeScript"
             hint="Separate keywords with commas."
           />
           <BooleanInput
