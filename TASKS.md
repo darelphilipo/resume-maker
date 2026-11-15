@@ -19,11 +19,6 @@ _None yet._
 ## Queue (Ready for Next Run)
 
 ### P0 — Bugs and correctness
-- [ ] P0: Show saved Dexie resumes (`src/lib/store/db.ts`) on `/` in `Launcher.tsx` with Open, Duplicate, and Delete actions; sort by last-edited. Users currently cannot find a draft without bookmarking `?id=`.
-- [ ] P0: Add a "Blank Resume" card on `/` and rename the preset group to "Start from a role sample" (`Launcher.tsx`). All 5 presets currently load sample data, so the "Start from scratch" label is misleading.
-- [ ] P0: Fix preview zoom + `Fit` in `LiveCanvasViewport.tsx` — `+` clips left/right edges with no horizontal scroll, and `Fit` does not restore the initial unclipped scale. Recalculate against container width on Fit; allow horizontal overflow past 100%. Must not regress mobile scrolling (see `CONTEXT.md` #3).
-- [ ] P0: Add independent scroll panes for Content/Preview/Design at `lg:` in `EditorWorkspace.tsx`, keeping `MobileBottomNav` behaviour on mobile. Expanding a tall section currently pushes Preview and Design off-screen.
-- [ ] P0: Verify and complete live preview on typing — `BasicsForm.tsx` should update on input with ~100 ms debounce. `useDebouncedCommit.ts` already exists; find the fields that still update only on blur and fix those.
 - [ ] P0: Standardize dates — `Certifications` uses free text (`2023-11`) instead of the month/year picker, and narrow two-column date fields truncate `October 2023` to `October 20...`. Format narrow inputs as `Oct 2023`.
 - [ ] P0: Add the trust badge above the fold on `/`: `100% Free · No Sign-Up · Works Offline in Your Browser` (`Launcher.tsx`). Free/local export is the product's main differentiator.
 
@@ -45,10 +40,7 @@ _None yet._
 ### P2 — Larger work
 - [ ] P2: Add a template system in `src/templates/registry.ts` with 6 single-column-first templates — Engineering Classic (Jake), Ivy/Executive (Harvard), Modern Accent, Compact 1-Pager, Hybrid Skills-First, and a two-column Studio Sidebar labelled "Best for direct/human review". Show an ATS-Safe badge on single-column options.
 - [ ] P2: Add 4 design controls to `DesignPanel.tsx`: template selector, accent color (5–6 curated swatches + monochrome), font pairing (Sans/Serif/Classic), density (Compact/Normal/Relaxed).
-- [ ] P2: Add client-side `.docx` export for single-column templates (e.g. `docx` package) for legacy ATS portals.
-- [ ] P2: Add lazy-loaded DOCX import (`mammoth`) and LinkedIn Data Export ZIP/CSV import (`jszip`).
 - [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
-- [ ] P2: Add PWA offline caching so the app works on spotty mobile connections.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
