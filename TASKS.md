@@ -10,7 +10,8 @@
 > **One task per run.** Implement, test, move the item to *Done*, stop.
 
 ## Inbox (User Ideas — Add New Requests Here)
-​Projects dates: In Projects → Entry 1 (Ledger API), Start date (Feb 2023) and End date (Nov 2023) are still plain text inputs rather than month pickers
+1.​Projects dates: In Projects → Entry 1 (Ledger API), Start date (Feb 2023) and End date (Nov 2023) are still plain text inputs rather than month pickers
+2.create a project readme with key features and a short goal that this is intended to be a free to use no ai tool to quickly create a resume . Ensure that every subsequent run updates the readme with the newly added features ,more for the users not as a log
 
 ## In Progress (OpenCode Updates This)
 _None yet._
