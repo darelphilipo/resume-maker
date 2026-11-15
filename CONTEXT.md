@@ -106,9 +106,41 @@ npx playwright test    # e2e; needs a dev server on :3000
   to branch `wip/opencode-checkpoint`; the next run resumes from it.
 - Live at <https://darelphilipo.github.io/resume-maker/>.
 
+### Autopilot failure modes (read before tuning the workflow)
+
+1. **Free-tier version floor.** `opencode-ai` below **1.18.0** prints
+   `Error: OpenCode 1.18.0 or newer is required to use the free tier` and stops.
+   The workflow pins `1.19.5`. If the pin is ever lowered, or the free tier
+   raises its floor again, this is the first thing to check.
+2. **`opencode run` can exit 0 while doing nothing** — that same version gate
+   exits 0. Exit codes therefore prove nothing on their own. The workflow has a
+   `Fail if the agent made no changes` gate: a run that leaves the tree
+   untouched fails the job. Never replace it with exit-code checks alone.
+3. **Every run uploads `opencode-run-log`.** It is the only place the model's
+   output is visible. Failed runs keep it too (`if: always()`).
+4. **`git status --porcelain` must be empty before a run** for the no-change
+   gate to mean anything; don't leave local edits to be swept into a bot commit.
+5. **`GH_PAT` is optional.** With `GITHUB_TOKEN` the push cannot trigger
+   `deploy.yml`, so the workflow dispatches it manually; with a PAT the push
+   triggers it and the manual dispatch is skipped. Don't do both.
+
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — Diagnosed the silent no-op autopilot run
+- First `workflow_dispatch` run was green in 53s and changed nothing:
+  `opencode-ai@1.15.13` printed `OpenCode 1.18.0 or newer is required to use
+  the free tier` **and exited 0**, so the guard step never fired.
+- Fixed in `.github/workflows/opencode-autopilot.yml`: pin `opencode-ai@1.19.5`,
+  add `Fail if the agent made no changes`, add `Refuse to commit human-owned
+  files` (`.github/workflows/*`, `opencode.json`), and make the commit step's
+  no-change branch fail instead of exiting 0.
+- Verified locally with the 1.19.5 binary: `opencode run ... ` answered and
+  exited 0; `opencode debug config` accepts the V1 `permission` object, so the
+  config needs no schema change.
+- Gotcha: always confirm a run by checking for a new commit *and* a new entry
+  here — a green job alone is meaningless.
 
 ### 2026-11-15 — Mobile bugs fixed, autopilot bootstrapped
 - Fixed: unpinned tab bar, dead scroll band, locked multi-page preview, generic

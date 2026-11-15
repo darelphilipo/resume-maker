@@ -44,8 +44,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install OpenCode v2 CLI
-        run: npm install -g opencode-ai@1.15.13
+      - name: Install OpenCode CLI
+        # The free tier refuses to run below 1.18.0 and still exits 0:
+        #   "Error: OpenCode 1.18.0 or newer is required to use the free tier"
+        # Do not downgrade this pin.
+        run: npm install -g opencode-ai@1.19.5
 
       - name: Run OpenCode on 1 task from TASKS.md
         env:
@@ -73,7 +76,34 @@ jobs:
         if: env.opencode_exit != '' && env.opencode_exit != '0'
         run: |
           echo "::error::opencode exited with ${opencode_exit} - see the opencode-run-log artifact"
+          tail -n 40 "$RUNNER_TEMP/opencode-run.log" || true
           exit 1
+
+      # opencode can print an error and still exit 0 (observed: the free-tier
+      # version gate). An exit code alone therefore proves nothing, so a run
+      # that leaves the tree untouched made no progress: fail loudly instead of
+      # reporting a green no-op.
+      - name: Fail if the agent made no changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Agent touched $(git status --porcelain | wc -l) path(s)."
+            exit 0
+          fi
+          echo "::error::OpenCode made no file changes - it errored or refused to work. Log tail:"
+          tail -n 40 "$RUNNER_TEMP/opencode-run.log" || true
+          exit 1
+
+      # opencode.json denies edits to these paths, but the run uses
+      # --dangerously-skip-permissions, so enforce the same rule here before
+      # anything can be committed.
+      - name: Refuse to commit human-owned files
+        run: |
+          CHANGED=$(git status --porcelain -- .github/workflows opencode.json)
+          if [ -n "$CHANGED" ]; then
+            echo "::error::The agent modified files reserved for humans:"
+            echo "$CHANGED"
+            exit 1
+          fi
 
       - name: Upload OpenCode log
         if: always()
@@ -101,8 +131,8 @@ jobs:
           git config user.email "opencode-bot@users.noreply.github.com"
 
           if [ -z "$(git status --porcelain)" ]; then
-            echo "No file changes to commit."
-            exit 0
+            echo "::error::No file changes to commit."
+            exit 1
           fi
 
           save_checkpoint() {
