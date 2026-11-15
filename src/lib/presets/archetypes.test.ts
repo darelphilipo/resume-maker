@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { buildAtsText } from "@/lib/ats/atsText";
 import { ResumeDocumentSchema } from "@/lib/schema/resume.schema";
 
 import { ARCHETYPES, buildArchetype } from "./archetypes";
@@ -60,11 +61,45 @@ describe("ARCHETYPES", () => {
       expect(doc.summary.content).toMatch(/^<p>.+<\/p>$/);
       expect(doc.sections.experience.items).toHaveLength(2);
       expect(doc.sections.education.items).toHaveLength(1);
-      expect(doc.sections.skills.items).toHaveLength(6);
+      expect(doc.sections.skills.items).toHaveLength(3);
       expect(doc.sections.projects.items.length).toBeGreaterThanOrEqual(1);
       expect(doc.sections.projects.items.length).toBeLessThanOrEqual(2);
     },
   );
+
+  it.each(ARCHETYPES.map((archetype) => [archetype.id, archetype] as const))(
+    "%s groups skills into three keyword categories",
+    (_id, archetype) => {
+      const doc = archetype.build();
+      const categories = doc.sections.skills.items;
+
+      expect(categories).toHaveLength(3);
+      expect(new Set(categories.map((category) => category.name)).size).toBe(3);
+
+      for (const category of categories) {
+        expect(category.name.trim()).not.toBe("");
+        expect(category.hidden).toBe(false);
+        expect(category.level).toBe(0);
+        expect(category.keywords.length).toBeGreaterThanOrEqual(2);
+
+        for (const keyword of category.keywords) {
+          expect(keyword.trim()).toBe(keyword);
+          expect(keyword).not.toBe("");
+        }
+      }
+    },
+  );
+
+  it("prints sample skills as category headings with comma-separated keywords", () => {
+    const doc = buildArchetype("software-engineer");
+    expect(doc).not.toBeNull();
+
+    const ats = buildAtsText(doc!);
+
+    expect(ats).toContain("Languages\nTypeScript, Python, Go, SQL");
+    expect(ats).toContain("Backend\nNode.js, PostgreSQL, Redis, GraphQL");
+    expect(ats).toContain("Cloud & DevOps\nAWS, Docker, Kubernetes, Terraform");
+  });
 
   it.each(ARCHETYPES.map((archetype) => [archetype.id, archetype] as const))(
     "%s uses quantified XYZ bullets and valid start dates",
@@ -104,11 +139,6 @@ describe("ARCHETYPES", () => {
       for (const item of doc.sections.projects.items) {
         expect(item.startDate).toMatch(DATE_PATTERN);
         expect(item.endDate).toMatch(DATE_PATTERN);
-      }
-
-      for (const skill of doc.sections.skills.items) {
-        expect(skill.level).toBeGreaterThanOrEqual(3);
-        expect(skill.level).toBeLessThanOrEqual(5);
       }
     },
   );

@@ -90,8 +90,8 @@ function project(input: ProjectInput): ProjectItem {
   };
 }
 
-function skill(name: string, level: number): SkillItem {
-  return { id: newId(), hidden: false, name, level, keywords: [] };
+function skillCategory(name: string, keywords: string[]): SkillItem {
+  return { id: newId(), hidden: false, name, level: 0, keywords };
 }
 
 function certification(
@@ -174,12 +174,19 @@ const SOFTWARE_ENGINEER: Archetype = {
         skills: {
           ...doc.sections.skills,
           items: [
-            skill("TypeScript", 5),
-            skill("Node.js", 5),
-            skill("PostgreSQL", 4),
-            skill("AWS", 4),
-            skill("Docker", 4),
-            skill("GraphQL", 3),
+            skillCategory("Languages", ["TypeScript", "Python", "Go", "SQL"]),
+            skillCategory("Backend", [
+              "Node.js",
+              "PostgreSQL",
+              "Redis",
+              "GraphQL",
+            ]),
+            skillCategory("Cloud & DevOps", [
+              "AWS",
+              "Docker",
+              "Kubernetes",
+              "Terraform",
+            ]),
           ],
         },
         projects: {
@@ -299,12 +306,24 @@ const PRODUCT_MANAGER: Archetype = {
         skills: {
           ...doc.sections.skills,
           items: [
-            skill("Roadmapping", 5),
-            skill("Experimentation", 5),
-            skill("SQL", 4),
-            skill("Analytics", 4),
-            skill("Figma", 3),
-            skill("Stakeholder Management", 5),
+            skillCategory("Product", [
+              "Roadmapping",
+              "Discovery",
+              "Experimentation",
+              "Pricing",
+            ]),
+            skillCategory("Analytics", [
+              "SQL",
+              "Amplitude",
+              "A/B Testing",
+              "Cohort Analysis",
+            ]),
+            skillCategory("Collaboration", [
+              "Stakeholder Management",
+              "User Research",
+              "Figma",
+              "Agile Delivery",
+            ]),
           ],
         },
         projects: {
@@ -424,12 +443,24 @@ const UX_UI_DESIGNER: Archetype = {
         skills: {
           ...doc.sections.skills,
           items: [
-            skill("Figma", 5),
-            skill("Prototyping", 5),
-            skill("Design Systems", 4),
-            skill("User Research", 4),
-            skill("Accessibility", 4),
-            skill("HTML/CSS", 3),
+            skillCategory("Design", [
+              "Figma",
+              "Prototyping",
+              "Interaction Design",
+              "Design Systems",
+            ]),
+            skillCategory("Research", [
+              "User Research",
+              "Usability Testing",
+              "Journey Mapping",
+              "Personas",
+            ]),
+            skillCategory("Delivery", [
+              "Accessibility (WCAG 2.2)",
+              "HTML/CSS",
+              "Design Tokens",
+              "Documentation",
+            ]),
           ],
         },
         projects: {
@@ -548,12 +579,24 @@ const FINANCE_OPERATIONS: Archetype = {
         skills: {
           ...doc.sections.skills,
           items: [
-            skill("Financial Modeling", 5),
-            skill("FP&A", 5),
-            skill("Excel", 5),
-            skill("SQL", 3),
-            skill("Process Improvement", 4),
-            skill("Vendor Negotiation", 4),
+            skillCategory("Finance", [
+              "Financial Modeling",
+              "FP&A",
+              "Forecasting",
+              "Variance Analysis",
+            ]),
+            skillCategory("Systems", [
+              "Excel",
+              "NetSuite",
+              "SQL",
+              "Power BI",
+            ]),
+            skillCategory("Operations", [
+              "Process Improvement",
+              "Vendor Negotiation",
+              "Internal Controls",
+              "Procurement",
+            ]),
           ],
         },
         projects: {
@@ -672,12 +715,14 @@ const FRESH_GRADUATE: Archetype = {
         skills: {
           ...doc.sections.skills,
           items: [
-            skill("Python", 4),
-            skill("SQL", 4),
-            skill("Java", 3),
-            skill("Git", 4),
-            skill("React", 3),
-            skill("Data Structures", 4),
+            skillCategory("Languages", ["Python", "SQL", "Java", "TypeScript"]),
+            skillCategory("Tools", ["Git", "React", "PostgreSQL", "Docker"]),
+            skillCategory("Coursework", [
+              "Data Structures",
+              "Algorithms",
+              "Databases",
+              "Operating Systems",
+            ]),
           ],
         },
         projects: {

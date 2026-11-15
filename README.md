@@ -26,7 +26,8 @@ in control of every line, and your data stays on your device.
 ### Start quickly
 
 - **Role presets** for Software Engineer, Product Manager, UX/UI Designer,
-  Finance & Operations, and Fresh Graduate, each with a complete editable sample.
+  Finance & Operations, and Fresh Graduate, each with a complete editable sample
+  including categorized skills you can adapt.
 - **JSON backup import** to continue a resume you exported earlier.
 - **JSON backup export** at any time so you are never locked in.
 

@@ -118,6 +118,17 @@ rediscover.
     on reload. Move actions run against visible rows and preserve tucked slots
     in `layout.pages[0].main`, so a Move click is never absorbed by a hidden
     row.
+14. **Role presets must follow the current renderers.** `src/lib/presets/archetypes.ts`
+    builds the launcher samples. Skills are three `skillCategory(name, keywords)`
+    rows per role (no proficiency bars); `level` stays `0` only because
+    `SkillItemSchema` still requires the field for import compatibility. The ATS
+    view prints a category name on its own line followed by comma-separated
+    keywords, so keep sample keyword lists comma-safe (no commas inside a
+    keyword).
+15. **`opencode.json` is human-owned.** Its `permission.edit` denies
+    `.github/workflows/*` and `opencode.json` itself, so an autonomous run
+    cannot change the autopilot workflow or OpenCode config. Ask the human or
+    use a temporary `.opencode/opencode.json` override.
 
 ## Verification and tooling
 
@@ -168,6 +179,20 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — Role-preset samples use categorized skills
+- Task: recheck the launcher role samples against the current Skills UI; skills
+  had been left as flat 1–5 level rows.
+- Replaced the `skill(name, level)` helper with `skillCategory(name, keywords)`
+  and gave every archetype three categories with 4 keywords each. `level` stays
+  `0` only to satisfy `SkillItemSchema`; nothing renders it.
+- Updated `archetypes.test.ts`: expects 3 categories, distinct non-empty names,
+  at least 2 keywords per category, level 0, and asserts the Software Engineer
+  sample prints as `Category` + comma-separated keywords in `buildAtsText`.
+- README role-preset line now mentions categorized skills.
+- Files: `src/lib/presets/archetypes.ts`,
+  `src/lib/presets/archetypes.test.ts`, `README.md`, `CONTEXT.md`.
+- Verified: `npm run typecheck`, `npm test` (330 pass), `npm run lint`.
 
 ### 2026-11-15 — Optional sections tucked behind Add optional section
 - Task: shorten the default `SectionList` by tucking Awards, Languages,
@@ -307,14 +332,3 @@ npx playwright test    # e2e; needs a dev server on :3000
   config needs no schema change.
 - Gotcha: always confirm a run by checking for a new commit *and* a new entry
   here — a green job alone is meaningless.
-
-### 2026-11-15 — Mobile bugs fixed, autopilot bootstrapped
-- Fixed: unpinned tab bar, dead scroll band, locked multi-page preview, generic
-  PDF filename.
-- Files: `EditorWorkspace.tsx`, `MobileBottomNav.tsx`, `LiveCanvasViewport.tsx`,
-  `src/app/layout.tsx`, `EditorLoading.tsx`, `src/lib/print/printDocument.ts`,
-  `PrintTriggerButton.tsx`, `e2e/mobile.spec.ts`.
-- Added: OpenCode autopilot workflow, `TASKS.md`, this file.
-- Gotcha: `opencode.json` denies `edit` on `.github/workflows/*` and itself, so
-  only a human (or a temporary `.opencode/opencode.json` override) can change
-  them. Prefer asking the human.
