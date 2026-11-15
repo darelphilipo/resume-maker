@@ -53,7 +53,7 @@ jobs:
         run: |
           set +e
           PROMPT=$(cat <<'PROMPT_EOF'
-          Read AGENTS.md and TASKS.md first.
+          Read AGENTS.md , TASKS.md and CONTEXT.md first.
 
           1. If there is an item under 'In Progress', continue it. Otherwise, pick the single top unchecked item from 'Queue' (or promote 1 clear item from 'Inbox' if Queue is empty).
           2. Move that item to 'In Progress' in TASKS.md with a brief plan and target file paths.
