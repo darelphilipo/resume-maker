@@ -81,9 +81,10 @@ rediscover.
    `src/lib/date/month.ts` (`formatMonth`, `toMonthValue`, `parseMonthInput`);
    `DateRange` re-exports `formatMonth` for compatibility. Native
    `<input type="month">` labels are locale-controlled and clip in half-width
-   cells, so narrow two-column pairs use `MonthInput`, which displays
-   `Oct 2023` but stores `YYYY-MM`. Native month inputs normalize imported
-   `YYYY-MM-DD` values to their month.
+   cells, so date pairs stay single-column (Experience, Education, and now
+   Projects). Projects uses native month pickers and converts imported
+   `YYYY-MM-DD` values to their month. `MonthInput` remains the compact fallback
+   if a genuinely narrow cell needs one.
 10. **Fit-to-one-page is persisted in `metadata.page.fitScale`** (0.5–1,
     default 1). The scale is applied to the existing Onyx `--resume-*`
     variables and to `gapPx` so preview, measurement, and print agree.
@@ -141,6 +142,19 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — Native month pickers for project dates
+- Task: Projects start/end dates rendered as compact text instead of month
+  pickers.
+- Replaced `MonthInput` in `ProjectsForm` with the shared `TextInput
+  type="month"` and made the pair single-column (`grid gap-3`) so locale month
+  labels do not clip in half-width cells. Imported ISO dates still normalize
+  to `YYYY-MM` through `toMonthValue`.
+- Added `ProjectsForm.test.tsx` covering input type, canonical displayed
+  values, ISO normalization, and debounced commits.
+- Files: `src/components/editor/ProjectsForm.tsx`,
+  `src/components/editor/ProjectsForm.test.tsx`.
+- Verified: `npm run typecheck`, `npm test` (293 pass), `npm run lint`.
 
 ### 2026-11-15 — Fit to 1 Page + keep-together entries
 - Task: P1 fit-to-one-page and stop experience/project roles splitting across
