@@ -7,10 +7,13 @@ import {
   Eye,
   EyeSlash,
   Plus,
+  Trash,
 } from "@phosphor-icons/react";
 import { useState } from "react";
 
+import { newId } from "@/lib/schema/defaults";
 import {
+  CustomSectionSchema,
   DEFAULT_SECTION_ORDER,
   SECTION_IDS,
   type SectionId,
@@ -18,6 +21,8 @@ import {
 import { useResumeStore } from "@/lib/store/useResumeStore";
 
 import { SectionForm } from "./SectionForm";
+import { TextInput } from "./SectionFormControls";
+import { useDebouncedCommit } from "./useDebouncedCommit";
 
 const SECTION_ID_SET = new Set<string>(SECTION_IDS);
 
@@ -30,8 +35,31 @@ const OPTIONAL_SECTION_IDS = new Set<string>([
   "references",
 ]);
 
+const DEFAULT_SECTION_TITLES: Record<SectionId, string> = {
+  profiles: "Profiles",
+  experience: "Experience",
+  education: "Education",
+  projects: "Projects",
+  skills: "Skills",
+  certifications: "Certifications",
+  awards: "Awards",
+  languages: "Languages",
+  interests: "Interests",
+  volunteer: "Volunteer",
+  publications: "Publications",
+  references: "References",
+};
+
 function isSectionId(id: string): id is SectionId {
   return SECTION_ID_SET.has(id);
+}
+
+function defaultTitle(id: string): string {
+  if (id === "summary") {
+    return "Summary";
+  }
+
+  return isSectionId(id) ? DEFAULT_SECTION_TITLES[id] : "Custom section";
 }
 
 type SectionRow = {
@@ -80,7 +108,7 @@ function buildRows(
     if (id === "summary") {
       return {
         id,
-        title: doc.summary.title || "Summary",
+        title: doc.summary.title || defaultTitle(id),
         count: doc.summary.content.trim() === "" ? 0 : 1,
         hidden: doc.summary.hidden,
       };
@@ -91,7 +119,7 @@ function buildRows(
 
       return {
         id,
-        title: section.title || id,
+        title: section.title || defaultTitle(id),
         count: section.items.length,
         hidden: section.hidden,
       };
@@ -101,11 +129,46 @@ function buildRows(
 
     return {
       id,
-      title: section?.title || id,
+      title: section?.title || defaultTitle(id),
       count: section?.items.length ?? 0,
       hidden: section?.hidden ?? false,
     };
   });
+}
+
+function SectionHeadingInput({
+  row,
+  onCommit,
+}: {
+  row: SectionRow;
+  onCommit: (title: string) => void;
+}) {
+  const [draft, setDraft] = useState(row.title);
+  const [lastTitle, setLastTitle] = useState(row.title);
+
+  if (row.title !== lastTitle) {
+    setLastTitle(row.title);
+    setDraft(row.title);
+  }
+
+  useDebouncedCommit(draft, (next) => {
+    const trimmed = next.trim();
+
+    if (trimmed !== row.title.trim()) {
+      onCommit(trimmed);
+    }
+  });
+
+  return (
+    <TextInput
+      id={`section-heading-${row.id}`}
+      label="Section heading"
+      value={draft}
+      onChange={setDraft}
+      placeholder={defaultTitle(row.id)}
+      hint="Leave blank to hide this heading."
+    />
+  );
 }
 
 export function SectionList({ onOpenSection }: SectionListProps) {
@@ -114,6 +177,9 @@ export function SectionList({ onOpenSection }: SectionListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [revealedOptional, setRevealedOptional] = useState<string[]>([]);
   const [optionalMenuOpen, setOptionalMenuOpen] = useState(false);
+  const [customFormOpen, setCustomFormOpen] = useState(false);
+  const [customTitle, setCustomTitle] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const rows = buildRows(doc);
 
   function isOptionalTucked(row: SectionRow): boolean {
@@ -195,11 +261,81 @@ export function SectionList({ onOpenSection }: SectionListProps) {
     });
   }
 
+  function renameSection(row: SectionRow, title: string): void {
+    if (row.id === "summary") {
+      patchDoc({ summary: { title } });
+      return;
+    }
+
+    if (isSectionId(row.id)) {
+      patchDoc({ sections: { [row.id]: { title } } });
+      return;
+    }
+
+    patchDoc({
+      customSections: doc.customSections.map((section) =>
+        section.id === row.id ? { ...section, title } : section,
+      ),
+    });
+  }
+
+  function addCustomSection(): void {
+    const title = customTitle.trim();
+
+    if (title === "") {
+      return;
+    }
+
+    const section = CustomSectionSchema.parse({ id: newId(), title });
+    const firstPage = doc.metadata.layout.pages[0] ?? {
+      fullWidth: false,
+      main: [...DEFAULT_SECTION_ORDER],
+      sidebar: [],
+    };
+
+    patchDoc({
+      customSections: [...doc.customSections, section],
+      metadata: {
+        layout: {
+          pages: [
+            { ...firstPage, main: [...firstPage.main, section.id] },
+            ...doc.metadata.layout.pages.slice(1),
+          ],
+        },
+      },
+    });
+
+    setCustomTitle("");
+    setCustomFormOpen(false);
+    setExpandedId(section.id);
+  }
+
+  function deleteCustomSection(row: SectionRow): void {
+    patchDoc({
+      customSections: doc.customSections.filter(
+        (section) => section.id !== row.id,
+      ),
+      metadata: {
+        layout: {
+          pages: doc.metadata.layout.pages.map((page) => ({
+            ...page,
+            main: page.main.filter((id) => id !== row.id),
+            sidebar: page.sidebar.filter((id) => id !== row.id),
+          })),
+        },
+      },
+    });
+
+    setConfirmDeleteId(null);
+    setExpandedId(null);
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <ul className="flex flex-col gap-2">
         {visibleRows.map((row, index) => {
           const isExpanded = expandedId === row.id;
+          const isCustomRow = !isSectionId(row.id) && row.id !== "summary";
           const atStart = index === 0;
           const atEnd = index === visibleRows.length - 1;
           const bodyId = `section-body-${row.id}`;
@@ -242,6 +378,13 @@ export function SectionList({ onOpenSection }: SectionListProps) {
                   id={bodyId}
                   className="flex flex-col gap-3 border-t border-black/10 px-4 py-3"
                 >
+                  {/* Custom section titles are edited inside CustomSectionForm. */}
+                  {isCustomRow ? null : (
+                    <SectionHeadingInput
+                      row={row}
+                      onCommit={(title) => renameSection(row, title)}
+                    />
+                  )}
                   <SectionForm sectionId={row.id} />
                   <div className="flex flex-wrap items-center gap-2">
                     <button
@@ -281,6 +424,39 @@ export function SectionList({ onOpenSection }: SectionListProps) {
                       <span>Move down</span>
                     </button>
                   </div>
+                  {isCustomRow ? (
+                    confirmDeleteId === row.id ? (
+                      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-2">
+                        <p className="text-sm text-red-900">
+                          Delete “{row.title}” and all its entries?
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => deleteCustomSection(row)}
+                          className="inline-flex min-h-11 items-center rounded-lg bg-red-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        >
+                          Confirm delete section
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="inline-flex min-h-11 items-center rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        >
+                          Cancel delete section
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        aria-label={`Delete ${row.title} section`}
+                        onClick={() => setConfirmDeleteId(row.id)}
+                        className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-800 transition-colors hover:border-red-400 active:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                      >
+                        <Trash size={16} aria-hidden />
+                        <span>Delete section</span>
+                      </button>
+                    )
+                  ) : null}
                   {onOpenSection ? (
                     <button
                       type="button"
@@ -340,6 +516,55 @@ export function SectionList({ onOpenSection }: SectionListProps) {
           ) : null}
         </div>
       ) : null}
+
+      {customFormOpen ? (
+        <form
+          aria-label="Add custom section"
+          onSubmit={(event) => {
+            event.preventDefault();
+            addCustomSection();
+          }}
+          className="flex flex-col gap-3 rounded-xl border border-black/10 bg-black/[0.02] p-3"
+        >
+          <TextInput
+            id="new-custom-section-title"
+            label="Section name"
+            value={customTitle}
+            onChange={setCustomTitle}
+            placeholder="e.g. Speaking, Patents"
+            hint="Create a section for anything the standard list does not cover."
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="submit"
+              disabled={customTitle.trim() === ""}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30"
+            >
+              <Plus size={16} aria-hidden />
+              <span>Add section</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCustomFormOpen(false);
+                setCustomTitle("");
+              }}
+              className="inline-flex min-h-11 items-center rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setCustomFormOpen(true)}
+          className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-black/20 px-3 py-2 text-sm font-medium transition-colors hover:border-black/40 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
+          <Plus size={16} aria-hidden />
+          <span>Add custom section</span>
+        </button>
+      )}
     </div>
   );
 }

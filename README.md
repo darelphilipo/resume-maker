@@ -44,6 +44,9 @@ in control of every line, and your data stays on your device.
   interests use the same comma-separated tags.
 - Month pickers for dates, so `2023-10` stays consistent everywhere.
 - Add, delete, hide, and reorder entries inside each section.
+- Rename any section heading, and create your own sections for anything the
+  standard list does not cover, such as speaking, patents, or coursework.
+  Custom sections can be deleted when you no longer need them.
 - Show, hide, and reorder whole sections; empty sections stay out of the PDF.
   Awards, Languages, Interests, Volunteer, Publications, and References stay
   tucked behind **Add optional section** until you need them.

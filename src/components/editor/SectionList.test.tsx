@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { UserEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
+import { CustomSectionSchema } from "@/lib/schema/resume.schema";
 import {
   resetResumeStore,
   useResumeStore,
@@ -189,5 +190,100 @@ describe("SectionList", () => {
 
     expect(main.indexOf("skills")).toBeGreaterThan(main.indexOf("certifications"));
     expect(main.indexOf("awards")).toBeGreaterThan(main.indexOf("skills"));
+  });
+
+  it("renames a standard section heading from the expanded body", async () => {
+    const user = userEvent.setup();
+
+    render(<SectionList />);
+
+    await expandRow(user, "Experience");
+    const heading = screen.getByLabelText("Section heading");
+
+    await user.clear(heading);
+    await user.type(heading, "Work History");
+
+    await waitFor(() => {
+      expect(useResumeStore.getState().doc.sections.experience.title).toBe(
+        "Work History",
+      );
+    });
+
+    expect(
+      screen.getByRole("button", { name: /^Work History/ }),
+    ).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("adds a custom section and appends it to the page layout", async () => {
+    const user = userEvent.setup();
+
+    render(<SectionList />);
+
+    await user.click(
+      screen.getByRole("button", { name: "Add custom section" }),
+    );
+
+    expect(screen.getByRole("button", { name: "Add section" })).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Section name"), "Speaking");
+    await user.click(screen.getByRole("button", { name: "Add section" }));
+
+    const doc = useResumeStore.getState().doc;
+    const section = doc.customSections[0];
+
+    expect(section.title).toBe("Speaking");
+    expect(doc.metadata.layout.pages[0].main).toContain(section.id);
+    expect(
+      screen.getByRole("button", { name: /^Speaking/ }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByLabelText("Section title")).toHaveValue("Speaking");
+  });
+
+  it("deletes a custom section and removes it from every layout page", async () => {
+    const doc = useResumeStore.getState().doc;
+    const custom = CustomSectionSchema.parse({
+      id: "custom-speaking",
+      title: "Speaking",
+    });
+    const firstPage = doc.metadata.layout.pages[0];
+
+    useResumeStore.setState({
+      doc: {
+        ...doc,
+        customSections: [custom],
+        metadata: {
+          ...doc.metadata,
+          layout: {
+            ...doc.metadata.layout,
+            pages: [
+              { ...firstPage, main: [...firstPage.main, custom.id] },
+              ...doc.metadata.layout.pages.slice(1),
+            ],
+          },
+        },
+      },
+    });
+
+    const user = userEvent.setup();
+
+    render(<SectionList />);
+
+    await expandRow(user, "Speaking");
+    await user.click(
+      screen.getByRole("button", { name: "Delete Speaking section" }),
+    );
+    expect(
+      screen.getByText(/Delete .*Speaking.* and all its entries\?/),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: "Confirm delete section" }),
+    );
+
+    expect(useResumeStore.getState().doc.customSections).toHaveLength(0);
+    expect(
+      useResumeStore.getState().doc.metadata.layout.pages[0].main,
+    ).not.toContain(custom.id);
+    expect(screen.queryByRole("button", { name: /Speaking/ })).toBeNull();
   });
 });

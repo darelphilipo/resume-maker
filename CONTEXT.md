@@ -129,6 +129,13 @@ rediscover.
     `.github/workflows/*` and `opencode.json` itself, so an autonomous run
     cannot change the autopilot workflow or OpenCode config. Ask the human or
     use a temporary `.opencode/opencode.json` override.
+16. **Custom sections live in two places.** Adding one must append its `id` to
+    `metadata.layout.pages[0].main` (the only page `usePageLayout` reads) as
+    well as to `customSections`; deleting one must strip the id from every
+    page's `main` and `sidebar` or stale layout entries linger. Custom titles
+    are edited inside `CustomSectionForm`; standard headings use the debounced
+    `SectionHeadingInput` in `SectionList`. An empty heading intentionally
+    hides that section's heading in the PDF.
 
 ## Verification and tooling
 
@@ -179,6 +186,23 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — Add/delete custom sections and rename headings
+- Task: finish the custom-section UI. `CustomSectionForm` was wired, but nothing
+  created or deleted a custom section and standard headings could not be renamed.
+- `SectionList` now has an inline `Add custom section` form (name required),
+  appends the new id to `customSections` and `layout.pages[0].main`, expands the
+  new row, and offers a two-step `Delete section` confirm for custom rows that
+  strips the id from every layout page. Standard rows gained a debounced
+  `Section heading` field; custom rows keep editing their title in
+  `CustomSectionForm`. Empty headings fall back to readable row labels but hide
+  the PDF heading.
+- Added four tests: heading rename, custom add + layout append, custom delete +
+  layout cleanup, and the empty-name disabled state.
+- Files: `src/components/editor/SectionList.tsx`,
+  `src/components/editor/SectionList.test.tsx`, `README.md`, `TASKS.md`,
+  `CONTEXT.md`.
+- Verified: `npm run typecheck`, `npm test` (333 pass), `npm run lint`.
 
 ### 2026-11-15 — Role-preset samples use categorized skills
 - Task: recheck the launcher role samples against the current Skills UI; skills
@@ -305,30 +329,7 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/launcher/launcher.test.tsx`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (278 pass).
 
-### 2026-11-15 — Standardized month/date fields
-- Added `src/lib/date/month.ts` (`formatMonth`, `toMonthValue`,
-  `parseMonthInput`) and switched Certifications/Awards/Publications/Custom
-  dates to native month pickers.
-- Added compact `MonthInput` for the narrow two-column Projects date pair: it
-  displays `Oct 2023` and commits `YYYY-MM` on blur/Enter, preserving
-  unparseable text instead of dropping it.
-- Tests: `src/lib/date/month.test.ts`, `MonthInput.test.tsx`,
-  `sectionFields.test.ts`. `npm run lint`, `typecheck`, and `test` (277 pass).
-- Gotcha: native month inputs render locale text that clips in half-width
-  cells; don't reintroduce `type="month"` there. Sync `MonthInput`'s draft
-  during render (not `useEffect`) to satisfy
-  `react-hooks/set-state-in-effect`.
+<!-- Older entries are trimmed to keep the 10 most recent. The standardized
+     month/date and first autopilot diagnosis are captured in Decisions &
+     Gotchas (#9) and Autopilot failure modes above. -->
 
-### 2026-11-15 — Diagnosed the silent no-op autopilot run
-- First `workflow_dispatch` run was green in 53s and changed nothing:
-  `opencode-ai@1.15.13` printed `OpenCode 1.18.0 or newer is required to use
-  the free tier` **and exited 0**, so the guard step never fired.
-- Fixed in `.github/workflows/opencode-autopilot.yml`: pin `opencode-ai@1.19.5`,
-  add `Fail if the agent made no changes`, add `Refuse to commit human-owned
-  files` (`.github/workflows/*`, `opencode.json`), and make the commit step's
-  no-change branch fail instead of exiting 0.
-- Verified locally with the 1.19.5 binary: `opencode run ... ` answered and
-  exited 0; `opencode debug config` accepts the V1 `permission` object, so the
-  config needs no schema change.
-- Gotcha: always confirm a run by checking for a new commit *and* a new entry
-  here — a green job alone is meaningless.
