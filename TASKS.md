@@ -23,7 +23,6 @@ _None yet._
 
 ### P1 — High-value features
 
-- [ ] P1: Add a client-side JD keyword matcher drawer — paste a job description, highlight Matched vs Missing keywords against the resume. Regex/token heuristics only, no API calls.
 - [ ] P1: Remove the `LevelInput` slider from `SkillsForm.tsx`; ATS ignores 1–5 ratings. Use Category + comma-separated keywords (`Languages: Python, SQL`).
 - [ ] P1: Tuck `Awards`, `Languages`, `Interests`, `Volunteer`, `Publications`, `References` behind `+ Add optional section` in `SectionList.tsx` so the default list is short.
 - [ ] P1: Expose UI to add/delete `customSections` and rename section headings in `SectionList.tsx`. `CustomSectionForm.tsx` exists — verify what is wired and finish the UI.
