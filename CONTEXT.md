@@ -77,6 +77,13 @@ rediscover.
 8. **Import fixtures share IDs.** Importing a resume whose items reuse one `id`
    produces React duplicate-key console errors. When generating fixtures, give
    every item a distinct `id`.
+9. **Date fields store `YYYY-MM`.** Shared helpers live in
+   `src/lib/date/month.ts` (`formatMonth`, `toMonthValue`, `parseMonthInput`);
+   `DateRange` re-exports `formatMonth` for compatibility. Native
+   `<input type="month">` labels are locale-controlled and clip in half-width
+   cells, so narrow two-column pairs use `MonthInput`, which displays
+   `Oct 2023` but stores `YYYY-MM`. Native month inputs normalize imported
+   `YYYY-MM-DD` values to their month.
 
 ## Verification and tooling
 
@@ -127,6 +134,20 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — Standardized month/date fields
+- Added `src/lib/date/month.ts` (`formatMonth`, `toMonthValue`,
+  `parseMonthInput`) and switched Certifications/Awards/Publications/Custom
+  dates to native month pickers.
+- Added compact `MonthInput` for the narrow two-column Projects date pair: it
+  displays `Oct 2023` and commits `YYYY-MM` on blur/Enter, preserving
+  unparseable text instead of dropping it.
+- Tests: `src/lib/date/month.test.ts`, `MonthInput.test.tsx`,
+  `sectionFields.test.ts`. `npm run lint`, `typecheck`, and `test` (277 pass).
+- Gotcha: native month inputs render locale text that clips in half-width
+  cells; don't reintroduce `type="month"` there. Sync `MonthInput`'s draft
+  during render (not `useEffect`) to satisfy
+  `react-hooks/set-state-in-effect`.
 
 ### 2026-11-15 — Diagnosed the silent no-op autopilot run
 - First `workflow_dispatch` run was green in 53s and changed nothing:

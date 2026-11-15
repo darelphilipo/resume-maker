@@ -186,10 +186,9 @@ export function CustomSectionForm({ sectionId }: { sectionId: string }) {
           <TextInput
             id={`custom-${sectionId}-${item.id}-date`}
             label="Date"
+            type="month"
             value={item.date}
             onChange={(value) => updateItem(index, "date", value)}
-            inputMode="numeric"
-            placeholder="YYYY-MM"
           />
           <TextInput
             id={`custom-${sectionId}-${item.id}-location`}

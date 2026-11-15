@@ -8,6 +8,12 @@ import {
 } from "@phosphor-icons/react";
 import { useState, type ReactNode } from "react";
 
+import {
+  formatMonth,
+  parseMonthInput,
+  toMonthValue,
+} from "@/lib/date/month";
+
 const INPUT_CLASS =
   "min-h-11 w-full rounded-lg border border-black/10 bg-background px-3 py-2 text-sm transition-colors placeholder:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
 
@@ -48,8 +54,83 @@ export function TextInput({
         inputMode={inputMode}
         autoComplete={autoComplete}
         placeholder={placeholder}
-        value={value}
+        value={type === "month" ? toMonthValue(value) : value}
         onChange={(event) => onChange(event.currentTarget.value)}
+        className={INPUT_CLASS}
+      />
+      {hint ? <p className="text-xs opacity-60">{hint}</p> : null}
+    </div>
+  );
+}
+
+export type MonthInputProps = {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  hint?: string;
+};
+
+/**
+ * Compact month field for narrow, two-column layouts. Native month inputs
+ * render a locale label ("October 2023") that clips in half-width cells, so
+ * this shows the short form ("Oct 2023") while still storing `YYYY-MM`.
+ */
+export function MonthInput({
+  id,
+  label,
+  value,
+  onChange,
+  hint,
+}: MonthInputProps) {
+  const [draft, setDraft] = useState(() => formatMonth(value));
+  const [lastValue, setLastValue] = useState(value);
+
+  if (value !== lastValue) {
+    setLastValue(value);
+    setDraft(formatMonth(value));
+  }
+
+  function commitDraft(): void {
+    const parsed = parseMonthInput(draft);
+
+    if (parsed === null) {
+      const raw = draft.trim();
+
+      if (raw !== value) {
+        onChange(raw);
+      }
+
+      return;
+    }
+
+    setDraft(formatMonth(parsed));
+
+    if (parsed !== value) {
+      onChange(parsed);
+    }
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <label htmlFor={id} className="text-sm font-medium">
+        {label}
+      </label>
+      <input
+        id={id}
+        type="text"
+        inputMode="text"
+        autoComplete="off"
+        spellCheck={false}
+        placeholder="Oct 2023"
+        value={draft}
+        onChange={(event) => setDraft(event.currentTarget.value)}
+        onBlur={commitDraft}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.currentTarget.blur();
+          }
+        }}
         className={INPUT_CLASS}
       />
       {hint ? <p className="text-xs opacity-60">{hint}</p> : null}

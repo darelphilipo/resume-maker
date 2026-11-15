@@ -18,6 +18,7 @@ import {
   EntryActions,
   EntryCard,
   FormActions,
+  MonthInput,
   TextInput,
 } from "./SectionFormControls";
 import { useDebouncedCommit } from "./useDebouncedCommit";
@@ -187,17 +188,15 @@ export function ProjectsForm() {
             hint="Separate keywords with commas."
           />
           <div className="grid gap-3 sm:grid-cols-2">
-            <TextInput
+            <MonthInput
               id={`projects-${item.id}-start-date`}
               label="Start date"
-              type="month"
               value={item.startDate}
               onChange={(value) => updateItem(index, "startDate", value)}
             />
-            <TextInput
+            <MonthInput
               id={`projects-${item.id}-end-date`}
               label="End date"
-              type="month"
               value={item.endDate}
               onChange={(value) => updateItem(index, "endDate", value)}
             />

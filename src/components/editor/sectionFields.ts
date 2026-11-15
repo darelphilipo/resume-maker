@@ -76,9 +76,7 @@ export const GENERIC_SECTION_FIELDS: Record<
     {
       key: "date",
       label: "Date",
-      kind: "text",
-      inputMode: "numeric",
-      placeholder: "YYYY-MM",
+      kind: "month",
     },
     {
       key: "url",
@@ -106,9 +104,7 @@ export const GENERIC_SECTION_FIELDS: Record<
     {
       key: "date",
       label: "Date",
-      kind: "text",
-      inputMode: "numeric",
-      placeholder: "YYYY-MM",
+      kind: "month",
     },
     {
       key: "summary",
@@ -212,9 +208,7 @@ export const GENERIC_SECTION_FIELDS: Record<
     {
       key: "date",
       label: "Date",
-      kind: "text",
-      inputMode: "numeric",
-      placeholder: "YYYY-MM",
+      kind: "month",
     },
     {
       key: "url",
