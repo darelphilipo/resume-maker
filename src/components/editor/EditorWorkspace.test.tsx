@@ -124,6 +124,18 @@ describe("EditorWorkspace", () => {
     ]);
   });
 
+  it("opens the job description keyword matcher from the content panel", async () => {
+    const user = userEvent.setup();
+
+    await renderReadyWorkspace();
+    await user.click(
+      screen.getByRole("button", { name: "Match to a job description" }),
+    );
+
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText("Job description")).toBeInTheDocument();
+  });
+
   it("calls undo from the top bar", async () => {
     const user = userEvent.setup();
 

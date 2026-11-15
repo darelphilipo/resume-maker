@@ -101,6 +101,12 @@ rediscover.
     and `usePageLayout` (first layout page `main` + `sidebar`). Any change to
     what those components render must be mirrored there or the ATS preview
     silently drifts from the PDF. Skills deliberately omit the 1–5 level.
+12. **JD keyword matching runs on the ATS text, locally.** The matcher in
+    `src/lib/keywords/jdMatch.ts` extracts lowercase tokens from the pasted
+    posting (drops boilerplate stopwords, ranks by frequency, tolerates trailing
+    dots and simple plurals) and compares them with `buildAtsText(doc)`. Hidden
+    or empty sections therefore do not count as matches. Keep it pure and
+    client-side: no network calls, no AI, no persistence of the job description.
 
 ## Verification and tooling
 
@@ -151,6 +157,21 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — JD keyword matcher drawer
+- Task: add a client-side JD keyword matcher drawer showing Matched vs Missing
+  keywords against the resume, with regex/token heuristics only.
+- Added `src/lib/keywords/jdMatch.ts` (`extractJobKeywords`,
+  `matchJobKeywords`) with a stopword list, frequency ranking, a 40-keyword
+  default cap, trailing-dot stripping, and dot/plural variants for matching.
+- `JdMatchDrawer` wraps `EntryDrawer`, keeps the pasted text in local component
+  state only, and renders coverage plus Matched/Missing chip lists. The trigger
+  is a full-width action under the Content intro in `EditorWorkspace`.
+- Files listed in `TASKS.md`; README feature tour updated.
+- Verified: `npm run typecheck`, `npm test` (317 pass), `npm run lint`.
+- Gotcha: in jsdom, `userEvent.type` inside a vaul drawer throws
+  `setPointerCapture is not a function`; use `fireEvent.change` for drawer form
+  fields in component tests.
 
 ### 2026-11-15 — ATS plain-text view
 - Task: add an ATS Plain-Text View toggle to the Preview pane showing the exact

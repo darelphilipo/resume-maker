@@ -32,6 +32,7 @@ import { BasicsForm } from "./BasicsForm";
 import { DesignPanel } from "./DesignPanel";
 import { EditorLoading } from "./EditorLoading";
 import { EntryDrawer } from "./EntryDrawer";
+import { JdMatchDrawer } from "./JdMatchDrawer";
 import { SectionForm } from "./SectionForm";
 import {
   MobileBottomNav,
@@ -287,6 +288,7 @@ export function EditorWorkspace() {
                 Reorder, hide, or open a section to edit it.
               </p>
             </div>
+            <JdMatchDrawer doc={doc} />
             <section aria-labelledby="basics-heading" className="flex flex-col gap-3">
               <h3
                 id="basics-heading"
