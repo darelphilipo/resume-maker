@@ -110,6 +110,14 @@ rediscover.
     dots and simple plurals) and compares them with `buildAtsText(doc)`. Hidden
     or empty sections therefore do not count as matches. Keep it pure and
     client-side: no network calls, no AI, no persistence of the job description.
+13. **`SectionList` tucks empty optional sections.** Awards, Languages,
+    Interests, Volunteer, Publications, and References are hidden from the
+    default list while empty; `+ Add optional section` reveals and expands one.
+    A row stays visible once it has items or has been hidden by the user. The
+    reveal state is session-local, so an added-but-still-empty section re-tucks
+    on reload. Move actions run against visible rows and preserve tucked slots
+    in `layout.pages[0].main`, so a Move click is never absorbed by a hidden
+    row.
 
 ## Verification and tooling
 
@@ -160,6 +168,21 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — Optional sections tucked behind Add optional section
+- Task: shorten the default `SectionList` by tucking Awards, Languages,
+  Interests, Volunteer, Publications, and References behind an add control.
+- `SectionList` now filters out empty optional rows, offers a mobile-sized
+  `+ Add optional section` disclosure, and reveals plus expands the chosen
+  section. Optional rows with items (or explicitly hidden ones) remain visible.
+- Move up/down now reorder only the visible rows and keep tucked slots in the
+  stored layout order, so a Move click is never silently absorbed by a hidden
+  row.
+- Added four tests: tucked defaults, add-then-expand, non-empty visibility, and
+  Move across tucked slots. README tour updated.
+- Files: `src/components/editor/SectionList.tsx`,
+  `src/components/editor/SectionList.test.tsx`, `README.md`.
+- Verified: `npm run typecheck`, `npm test` (324 pass), `npm run lint`.
 
 ### 2026-11-15 — Skills are category + keywords
 - Task: remove the 1–5 proficiency slider from the skills form and make skills

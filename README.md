@@ -44,6 +44,8 @@ in control of every line, and your data stays on your device.
 - Month pickers for dates, so `2023-10` stays consistent everywhere.
 - Add, delete, hide, and reorder entries inside each section.
 - Show, hide, and reorder whole sections; empty sections stay out of the PDF.
+  Awards, Languages, Interests, Volunteer, Publications, and References stay
+  tucked behind **Add optional section** until you need them.
 
 ### Design and preview
 

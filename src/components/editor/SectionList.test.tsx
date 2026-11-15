@@ -108,4 +108,86 @@ describe("SectionList", () => {
       useResumeStore.getState().doc.metadata.layout.pages[0].main.slice(0, 2),
     ).toEqual(["experience", "summary"]);
   });
+
+  it("tucks empty optional sections behind Add optional section", () => {
+    render(<SectionList />);
+
+    expect(screen.queryByRole("button", { name: /^Awards/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Languages/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^References/ })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Experience/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Add optional section/ }),
+    ).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("reveals and expands an optional section from the add menu", async () => {
+    const user = userEvent.setup();
+
+    render(<SectionList />);
+
+    await user.click(
+      screen.getByRole("button", { name: /Add optional section/ }),
+    );
+    await user.click(screen.getByRole("button", { name: "Awards" }));
+
+    expect(
+      screen.getByRole("button", { name: /Awards0 items/ }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /Add entry/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Awards" })).toBeNull();
+  });
+
+  it("keeps optional sections with items in the main list", () => {
+    const doc = useResumeStore.getState().doc;
+
+    useResumeStore.setState({
+      doc: {
+        ...doc,
+        sections: {
+          ...doc.sections,
+          awards: {
+            ...doc.sections.awards,
+            items: [
+              {
+                id: "award-1",
+                hidden: false,
+                title: "Engineer of the year",
+                awarder: "",
+                date: "",
+                summary: "",
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    render(<SectionList />);
+
+    expect(
+      screen.getByRole("button", { name: /Awards1 item/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("reorders visible rows without letting tucked sections absorb moves", async () => {
+    const user = userEvent.setup();
+
+    render(<SectionList />);
+
+    await expandRow(user, "Certifications");
+    expect(
+      screen.getByRole("button", { name: "Move Certifications down" }),
+    ).toBeDisabled();
+
+    await expandRow(user, "Skills");
+    await user.click(screen.getByRole("button", { name: "Move Skills down" }));
+
+    const main = useResumeStore.getState().doc.metadata.layout.pages[0].main;
+
+    expect(main.indexOf("skills")).toBeGreaterThan(main.indexOf("certifications"));
+    expect(main.indexOf("awards")).toBeGreaterThan(main.indexOf("skills"));
+  });
 });
