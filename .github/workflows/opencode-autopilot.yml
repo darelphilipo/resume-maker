@@ -66,8 +66,22 @@ jobs:
           timeout 20m opencode run \
             --dangerously-skip-permissions \
             -m opencode/deepseek-v4.1-flash-free \
-            "$PROMPT"
-          echo "opencode_exit=$?" >> "$GITHUB_ENV"
+            "$PROMPT" 2>&1 | tee "$RUNNER_TEMP/opencode-run.log"
+          echo "opencode_exit=${PIPESTATUS[0]}" >> "$GITHUB_ENV"
+
+      - name: Fail if OpenCode errored
+        if: env.opencode_exit != '' && env.opencode_exit != '0'
+        run: |
+          echo "::error::opencode exited with ${opencode_exit} - see the opencode-run-log artifact"
+          exit 1
+
+      - name: Upload OpenCode log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-run-log
+          path: ${{ runner.temp }}/opencode-run.log
+          if-no-files-found: ignore
 
       - name: Verify build & tests
         id: verify
