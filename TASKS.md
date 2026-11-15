@@ -10,8 +10,8 @@
 > **One task per run.** Implement, test, move the item to *Done*, stop.
 
 ## Inbox (User Ideas — Add New Requests Here)
-1.​Projects dates: In Projects → Entry 1 (Ledger API), Start date (Feb 2023) and End date (Nov 2023) are still plain text inputs rather than month pickers
-2.create a project readme with key features and a short goal that this is intended to be a free to use no ai tool to quickly create a resume . Ensure that every subsequent run updates the readme with the newly added features ,more for the users not as a log
+
+_empty
 
 ## In Progress (OpenCode Updates This)
 _None yet._
@@ -19,6 +19,10 @@ _None yet._
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
+
+- [ ] P1: ​Projects dates: In Projects → Entry 1 (Ledger API), Start date (Feb 2023) and End date (Nov 2023) are still plain text inputs rather than month pickers
+- [ ] create a project readme with key features and a short goal that this is intended to be a free to use no ai tool to quickly create a resume . Ensure that every subsequent run updates the readme with the newly added features ,more for the users not as a log
+
 - [ ] P1: Add an ATS Plain-Text View toggle to the Preview pane showing the exact linear text order a parser extracts from the current template.
 - [ ] P1: Add a client-side JD keyword matcher drawer — paste a job description, highlight Matched vs Missing keywords against the resume. Regex/token heuristics only, no API calls.
 - [ ] P1: Remove the `LevelInput` slider from `SkillsForm.tsx`; ATS ignores 1–5 ratings. Use Category + comma-separated keywords (`Languages: Python, SQL`).
