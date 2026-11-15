@@ -23,6 +23,7 @@ _None yet._
 
 ### P1 — High-value features
 - [ ] P1: Tuck `Awards`, `Languages`, `Interests`, `Volunteer`, `Publications`, `References` behind `+ Add optional section` in `SectionList.tsx` so the default list is short.
+- [ ] recheck the sample data for templates so that a correct resume sample is presented .for example skills now are categorized ,so have maybe 3 categories and some sample skills in them
 - [ ] P1: Expose UI to add/delete `customSections` and rename section headings in `SectionList.tsx`. `CustomSectionForm.tsx` exists — verify what is wired and finish the UI.
 - [ ] P1: Simplify contact inputs — auto-detect network and icon from a pasted profile URL (`github.com/user` → GitHub) and drop the manual `Icon` and `Website label` fields (`BasicsForm.tsx`).
 - [ ] P1: Add an optional one-line Work Auth / Notice Period tag to `Basics` (`Immediate Joiner`, `Authorized to work in US`).
