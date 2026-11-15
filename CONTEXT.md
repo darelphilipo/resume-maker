@@ -12,10 +12,13 @@ rediscover.
    - what actually changed (files),
    - anything a future run must know: new constraints, dead ends, hidden
      coupling, surprising test behaviour.
-3. **Promote, don't duplicate.** If a durable fact belongs in *Decisions &
+3. **Keep `README.md` current.** If the task changes anything a user can see or
+   do, update the **Key features** tour in plain user language. The README is
+   not a changelog: no dates, run logs, or file lists there.
+4. **Promote, don't duplicate.** If a durable fact belongs in *Decisions &
    Gotchas*, add it there and keep the session entry short.
-4. Keep *Session Log* to the **10 most recent** entries; delete the oldest.
-5. Never write secrets, tokens, API keys, or personal user data here.
+5. Keep *Session Log* to the **10 most recent** entries; delete the oldest.
+6. Never write secrets, tokens, API keys, or personal user data here.
 
 ---
 
@@ -142,6 +145,17 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — User-facing README
+- Task: create the project README and make future runs keep it current.
+- Added `README.md` with the free/no-AI goal, privacy/static-export model, a
+  user-language feature tour, PDF steps, local commands, and a "keeping this
+  README useful" rule. Future runs must update **Key features** for any
+  user-visible change; the README stays a tour, not a changelog.
+- Wired that rule into the `TASKS.md` finish checklist and the `CONTEXT.md`
+  "How to use this file" steps.
+- Files: `README.md`, `TASKS.md`, `CONTEXT.md`.
+- Verified: `npm run typecheck`, `npm test` (293 pass), `npm run lint`.
 
 ### 2026-11-15 — Native month pickers for project dates
 - Task: Projects start/end dates rendered as compact text instead of month

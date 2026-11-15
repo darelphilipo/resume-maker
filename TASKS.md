@@ -5,7 +5,10 @@
 > gestures, print title, static-export limits). Read it before touching code.
 >
 > **Before you finish:** append a Session Log entry to `CONTEXT.md`. If you
-> learned something expensive, promote it into *Decisions & Gotchas*.
+> learned something expensive, promote it into *Decisions & Gotchas*. Also
+> update `README.md` whenever the task adds or changes a user-visible feature:
+> extend the **Key features** tour in user language, never with a changelog or
+> run log.
 >
 > **One task per run.** Implement, test, move the item to *Done*, stop.
 
@@ -19,8 +22,6 @@ _None yet._
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
-
-- [ ] P1: create a project readme with key features and a short goal that this is intended to be a free to use no ai tool to quickly create a resume . Ensure that every subsequent run updates the readme with the newly added features ,more for the users not as a log
 
 - [ ] P1: Add an ATS Plain-Text View toggle to the Preview pane showing the exact linear text order a parser extracts from the current template.
 - [ ] P1: Add a client-side JD keyword matcher drawer — paste a job description, highlight Matched vs Missing keywords against the resume. Regex/token heuristics only, no API calls.
@@ -43,6 +44,7 @@ _None yet._
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-15 — Added a user-facing `README.md` covering the free/no-AI goal, privacy model, feature tour, PDF steps, and local commands; made README feature updates a standing finish step in `TASKS.md` and `CONTEXT.md`. Files: `README.md`, `TASKS.md`, `CONTEXT.md`.
 - [x] 2026-11-15 — Project dates now use native month pickers in a full-width pair (matching Experience/Education) instead of compact text fields, with ISO imported dates normalized to `YYYY-MM`. Files: `src/components/editor/ProjectsForm.tsx`, `src/components/editor/ProjectsForm.test.tsx`.
 - [x] 2026-11-15 — Enabled "Fit to 1 Page": multi-page previews show a "Spills onto N pages" badge, the action applies a computed `metadata.page.fitScale` through the Onyx `--resume-*` CSS variables, and experience/project entries stay together across print breaks. Files: `src/lib/schema/resume.schema.ts`, `src/lib/pagination/fitScale.ts`, `src/lib/pagination/usePageLayout.ts`, `src/components/preview/PageOverflowBanner.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/MeasureLayer.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/templates/onyx/OnyxTemplate.tsx`, `src/templates/onyx/onyx.css`, `src/templates/shared/SectionRenderer.tsx`, `src/styles/print.css`, `src/lib/pagination/fitScale.test.ts`, `src/lib/pagination/usePageLayout.test.tsx`, `src/components/preview/PageOverflowBanner.test.tsx`, `src/components/preview/LiveCanvasViewport.test.tsx`, `src/components/preview/MeasureLayer.test.tsx`, `src/templates/onyx/onyx.test.tsx`, `src/templates/shared/SectionRenderer.test.tsx`, `src/lib/schema/defaults.test.ts`.
 - [x] 2026-11-15 — Added the `100% Free · No Sign-Up · Works Offline in Your Browser` trust badge as the first, wrapping element above the launcher cards on `/`, with a test asserting the phrases, non-interactivity, and DOM order. Files: `src/components/launcher/Launcher.tsx`, `src/components/launcher/launcher.test.tsx`.
