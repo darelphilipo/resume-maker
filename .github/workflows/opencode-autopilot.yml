@@ -1,0 +1,137 @@
+name: OpenCode Autopilot
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: opencode-autopilot
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  build-next-task:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Resume WIP checkpoint if ahead of main
+        run: |
+          if git ls-remote --exit-code --heads origin wip/opencode-checkpoint >/dev/null 2>&1; then
+            AHEAD=$(git rev-list --count origin/main..origin/wip/opencode-checkpoint)
+            if [ "$AHEAD" -gt 0 ]; then
+              echo "Resuming from wip/opencode-checkpoint ($AHEAD commit(s) ahead of main)"
+              git checkout -B work-branch origin/wip/opencode-checkpoint
+            fi
+          fi
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install OpenCode v2 CLI
+        run: npm install -g opencode-ai@1.15.13
+
+      - name: Run OpenCode on 1 task from TASKS.md
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_KEY }}
+        run: |
+          set +e
+          PROMPT=$(cat <<'PROMPT_EOF'
+          Read AGENTS.md and TASKS.md first.
+
+          1. If there is an item under 'In Progress', continue it. Otherwise, pick the single top unchecked item from 'Queue' (or promote 1 clear item from 'Inbox' if Queue is empty).
+          2. Move that item to 'In Progress' in TASKS.md with a brief plan and target file paths.
+          3. Implement the change cleanly following mobile-first, static-export, and existing test conventions. Add or update unit tests where appropriate.
+          4. Run: npm run typecheck && npm test
+          5. If checks pass, move the item to 'Done' in TASKS.md (with date and files changed). If you hit errors or run short on time, keep it under 'In Progress' with exact next steps for the next run.
+          6. Stop after this single task. Do NOT run git commit or git push.
+          PROMPT_EOF
+          )
+          timeout 20m opencode run \
+            --dangerously-skip-permissions \
+            -m opencode/deepseek-v4.1-flash-free \
+            "$PROMPT"
+          echo "opencode_exit=$?" >> "$GITHUB_ENV"
+
+      - name: Verify build & tests
+        id: verify
+        continue-on-error: true
+        run: |
+          npm run typecheck
+          npm test
+          PAGES_BASE_PATH="/resume-maker" npm run build
+
+      - name: Commit & push progress
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          PAT: ${{ secrets.GH_PAT }}
+        run: |
+          set +e
+          git config user.name "opencode-bot"
+          git config user.email "opencode-bot@users.noreply.github.com"
+
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No file changes to commit."
+            exit 0
+          fi
+
+          save_checkpoint() {
+            echo "::warning::Verification or push failed - saving checkpoint branch"
+            git rebase --abort 2>/dev/null || true
+            git checkout -B wip/opencode-checkpoint
+            git add -A
+            git commit -m "wip(opencode): checkpoint partial progress"
+            git push -f origin wip/opencode-checkpoint
+          }
+
+          if [ "${{ steps.verify.outcome }}" != "success" ]; then
+            save_checkpoint
+            exit 0
+          fi
+
+          git add -A
+          git commit -m "chore(opencode): complete task & update TASKS.md"
+
+          if ! git fetch origin main; then
+            echo "::error::git fetch failed"
+            exit 1
+          fi
+
+          if ! git rebase origin/main; then
+            echo "::error::rebase onto main conflicted"
+            save_checkpoint
+            exit 0
+          fi
+
+          if ! git push origin HEAD:main; then
+            echo "::error::push to main rejected"
+            save_checkpoint
+            exit 0
+          fi
+
+          git push origin --delete wip/opencode-checkpoint 2>/dev/null || true
+
+          # A push authenticated with GITHUB_TOKEN does not trigger other workflows,
+          # so deploy.yml must be started manually in that case. A PAT push already
+          # triggers deploy.yml on push, so dispatching again would deploy twice.
+          if [ -n "$PAT" ]; then
+            echo "Pushed with GH_PAT - deploy.yml triggered by the push."
+          else
+            gh workflow run deploy.yml --ref main || echo "::warning::could not dispatch deploy.yml"
+          fi
