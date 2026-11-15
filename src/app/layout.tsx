@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
 import "./globals.css";
@@ -22,6 +22,14 @@ export const metadata: Metadata = {
   title: "Resume Maker",
   description:
     "Build a professional resume locally in your browser and print it to PDF.",
+};
+
+// `viewportFit: "cover"` is what makes env(safe-area-inset-*) resolve on
+// notched phones; without it the safe-area padding on the mobile bar is 0.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

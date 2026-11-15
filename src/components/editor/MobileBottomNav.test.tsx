@@ -35,6 +35,16 @@ describe("MobileBottomNav", () => {
     );
   });
 
+  it("renders in normal flow instead of anchoring to the viewport", () => {
+    render(<MobileBottomNav activeTab="content" onChange={vi.fn()} />);
+
+    const nav = screen.getByRole("navigation", { name: "Editor panels" });
+
+    expect(nav).not.toHaveClass("fixed");
+    expect(nav).not.toHaveClass("absolute");
+    expect(nav).toHaveClass("shrink-0");
+  });
+
   it("reflects a controlled active tab", () => {
     const { rerender } = render(
       <MobileBottomNav activeTab="content" onChange={vi.fn()} />,

@@ -70,7 +70,7 @@ function EmptyState({
   message: string;
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10 text-text">
+    <main className="flex min-h-dvh items-center justify-center bg-background px-4 py-10 text-text">
       <div className="flex w-full max-w-md flex-col gap-3 rounded-2xl border border-black/10 p-6">
         <h1 className="font-serif text-2xl font-semibold tracking-tight">
           {title}
@@ -216,7 +216,7 @@ export function EditorWorkspace() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-text">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background text-text lg:block lg:h-auto lg:overflow-visible">
       <InAppBrowserNotice />
       <header className="editor-chrome sticky top-0 z-20 border-b border-black/10 bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-2 px-4 py-1.5 sm:px-6">
@@ -268,7 +268,7 @@ export function EditorWorkspace() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1600px] px-4 pb-28 pt-4 sm:px-6 lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-5 lg:pb-8">
+      <main className="mx-auto w-full max-w-[1600px] flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-5 lg:overflow-visible lg:pb-8">
         <section
           id="panel-content"
           role="tabpanel"

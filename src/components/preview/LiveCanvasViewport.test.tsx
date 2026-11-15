@@ -51,6 +51,22 @@ const clientWidthDescriptor = Object.getOwnPropertyDescriptor(
   "clientWidth",
 );
 const originalResizeObserver = globalThis.ResizeObserver;
+const originalMatchMedia = window.matchMedia;
+const COARSE_POINTER_QUERY = "(pointer: coarse)";
+
+function stubPointer(coarse: boolean): void {
+  window.matchMedia = ((query: string) =>
+    ({
+      matches: coarse && query === COARSE_POINTER_QUERY,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }) as unknown as MediaQueryList) as typeof window.matchMedia;
+}
 
 beforeEach(() => {
   Object.defineProperty(HTMLElement.prototype, "clientWidth", {
@@ -73,6 +89,7 @@ afterEach(() => {
   }
 
   globalThis.ResizeObserver = originalResizeObserver;
+  window.matchMedia = originalMatchMedia;
 });
 
 async function renderCanvas(pageCount = 1) {
@@ -162,5 +179,22 @@ describe("LiveCanvasViewport", () => {
       geometry.widthPx,
       1,
     );
+  });
+
+  it("keeps native page scrolling for coarse pointers", async () => {
+    stubPointer(true);
+
+    const { wrapper } = await renderCanvas();
+
+    // Touch drags must reach the page scroller, not the canvas panning.
+    expect(wrapper.style.touchAction).toBe("pan-y");
+  });
+
+  it("leaves the canvas pannable for fine pointers", async () => {
+    stubPointer(false);
+
+    const { wrapper } = await renderCanvas();
+
+    expect(wrapper.style.touchAction).toBe("auto");
   });
 });

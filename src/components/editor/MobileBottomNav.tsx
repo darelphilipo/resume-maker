@@ -29,7 +29,7 @@ export function MobileBottomNav({
   return (
     <nav
       aria-label="Editor panels"
-      className="mobile-bottom-bar fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      className="mobile-bottom-bar shrink-0 border-t border-black/10 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
       <div role="tablist" aria-label="Editor panels" className="grid grid-cols-3">
         {TABS.map(({ id, label, Icon }) => {

@@ -197,6 +197,29 @@ export function LiveCanvasViewport({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
+  const [isCoarsePointer, setIsCoarsePointer] = useState(false);
+
+  useIsomorphicLayoutEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return;
+    }
+
+    const query = window.matchMedia("(pointer: coarse)");
+
+    const update = (): void => {
+      setIsCoarsePointer(query.matches);
+    };
+
+    update();
+    query.addEventListener("change", update);
+
+    return () => {
+      query.removeEventListener("change", update);
+    };
+  }, []);
 
   useIsomorphicLayoutEffect(() => {
     const element = containerRef.current;
@@ -285,7 +308,8 @@ export function LiveCanvasViewport({
           limitToBounds
           doubleClick={{ disabled: true }}
           wheel={{ disabled: true }}
-          pinch={{ step: 5 }}
+          pinch={{ step: 5, disabled: isCoarsePointer }}
+          panning={{ disabled: isCoarsePointer }}
         >
           <div className="editor-chrome flex items-center justify-between gap-2 px-1">
             <span aria-live="polite" className="text-xs opacity-70">
@@ -304,7 +328,12 @@ export function LiveCanvasViewport({
             maxScale={MAX_SCALE}
           >
             <TransformComponent
-              wrapperStyle={{ width: "100%", height: `${frame.height}px` }}
+              wrapperStyle={{
+                width: "100%",
+                height: `${frame.height}px`,
+                // Touch screens scroll the page instead of panning the canvas.
+                touchAction: isCoarsePointer ? "pan-y" : "auto",
+              }}
               contentStyle={{ width: `${frame.width / frame.scale}px` }}
               wrapperProps={
                 {
