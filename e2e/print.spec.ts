@@ -30,6 +30,7 @@ test("prints the rendered pages and restores the title", async ({ page }) => {
   await showPreview(page);
 
   const originalTitle = await page.title();
+  expect(originalTitle).toBe("Resume Maker");
   const previewPageCount = await page
     .locator(".resume-pages .resume-page")
     .count();
@@ -44,7 +45,9 @@ test("prints the rendered pages and restores the title", async ({ page }) => {
 
   const [call] = await readPrintCalls(page);
 
-  expect(call.title).toBe("Maya-Chen-Resume");
+  expect(call.title).toMatch(
+    /^maya-chen-senior-backend-engineer-\d{4}-\d{2}-\d{2}-resume$/,
+  );
   expect(call.portalExists).toBe(true);
   expect(call.directChild).toBe(true);
   expect(call.pageCount).toBe(previewPageCount);

@@ -35,16 +35,18 @@ export function PrintTriggerButton({
 
     startedJobRef.current = job;
 
-    void printResume({ pages: job.pages, name: job.doc.basics.name }).finally(
-      () => {
-        if (startedJobRef.current !== job) {
-          return;
-        }
+    void printResume({
+      pages: job.pages,
+      name: job.doc.basics.name,
+      headline: job.doc.basics.headline,
+    }).finally(() => {
+      if (startedJobRef.current !== job) {
+        return;
+      }
 
-        startedJobRef.current = null;
-        setJob(null);
-      },
-    );
+      startedJobRef.current = null;
+      setJob(null);
+    });
   }, [job]);
 
   return (

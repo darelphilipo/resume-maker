@@ -1,22 +1,64 @@
 const PRINT_TIMEOUT_MS = 60_000;
+const TOUCH_TITLE_RESTORE_DELAY_MS = 1_200;
 
 export type PrintResumeOptions = {
   pages: string[][];
   name: string;
+  headline?: string;
+  date?: Date;
   beforePrint?: () => void | Promise<void>;
   print?: () => void;
   fontsReady?: () => Promise<unknown>;
 };
 
-export function printTitle(name: string): string {
-  const base = name
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^A-Za-z0-9-_]/g, "")
+export type PrintTitleInput = {
+  name: string;
+  headline?: string;
+  date?: Date;
+};
+
+export function slugSegment(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
     .replace(/-{2,}/g, "-")
     .replace(/^-+|-+$/g, "");
+}
 
-  return base === "" ? "Resume" : `${base}-Resume`;
+export function printDateStamp(date: Date): string {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+export function printTitle(input: PrintTitleInput): string {
+  const segments = [
+    slugSegment(input.name),
+    slugSegment(input.headline ?? ""),
+    printDateStamp(input.date ?? new Date()),
+  ].filter(Boolean);
+
+  const base = segments.join("-");
+
+  return base === "" ? "resume" : `${base}-resume`;
+}
+
+function isCoarsePointer(): boolean {
+  if (typeof window.matchMedia !== "function") {
+    return false;
+  }
+
+  return window.matchMedia("(pointer: coarse)").matches;
+}
+
+function waitForTitleRestoreDelay(): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, TOUCH_TITLE_RESTORE_DELAY_MS);
+  });
 }
 
 function defaultFontsReady(): Promise<unknown> {
@@ -97,7 +139,11 @@ export async function printResume(opts: PrintResumeOptions): Promise<void> {
       // A failing pre-print hook should never block the print dialog.
     }
 
-    document.title = printTitle(opts.name);
+    document.title = printTitle({
+      name: opts.name,
+      headline: opts.headline,
+      date: opts.date ?? new Date(),
+    });
 
     const afterPrint = waitForAfterPrint();
 
@@ -109,6 +155,10 @@ export async function printResume(opts: PrintResumeOptions): Promise<void> {
 
     await afterPrint;
   } finally {
+    if (isCoarsePointer()) {
+      await waitForTitleRestoreDelay();
+    }
+
     document.title = previousTitle;
   }
 }
