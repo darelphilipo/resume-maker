@@ -48,7 +48,7 @@ jobs:
         # The free tier refuses to run below 1.18.0 and still exits 0:
         #   "Error: OpenCode 1.18.0 or newer is required to use the free tier"
         # Do not downgrade this pin.
-        run: npm install -g opencode-ai@1.19.5
+        run: npm install -g @opencode/cli@latest
 
       - name: Run OpenCode on 1 task from TASKS.md
         env:
