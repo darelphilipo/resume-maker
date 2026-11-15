@@ -42,8 +42,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/components/preview/LiveCanvasViewport", () => ({
-  LiveCanvasViewport: () => (
-    <div data-testid="preview-canvas">Preview canvas</div>
+  LiveCanvasViewport: ({ mode }: { mode?: string }) => (
+    <div data-testid="preview-canvas" data-mode={mode}>
+      Preview canvas
+    </div>
   ),
 }));
 
@@ -133,6 +135,26 @@ describe("EditorWorkspace", () => {
     await user.click(undoButton);
 
     expect(storeFunctions.undo).toHaveBeenCalledTimes(1);
+  });
+
+  it("switches the preview between the canvas and ATS plain text", async () => {
+    const user = userEvent.setup();
+
+    await renderReadyWorkspace();
+
+    const canvas = screen.getByTestId("preview-canvas");
+    const visual = screen.getByRole("button", { name: "Visual" });
+    const ats = screen.getByRole("button", { name: "ATS text" });
+
+    expect(visual).toHaveAttribute("aria-pressed", "true");
+    expect(ats).toHaveAttribute("aria-pressed", "false");
+    expect(canvas).toHaveAttribute("data-mode", "canvas");
+
+    await user.click(ats);
+
+    expect(visual).toHaveAttribute("aria-pressed", "false");
+    expect(ats).toHaveAttribute("aria-pressed", "true");
+    expect(canvas).toHaveAttribute("data-mode", "ats");
   });
 
   it("shows the save state from the store", async () => {

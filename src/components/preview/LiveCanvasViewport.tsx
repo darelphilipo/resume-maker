@@ -17,8 +17,11 @@ import {
   wheelZoomTarget,
 } from "@/lib/zoom/wheelZoom";
 
+import { AtsTextView } from "./AtsTextView";
 import { PageOverflowBanner } from "./PageOverflowBanner";
 import { PageStack } from "./PageStack";
+
+export type PreviewMode = "canvas" | "ats";
 
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 2;
@@ -192,10 +195,12 @@ export function LiveCanvasViewport({
   doc,
   layout,
   onFit,
+  mode = "canvas",
 }: {
   doc: ResumeDocument;
   layout: PageLayout;
   onFit?: (scale: number) => void;
+  mode?: PreviewMode;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
@@ -295,7 +300,9 @@ export function LiveCanvasViewport({
         fitScale={layout.fitScale}
         onFit={onFit}
       />
-      {frame === null || layout.isMeasuring ? (
+      {mode === "ats" ? (
+        <AtsTextView doc={doc} />
+      ) : frame === null || layout.isMeasuring ? (
         <div
           aria-busy="true"
           data-canvas-placeholder=""

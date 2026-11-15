@@ -9,7 +9,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { LiveCanvasViewport } from "@/components/preview/LiveCanvasViewport";
+import {
+  LiveCanvasViewport,
+  type PreviewMode,
+} from "@/components/preview/LiveCanvasViewport";
 import { InAppBrowserNotice } from "@/components/preview/InAppBrowserNotice";
 import { PrintTriggerButton } from "@/components/preview/PrintTriggerButton";
 import { ExportJsonButton } from "@/components/shared/ExportJsonButton";
@@ -98,6 +101,7 @@ export function EditorWorkspace() {
   const lastSavedAt = useResumeStore((state) => state.lastSavedAt);
   const [loadResult, setLoadResult] = useState<LoadResult | null>(null);
   const [activeTab, setActiveTab] = useState<EditorTab>("content");
+  const [previewMode, setPreviewMode] = useState<PreviewMode>("canvas");
   const [drawerSection, setDrawerSection] =
     useState<SectionListEntry | null>(null);
   const layout = usePageLayout(doc);
@@ -315,12 +319,39 @@ export function EditorWorkspace() {
           className={panelClass("preview", "lg:order-2")}
         >
           <div className="flex flex-col gap-3">
-            <h2 className="px-1 text-lg font-semibold tracking-tight">
-              Preview
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <h2 className="text-lg font-semibold tracking-tight">Preview</h2>
+              <div
+                role="group"
+                aria-label="Preview mode"
+                className="flex items-center gap-1 rounded-lg border border-black/10 p-0.5"
+              >
+                <button
+                  type="button"
+                  aria-pressed={previewMode === "canvas"}
+                  onClick={() => {
+                    setPreviewMode("canvas");
+                  }}
+                  className="min-h-11 rounded-md px-3 text-sm font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  Visual
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={previewMode === "ats"}
+                  onClick={() => {
+                    setPreviewMode("ats");
+                  }}
+                  className="min-h-11 rounded-md px-3 text-sm font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  ATS text
+                </button>
+              </div>
+            </div>
             <LiveCanvasViewport
               doc={doc}
               layout={layout}
+              mode={previewMode}
               onFit={(scale) => {
                 patchDoc({ metadata: { page: { fitScale: scale } } });
               }}

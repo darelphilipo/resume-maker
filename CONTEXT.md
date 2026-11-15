@@ -95,6 +95,12 @@ rediscover.
     forced `startOnNewPage` sections disable it. Keep `MeasureLayer` in sync:
     its inline `font-size` overrides `.onyx`, so scaling only the CSS variable
     leaves measured heights (and pagination) unchanged.
+11. **ATS text is a parallel renderer, not DOM scraping.**
+    `src/lib/ats/atsText.ts` re-implements the visibility rules, field order,
+    date formatting, and section order used by `SectionRenderer`, `HeaderSlot`,
+    and `usePageLayout` (first layout page `main` + `sidebar`). Any change to
+    what those components render must be mirrored there or the ATS preview
+    silently drifts from the PDF. Skills deliberately omit the 1–5 level.
 
 ## Verification and tooling
 
@@ -145,6 +151,21 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — ATS plain-text view
+- Task: add an ATS Plain-Text View toggle to the Preview pane showing the exact
+  linear text order a parser extracts from the current template.
+- Added `buildAtsText(doc)` (`src/lib/ats/atsText.ts`) mirroring Onyx's header
+  and section order, hidden/empty filtering, `formatMonth` date ranges, comma
+  keywords, and rich-text bullet extraction (tags stripped, entities decoded).
+- `LiveCanvasViewport` gained an optional `mode: "canvas" | "ats"` prop and
+  swaps the transform canvas for `AtsTextView` while keeping `measureLayer`
+  mounted, so pagination and Save PDF keep working in ATS mode.
+- `EditorWorkspace` renders a Visual/ATS segmented toggle in the Preview header.
+- Files listed in `TASKS.md`; README feature tour updated.
+- Verified: `npm run typecheck`, `npm test` (304 pass), `npm run lint`.
+- Gotcha: ATS text is a parallel renderer. If `SectionRenderer`/`HeaderSlot`
+  field order or visibility changes, update `atsText.ts` too.
 
 ### 2026-11-15 — User-facing README
 - Task: create the project README and make future runs keep it current.

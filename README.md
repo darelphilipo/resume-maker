@@ -50,6 +50,9 @@ in control of every line, and your data stays on your device.
 - Live paginated preview that measures real content, not an estimate.
 - Zoom and pan the preview on desktop; swipe naturally on touch devices.
 - **Fit to 1 Page** when a resume spills just past one page.
+- **ATS plain-text view** that shows the exact linear text a parser reads from
+  the current template, so you can check section order and wording before you
+  apply.
 - A page-count and overflow warning before you print.
 - Print/PDF filenames are generated from your name, headline, and date.
 
