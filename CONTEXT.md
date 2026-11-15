@@ -135,6 +135,18 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-15 — Launcher trust badge
+- Task: P0 trust badge above the fold on `/`.
+- Added a non-interactive `<ul>` trust strip (`100% Free`, `No Sign-Up`,
+  `Works Offline in Your Browser`) as the first child of `Launcher`, before the
+  import card, so it renders directly under the page header on mobile.
+- Kept it outside a `<section>` so the launcher's "exactly two regions"
+  contract (and `page.test.tsx`) stays intact. It wraps with `flex-wrap` and
+  scales `text-xs` → `sm:text-sm`.
+- Files: `src/components/launcher/Launcher.tsx`,
+  `src/components/launcher/launcher.test.tsx`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (278 pass).
+
 ### 2026-11-15 — Standardized month/date fields
 - Added `src/lib/date/month.ts` (`formatMonth`, `toMonthValue`,
   `parseMonthInput`) and switched Certifications/Awards/Publications/Custom

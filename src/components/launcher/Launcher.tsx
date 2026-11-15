@@ -14,6 +14,11 @@ const INVALID_FILE_MESSAGE =
   "That file is not a valid resume backup. Check the JSON and try again.";
 const CREATE_RESUME_MESSAGE =
   "Could not create the resume. Your browser may be blocking local storage.";
+const TRUST_POINTS = [
+  "100% Free",
+  "No Sign-Up",
+  "Works Offline in Your Browser",
+] as const;
 
 export function Launcher() {
   const router = useRouter();
@@ -76,6 +81,22 @@ export function Launcher() {
 
   return (
     <div className="flex flex-col gap-5">
+      <ul
+        aria-label="Resume Maker promises"
+        className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-black/10 bg-black/[0.03] px-3 py-2 text-xs font-medium sm:text-sm"
+      >
+        {TRUST_POINTS.map((point, index) => (
+          <li key={point} className="flex items-center gap-2">
+            {index > 0 ? (
+              <span aria-hidden className="opacity-40">
+                ·
+              </span>
+            ) : null}
+            <span>{point}</span>
+          </li>
+        ))}
+      </ul>
+
       <section
         aria-labelledby="launcher-import-heading"
         className="rounded-2xl border border-black/10 bg-background p-6"

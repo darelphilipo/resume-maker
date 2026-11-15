@@ -50,6 +50,26 @@ describe("Launcher", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the free/local trust badge above the import card", () => {
+    render(<Launcher />);
+
+    const badge = screen.getByRole("list", {
+      name: "Resume Maker promises",
+    });
+    expect(badge).toHaveTextContent("100% Free");
+    expect(badge).toHaveTextContent("No Sign-Up");
+    expect(badge).toHaveTextContent("Works Offline in Your Browser");
+    expect(badge.querySelectorAll("a, button")).toHaveLength(0);
+
+    const importCard = screen.getByRole("region", {
+      name: "Import existing resume",
+    });
+    expect(
+      badge.compareDocumentPosition(importCard) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("does not render a PDF option while PDF_IMPORT_ENABLED is false", () => {
     render(<Launcher />);
 
