@@ -10,8 +10,7 @@
 > **One task per run.** Implement, test, move the item to *Done*, stop.
 
 ## Inbox (User Ideas — Add New Requests Here)
-_Empty. Drop new raw ideas here; promoting one to *Queue* means adding file
-paths and a testable acceptance criterion._
+​Projects dates: In Projects → Entry 1 (Ledger API), Start date (Feb 2023) and End date (Nov 2023) are still plain text inputs rather than month pickers
 
 ## In Progress (OpenCode Updates This)
 _None yet._
