@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
+import { websiteLabelFromUrl } from "@/lib/links/contactLinks";
 import type {
   PictureConfig,
   ResumeBasics,
@@ -21,7 +22,6 @@ const basicsFormSchema = z.object({
   phone: z.string(),
   location: z.string(),
   websiteUrl: z.string(),
-  websiteLabel: z.string(),
   pictureUrl: z.string(),
   pictureHidden: z.boolean(),
 });
@@ -39,7 +39,6 @@ function toFormValues(
     phone: basics.phone,
     location: basics.location,
     websiteUrl: basics.website.url,
-    websiteLabel: basics.website.label,
     pictureUrl: picture.url,
     pictureHidden: picture.hidden,
   };
@@ -66,6 +65,13 @@ export function BasicsForm() {
   }) as typeof values;
 
   useDebouncedCommit(watched, (next) => {
+    const urlChanged = next.websiteUrl.trim() !== basics.website.url.trim();
+    // Keep a custom label imported from JSON until the URL itself changes.
+    const websiteLabel =
+      !urlChanged && basics.website.label.trim() !== ""
+        ? basics.website.label
+        : websiteLabelFromUrl(next.websiteUrl);
+
     patchDoc({
       basics: {
         name: next.name,
@@ -75,7 +81,7 @@ export function BasicsForm() {
         location: next.location,
         website: {
           url: next.websiteUrl,
-          label: next.websiteLabel,
+          label: websiteLabel,
         },
       },
       picture: {
@@ -84,6 +90,8 @@ export function BasicsForm() {
       },
     });
   });
+
+  const websitePreview = websiteLabelFromUrl(watched.websiteUrl);
 
   return (
     <form
@@ -150,15 +158,9 @@ export function BasicsForm() {
           form.setValue("websiteUrl", value, { shouldDirty: true })
         }
         placeholder="https://example.com"
-      />
-      <TextInput
-        id="basics-website-label"
-        label="Website label"
-        value={watched.websiteLabel}
-        onChange={(value) =>
-          form.setValue("websiteLabel", value, { shouldDirty: true })
+        hint={
+          websitePreview !== "" ? `Shown as ${websitePreview}` : undefined
         }
-        placeholder="example.com"
       />
       <TextInput
         id="basics-picture-url"

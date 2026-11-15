@@ -136,6 +136,15 @@ rediscover.
     are edited inside `CustomSectionForm`; standard headings use the debounced
     `SectionHeadingInput` in `SectionList`. An empty heading intentionally
     hides that section's heading in the PDF.
+17. **Contact labels are derived, not hand-authored.** `src/lib/links/contactLinks.ts`
+    owns both heuristics: `detectProfileLink` maps ~25 known profile hosts to
+    `{ network, icon, username }` (unknown hosts return `null` so a personal
+    site never invents a network), and `websiteLabelFromUrl` strips protocol,
+    `www.`, query, hash, and trailing slashes for the header label. The profile
+    `Icon` descriptor stays in `GENERIC_SECTION_FIELDS` with `hidden: true` so
+    imported icons survive round-trips without asking the user; any new
+    non-rendered field should use the same pass-through. `BasicsForm` preserves
+    an imported custom website label until the URL itself changes.
 
 ## Verification and tooling
 
@@ -186,6 +195,26 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — Auto-detect contact networks and derive the website label
+- Task: simplify contact inputs so users paste a profile URL instead of typing
+  a network/icon, and drop the manual `Website label` field.
+- Added `src/lib/links/contactLinks.ts`: `detectProfileLink` (known-host table
+  for GitHub, GitLab, LinkedIn, Stack Overflow, Dribbble, Mastodon, etc.;
+  skips route prefixes like `in`/`users`, leading `@`/`~`, handles `www.` and
+  subdomains) and `websiteLabelFromUrl` (protocol, `www.`, query, hash, and
+  trailing slashes removed). Ten colocated unit tests cover both.
+- `profiles` fields are now URL → Network → Username, with `Icon` kept as a
+  `hidden: true` pass-through so imports still round-trip. `GenericSectionForm`
+  fills the three fields when the URL changes, replacing only values that are
+  empty or match the previous URL's detection; hand-typed values win.
+- `BasicsForm` dropped the label input, derives `website.label` on URL changes,
+  preserves an imported custom label until the URL changes, and shows a
+  `Shown as …` hint under the URL.
+- Files: `src/lib/links/contactLinks.ts` (+ test), `sectionFields.ts`,
+  `GenericSectionForm.tsx` (+ new test), `BasicsForm.tsx` (+ tests), `README.md`,
+  `TASKS.md`, `CONTEXT.md`.
+- Verified: `npm run typecheck`, `npm test` (350 pass), `npm run lint`.
 
 ### 2026-11-15 — Add/delete custom sections and rename headings
 - Task: finish the custom-section UI. `CustomSectionForm` was wired, but nothing
@@ -316,18 +345,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `PAGES_BASE_PATH='/resume-maker' npm run build`.
 - Gotcha: `MeasureLayer` sets inline `font-size`; scale it too or pagination
   measures unscaled text.
-
-### 2026-11-15 — Launcher trust badge
-- Task: P0 trust badge above the fold on `/`.
-- Added a non-interactive `<ul>` trust strip (`100% Free`, `No Sign-Up`,
-  `Works Offline in Your Browser`) as the first child of `Launcher`, before the
-  import card, so it renders directly under the page header on mobile.
-- Kept it outside a `<section>` so the launcher's "exactly two regions"
-  contract (and `page.test.tsx`) stays intact. It wraps with `flex-wrap` and
-  scales `text-xs` → `sm:text-sm`.
-- Files: `src/components/launcher/Launcher.tsx`,
-  `src/components/launcher/launcher.test.tsx`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (278 pass).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The standardized
      month/date and first autopilot diagnosis are captured in Decisions &

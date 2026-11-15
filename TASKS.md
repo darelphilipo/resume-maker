@@ -22,7 +22,6 @@ _None yet._
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
-- [ ] P1: Simplify contact inputs — auto-detect network and icon from a pasted profile URL (`github.com/user` → GitHub) and drop the manual `Icon` and `Website label` fields (`BasicsForm.tsx`).
 - [ ] P1: Add an optional one-line Work Auth / Notice Period tag to `Basics` (`Immediate Joiner`, `Authorized to work in US`).
 - [ ] P1: Show a one-line mobile print tip to uncheck "Headers and footers" in the print dialog (`PrintTriggerButton.tsx`), so browser URLs and dates stay out of the PDF.
 - [ ] P1: Add client-side Paste-to-Parse import — a textarea on `Launcher.tsx` that parses raw pasted text (PDF/LinkedIn/ChatGPT output) into Basics, Experience, Education, Skills via section-heading heuristics.
@@ -38,6 +37,7 @@ _None yet._
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-15 — Simplified contact inputs: a pasted profile URL now fills `network`, `username`, and `icon` from a known-host table (`github.com/ada` → GitHub), the manual `Icon` field is gone (kept as a hidden pass-through for imports), and the `Website label` input was removed in favour of a derived `example.com/path` label with a live hint. Hand-typed networks/usernames are preserved. Files: `src/lib/links/contactLinks.ts`, `src/lib/links/contactLinks.test.ts`, `src/components/editor/sectionFields.ts`, `src/components/editor/GenericSectionForm.tsx`, `src/components/editor/GenericSectionForm.test.tsx`, `src/components/editor/BasicsForm.tsx`, `src/components/editor/BasicsForm.test.tsx`, `README.md`.
 - [x] 2026-11-15 — Custom sections can be created and deleted from SectionList, and standard section headings renamed: an inline Add custom section form appends to `customSections` plus `layout.pages[0].main`, a two-step Delete confirm strips the id from every page, and a debounced Section heading field updates standard/summary titles. Files: `src/components/editor/SectionList.tsx`, `src/components/editor/SectionList.test.tsx`, `README.md`, `CONTEXT.md`.
 
 - [x] 2026-11-15 — Role-preset samples now match the categorized Skills model: each archetype ships three `Category` rows with keyword lists (e.g. Languages / Backend / Cloud & DevOps), and legacy 1–5 levels are no longer used in samples. Added category-shape and ATS-output tests. Files: `src/lib/presets/archetypes.ts`, `src/lib/presets/archetypes.test.ts`, `README.md`, `CONTEXT.md`.

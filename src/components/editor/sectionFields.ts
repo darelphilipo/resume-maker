@@ -23,6 +23,8 @@ export type SectionFieldDescriptor = {
   inputMode?: "text" | "email" | "tel" | "url" | "numeric";
   autoComplete?: string;
   placeholder?: string;
+  /** Kept in the form/store for import compatibility, but never rendered. */
+  hidden?: boolean;
 };
 
 export const GENERIC_SECTION_FIELDS: Record<
@@ -30,6 +32,14 @@ export const GENERIC_SECTION_FIELDS: Record<
   readonly SectionFieldDescriptor[]
 > = {
   profiles: [
+    {
+      key: "url",
+      label: "Profile URL",
+      kind: "url",
+      inputMode: "url",
+      autoComplete: "url",
+      placeholder: "https://github.com/ada",
+    },
     {
       key: "network",
       label: "Network",
@@ -45,18 +55,10 @@ export const GENERIC_SECTION_FIELDS: Record<
       placeholder: "ada",
     },
     {
-      key: "url",
-      label: "Profile URL",
-      kind: "url",
-      inputMode: "url",
-      autoComplete: "url",
-      placeholder: "https://github.com/ada",
-    },
-    {
       key: "icon",
       label: "Icon",
       kind: "text",
-      placeholder: "github",
+      hidden: true,
     },
   ],
   certifications: [

@@ -77,4 +77,65 @@ describe("BasicsForm", () => {
     expect(picture.url).toBe("https://example.com/photo.jpg");
     expect(picture.hidden).toBe(false);
   });
+
+  it("derives the website label from the URL instead of asking for one", () => {
+    render(<BasicsForm />);
+
+    expect(screen.queryByLabelText("Website label")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Website URL"), {
+      target: { value: "https://www.ada.dev/portfolio/" },
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    const website = useResumeStore.getState().doc.basics.website;
+
+    expect(website.url).toBe("https://www.ada.dev/portfolio/");
+    expect(website.label).toBe("ada.dev/portfolio");
+  });
+
+  it("previews the derived website label while typing", () => {
+    render(<BasicsForm />);
+
+    fireEvent.change(screen.getByLabelText("Website URL"), {
+      target: { value: "https://example.com/" },
+    });
+
+    expect(screen.getByText("Shown as example.com")).toBeInTheDocument();
+  });
+
+  it("keeps an imported website label until the URL changes", () => {
+    const doc = createEmptyResume();
+    doc.basics.website = { url: "https://ada.dev", label: "Ada's portfolio" };
+    useResumeStore.setState({ doc });
+
+    render(<BasicsForm />);
+
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Ada Lovelace" },
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    expect(useResumeStore.getState().doc.basics.website.label).toBe(
+      "Ada's portfolio",
+    );
+
+    fireEvent.change(screen.getByLabelText("Website URL"), {
+      target: { value: "https://ada.dev/work" },
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    expect(useResumeStore.getState().doc.basics.website.label).toBe(
+      "ada.dev/work",
+    );
+  });
 });

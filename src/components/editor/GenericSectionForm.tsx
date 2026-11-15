@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
+import { detectProfileLink } from "@/lib/links/contactLinks";
 import { newId } from "@/lib/schema/defaults";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import {
@@ -54,6 +55,55 @@ function numberValue(value: GenericFormValue | undefined): number {
 
 function booleanValue(value: GenericFormValue | undefined): boolean {
   return value === true;
+}
+
+/**
+ * A field still holds whatever we derived from the previous URL, so it is safe
+ * to replace. Anything the user typed by hand is left alone.
+ */
+function isDerivedValue(
+  current: string,
+  previousAutoValue: string | undefined,
+): boolean {
+  return (
+    current.trim() === "" ||
+    (previousAutoValue !== undefined && current === previousAutoValue)
+  );
+}
+
+function applyProfileLinkDetection(
+  previous: GenericFormItem,
+  next: GenericFormItem,
+): GenericFormItem {
+  const detected = detectProfileLink(stringValue(next.url));
+
+  if (!detected) {
+    return next;
+  }
+
+  const previousDetection = detectProfileLink(stringValue(previous.url));
+  const result: GenericFormItem = { ...next, icon: detected.icon };
+
+  if (
+    detected.network !== "" &&
+    isDerivedValue(
+      stringValue(previous.network),
+      previousDetection?.network,
+    )
+  ) {
+    result.network = detected.network;
+  }
+
+  if (
+    isDerivedValue(
+      stringValue(previous.username),
+      previousDetection?.username,
+    )
+  ) {
+    result.username = detected.username;
+  }
+
+  return result;
 }
 
 function createEmptyItem(
@@ -186,11 +236,21 @@ export function GenericSectionForm({
     key: string,
     value: GenericFormValue,
   ): void {
-    const next = form
-      .getValues("items")
-      .map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [key]: value } : item,
-      );
+    const items = form.getValues("items");
+    const previous = items[index];
+
+    if (!previous) {
+      return;
+    }
+
+    const updated = { ...previous, [key]: value };
+    const nextItem =
+      sectionId === "profiles" && key === "url"
+        ? applyProfileLinkDetection(previous, updated)
+        : updated;
+    const next = items.map((item, itemIndex) =>
+      itemIndex === index ? nextItem : item,
+    );
 
     form.setValue("items", next, { shouldDirty: true });
   }
@@ -231,6 +291,10 @@ export function GenericSectionForm({
     index: number,
     field: SectionFieldDescriptor,
   ) {
+    if (field.hidden) {
+      return null;
+    }
+
     const id = `${sectionId}-${stringValue(item.id)}-${field.key}`;
 
     if (field.kind === "rich") {
