@@ -135,6 +135,7 @@ function EntryShell({
   extra,
   summary,
   compact = false,
+  keepTogether = false,
 }: {
   title: string;
   subtitle?: string;
@@ -143,11 +144,18 @@ function EntryShell({
   extra?: ReactNode;
   summary?: string;
   compact?: boolean;
+  keepTogether?: boolean;
 }) {
+  const className = [
+    "resume-entry",
+    compact ? "resume-entry-compact" : "",
+    keepTogether ? "resume-entry-keep-together" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <article
-      className={`resume-entry${compact ? " resume-entry-compact" : ""}`}
-    >
+    <article className={className}>
       <div className="resume-entry-header">
         <div className="resume-entry-leading">
           {title !== "" ? (
@@ -201,6 +209,7 @@ function ExperienceEntry({ item }: { item: ItemRecord }) {
         .join(" · ")}
       date={dateNode(item)}
       summary={text(item, "summary")}
+      keepTogether
     />
   );
 }
@@ -234,6 +243,7 @@ function ProjectEntry({ item }: { item: ItemRecord }) {
         .join(" · ")}
       date={dateNode(item)}
       summary={text(item, "description")}
+      keepTogether
     />
   );
 }

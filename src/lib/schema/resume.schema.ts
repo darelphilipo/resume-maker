@@ -387,6 +387,7 @@ export const PageConfigSchema = z.object({
   gapX: z.number().default(8),
   gapY: z.number().default(12),
   hideIcons: z.boolean().default(false),
+  fitScale: z.number().min(0.5).max(1).default(1),
 });
 
 const BodyTypographySchema = z.object({

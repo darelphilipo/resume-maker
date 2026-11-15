@@ -13,6 +13,7 @@ import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
 
 import { HEADER_BLOCK_ID } from "./constants";
 import { computePages } from "./computePages";
+import { computeFitScale } from "./fitScale";
 
 export type MeasureResult = {
   headerHeightPx: number;
@@ -28,6 +29,7 @@ export type PageLayout = {
   contentWidthPx: number;
   contentHeightPx: number;
   gapPx: number;
+  fitScale: number | null;
   measureLayer: ReactNode;
 };
 
@@ -92,7 +94,8 @@ export function usePageLayout(
     ],
   );
 
-  const gapPx = doc.metadata.page.gapY * PT_TO_PX;
+  const currentFitScale = doc.metadata.page.fitScale;
+  const gapPx = doc.metadata.page.gapY * PT_TO_PX * currentFitScale;
 
   const startOnNewPage = useMemo(() => {
     const forced = new Set<string>();
@@ -193,6 +196,7 @@ export function usePageLayout(
       contentWidthPx,
       contentHeightPx,
       gapPx,
+      fitScale: null,
       measureLayer,
     };
   }
@@ -206,6 +210,22 @@ export function usePageLayout(
     startOnNewPage,
   });
 
+  const sectionHeights = order
+    .map((id) => measurements.heights[id] ?? 0)
+    .filter((heightPx) => heightPx > 0);
+  const totalHeightPx =
+    measurements.headerHeightPx +
+    sectionHeights.reduce((sum, heightPx) => sum + heightPx, 0) +
+    gapPx * sectionHeights.length;
+  const fitScale =
+    startOnNewPage.size > 0
+      ? null
+      : computeFitScale({
+          totalHeightPx,
+          contentHeightPx,
+          currentFitScale,
+        });
+
   return {
     pages: packed.pages,
     overflowPx: packed.overflowPx,
@@ -213,6 +233,7 @@ export function usePageLayout(
     contentWidthPx,
     contentHeightPx,
     gapPx,
+    fitScale,
     measureLayer,
   };
 }

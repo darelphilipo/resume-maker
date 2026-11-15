@@ -57,6 +57,31 @@ describe("MeasureLayer", () => {
     }
   });
 
+  it("scales its measuring typography with the fit scale", () => {
+    const restore = mockLayoutWidth(700);
+
+    try {
+      const doc = createEmptyResume();
+      doc.metadata.page.fitScale = 0.5;
+
+      const { container } = render(
+        <MeasureLayer
+          doc={doc}
+          order={["experience"]}
+          contentWidthPx={700}
+          onMeasure={vi.fn()}
+        />,
+      );
+      const root = container.firstElementChild as HTMLElement;
+
+      expect(root.style.fontSize).toBe("5.5pt");
+      expect(root.style.getPropertyValue("--resume-font-size")).toBe("5.5pt");
+      expect(root.style.getPropertyValue("--resume-fit-scale")).toBe("0.5");
+    } finally {
+      restore();
+    }
+  });
+
   it("skips measurements when the root has no layout width", () => {
     const restore = mockLayoutWidth(0);
 

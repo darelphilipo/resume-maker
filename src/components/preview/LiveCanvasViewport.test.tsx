@@ -25,6 +25,7 @@ function createLayout(pageCount: number): PageLayout {
     contentWidthPx: 1,
     contentHeightPx: 1,
     gapPx: 16,
+    fitScale: null,
     measureLayer: null,
   };
 }

@@ -191,9 +191,11 @@ function WheelZoom({
 export function LiveCanvasViewport({
   doc,
   layout,
+  onFit,
 }: {
   doc: ResumeDocument;
   layout: PageLayout;
+  onFit?: (scale: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
@@ -290,6 +292,8 @@ export function LiveCanvasViewport({
         overflowPx={layout.overflowPx}
         pageCount={layout.pages.length}
         lineHeightPx={lineHeightPx}
+        fitScale={layout.fitScale}
+        onFit={onFit}
       />
       {frame === null || layout.isMeasuring ? (
         <div

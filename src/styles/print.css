@@ -88,6 +88,7 @@
 .resume-section-heading,
 .resume-entry-header,
 .resume-entry-compact,
+.resume-entry-keep-together,
 .resume-entry-bullets > li,
 .resume-rich-text p {
   break-inside: avoid;
@@ -104,6 +105,7 @@
 .resume-section-heading,
 .resume-entry-header,
 .resume-entry-compact,
+.resume-entry-keep-together,
 .resume-entry-bullets > li,
 .resume-rich-text p {
   orphans: 3;

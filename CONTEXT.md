@@ -84,6 +84,13 @@ rediscover.
    cells, so narrow two-column pairs use `MonthInput`, which displays
    `Oct 2023` but stores `YYYY-MM`. Native month inputs normalize imported
    `YYYY-MM-DD` values to their month.
+10. **Fit-to-one-page is persisted in `metadata.page.fitScale`** (0.5–1,
+    default 1). The scale is applied to the existing Onyx `--resume-*`
+    variables and to `gapPx` so preview, measurement, and print agree.
+    `usePageLayout` returns the next safe target via `computeFitScale`;
+    forced `startOnNewPage` sections disable it. Keep `MeasureLayer` in sync:
+    its inline `font-size` overrides `.onyx`, so scaling only the CSS variable
+    leaves measured heights (and pagination) unchanged.
 
 ## Verification and tooling
 
@@ -134,6 +141,23 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-15 — Fit to 1 Page + keep-together entries
+- Task: P1 fit-to-one-page and stop experience/project roles splitting across
+  print pages.
+- Added `metadata.page.fitScale` (0.5–1, default 1), fed through the existing
+  `--resume-*` variables in both `OnyxTemplate` and `MeasureLayer`.
+  `usePageLayout` now returns a `fitScale` target from `computeFitScale`;
+  `EditorWorkspace` persists the chosen scale and the banner offers it when
+  `pageCount > 1`. Forced page breaks disable fitting.
+- Experience and project `EntryShell`s now get `.resume-entry-keep-together`
+  (`break-inside: avoid`) in `onyx.css` and `print.css`.
+- Files: schema/pagination/preview/template files listed in `TASKS.md`, plus
+  `fitScale.test.ts` and updated unit tests.
+- Verified: `npm run typecheck`, `npm test` (290 pass), `npm run lint`,
+  `PAGES_BASE_PATH='/resume-maker' npm run build`.
+- Gotcha: `MeasureLayer` sets inline `font-size`; scale it too or pagination
+  measures unscaled text.
 
 ### 2026-11-15 — Launcher trust badge
 - Task: P0 trust badge above the fold on `/`.

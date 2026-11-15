@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
   ExperienceItemSchema,
+  ProjectItemSchema,
   SkillItemSchema,
 } from "@/lib/schema/resume.schema";
 
@@ -118,6 +119,32 @@ describe("SectionRenderer", () => {
 
     expect(section).toHaveAttribute("data-keep-together", "true");
     expect(section).toHaveAttribute("data-start-new-page", "true");
+  });
+
+  it("keeps experience and project entries from splitting across pages", () => {
+    const doc = createEmptyResume();
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+        summary: "<ul><li>Shipped a thing</li></ul>",
+      }),
+    ];
+    doc.sections.projects.items = [
+      ProjectItemSchema.parse({ id: "p1", name: "Ledger API" }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={["experience", "projects"]}
+      />,
+    );
+
+    expect(
+      container.querySelectorAll(".resume-entry-keep-together"),
+    ).toHaveLength(2);
   });
 
   it("renders skill keywords as pills or as an inline comma list", () => {

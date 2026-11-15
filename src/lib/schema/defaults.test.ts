@@ -45,6 +45,7 @@ describe("createEmptyResume", () => {
       gapX: 8,
       gapY: 12,
       hideIcons: false,
+      fitScale: 1,
     });
     expect(doc.metadata.typography.body.fontSize).toBe(11);
     expect(doc.metadata.typography.body.lineHeight).toBe(1.4);

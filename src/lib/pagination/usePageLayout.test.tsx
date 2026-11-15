@@ -92,6 +92,47 @@ describe("usePageLayout", () => {
     );
   });
 
+  it("suggests a fit scale when content spills onto a second page", () => {
+    const doc = makeDoc();
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: { experience: 600, skills: 600 },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    expect(result.current.pages).toHaveLength(2);
+    expect(result.current.fitScale).toBeGreaterThan(0.5);
+    expect(result.current.fitScale).toBeLessThan(1);
+  });
+
+  it("does not suggest a fit scale for a one-page document", () => {
+    const doc = makeDoc();
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: { experience: 200, skills: 200 },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    expect(result.current.pages).toHaveLength(1);
+    expect(result.current.fitScale).toBeNull();
+  });
+
+  it("does not suggest a fit scale when a forced page break keeps content apart", () => {
+    const doc = makeDoc();
+    doc.sections.skills.startOnNewPage = true;
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: { experience: 100, skills: 100 },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    expect(result.current.pages).toHaveLength(2);
+    expect(result.current.fitScale).toBeNull();
+  });
+
   it("derives the render order from main then sidebar", () => {
     const doc = createEmptyResume();
     doc.metadata.layout.pages = [

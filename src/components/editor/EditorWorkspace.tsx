@@ -93,6 +93,7 @@ export function EditorWorkspace() {
   const id = searchParams.get("id");
   const doc = useResumeStore((state) => state.doc);
   const loadResume = useResumeStore((state) => state.loadResume);
+  const patchDoc = useResumeStore((state) => state.patchDoc);
   const saveState = useResumeStore((state) => state.saveState);
   const lastSavedAt = useResumeStore((state) => state.lastSavedAt);
   const [loadResult, setLoadResult] = useState<LoadResult | null>(null);
@@ -317,7 +318,13 @@ export function EditorWorkspace() {
             <h2 className="px-1 text-lg font-semibold tracking-tight">
               Preview
             </h2>
-            <LiveCanvasViewport doc={doc} layout={layout} />
+            <LiveCanvasViewport
+              doc={doc}
+              layout={layout}
+              onFit={(scale) => {
+                patchDoc({ metadata: { page: { fitScale: scale } } });
+              }}
+            />
           </div>
         </section>
       </main>

@@ -101,6 +101,11 @@
   min-width: 0;
 }
 
+.onyx .resume-entry-keep-together {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .onyx .resume-entry-header {
   display: flex;
   justify-content: space-between;

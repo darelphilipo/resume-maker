@@ -115,12 +115,31 @@ describe("OnyxTemplate", () => {
     expect(root.style.getPropertyValue("--resume-font-size")).toBe("12pt");
     expect(root.style.getPropertyValue("--resume-line-height")).toBe("1.5");
     expect(root.style.getPropertyValue("--resume-heading-size")).toBe("16pt");
+    expect(root.style.getPropertyValue("--resume-fit-scale")).toBe("1");
     expect(root.style.getPropertyValue("--page-gap-y")).toBe("14pt");
     expect(root.style.getPropertyValue("--page-gap-x")).toBe("9pt");
     expect(root.style.getPropertyValue("--item-gap")).toBe("6pt");
     expect(root.style.getPropertyValue("--brand-primary")).toBe("#123456");
     expect(root.style.color).toBe("rgb(34, 34, 34)");
     expect(root.style.background).toBe("rgb(250, 250, 250)");
+  });
+
+  it("scales typography and section gaps with the page fit scale", () => {
+    const doc = createEmptyResume();
+    doc.metadata.page.fitScale = 0.5;
+
+    const { container } = render(
+      <OnyxTemplate doc={doc} pages={[[]]} pageIndex={0} />,
+    );
+    const root = container.firstElementChild as HTMLElement;
+
+    expect(root.style.getPropertyValue("--resume-font-size")).toBe("5.5pt");
+    expect(root.style.getPropertyValue("--resume-heading-size")).toBe("7pt");
+    expect(root.style.getPropertyValue("--resume-fit-scale")).toBe("0.5");
+    expect(root.style.getPropertyValue("--page-gap-y")).toBe("6pt");
+    expect(root.style.getPropertyValue("--page-gap-x")).toBe("4pt");
+    expect(root.style.getPropertyValue("--item-gap")).toBe("3pt");
+    expect(root.style.getPropertyValue("--page-margin-x")).toBe("14pt");
   });
 });
 

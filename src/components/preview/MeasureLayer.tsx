@@ -25,6 +25,10 @@ const MEASURED_SELECTOR = "[data-measure-id]";
 const useIsomorphicLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
 
+function scaledPt(value: number, fitScale: number): string {
+  return `${Number((value * fitScale).toFixed(2))}pt`;
+}
+
 export function MeasureLayer({
   doc,
   order,
@@ -109,16 +113,26 @@ export function MeasureLayer({
   }, [doc, order, contentWidthPx]);
 
   const themeStyle = {
-    "--resume-font-size": `${doc.metadata.typography.body.fontSize}pt`,
+    "--resume-font-size": scaledPt(
+      doc.metadata.typography.body.fontSize,
+      doc.metadata.page.fitScale,
+    ),
     "--resume-line-height": String(doc.metadata.typography.body.lineHeight),
-    "--resume-heading-size": `${doc.metadata.typography.heading.fontSize}pt`,
+    "--resume-heading-size": scaledPt(
+      doc.metadata.typography.heading.fontSize,
+      doc.metadata.page.fitScale,
+    ),
     "--resume-heading-font": doc.metadata.typography.heading.fontFamily,
-    "--page-gap-y": `${doc.metadata.page.gapY}pt`,
-    "--page-gap-x": `${doc.metadata.page.gapX}pt`,
-    "--item-gap": "6pt",
+    "--resume-fit-scale": String(doc.metadata.page.fitScale),
+    "--page-gap-y": scaledPt(doc.metadata.page.gapY, doc.metadata.page.fitScale),
+    "--page-gap-x": scaledPt(doc.metadata.page.gapX, doc.metadata.page.fitScale),
+    "--item-gap": scaledPt(6, doc.metadata.page.fitScale),
     "--brand-primary": doc.metadata.design.colors.primary,
     fontFamily: doc.metadata.typography.body.fontFamily,
-    fontSize: `${doc.metadata.typography.body.fontSize}pt`,
+    fontSize: scaledPt(
+      doc.metadata.typography.body.fontSize,
+      doc.metadata.page.fitScale,
+    ),
     lineHeight: doc.metadata.typography.body.lineHeight,
     color: doc.metadata.design.colors.text,
   } as CSSProperties;
