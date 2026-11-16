@@ -25,6 +25,10 @@ in control of every line, and your data stays on your device.
 
 ### Start quickly
 
+- **Three clear ways to begin**: the home page asks you to choose between
+  pasting text, uploading a PDF, or starting from a role sample, with each
+  option explained in plain language. The free, no-sign-up, offline promises sit
+  right above the choices, so you can start in one tap.
 - **PDF import**: choose a PDF and its text is read locally in your browser,
   then split into editable contact details, summary, experience, education, and
   skills. Scanned or image-only PDFs need to be pasted as text instead.

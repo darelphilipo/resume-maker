@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
@@ -75,16 +81,24 @@ describe("Launcher", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the free/local trust badge above the upload card", () => {
+  it("shows the free/local trust badge as three intact promise pills above the upload card", () => {
     render(<Launcher />);
 
     const badge = screen.getByRole("list", {
       name: "Resume Maker promises",
     });
-    expect(badge).toHaveTextContent("100% Free");
-    expect(badge).toHaveTextContent("No Sign-Up");
-    expect(badge).toHaveTextContent("Works Offline in Your Browser");
+    const promises = within(badge).getAllByRole("listitem");
+    expect(promises.map((promise) => promise.textContent)).toEqual([
+      "100% Free",
+      "No Sign-Up",
+      "Works Offline in Your Browser",
+    ]);
+    expect(badge).not.toHaveTextContent("·");
     expect(badge.querySelectorAll("a, button")).toHaveLength(0);
+
+    for (const promise of promises) {
+      expect(promise.querySelector(".whitespace-nowrap")).not.toBeNull();
+    }
 
     const uploadCard = screen.getByRole("region", {
       name: "Upload a PDF",
@@ -93,6 +107,18 @@ describe("Launcher", () => {
       badge.compareDocumentPosition(uploadCard) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("points users at the three entry options with a choose-one heading", () => {
+    render(<Launcher />);
+
+    expect(
+      screen.getByRole("heading", { name: "Choose one way to start" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Pick the option that matches what you already have/),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("region")).toHaveLength(3);
   });
 
   it("enables PDF upload from the primary card", () => {

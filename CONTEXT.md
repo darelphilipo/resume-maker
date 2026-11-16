@@ -188,6 +188,16 @@ rediscover.
     cards). Export stays in the editor header (`ExportJsonButton`), and the
     disclosure copy points users there. PDF upload now has its own input and
     error state; do not fold JSON back into the primary file picker.
+22. **The home page is a landing page, not a bare form.** `src/app/page.tsx`
+    owns the only `h1`, the `Resume Maker` wordmark; the e2e a11y and page tests
+    look that heading up by name, so the value proposition stays an `h2`. The
+    `Launcher` keeps exactly three entry `<section>`s labelled by their card
+    headings, so `getAllByRole("region")` still returns three. Trust promises
+    stay a `ul[aria-label="Resume Maker promises"]` of three `li` pills with
+    `whitespace-nowrap` labels — the old inline `·` separators let phrases like
+    "Works Offline in Your Browser" break across lines on phones. `page.tsx` is
+    a server component, so do not import Phosphor icons there (they call
+    `useContext`); the brand mark is an inline SVG.
 
 ## Verification and tooling
 
@@ -241,6 +251,27 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-16 — Home page entry-point redesign
+- Task: stop the trust badge wrapping mid-phrase, give `/` professional
+  styling, and make the three ways to start obvious.
+- `page.tsx` is now a warm paper/navy editorial landing page: brand header with
+  the only `h1` (`Resume Maker`) plus an inline SVG mark, a “Private by default”
+  note on desktop, and an `h2` value proposition over the launcher.
+- `Launcher` trust promises are three separate icon pills
+  (`CurrencyDollar`, `ShieldCheck`, `WifiSlash`) with `whitespace-nowrap`
+  labels, so each phrase stays intact; the `·` separators are gone.
+- Added a “Choose one way to start” `h2` and a shared `EntryCard` with icon
+  tiles. The paste card is marked Recommended and uses a filled navy action;
+  PDF gets a larger dashed dropzone; presets sit in a two-column grid on
+  desktop; `Backup & Restore` stays muted and collapsed. All ids, labels,
+  `aria-live` regions, and error roles are unchanged.
+- Tests: exact promise list-item text and nowrap spans, no separator text,
+  three regions, and the choose-one guidance; page tests assert one `h1` and
+  the value-prop heading.
+- Files: `src/app/page.tsx` (+ test), `Launcher.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (383 pass), `npm run lint`.
 
 ### 2026-11-16 — Backup & Restore is a secondary launcher menu
 - Task: stop presenting JSON import as a primary way to start, and give JSON
@@ -408,21 +439,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/lib/presets/archetypes.ts`,
   `src/lib/presets/archetypes.test.ts`, `README.md`, `CONTEXT.md`.
 - Verified: `npm run typecheck`, `npm test` (330 pass), `npm run lint`.
-
-### 2026-11-15 — Optional sections tucked behind Add optional section
-- Task: shorten the default `SectionList` by tucking Awards, Languages,
-  Interests, Volunteer, Publications, and References behind an add control.
-- `SectionList` now filters out empty optional rows, offers a mobile-sized
-  `+ Add optional section` disclosure, and reveals plus expands the chosen
-  section. Optional rows with items (or explicitly hidden ones) remain visible.
-- Move up/down now reorder only the visible rows and keep tucked slots in the
-  stored layout order, so a Move click is never silently absorbed by a hidden
-  row.
-- Added four tests: tucked defaults, add-then-expand, non-empty visibility, and
-  Move across tucked slots. README tour updated.
-- Files: `src/components/editor/SectionList.tsx`,
-  `src/components/editor/SectionList.test.tsx`, `README.md`.
-- Verified: `npm run typecheck`, `npm test` (324 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
      standardized month/date, first autopilot diagnosis, and categorized-skills

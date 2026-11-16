@@ -17,12 +17,11 @@
 _empty
 
 ## In Progress (OpenCode Updates This)
-_None yet._
+_None._
 
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
-- [ ]     100% Fre·No Sign-Up Works Offline in Your Browser ,text on the front page is spanning in two lines on homepage breaking the homepage look overall . Also I eed some professional colors and styling on the homepage . The homepage needs to be redesigned to make it intuitive for the user to understand entry points and use one of the options to start off with . 
 - [ ] P1: Add action-verb and metric helper chips to `RichTextField.tsx` (Built, Reduced, Led, Automated) with an `[Action] + [What] + [Result by X%]` prompt.
 
 ### P2 — Larger work
@@ -32,6 +31,8 @@ _None yet._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-16 — Redesigned the home page around three obvious entry points: a warm paper/navy editorial hero with the `Resume Maker` wordmark as the only h1, a `Choose one way to start` heading above the launcher cards, icon-led cards with a filled paste action, a calmer PDF dropzone, scannable preset rows, and a muted `Backup & Restore` disclosure. The trust promises are now three separate icon pills whose labels never wrap mid-phrase. Verified `npm run typecheck`, `npm test` (383 pass), `npm run lint`. Files: `src/app/page.tsx`, `src/app/page.test.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/launcher/launcher.test.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-16 — Reframed JSON as a secondary path: `/` now leads with Paste your resume, Upload a PDF, and Start from scratch, while JSON restore moved into a collapsed `Backup & Restore` disclosure that points to Download JSON backup in the editor; upload, backup, and preset errors are now separate. Verified `npm run typecheck`, `npm test` (381 pass), `npm run lint`. Files: `src/components/launcher/Launcher.tsx`, `src/components/launcher/launcher.test.tsx`, `src/app/page.tsx`, `src/app/page.test.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 

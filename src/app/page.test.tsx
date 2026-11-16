@@ -24,4 +24,18 @@ describe("Home page", () => {
       screen.getByRole("region", { name: "Start from scratch" }),
     ).toBeInTheDocument();
   });
+
+  it("leads with one value-prop heading over the entry options", () => {
+    render(<Home />);
+
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(
+      screen.getByRole("heading", {
+        name: "A professional resume, built in your browser.",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Choose one way to start" }),
+    ).toBeInTheDocument();
+  });
 });
