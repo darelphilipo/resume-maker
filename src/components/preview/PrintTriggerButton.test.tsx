@@ -16,6 +16,18 @@ afterEach(() => {
 });
 
 describe("PrintTriggerButton", () => {
+  it("links a touch-only reminder about print headers and footers", () => {
+    render(<PrintTriggerButton doc={createEmptyResume()} pages={PAGES} />);
+
+    const button = screen.getByRole("button", { name: "Save PDF" });
+    const tip = screen.getByText(
+      "Turn off “Headers and footers” in the print dialog.",
+    );
+
+    expect(tip).toHaveClass("hidden", "pointer-coarse:block");
+    expect(button).toHaveAttribute("aria-describedby", tip.id);
+  });
+
   it("keeps the captured page snapshot when the live pages collapse", async () => {
     const print = vi.spyOn(window, "print").mockImplementation(() => {});
     const doc = createEmptyResume();

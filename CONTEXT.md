@@ -66,7 +66,9 @@ rediscover.
    `pinch` are disabled and `touch-action: pan-y` is set, so vertical swipes
    scroll the page. `react-zoom-pan-pinch` only calls `preventDefault()` once
    `isPanning` is true, so disabling pan restores native scrolling. Desktop
-   wheel/pinch/drag must stay untouched.
+   wheel/pinch/drag must stay untouched. For touch-only UI, prefer Tailwind's
+   built-in `pointer-coarse:` variant (Tailwind 4) over JS `matchMedia`, so
+   there is no hydration flicker.
 4. **PDF filename comes from `document.title`.** There is no HTTP response in a
    static export, so title is the only lever. Format:
    `{name}-{headline}-{YYYY-MM-DD}-resume`, lowercase-kebab, local date. A
@@ -197,6 +199,21 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-16 — Touch-only print headers/footers tip
+- Task: remind phone users to turn off browser headers/footers so URLs and dates
+  stay out of the printed PDF.
+- `PrintTriggerButton` wraps the button in a small column and renders a one-line
+  `<p>` under it, hidden by default and shown with the `pointer-coarse:block`
+  variant. The tip is linked to the button through `useId` +
+  `aria-describedby`. No JS pointer detection means no hydration flicker; the
+  tip lives in the app root, so print CSS hides it with the rest of the editor.
+- Tests: copy, `hidden`/`pointer-coarse:block` classes, and the `aria-describedby`
+  linkage in `PrintTriggerButton.test.tsx`. Verified the production build emits
+  the rule under `@media (pointer:coarse)`.
+- Files: `src/components/preview/PrintTriggerButton.tsx` (+ test), `README.md`,
+  `TASKS.md`, `CONTEXT.md`.
+- Verified: `npm run typecheck`, `npm test` (355 pass), `npm run build`.
 
 ### 2026-11-16 — Optional work auth / notice period tag
 - Task: add an optional one-line Work Auth / Notice Period line to `Basics`.
@@ -335,19 +352,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Wired that rule into the `TASKS.md` finish checklist and the `CONTEXT.md`
   "How to use this file" steps.
 - Files: `README.md`, `TASKS.md`, `CONTEXT.md`.
-- Verified: `npm run typecheck`, `npm test` (293 pass), `npm run lint`.
-
-### 2026-11-15 — Native month pickers for project dates
-- Task: Projects start/end dates rendered as compact text instead of month
-  pickers.
-- Replaced `MonthInput` in `ProjectsForm` with the shared `TextInput
-  type="month"` and made the pair single-column (`grid gap-3`) so locale month
-  labels do not clip in half-width cells. Imported ISO dates still normalize
-  to `YYYY-MM` through `toMonthValue`.
-- Added `ProjectsForm.test.tsx` covering input type, canonical displayed
-  values, ISO normalization, and debounced commits.
-- Files: `src/components/editor/ProjectsForm.tsx`,
-  `src/components/editor/ProjectsForm.test.tsx`.
 - Verified: `npm run typecheck`, `npm test` (293 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
