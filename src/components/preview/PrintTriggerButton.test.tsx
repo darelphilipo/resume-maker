@@ -16,16 +16,57 @@ afterEach(() => {
 });
 
 describe("PrintTriggerButton", () => {
-  it("links a touch-only reminder about print headers and footers", () => {
+  it("describes Save PDF with an absolute print-headers tooltip", () => {
     render(<PrintTriggerButton doc={createEmptyResume()} pages={PAGES} />);
 
     const button = screen.getByRole("button", { name: "Save PDF" });
-    const tip = screen.getByText(
-      "Turn off “Headers and footers” in the print dialog.",
-    );
+    const tip = screen.getByRole("tooltip");
 
-    expect(tip).toHaveClass("hidden", "pointer-coarse:block");
+    expect(tip).toHaveTextContent(
+      "Turn off “Headers and footers” in the print dialog",
+    );
+    expect(tip).toHaveClass("absolute", "invisible", "opacity-0");
+    expect(tip).toHaveClass("pointer-fine:group-hover:visible");
     expect(button).toHaveAttribute("aria-describedby", tip.id);
+  });
+
+  it("toggles the tip from the touch info button", () => {
+    render(<PrintTriggerButton doc={createEmptyResume()} pages={PAGES} />);
+
+    const tip = screen.getByRole("tooltip");
+    const info = screen.getByRole("button", { name: "Print tips" });
+
+    expect(info).toHaveClass("hidden", "pointer-coarse:inline-flex");
+    expect(info).toHaveAttribute("aria-expanded", "false");
+    expect(tip).toHaveClass("invisible");
+
+    fireEvent.click(info);
+
+    expect(info).toHaveAttribute("aria-expanded", "true");
+    expect(tip).toHaveClass("visible", "opacity-100");
+
+    fireEvent.click(info);
+
+    expect(info).toHaveAttribute("aria-expanded", "false");
+    expect(tip).toHaveClass("invisible");
+  });
+
+  it("dismisses an open tip on Escape or an outside tap", () => {
+    render(<PrintTriggerButton doc={createEmptyResume()} pages={PAGES} />);
+
+    const info = screen.getByRole("button", { name: "Print tips" });
+
+    fireEvent.click(info);
+    expect(info).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.keyDown(info, { key: "Escape" });
+    expect(info).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(info);
+    expect(info).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.pointerDown(document.body);
+    expect(info).toHaveAttribute("aria-expanded", "false");
   });
 
   it("keeps the captured page snapshot when the live pages collapse", async () => {

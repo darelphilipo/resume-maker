@@ -91,8 +91,9 @@ in control of every line, and your data stays on your device.
 4. In the browser print dialog, choose **Save as PDF**.
 
 For the cleanest result, turn off browser headers and footers in the print
-dialog so the page URL and date do not appear in the PDF. On touch devices, a
-short reminder to turn off **Headers and footers** appears under **Save PDF**.
+dialog so the page URL and date do not appear in the PDF. Hover or focus
+**Save PDF** to see the reminder, or tap the info button beside it on a touch
+device.
 
 ## Run it locally
 

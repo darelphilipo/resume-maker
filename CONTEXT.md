@@ -158,6 +158,15 @@ rediscover.
     `YYYY-MM` (year-only ranges use `-01` for the start and `-12` for the end).
     Keep the parser pure and client-side: no network calls, no AI, and no
     persistence of the pasted text.
+19. **The print reminder is a tooltip, not a layout row.** `PrintTriggerButton`
+    keeps the “Headers and footers” message in an absolutely positioned
+    `role="tooltip"` bubble so the print control stays the same 44px height as
+    Undo/Redo/JSON. Fine pointers show it on `pointer-fine` hover/focus; coarse
+    pointers get a `pointer-coarse` info button that toggles `aria-expanded`.
+    Closing on outside `pointerdown`, blur, and Escape is deliberate: mobile
+    Safari does not always focus buttons on tap. The header title uses
+    `basis-24` so the action group wraps as a unit and stays right-aligned
+    rather than squeezing the resume name.
 
 ## Verification and tooling
 
@@ -208,6 +217,25 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-16 — Print tip moved into a hover info tooltip
+- Task: stop the “Headers and footers” reminder under Save PDF from stretching
+  the print control and misaligning the Undo/Redo/JSON buttons.
+- `PrintTriggerButton` now renders the reminder as an absolutely positioned
+  `role="tooltip"` bubble: no layout space, shown on `pointer-fine` hover/focus
+  of Save PDF, and toggled by a `pointer-coarse` info button (`aria-expanded` /
+  `aria-controls`). It closes on Escape, blur outside the control, or an outside
+  pointerdown.
+- Header: the title got `basis-24` so the action group wraps as a unit and stays
+  right-aligned instead of squeezing the name; actions are `flex-nowrap` and
+  centered with the other 44px controls, and the print slot is `items-center`.
+- Tests: tooltip copy/position/`aria-describedby` linkage, touch toggle, Escape,
+  and outside-tap dismissal.
+- Files: `src/components/preview/PrintTriggerButton.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx`, `README.md`, `TASKS.md`,
+  `CONTEXT.md`.
+- Verified: `npm run typecheck`, `npm test` (371 pass), `npm run lint`,
+  `npm run build` (confirmed the `pointer:fine` hover rules reach the CSS).
 
 ### 2026-11-16 — Paste-to-Parse launcher import
 - Task: let users paste plain resume text (PDF copy, LinkedIn profile, another
@@ -356,21 +384,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Gotcha: in jsdom, `userEvent.type` inside a vaul drawer throws
   `setPointerCapture is not a function`; use `fireEvent.change` for drawer form
   fields in component tests.
-
-### 2026-11-15 — ATS plain-text view
-- Task: add an ATS Plain-Text View toggle to the Preview pane showing the exact
-  linear text order a parser extracts from the current template.
-- Added `buildAtsText(doc)` (`src/lib/ats/atsText.ts`) mirroring Onyx's header
-  and section order, hidden/empty filtering, `formatMonth` date ranges, comma
-  keywords, and rich-text bullet extraction (tags stripped, entities decoded).
-- `LiveCanvasViewport` gained an optional `mode: "canvas" | "ats"` prop and
-  swaps the transform canvas for `AtsTextView` while keeping `measureLayer`
-  mounted, so pagination and Save PDF keep working in ATS mode.
-- `EditorWorkspace` renders a Visual/ATS segmented toggle in the Preview header.
-- Files listed in `TASKS.md`; README feature tour updated.
-- Verified: `npm run typecheck`, `npm test` (304 pass), `npm run lint`.
-- Gotcha: ATS text is a parallel renderer. If `SectionRenderer`/`HeaderSlot`
-  field order or visibility changes, update `atsText.ts` too.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
      standardized month/date, and first autopilot diagnosis details are

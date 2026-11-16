@@ -1,6 +1,6 @@
 "use client";
 
-import { Printer } from "@phosphor-icons/react";
+import { Info, Printer } from "@phosphor-icons/react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
@@ -21,7 +21,9 @@ export function PrintTriggerButton({
   pages: string[][];
 }) {
   const [job, setJob] = useState<PrintJob | null>(null);
+  const [tipOpen, setTipOpen] = useState(false);
   const startedJobRef = useRef<PrintJob | null>(null);
+  const tipContainerRef = useRef<HTMLDivElement | null>(null);
   const tipId = useId();
 
   useEffect(() => {
@@ -50,9 +52,43 @@ export function PrintTriggerButton({
     });
   }, [job]);
 
+  useEffect(() => {
+    if (!tipOpen) {
+      return;
+    }
+
+    function handlePointerDown(event: PointerEvent): void {
+      if (!tipContainerRef.current?.contains(event.target as Node)) {
+        setTipOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [tipOpen]);
+
   return (
     <>
-      <div className="flex flex-col items-end gap-0.5">
+      <div
+        ref={tipContainerRef}
+        className="group relative flex items-center"
+        onBlur={(event) => {
+          const next = event.relatedTarget;
+
+          if (!(next instanceof Node) || !event.currentTarget.contains(next)) {
+            setTipOpen(false);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && tipOpen) {
+            event.stopPropagation();
+            setTipOpen(false);
+          }
+        }}
+      >
         <button
           type="button"
           aria-label="Save PDF"
@@ -67,11 +103,26 @@ export function PrintTriggerButton({
           <span className="hidden sm:inline">Save PDF</span>
         </button>
 
+        <button
+          type="button"
+          aria-label="Print tips"
+          aria-expanded={tipOpen}
+          aria-controls={tipId}
+          onClick={() => {
+            setTipOpen((open) => !open);
+          }}
+          className="ml-0.5 hidden min-h-11 min-w-11 items-center justify-center rounded-lg text-black/50 transition-colors hover:bg-black/5 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:inline-flex"
+        >
+          <Info size={16} aria-hidden />
+        </button>
+
         <p
           id={tipId}
-          className="hidden max-w-[17rem] text-right text-[11px] leading-tight opacity-60 pointer-coarse:block"
+          role="tooltip"
+          className={`${tipOpen ? "visible opacity-100" : "invisible opacity-0"} pointer-events-none absolute right-0 top-full z-30 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-black/10 bg-background p-3 text-left text-xs leading-snug shadow-lg transition-opacity pointer-fine:group-hover:visible pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:visible pointer-fine:group-focus-within:opacity-100`}
         >
-          Turn off “Headers and footers” in the print dialog.
+          Turn off “Headers and footers” in the print dialog so the page URL and
+          date stay out of the PDF.
         </p>
       </div>
 

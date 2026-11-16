@@ -22,8 +22,6 @@ _None yet._
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
-- [ ] Turn off “Headers and footers” in the print dialog , the text has broken the alignment of the undo buttons , print button and json button . The header needs better alignment and this informational message can be an info on hover on print button
-
 - [ ] P1: Add client-side PDF text extraction with `pdf.js` feeding the same parser; flip `PDF_IMPORT_ENABLED` in `src/lib/features.ts` only when the parser is real.
  
 - [ ] P1: Reframe JSON import/export as a secondary "Backup & Restore" menu on `/` rather than the primary entry point.
@@ -37,6 +35,7 @@ _None yet._
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-16 — Moved the print “Headers and footers” reminder out of the header layout and into an absolutely positioned tooltip on Save PDF (hover/focus on desktop, tap-toggle info button on touch), so Undo/Redo/JSON/print stay on one aligned 44px row; the header title now lets the action group wrap as a unit instead of squeezing the name. Files: `src/components/preview/PrintTriggerButton.tsx`, `src/components/preview/PrintTriggerButton.test.tsx`, `src/components/editor/EditorWorkspace.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - [x] 2026-11-16 — Added a Paste-to-Parse launcher card: pasted PDF/LinkedIn/other-tool text is split by section headings into Basics, summary, Experience, Education, and Skills, with contact/profile/website detection, month-normalized date ranges, rich-text bullets, and local tests. Files: `src/lib/import/pasteResume.ts`, `src/lib/import/pasteResume.test.ts`, `src/components/launcher/Launcher.tsx`, `src/components/launcher/launcher.test.tsx`, `README.md`, `CONTEXT.md`.
 - [x] 2026-11-16 — Show a one-line touch print tip under Save PDF: on coarse pointers the editor header now says “Turn off ‘Headers and footers’ in the print dialog,” linked to the button with `aria-describedby`, so browser URLs and dates stay out of the PDF without adding desktop clutter. Files: `src/components/preview/PrintTriggerButton.tsx`, `src/components/preview/PrintTriggerButton.test.tsx`, `README.md`, `CONTEXT.md`.
 - [x] 2026-11-16 — Added an optional one-line Work Auth / Notice Period tag to Basics: `basics.workAuth` defaults to empty, the form offers `Authorized to work in US` / `Immediate Joiner` one-tap chips (tap again to clear), and the header prints a compact seal-icon tag between location and website. The ATS contact line mirrors the same order. Files: `src/lib/schema/resume.schema.ts`, `src/components/editor/BasicsForm.tsx`, `src/components/editor/BasicsForm.test.tsx`, `src/templates/shared/HeaderSlot.tsx`, `src/templates/shared/AvatarSlot.test.tsx`, `src/templates/onyx/onyx.css`, `src/lib/ats/atsText.ts`, `src/lib/ats/atsText.test.ts`, `src/lib/schema/resume.schema.test.ts`, `README.md`, `CONTEXT.md`.

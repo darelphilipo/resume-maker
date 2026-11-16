@@ -225,7 +225,7 @@ export function EditorWorkspace() {
     <div className="flex h-dvh flex-col overflow-hidden bg-background text-text lg:block lg:h-auto lg:overflow-visible">
       <InAppBrowserNotice />
       <header className="editor-chrome sticky top-0 z-20 border-b border-black/10 bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-2 px-4 py-1.5 sm:px-6">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-2 gap-y-1 px-3 py-1.5 sm:px-6">
           <Link
             href="/"
             aria-label="Back to home"
@@ -235,7 +235,7 @@ export function EditorWorkspace() {
             <span className="hidden sm:inline">Back</span>
           </Link>
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 basis-24">
             <h1 className="truncate text-base font-semibold tracking-tight">
               {resumeName}
             </h1>
@@ -247,7 +247,7 @@ export function EditorWorkspace() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-1.5">
             <button
               type="button"
               aria-label="Undo"
@@ -267,7 +267,7 @@ export function EditorWorkspace() {
               <ArrowClockwise size={18} aria-hidden />
             </button>
             <ExportJsonButton />
-            <div data-print-slot className="flex">
+            <div data-print-slot className="flex items-center">
               <PrintTriggerButton doc={doc} pages={layout.pages} />
             </div>
           </div>
