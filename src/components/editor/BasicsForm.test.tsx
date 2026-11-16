@@ -78,6 +78,48 @@ describe("BasicsForm", () => {
     expect(picture.hidden).toBe(false);
   });
 
+  it("commits the optional work auth line with the rest of the basics", () => {
+    render(<BasicsForm />);
+
+    fireEvent.change(screen.getByLabelText("Work auth / notice period"), {
+      target: { value: "Authorized to work in US" },
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    expect(useResumeStore.getState().doc.basics.workAuth).toBe(
+      "Authorized to work in US",
+    );
+  });
+
+  it("fills and clears the work auth line from its preset chips", () => {
+    render(<BasicsForm />);
+
+    const preset = screen.getByRole("button", { name: "Immediate Joiner" });
+
+    fireEvent.click(preset);
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    expect(useResumeStore.getState().doc.basics.workAuth).toBe(
+      "Immediate Joiner",
+    );
+    expect(preset).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(preset);
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    expect(useResumeStore.getState().doc.basics.workAuth).toBe("");
+    expect(preset).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("derives the website label from the URL instead of asking for one", () => {
     render(<BasicsForm />);
 

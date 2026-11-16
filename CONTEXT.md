@@ -100,7 +100,9 @@ rediscover.
     date formatting, and section order used by `SectionRenderer`, `HeaderSlot`,
     and `usePageLayout` (first layout page `main` + `sidebar`). Any change to
     what those components render must be mirrored there or the ATS preview
-    silently drifts from the PDF. Skills are category + comma-separated
+    silently drifts from the PDF. `basics.workAuth` is part of that contract:
+    the header prints it as a tag between location and website, so `contactLine`
+    must push it in the same position. Skills are category + comma-separated
     keywords; the 1–5 level stays in the schema only so imported JSON parses,
     and `SkillEntry` no longer renders a proficiency indicator (Languages still
     do).
@@ -195,6 +197,25 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-16 — Optional work auth / notice period tag
+- Task: add an optional one-line Work Auth / Notice Period line to `Basics`.
+- `ResumeBasicsSchema` gained `workAuth` (default `""`), so old imports and
+  documents parse unchanged and JSON export keeps the line.
+- `BasicsForm` shows `Work auth / notice period` after Location, plus two
+  toggleable preset chips (`Authorized to work in US`, `Immediate Joiner`);
+  tapping the selected chip clears the line. The value commits through the
+  existing 50 ms debounce with the rest of the basics.
+- `HeaderSlot` inserts the tag between location and website in the contact
+  line, with a `SealCheck` icon (hidden when `hideIcons`) and the
+  `.resume-work-auth` pill styling in `onyx.css`. `buildAtsText` mirrors the
+  same position.
+- Tests: schema default, form commit, preset fill/clear, header tag presence and
+  empty suppression, and ATS header order.
+- Files: `src/lib/schema/resume.schema.ts` (+ test), `BasicsForm.tsx` (+ test),
+  `HeaderSlot.tsx`, `AvatarSlot.test.tsx`, `onyx.css`, `atsText.ts` (+ test),
+  `README.md`, `TASKS.md`, `CONTEXT.md`.
+- Verified: `npm run typecheck`, `npm test` (354 pass).
 
 ### 2026-11-15 — Auto-detect contact networks and derive the website label
 - Task: simplify contact inputs so users paste a profile URL instead of typing
@@ -329,24 +350,8 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/ProjectsForm.test.tsx`.
 - Verified: `npm run typecheck`, `npm test` (293 pass), `npm run lint`.
 
-### 2026-11-15 — Fit to 1 Page + keep-together entries
-- Task: P1 fit-to-one-page and stop experience/project roles splitting across
-  print pages.
-- Added `metadata.page.fitScale` (0.5–1, default 1), fed through the existing
-  `--resume-*` variables in both `OnyxTemplate` and `MeasureLayer`.
-  `usePageLayout` now returns a `fitScale` target from `computeFitScale`;
-  `EditorWorkspace` persists the chosen scale and the banner offers it when
-  `pageCount > 1`. Forced page breaks disable fitting.
-- Experience and project `EntryShell`s now get `.resume-entry-keep-together`
-  (`break-inside: avoid`) in `onyx.css` and `print.css`.
-- Files: schema/pagination/preview/template files listed in `TASKS.md`, plus
-  `fitScale.test.ts` and updated unit tests.
-- Verified: `npm run typecheck`, `npm test` (290 pass), `npm run lint`,
-  `PAGES_BASE_PATH='/resume-maker' npm run build`.
-- Gotcha: `MeasureLayer` sets inline `font-size`; scale it too or pagination
-  measures unscaled text.
-
-<!-- Older entries are trimmed to keep the 10 most recent. The standardized
-     month/date and first autopilot diagnosis are captured in Decisions &
-     Gotchas (#9) and Autopilot failure modes above. -->
+<!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
+     standardized month/date, and first autopilot diagnosis details are
+     captured in Decisions & Gotchas (#9, #10) and Autopilot failure modes
+     above. -->
 

@@ -21,12 +21,18 @@ const basicsFormSchema = z.object({
   email: z.string(),
   phone: z.string(),
   location: z.string(),
+  workAuth: z.string(),
   websiteUrl: z.string(),
   pictureUrl: z.string(),
   pictureHidden: z.boolean(),
 });
 
 type BasicsFormValues = z.infer<typeof basicsFormSchema>;
+
+const WORK_AUTH_PRESETS = [
+  "Authorized to work in US",
+  "Immediate Joiner",
+] as const;
 
 function toFormValues(
   basics: ResumeBasics,
@@ -38,6 +44,7 @@ function toFormValues(
     email: basics.email,
     phone: basics.phone,
     location: basics.location,
+    workAuth: basics.workAuth,
     websiteUrl: basics.website.url,
     pictureUrl: picture.url,
     pictureHidden: picture.hidden,
@@ -79,6 +86,7 @@ export function BasicsForm() {
         email: next.email,
         phone: next.phone,
         location: next.location,
+        workAuth: next.workAuth,
         website: {
           url: next.websiteUrl,
           label: websiteLabel,
@@ -147,6 +155,39 @@ export function BasicsForm() {
         }
         placeholder="Berlin, Germany"
       />
+      <TextInput
+        id="basics-work-auth"
+        label="Work auth / notice period"
+        value={watched.workAuth}
+        onChange={(value) =>
+          form.setValue("workAuth", value, { shouldDirty: true })
+        }
+        placeholder="Authorized to work in US"
+        hint="Optional one-liner shown in the header. Keep it short."
+      />
+      <div className="flex flex-wrap gap-1.5">
+        {WORK_AUTH_PRESETS.map((preset) => (
+          <button
+            key={preset}
+            type="button"
+            aria-pressed={watched.workAuth === preset}
+            onClick={() =>
+              form.setValue(
+                "workAuth",
+                watched.workAuth === preset ? "" : preset,
+                { shouldDirty: true },
+              )
+            }
+            className={`inline-flex min-h-11 items-center rounded-full border px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+              watched.workAuth === preset
+                ? "border-primary bg-primary/5"
+                : "border-black/10 hover:border-black/30 active:bg-black/5"
+            }`}
+          >
+            {preset}
+          </button>
+        ))}
+      </div>
       <TextInput
         id="basics-website-url"
         label="Website URL"

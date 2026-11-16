@@ -94,6 +94,30 @@ describe("HeaderSlot", () => {
     expect(container.querySelectorAll("svg")).toHaveLength(0);
   });
 
+  it("renders the optional work auth line as a header tag", () => {
+    const doc = createEmptyResume();
+    doc.basics.email = "ada@example.com";
+    doc.basics.workAuth = "Authorized to work in US";
+
+    const { container } = render(<HeaderSlot doc={doc} />);
+
+    const tag = screen.getByText("Authorized to work in US");
+
+    expect(tag).toBeInTheDocument();
+    expect(tag.closest(".resume-work-auth")).not.toBeNull();
+    expect(container.querySelectorAll(".resume-work-auth")).toHaveLength(1);
+  });
+
+  it("omits the work auth tag when it is empty", () => {
+    const doc = createEmptyResume();
+    doc.basics.email = "ada@example.com";
+    doc.basics.workAuth = "   ";
+
+    const { container } = render(<HeaderSlot doc={doc} />);
+
+    expect(container.querySelectorAll(".resume-work-auth")).toHaveLength(0);
+  });
+
   it("renders contact icons when hideIcons is false", () => {
     const doc = createEmptyResume();
     doc.basics.email = "ada@example.com";

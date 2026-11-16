@@ -327,6 +327,7 @@ export const ResumeBasicsSchema = z.object({
   email: text(),
   phone: text(),
   location: text(),
+  workAuth: text(),
   website: WebsiteSchema.default(() => WebsiteSchema.parse({})),
   customFields: z.array(CustomFieldSchema).default(() => []),
 });

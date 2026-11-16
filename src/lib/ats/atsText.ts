@@ -160,6 +160,7 @@ function contactLine(doc: ResumeDocument): string[] {
   pushText(entries, doc.basics.email);
   pushText(entries, doc.basics.phone);
   pushText(entries, doc.basics.location);
+  pushText(entries, doc.basics.workAuth);
   pushText(entries, doc.basics.website.label);
 
   for (const field of doc.basics.customFields) {

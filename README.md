@@ -33,9 +33,11 @@ in control of every line, and your data stays on your device.
 
 ### Write and organize
 
-- Basics: name, headline, email, phone, location, website, and optional photo.
-  Paste your website and it is shown without `https://` or `www.` — there is no
-  separate label to maintain.
+- Basics: name, headline, email, phone, location, website, optional photo, and
+  an optional one-line work authorization or notice period tag (for example
+  `Authorized to work in US` or `Immediate Joiner`). Paste your website and it
+  is shown without `https://` or `www.` — there is no separate label to
+  maintain.
 - Profiles: paste a profile URL such as `github.com/you` and the network,
   username, and icon are filled in automatically.
 - Summary plus Profiles, Experience, Projects, Education, Skills, and

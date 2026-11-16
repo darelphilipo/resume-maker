@@ -58,6 +58,20 @@
   opacity: 0.45;
 }
 
+.onyx .resume-work-auth {
+  padding: 0 5pt;
+  border: 1px solid
+    color-mix(in srgb, var(--brand-primary, #1f2937) 30%, transparent);
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--brand-primary, #1f2937) 7%,
+    transparent
+  );
+  color: var(--brand-primary, #1f2937);
+  font-size: 0.95em;
+}
+
 .onyx .page-stack {
   display: flex;
   flex-direction: column;

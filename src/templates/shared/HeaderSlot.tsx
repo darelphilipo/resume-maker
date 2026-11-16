@@ -5,13 +5,20 @@ import {
   LinkSimple,
   MapPin,
   Phone,
+  SealCheck,
 } from "@phosphor-icons/react";
 
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 
 import { AvatarSlot, shouldShowAvatar } from "./AvatarSlot";
 
-type ContactKind = "email" | "phone" | "location" | "website" | "custom";
+type ContactKind =
+  | "email"
+  | "phone"
+  | "location"
+  | "website"
+  | "workAuth"
+  | "custom";
 
 type ContactEntry = {
   id: string;
@@ -29,7 +36,9 @@ function ContactIcon({ kind }: { kind: ContactKind }) {
           ? MapPin
           : kind === "website"
             ? Globe
-            : LinkSimple;
+            : kind === "workAuth"
+              ? SealCheck
+              : LinkSimple;
 
   return (
     <Icon
@@ -58,6 +67,14 @@ function buildContactEntries(doc: ResumeDocument): ContactEntry[] {
       id: "location",
       kind: "location",
       text: doc.basics.location.trim(),
+    });
+  }
+
+  if (doc.basics.workAuth.trim() !== "") {
+    entries.push({
+      id: "work-auth",
+      kind: "workAuth",
+      text: doc.basics.workAuth.trim(),
     });
   }
 
@@ -152,7 +169,11 @@ export function HeaderSlot({ doc }: { doc: ResumeDocument }) {
                   </span>
                 ) : null}
                 <span
-                  className="resume-contact-item"
+                  className={
+                    entry.kind === "workAuth"
+                      ? "resume-contact-item resume-work-auth"
+                      : "resume-contact-item"
+                  }
                   style={{
                     display: "inline-flex",
                     alignItems: "center",

@@ -8,6 +8,7 @@ describe("ResumeDocumentSchema", () => {
 
     expect(doc.basics.name).toBe("Ada");
     expect(doc.basics.email).toBe("");
+    expect(doc.basics.workAuth).toBe("");
     expect(doc.basics.website).toEqual({ url: "", label: "" });
     expect(doc.metadata.page.marginX).toBe(14);
     expect(doc.sections.experience.items).toEqual([]);

@@ -40,6 +40,7 @@ describe("buildAtsText", () => {
     doc.basics.email = "ada@example.com";
     doc.basics.phone = "+1 555 0100";
     doc.basics.location = "London";
+    doc.basics.workAuth = "Authorized to work in US";
     doc.basics.website.label = "ada.dev";
     doc.basics.customFields = [
       { id: "custom-1", icon: "", text: "github.com/ada" },
@@ -49,7 +50,7 @@ describe("buildAtsText", () => {
       [
         "Ada Lovelace",
         "Software Engineer",
-        "ada@example.com | +1 555 0100 | London | ada.dev | github.com/ada",
+        "ada@example.com | +1 555 0100 | London | Authorized to work in US | ada.dev | github.com/ada",
       ].join("\n"),
     );
   });
