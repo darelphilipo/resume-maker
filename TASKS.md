@@ -23,6 +23,7 @@ _None yet._
 
 ### P1 — High-value features
 - [ ] P1: Reframe JSON import/export as a secondary "Backup & Restore" menu on `/` rather than the primary entry point.
+- [ ]     100% Fre·No Sign-Up Works Offline in Your Browser ,text on the front page is spanning in two lines on homepage breaking the homepage look overall . Also I eed some professional colors and styling on the homepage . The homepage needs to be redesigned to make it intuitive for the user to understand entry points and use one of the options to start off with . 
 - [ ] P1: Add action-verb and metric helper chips to `RichTextField.tsx` (Built, Reduced, Led, Automated) with an `[Action] + [What] + [Result by X%]` prompt.
 
 ### P2 — Larger work
