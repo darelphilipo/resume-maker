@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
@@ -37,11 +37,14 @@ afterEach(() => {
 });
 
 describe("Launcher", () => {
-  it("renders exactly two cards with the expected accessible names", () => {
+  it("renders the three entry cards with the expected accessible names", () => {
     render(<Launcher />);
 
     const cards = screen.getAllByRole("region");
-    expect(cards).toHaveLength(2);
+    expect(cards).toHaveLength(3);
+    expect(
+      screen.getByRole("region", { name: "Paste your resume" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "Import existing resume" }),
     ).toBeInTheDocument();
@@ -70,13 +73,13 @@ describe("Launcher", () => {
     ).toBeTruthy();
   });
 
-  it("does not render a PDF option while PDF_IMPORT_ENABLED is false", () => {
+  it("does not enable PDF file import while PDF_IMPORT_ENABLED is false", () => {
     render(<Launcher />);
 
-    expect(screen.queryByText(/pdf/i)).not.toBeInTheDocument();
-    expect(
-      screen.getByLabelText("Resume JSON file"),
-    ).toHaveAttribute("accept", ".json,application/json");
+    const fileInput = screen.getByLabelText("Resume JSON file");
+
+    expect(fileInput).toHaveAttribute("accept", ".json,application/json");
+    expect(fileInput.getAttribute("accept")).not.toContain("pdf");
   });
 
   it("contains no AI wording", () => {
@@ -177,5 +180,71 @@ describe("Launcher", () => {
     const state = useResumeStore.getState();
     expect(state.doc.basics.name).toBe("Grace Hopper");
     expect(state.resumeId).not.toBeNull();
+  });
+
+  it("disables the paste action until text is entered", () => {
+    render(<Launcher />);
+
+    expect(
+      screen.getByRole("button", { name: "Create resume from text" }),
+    ).toBeDisabled();
+  });
+
+  it("parses pasted resume text and navigates to the editor", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    fireEvent.change(screen.getByLabelText("Resume text"), {
+      target: {
+        value: `Jordan Blake
+Product Manager
+jordan@example.com
+
+EXPERIENCE
+Senior Product Manager
+Acme Corp | Jan 2020 - Present
+- Grew activation by 20%.
+
+SKILLS
+Product: Roadmapping, Discovery`,
+      },
+    });
+    await user.click(
+      screen.getByRole("button", { name: "Create resume from text" }),
+    );
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/editor\?id=/),
+      );
+    });
+
+    const state = useResumeStore.getState();
+    expect(state.doc.basics.name).toBe("Jordan Blake");
+    expect(state.doc.basics.headline).toBe("Product Manager");
+    expect(state.doc.sections.experience.items[0]?.company).toBe("Acme Corp");
+    expect(state.doc.sections.skills.items[0]?.keywords).toEqual([
+      "Roadmapping",
+      "Discovery",
+    ]);
+    expect(state.resumeId).not.toBeNull();
+  });
+
+  it("shows an inline error when pasted text cannot be parsed", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    fireEvent.change(screen.getByLabelText("Resume text"), {
+      target: { value: "just some notes about my weekend" },
+    });
+    await user.click(
+      screen.getByRole("button", { name: "Create resume from text" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "That text did not look like a resume.",
+    );
+    expect(useResumeStore.getState().resumeId).toBeNull();
+    expect(pushMock).not.toHaveBeenCalled();
   });
 });

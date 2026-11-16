@@ -149,12 +149,21 @@ rediscover.
     imported icons survive round-trips without asking the user; any new
     non-rendered field should use the same pass-through. `BasicsForm` preserves
     an imported custom website label until the URL itself changes.
+18. **Paste-to-parse is a third importer.** `src/lib/import/pasteResume.ts`
+    maps plain text into a `ResumeDocument` using a section-alias table; content
+    under an unrecognised heading folds into the previous section, so add every
+    new standard heading alias there when a section is introduced. It emits
+    escaped `<p>`/`<ul>` rich text, and `Launcher` still runs
+    `sanitizeResumeDocument` before `importResume`. Dates normalize to
+    `YYYY-MM` (year-only ranges use `-01` for the start and `-12` for the end).
+    Keep the parser pure and client-side: no network calls, no AI, and no
+    persistence of the pasted text.
 
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~238 tests
+npm test               # vitest, ~369 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -199,6 +208,26 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-16 — Paste-to-Parse launcher import
+- Task: let users paste plain resume text (PDF copy, LinkedIn profile, another
+  tool) instead of needing a JSON backup or a role preset.
+- Added `src/lib/import/pasteResume.ts`: a pure parser that normalizes lines,
+  splits known section headings, reads the header contact block (email, phone,
+  location, known profile links via `detectProfileLink`, first unknown URL as
+  the website), and builds summary/experience/education/skills items. Date
+  ranges become `YYYY-MM`; bullets become escaped `<ul><li>` rich text.
+- `Launcher` gained a first card, "Paste your resume", with a mobile-sized
+  textarea and `Create resume from text` action. It parses, sanitizes, calls the
+  existing `importResume`, and routes to the editor. Invalid text shows an
+  inline alert and never navigates.
+- Tests: 11 parser cases (header/contact, experience, education, skills, summary,
+  title/company order, year-only dates, no-blank-line entries, ignored sections,
+  unlabeled skills, HTML escaping, junk input) plus launcher success/error and
+  disabled-button coverage.
+- Files: `src/lib/import/pasteResume.ts` (+ test), `Launcher.tsx` (+ test),
+  `README.md`, `TASKS.md`, `CONTEXT.md`.
+- Verified: `npm run typecheck`, `npm test` (369 pass), `npm run lint`.
 
 ### 2026-11-16 — Touch-only print headers/footers tip
 - Task: remind phone users to turn off browser headers/footers so URLs and dates
@@ -342,17 +371,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (304 pass), `npm run lint`.
 - Gotcha: ATS text is a parallel renderer. If `SectionRenderer`/`HeaderSlot`
   field order or visibility changes, update `atsText.ts` too.
-
-### 2026-11-15 — User-facing README
-- Task: create the project README and make future runs keep it current.
-- Added `README.md` with the free/no-AI goal, privacy/static-export model, a
-  user-language feature tour, PDF steps, local commands, and a "keeping this
-  README useful" rule. Future runs must update **Key features** for any
-  user-visible change; the README stays a tour, not a changelog.
-- Wired that rule into the `TASKS.md` finish checklist and the `CONTEXT.md`
-  "How to use this file" steps.
-- Files: `README.md`, `TASKS.md`, `CONTEXT.md`.
-- Verified: `npm run typecheck`, `npm test` (293 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
      standardized month/date, and first autopilot diagnosis details are

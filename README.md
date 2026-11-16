@@ -25,6 +25,10 @@ in control of every line, and your data stays on your device.
 
 ### Start quickly
 
+- **Paste-to-parse import**: paste the text of an existing resume from a PDF,
+  LinkedIn profile, or another tool, and your contact details, summary,
+  experience, education, and skills are split into editable fields. Parsing
+  runs in your browser, and you can correct anything afterwards.
 - **Role presets** for Software Engineer, Product Manager, UX/UI Designer,
   Finance & Operations, and Fresh Graduate, each with a complete editable sample
   including categorized skills you can adapt.
