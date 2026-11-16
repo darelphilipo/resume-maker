@@ -188,7 +188,15 @@ rediscover.
     cards). Export stays in the editor header (`ExportJsonButton`), and the
     disclosure copy points users there. PDF upload now has its own input and
     error state; do not fold JSON back into the primary file picker.
-22. **The home page is a landing page, not a bare form.** `src/app/page.tsx`
+22. **Action-verb helpers are opt-in and insert plain text.** `RichTextField`'s
+    `actionHelpers` prop renders the `[Action] + [What] + [Result by X%]` prompt
+    and four 44px chips (Built, Reduced, Led, Automated). A chip inserts the verb
+    plus a trailing space at the cursor via TipTap `insertContent`; it does not
+    wrap the current selection or add formatting. Only achievement-style fields
+    (Experience and Projects descriptions) pass the prop — Summary, award
+    notes, and reference notes stay prose-only. Keep the chips local and
+    client-side: no AI suggestions, prompts, or network calls.
+23. **The home page is a landing page, not a bare form.** `src/app/page.tsx`
     owns the only `h1`, the `Resume Maker` wordmark; the e2e a11y and page tests
     look that heading up by name, so the value proposition stays an `h2`. The
     `Launcher` keeps exactly three entry `<section>`s labelled by their card
@@ -251,6 +259,25 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-16 — Action-verb helper chips for achievement bullets
+- Task: help users write impact-first experience/project bullets without AI.
+- `RichTextField` gained an opt-in `actionHelpers` prop. When enabled it renders
+  a wrapped helper strip between the toolbar and the editor: the
+  `[Action] + [What] + [Result by X%]` prompt with a worked example, plus four
+  44px chips (Built, Reduced, Led, Automated). A chip inserts the verb and a
+  trailing space at the cursor through TipTap `insertContent`.
+- The helper group is linked to the prompt via `useId` +
+  `aria-describedby`; chips are labelled `Insert action verb <Verb>` and are
+  disabled until the editor exists. Enabled only in `ExperienceForm` and
+  `ProjectsForm`; Summary and other rich-text notes remain plain prose.
+- Tests cover the default-hidden state, prompt/group linkage, all four chip
+  labels, and the inserted `"Reduced "` payload.
+- Files: `src/components/editor/RichTextField.tsx` (+ test),
+  `src/components/editor/ExperienceForm.tsx`,
+  `src/components/editor/ProjectsForm.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (386 pass), `npm run lint`.
 
 ### 2026-11-16 — Home page entry-point redesign
 - Task: stop the trust badge wrapping mid-phrase, give `/` professional
@@ -425,20 +452,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/SectionList.test.tsx`, `README.md`, `TASKS.md`,
   `CONTEXT.md`.
 - Verified: `npm run typecheck`, `npm test` (333 pass), `npm run lint`.
-
-### 2026-11-15 — Role-preset samples use categorized skills
-- Task: recheck the launcher role samples against the current Skills UI; skills
-  had been left as flat 1–5 level rows.
-- Replaced the `skill(name, level)` helper with `skillCategory(name, keywords)`
-  and gave every archetype three categories with 4 keywords each. `level` stays
-  `0` only to satisfy `SkillItemSchema`; nothing renders it.
-- Updated `archetypes.test.ts`: expects 3 categories, distinct non-empty names,
-  at least 2 keywords per category, level 0, and asserts the Software Engineer
-  sample prints as `Category` + comma-separated keywords in `buildAtsText`.
-- README role-preset line now mentions categorized skills.
-- Files: `src/lib/presets/archetypes.ts`,
-  `src/lib/presets/archetypes.test.ts`, `README.md`, `CONTEXT.md`.
-- Verified: `npm run typecheck`, `npm test` (330 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
      standardized month/date, first autopilot diagnosis, and categorized-skills

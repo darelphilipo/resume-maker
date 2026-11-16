@@ -168,6 +168,7 @@ export function ProjectsForm() {
             onChange={(html) => updateItem(index, "description", html)}
             ariaLabel={`Description for entry ${index + 1}`}
             placeholder="What the project does and your role"
+            actionHelpers
           />
           <TextInput
             id={`projects-${item.id}-url`}

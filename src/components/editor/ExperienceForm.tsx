@@ -190,6 +190,7 @@ export function ExperienceForm() {
             onChange={(html) => updateItem(index, "summary", html)}
             ariaLabel={`Description for entry ${index + 1}`}
             placeholder="What did you build and what changed?"
+            actionHelpers
           />
           <BooleanInput
             id={`experience-${item.id}-hidden`}

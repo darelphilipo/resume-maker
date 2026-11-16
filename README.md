@@ -57,7 +57,10 @@ in control of every line, and your data stays on your device.
   Certifications, with optional Awards, Languages, Interests, Volunteer,
   Publications, and References.
 - Rich-text descriptions with bold, italic, bullet/numbered lists, links, and
-  editor undo.
+  editor undo. Experience and project bullets offer one-tap action verbs
+  (**Built**, **Reduced**, **Led**, **Automated**) plus an
+  `[Action] + [What] + [Result by X%]` prompt, so achievements start with impact
+  and end with a number.
 - Skills grouped by category with comma-separated keywords (for example
   `Languages: Python, SQL`), with no self-ratings to maintain; projects and
   interests use the same comma-separated tags.

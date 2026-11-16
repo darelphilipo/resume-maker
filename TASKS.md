@@ -22,7 +22,6 @@ _None._
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
-- [ ] P1: Add action-verb and metric helper chips to `RichTextField.tsx` (Built, Reduced, Led, Automated) with an `[Action] + [What] + [Result by X%]` prompt.
 
 ### P2 — Larger work
 - [ ] P2: Add a template system in `src/templates/registry.ts` with 6 single-column-first templates — Engineering Classic (Jake), Ivy/Executive (Harvard), Modern Accent, Compact 1-Pager, Hybrid Skills-First, and a two-column Studio Sidebar labelled "Best for direct/human review". Show an ATS-Safe badge on single-column options.
@@ -31,6 +30,8 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-16 — Added opt-in action-verb chips (Built, Reduced, Led, Automated) and an `[Action] + [What] + [Result by X%]` prompt to `RichTextField`, enabled for Experience and Projects descriptions; chips insert the verb at the cursor, helpers are screen-reader linked, and tests cover hidden/enabled/insert behaviour. Verified `npm run typecheck`, `npm test` (386 pass), `npm run lint`. Files: `src/components/editor/RichTextField.tsx`, `src/components/editor/RichTextField.test.tsx`, `src/components/editor/ExperienceForm.tsx`, `src/components/editor/ProjectsForm.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-16 — Redesigned the home page around three obvious entry points: a warm paper/navy editorial hero with the `Resume Maker` wordmark as the only h1, a `Choose one way to start` heading above the launcher cards, icon-led cards with a filled paste action, a calmer PDF dropzone, scannable preset rows, and a muted `Backup & Restore` disclosure. The trust promises are now three separate icon pills whose labels never wrap mid-phrase. Verified `npm run typecheck`, `npm test` (383 pass), `npm run lint`. Files: `src/app/page.tsx`, `src/app/page.test.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/launcher/launcher.test.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 

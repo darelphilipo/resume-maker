@@ -14,15 +14,19 @@ import Link from "@tiptap/extension-link";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 import { sanitizeRichText } from "@/lib/richtext/sanitize";
+
+export const ACTION_VERBS = ["Built", "Reduced", "Led", "Automated"] as const;
 
 export type RichTextFieldProps = {
   value: string;
   onChange: (html: string) => void;
   ariaLabel: string;
   placeholder?: string;
+  /** Show action-verb chips and the achievement-bullet prompt (for bullet lists). */
+  actionHelpers?: boolean;
 };
 
 type ToolbarButtonProps = {
@@ -59,8 +63,10 @@ export function RichTextField({
   onChange,
   ariaLabel,
   placeholder,
+  actionHelpers = false,
 }: RichTextFieldProps) {
   const onChangeRef = useRef(onChange);
+  const actionHintId = useId();
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -124,6 +130,10 @@ export function RichTextField({
 
     editor.commands.setContent(next, { emitUpdate: false });
   }, [editor, value]);
+
+  function insertActionVerb(verb: string): void {
+    editor?.chain().focus().insertContent(`${verb} `).run();
+  }
 
   function toggleLink(): void {
     if (!editor) {
@@ -220,6 +230,37 @@ export function RichTextField({
           <ArrowClockwise size={18} aria-hidden />
         </ToolbarButton>
       </div>
+      {actionHelpers ? (
+        <div className="flex flex-col gap-1.5 border-b border-black/10 bg-primary/[0.03] px-2 py-2">
+          <p id={actionHintId} className="text-xs text-black/60">
+            <span className="font-medium text-black/75">
+              [Action] + [What] + [Result by X%]
+            </span>{" "}
+            <span className="text-black/50">
+              e.g. Built a checkout flow that reduced drop-off by 18%.
+            </span>
+          </p>
+          <div
+            role="group"
+            aria-label="Action verb helpers"
+            aria-describedby={actionHintId}
+            className="flex flex-wrap gap-1.5"
+          >
+            {ACTION_VERBS.map((verb) => (
+              <button
+                key={verb}
+                type="button"
+                aria-label={`Insert action verb ${verb}`}
+                disabled={!editor}
+                onClick={() => insertActionVerb(verb)}
+                className="inline-flex min-h-11 items-center rounded-full border border-black/10 bg-white/60 px-3 py-2 text-xs font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10"
+              >
+                {verb}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <EditorContent editor={editor} />
     </div>
   );

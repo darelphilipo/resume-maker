@@ -1,5 +1,5 @@
-import { act, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RichTextField } from "./RichTextField";
 
@@ -16,11 +16,13 @@ type Chain = {
   clearNodes: () => Chain;
   undo: () => Chain;
   redo: () => Chain;
+  insertContent: (content: string) => Chain;
   run: () => boolean;
 };
 
 const tiptapMock = vi.hoisted(() => {
   const chain = {} as Chain;
+  const insertedContent: string[] = [];
 
   Object.assign(chain, {
     focus: () => chain,
@@ -35,6 +37,10 @@ const tiptapMock = vi.hoisted(() => {
     clearNodes: () => chain,
     undo: () => chain,
     redo: () => chain,
+    insertContent: (content: string) => {
+      insertedContent.push(content);
+      return chain;
+    },
     run: () => true,
   });
 
@@ -51,6 +57,7 @@ const tiptapMock = vi.hoisted(() => {
 
   return {
     editor,
+    insertedContent,
     options: {
       current: null as null | {
         onUpdate?: (props: { editor: typeof editor }) => void;
@@ -71,6 +78,11 @@ vi.mock("@tiptap/react", () => ({
 }));
 
 describe("RichTextField", () => {
+  beforeEach(() => {
+    tiptapMock.insertedContent.length = 0;
+    tiptapMock.editor.chain.mockClear();
+  });
+
   it("renders the formatting toolbar", () => {
     render(
       <RichTextField
@@ -145,5 +157,63 @@ describe("RichTextField", () => {
       "<p>Two</p>",
       { emitUpdate: false },
     );
+  });
+
+  it("does not show action helpers unless requested", () => {
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Summary"
+      />,
+    );
+
+    expect(
+      screen.queryByRole("group", { name: "Action verb helpers" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("[Action] + [What] + [Result by X%]"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows action verb chips and the achievement prompt when enabled", () => {
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description for entry 1"
+        actionHelpers
+      />,
+    );
+
+    const group = screen.getByRole("group", { name: "Action verb helpers" });
+    const prompt = screen.getByText("[Action] + [What] + [Result by X%]");
+
+    expect(prompt).toBeInTheDocument();
+    expect(group).toHaveAttribute("aria-describedby", prompt.closest("p")?.id);
+
+    for (const verb of ["Built", "Reduced", "Led", "Automated"]) {
+      expect(
+        screen.getByRole("button", { name: `Insert action verb ${verb}` }),
+      ).toBeInTheDocument();
+    }
+  });
+
+  it("inserts the chosen action verb followed by a space", () => {
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description for entry 1"
+        actionHelpers
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Insert action verb Reduced" }),
+    );
+
+    expect(tiptapMock.editor.chain).toHaveBeenCalledTimes(1);
+    expect(tiptapMock.insertedContent).toEqual(["Reduced "]);
   });
 });
