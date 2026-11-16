@@ -23,6 +23,9 @@ _None._
 
 ### P1 — High-value features
 
+- [ ] front page theme needs to be added across to all pages. The homepage has 100% free and other text in 3 Separate capsules that are wasting vertical space .make it a single line.in the editing pages the header which shows name and print icon are in 2 separate lines ,we should compact it and make them appear in the same line.
+- [ ] the resume preview needs to have zoom functionality in it.if the pinch and scroll to zoom are risky and might break the scrolling , implement simple zoom in zoom out and movement buttons
+      
 ### P2 — Larger work
 - [ ] P2: Add a template system in `src/templates/registry.ts` with 6 single-column-first templates — Engineering Classic (Jake), Ivy/Executive (Harvard), Modern Accent, Compact 1-Pager, Hybrid Skills-First, and a two-column Studio Sidebar labelled "Best for direct/human review". Show an ATS-Safe badge on single-column options.
 - [ ] P2: Add 4 design controls to `DesignPanel.tsx`: template selector, accent color (5–6 curated swatches + monochrome), font pairing (Sans/Serif/Classic), density (Compact/Normal/Relaxed).
