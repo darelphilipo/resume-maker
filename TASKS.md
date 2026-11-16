@@ -22,7 +22,10 @@ _None yet._
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
+- [ ] Turn off “Headers and footers” in the print dialog , the text has broken the alignment of the undo buttons , print button and json button . The header needs better alignment and this informational message can be an info on hover on print button
+
 - [ ] P1: Add client-side PDF text extraction with `pdf.js` feeding the same parser; flip `PDF_IMPORT_ENABLED` in `src/lib/features.ts` only when the parser is real.
+ 
 - [ ] P1: Reframe JSON import/export as a secondary "Backup & Restore" menu on `/` rather than the primary entry point.
 - [ ] P1: Add action-verb and metric helper chips to `RichTextField.tsx` (Built, Reduced, Led, Automated) with an `[Action] + [What] + [Result by X%]` prompt.
 
