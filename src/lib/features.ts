@@ -1,4 +1,4 @@
-export const PDF_IMPORT_ENABLED = false;
-
-// The heuristic PDF parser lands in a later plan. Until it exists, the
-// launcher must not render the PDF import option.
+// PDF import extracts text locally with PDF.js, then feeds it through the same
+// heuristic parser as pasted text. Keep this on: the parser is real, and no
+// server or network request is involved.
+export const PDF_IMPORT_ENABLED = true;

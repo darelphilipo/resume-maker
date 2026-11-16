@@ -25,6 +25,9 @@ in control of every line, and your data stays on your device.
 
 ### Start quickly
 
+- **PDF import**: choose a PDF and its text is read locally in your browser,
+  then split into editable contact details, summary, experience, education, and
+  skills. Scanned or image-only PDFs need to be pasted as text instead.
 - **Paste-to-parse import**: paste the text of an existing resume from a PDF,
   LinkedIn profile, or another tool, and your contact details, summary,
   experience, education, and skills are split into editable fields. Parsing

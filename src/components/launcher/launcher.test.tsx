@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
+import { parsePdfResume } from "@/lib/import/pdfResume";
 import { serializeResume } from "@/lib/schema/serialize";
 import { resumeDb } from "@/lib/store/db";
 import {
@@ -18,6 +19,10 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
 
+vi.mock("@/lib/import/pdfResume", () => ({
+  parsePdfResume: vi.fn(),
+}));
+
 function jsonFile(content: string, name = "resume.json"): File {
   const file = new File([content], name, { type: "application/json" });
   Object.defineProperty(file, "text", {
@@ -26,8 +31,17 @@ function jsonFile(content: string, name = "resume.json"): File {
   return file;
 }
 
+function pdfFile(content = "%PDF-1.4", name = "resume.pdf"): File {
+  const file = new File([content], name, { type: "application/pdf" });
+  Object.defineProperty(file, "arrayBuffer", {
+    value: () => Promise.resolve(new ArrayBuffer(content.length)),
+  });
+  return file;
+}
+
 beforeEach(async () => {
   pushMock.mockReset();
+  vi.mocked(parsePdfResume).mockReset();
   resetResumeStore();
   await resumeDb.resumes.clear();
 });
@@ -73,13 +87,15 @@ describe("Launcher", () => {
     ).toBeTruthy();
   });
 
-  it("does not enable PDF file import while PDF_IMPORT_ENABLED is false", () => {
+  it("enables PDF and JSON file import", () => {
     render(<Launcher />);
 
-    const fileInput = screen.getByLabelText("Resume JSON file");
+    const fileInput = screen.getByLabelText("Resume file");
 
-    expect(fileInput).toHaveAttribute("accept", ".json,application/json");
-    expect(fileInput.getAttribute("accept")).not.toContain("pdf");
+    expect(fileInput).toHaveAttribute(
+      "accept",
+      ".pdf,.json,application/pdf,application/json",
+    );
   });
 
   it("contains no AI wording", () => {
@@ -151,7 +167,7 @@ describe("Launcher", () => {
     render(<Launcher />);
 
     await user.upload(
-      screen.getByLabelText("Resume JSON file"),
+      screen.getByLabelText("Resume file"),
       jsonFile("{not valid json"),
     );
 
@@ -167,7 +183,7 @@ describe("Launcher", () => {
     render(<Launcher />);
 
     await user.upload(
-      screen.getByLabelText("Resume JSON file"),
+      screen.getByLabelText("Resume file"),
       jsonFile(serializeResume(doc)),
     );
 
@@ -180,6 +196,58 @@ describe("Launcher", () => {
     const state = useResumeStore.getState();
     expect(state.doc.basics.name).toBe("Grace Hopper");
     expect(state.resumeId).not.toBeNull();
+  });
+
+  it("reads a PDF locally, parses it, and navigates to the editor", async () => {
+    const user = userEvent.setup();
+    const doc = createEmptyResume();
+    doc.basics.name = "Ada Lovelace";
+    vi.mocked(parsePdfResume).mockResolvedValue({
+      text: "Ada Lovelace",
+      doc,
+    });
+    render(<Launcher />);
+
+    await user.upload(screen.getByLabelText("Resume file"), pdfFile());
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/editor\?id=/),
+      );
+    });
+
+    expect(parsePdfResume).toHaveBeenCalledWith(expect.any(ArrayBuffer));
+    const state = useResumeStore.getState();
+    expect(state.doc.basics.name).toBe("Ada Lovelace");
+    expect(state.resumeId).not.toBeNull();
+  });
+
+  it("explains when a PDF has no selectable text", async () => {
+    const user = userEvent.setup();
+    vi.mocked(parsePdfResume).mockResolvedValue({ text: "  ", doc: null });
+    render(<Launcher />);
+
+    await user.upload(screen.getByLabelText("Resume file"), pdfFile());
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "That PDF has no selectable text.",
+    );
+    expect(useResumeStore.getState().resumeId).toBeNull();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("shows an inline error when a PDF cannot be read", async () => {
+    const user = userEvent.setup();
+    vi.mocked(parsePdfResume).mockRejectedValue(new Error("corrupt pdf"));
+    render(<Launcher />);
+
+    await user.upload(screen.getByLabelText("Resume file"), pdfFile());
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not read that PDF.",
+    );
+    expect(useResumeStore.getState().resumeId).toBeNull();
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it("disables the paste action until text is entered", () => {

@@ -13,6 +13,7 @@ import { PDF_IMPORT_ENABLED } from "@/lib/features";
 import { parsePastedResume } from "@/lib/import/pasteResume";
 import { ARCHETYPES, type Archetype } from "@/lib/presets/archetypes";
 import { sanitizeResumeDocument } from "@/lib/richtext/sanitize";
+import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { parseResumeJson } from "@/lib/schema/serialize";
 import { useResumeStore } from "@/lib/store/useResumeStore";
 
@@ -20,6 +21,10 @@ const INVALID_FILE_MESSAGE =
   "That file is not a valid resume backup. Check the JSON and try again.";
 const PASTE_ERROR_MESSAGE =
   "That text did not look like a resume. Include your name or at least one role, school, or skill and try again.";
+const PDF_READ_ERROR_MESSAGE =
+  "Could not read that PDF. Try another file, or paste the text instead.";
+const PDF_NO_TEXT_MESSAGE =
+  "That PDF has no selectable text. If it is a scan or an image, paste the text instead.";
 const CREATE_RESUME_MESSAGE =
   "Could not create the resume. Your browser may be blocking local storage.";
 const TRUST_POINTS = [
@@ -46,27 +51,64 @@ export function Launcher() {
       return;
     }
 
+    const isPdf =
+      PDF_IMPORT_ENABLED &&
+      (file.type === "application/pdf" || /\.pdf$/i.test(file.name));
+
     setFileName(file.name);
     setError(null);
     setIsImporting(true);
 
+    const reset = () => {
+      setIsImporting(false);
+      input.value = "";
+    };
+
+    let doc: ResumeDocument | null = null;
+
     try {
-      const text = await file.text();
-      const parsed = parseResumeJson(text);
+      if (isPdf) {
+        const { parsePdfResume } = await import("@/lib/import/pdfResume");
+        const result = await parsePdfResume(await file.arrayBuffer());
 
-      if (!parsed.ok) {
-        setError(INVALID_FILE_MESSAGE);
-        return;
+        if (result.text.trim() === "") {
+          setError(PDF_NO_TEXT_MESSAGE);
+          reset();
+          return;
+        }
+
+        doc = result.doc;
+      } else {
+        const parsed = parseResumeJson(await file.text());
+
+        if (!parsed.ok) {
+          setError(INVALID_FILE_MESSAGE);
+          reset();
+          return;
+        }
+
+        doc = parsed.doc;
       }
+    } catch {
+      setError(isPdf ? PDF_READ_ERROR_MESSAGE : INVALID_FILE_MESSAGE);
+      reset();
+      return;
+    }
 
-      const safeDoc = sanitizeResumeDocument(parsed.doc);
+    if (!doc) {
+      setError(isPdf ? PASTE_ERROR_MESSAGE : INVALID_FILE_MESSAGE);
+      reset();
+      return;
+    }
+
+    try {
+      const safeDoc = sanitizeResumeDocument(doc);
       const id = await useResumeStore.getState().importResume(safeDoc);
       router.push(`/editor?id=${id}`);
     } catch {
-      setError(INVALID_FILE_MESSAGE);
+      setError(CREATE_RESUME_MESSAGE);
     } finally {
-      setIsImporting(false);
-      input.value = "";
+      reset();
     }
   }
 
@@ -199,7 +241,8 @@ export function Launcher() {
             Import existing resume
           </h2>
           <p className="text-sm opacity-70">
-            Bring in a JSON backup and keep every section intact.
+            Bring in a JSON backup, or choose a PDF and its text is read locally
+            into editable sections.
           </p>
         </div>
 
@@ -212,14 +255,18 @@ export function Launcher() {
         >
           <UploadSimple size={28} aria-hidden />
           <span className="text-sm font-medium">
-            {isImporting ? "Importing..." : "Choose a JSON file"}
+            {isImporting
+              ? "Reading..."
+              : PDF_IMPORT_ENABLED
+                ? "Choose a JSON backup or PDF"
+                : "Choose a JSON file"}
           </span>
           <span className="text-xs opacity-70">
             Drop it here or tap to browse
           </span>
           <input
             id="resume-json-input"
-            aria-label="Resume JSON file"
+            aria-label="Resume file"
             type="file"
             accept={
               PDF_IMPORT_ENABLED
@@ -236,7 +283,9 @@ export function Launcher() {
           <p className="mt-3 flex items-center gap-2 text-sm" aria-live="polite">
             <FileText size={16} aria-hidden />
             <span className="truncate">{fileName}</span>
-            {isImporting ? <span className="opacity-70">Importing...</span> : null}
+            {isImporting ? (
+              <span className="opacity-70">Reading...</span>
+            ) : null}
           </p>
         ) : null}
 

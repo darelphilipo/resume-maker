@@ -167,6 +167,19 @@ rediscover.
     Safari does not always focus buttons on tap. The header title uses
     `basis-24` so the action group wraps as a unit and stays right-aligned
     rather than squeezing the resume name.
+20. **PDF import is lazy and workerless.** `src/lib/import/pdfResume.ts`
+    dynamically imports `pdfjs-dist` and `pdfjs-dist/build/pdf.worker.mjs`.
+    Importing the worker module registers `globalThis.pdfjsWorker`, so PDF.js
+    uses its in-thread fake worker instead of fetching a separate worker asset.
+    That keeps the static export self-contained, offline-safe, and independent
+    of `basePath`. Never statically import PDF.js from `Launcher` or the editor;
+    the chunk is large and only needed after a PDF is chosen. Text items are
+    grouped by Y (±2.5 pt), ordered by X, joined without a space when the visual
+    gap is ≤1.5 pt, and separated by a blank line when the gap exceeds 1.6× the
+    page's median line gap. The reconstructed text is fed straight into
+    `parsePastedResume`, so any parser fix benefits both import paths. Two-column
+    PDFs can interleave columns; this is a text heuristic, not a geometric
+    layout parser.
 
 ## Verification and tooling
 
@@ -186,6 +199,9 @@ npx playwright test    # e2e; needs a dev server on :3000
 - `test.use({ ...devices["iPhone 14"] })` spreads `defaultBrowserType: "webkit"`,
   which forces WebKit even inside the `chromium` project — spread fields
   individually when you need CDP.
+- In jsdom, `userEvent.type` inside a vaul drawer throws
+  `setPointerCapture is not a function`; use `fireEvent.change` for drawer form
+  fields in component tests.
 
 ## CI and deployment
 
@@ -217,6 +233,31 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-16 — Client-side PDF import
+- Task: let users choose an existing PDF instead of copying its text, using
+  PDF.js locally and the same heuristic parser as the paste importer.
+- Added `pdfjs-dist` (lazy-loaded) and `src/lib/import/pdfResume.ts`:
+  `groupPdfTextItems` rebuilds lines from PDF text-item coordinates (Y grouping,
+  X ordering, visual word gaps, paragraph gaps, page breaks), and
+  `extractPdfText`/`parsePdfResume` load PDF.js plus its worker module only when
+  a PDF is chosen. Importing the worker module registers `globalThis.pdfjsWorker`
+  so PDF.js uses its in-thread fake worker: no separate static worker asset, no
+  CDN, no `basePath` coupling.
+- `Launcher` now detects `.pdf`/`application/pdf` uploads, shows `Reading...`,
+  and distinguishes unreadable PDFs, PDFs with no selectable text (scans), and
+  text that does not parse as a resume. JSON import is unchanged.
+- Flipped `PDF_IMPORT_ENABLED` to `true` and expanded the file picker to accept
+  PDFs alongside JSON backups.
+- Tests: line reconstruction (X order, fragment joining, paragraph gaps, page
+  separation, empty items), a PDF-text-to-resume integration case, and launcher
+  success/no-text/unreadable-PDF cases.
+- Files: `src/lib/import/pdfResume.ts` (+ test), `src/types/pdfjs-worker.d.ts`,
+  `src/components/launcher/Launcher.tsx` (+ test), `src/lib/features.ts`,
+  `package.json`, `package-lock.json`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (380 pass), `npm run lint`,
+  `npm run build` (static export succeeds; PDF.js chunks are not in the initial
+  `/` script tags).
 
 ### 2026-11-16 — Print tip moved into a hover info tooltip
 - Task: stop the “Headers and footers” reminder under Save PDF from stretching
@@ -369,21 +410,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Added `SkillsForm.test.tsx` and extended the skills render test; README tour
   updated.
 - Verified: `npm run typecheck`, `npm test` (320 pass), `npm run lint`.
-
-### 2026-11-15 — JD keyword matcher drawer
-- Task: add a client-side JD keyword matcher drawer showing Matched vs Missing
-  keywords against the resume, with regex/token heuristics only.
-- Added `src/lib/keywords/jdMatch.ts` (`extractJobKeywords`,
-  `matchJobKeywords`) with a stopword list, frequency ranking, a 40-keyword
-  default cap, trailing-dot stripping, and dot/plural variants for matching.
-- `JdMatchDrawer` wraps `EntryDrawer`, keeps the pasted text in local component
-  state only, and renders coverage plus Matched/Missing chip lists. The trigger
-  is a full-width action under the Content intro in `EditorWorkspace`.
-- Files listed in `TASKS.md`; README feature tour updated.
-- Verified: `npm run typecheck`, `npm test` (317 pass), `npm run lint`.
-- Gotcha: in jsdom, `userEvent.type` inside a vaul drawer throws
-  `setPointerCapture is not a function`; use `fireEvent.change` for drawer form
-  fields in component tests.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
      standardized month/date, and first autopilot diagnosis details are
