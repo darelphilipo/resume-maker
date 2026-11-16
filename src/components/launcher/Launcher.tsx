@@ -2,6 +2,8 @@
 
 import {
   ArrowRight,
+  BoxArrowDown,
+  CaretDown,
   ClipboardText,
   FileText,
   UploadSimple,
@@ -35,15 +37,20 @@ const TRUST_POINTS = [
 
 export function Launcher() {
   const router = useRouter();
-  const [fileName, setFileName] = useState<string | null>(null);
   const [pastedText, setPastedText] = useState("");
-  const [isImporting, setIsImporting] = useState(false);
   const [isPasting, setIsPasting] = useState(false);
-  const [creatingId, setCreatingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [pasteError, setPasteError] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string | null>(null);
+  const [isReadingPdf, setIsReadingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [backupFileName, setBackupFileName] = useState<string | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [backupError, setBackupError] = useState<string | null>(null);
+  const [creatingId, setCreatingId] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
-  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+  async function handlePdfChange(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
     const file = input.files?.[0];
 
@@ -51,54 +58,33 @@ export function Launcher() {
       return;
     }
 
-    const isPdf =
-      PDF_IMPORT_ENABLED &&
-      (file.type === "application/pdf" || /\.pdf$/i.test(file.name));
+    setPdfFileName(file.name);
+    setPdfError(null);
+    setIsReadingPdf(true);
 
-    setFileName(file.name);
-    setError(null);
-    setIsImporting(true);
-
-    const reset = () => {
-      setIsImporting(false);
-      input.value = "";
-    };
-
-    let doc: ResumeDocument | null = null;
+    let doc: ResumeDocument;
 
     try {
-      if (isPdf) {
-        const { parsePdfResume } = await import("@/lib/import/pdfResume");
-        const result = await parsePdfResume(await file.arrayBuffer());
+      const { parsePdfResume } = await import("@/lib/import/pdfResume");
+      const result = await parsePdfResume(await file.arrayBuffer());
 
-        if (result.text.trim() === "") {
-          setError(PDF_NO_TEXT_MESSAGE);
-          reset();
-          return;
-        }
-
-        doc = result.doc;
-      } else {
-        const parsed = parseResumeJson(await file.text());
-
-        if (!parsed.ok) {
-          setError(INVALID_FILE_MESSAGE);
-          reset();
-          return;
-        }
-
-        doc = parsed.doc;
+      if (result.text.trim() === "") {
+        setPdfError(PDF_NO_TEXT_MESSAGE);
+        return;
       }
-    } catch {
-      setError(isPdf ? PDF_READ_ERROR_MESSAGE : INVALID_FILE_MESSAGE);
-      reset();
-      return;
-    }
 
-    if (!doc) {
-      setError(isPdf ? PASTE_ERROR_MESSAGE : INVALID_FILE_MESSAGE);
-      reset();
+      if (!result.doc) {
+        setPdfError(PASTE_ERROR_MESSAGE);
+        return;
+      }
+
+      doc = result.doc;
+    } catch {
+      setPdfError(PDF_READ_ERROR_MESSAGE);
       return;
+    } finally {
+      setIsReadingPdf(false);
+      input.value = "";
     }
 
     try {
@@ -106,9 +92,42 @@ export function Launcher() {
       const id = await useResumeStore.getState().importResume(safeDoc);
       router.push(`/editor?id=${id}`);
     } catch {
-      setError(CREATE_RESUME_MESSAGE);
+      setPdfError(CREATE_RESUME_MESSAGE);
+    }
+  }
+
+  async function handleBackupChange(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setBackupFileName(file.name);
+    setBackupError(null);
+    setIsRestoring(true);
+
+    try {
+      const parsed = parseResumeJson(await file.text());
+
+      if (!parsed.ok) {
+        setBackupError(INVALID_FILE_MESSAGE);
+        return;
+      }
+
+      try {
+        const safeDoc = sanitizeResumeDocument(parsed.doc);
+        const id = await useResumeStore.getState().importResume(safeDoc);
+        router.push(`/editor?id=${id}`);
+      } catch {
+        setBackupError(CREATE_RESUME_MESSAGE);
+      }
+    } catch {
+      setBackupError(INVALID_FILE_MESSAGE);
     } finally {
-      reset();
+      setIsRestoring(false);
+      input.value = "";
     }
   }
 
@@ -144,7 +163,7 @@ export function Launcher() {
     }
 
     setCreatingId(archetype.id);
-    setError(null);
+    setCreateError(null);
 
     try {
       const id = await useResumeStore.getState().createResume("onyx");
@@ -152,7 +171,7 @@ export function Launcher() {
       await useResumeStore.getState().saveNow();
       router.push(`/editor?id=${id}`);
     } catch {
-      setError(CREATE_RESUME_MESSAGE);
+      setCreateError(CREATE_RESUME_MESSAGE);
     } finally {
       setCreatingId(null);
     }
@@ -229,72 +248,69 @@ export function Launcher() {
         ) : null}
       </section>
 
-      <section
-        aria-labelledby="launcher-import-heading"
-        className="rounded-2xl border border-black/10 bg-background p-6"
-      >
-        <div className="flex flex-col gap-1">
-          <h2
-            id="launcher-import-heading"
-            className="text-lg font-semibold tracking-tight"
-          >
-            Import existing resume
-          </h2>
-          <p className="text-sm opacity-70">
-            Bring in a JSON backup, or choose a PDF and its text is read locally
-            into editable sections.
-          </p>
-        </div>
-
-        <label
-          htmlFor="resume-json-input"
-          aria-disabled={isImporting}
-          className={`mt-5 flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-black/20 px-4 py-6 text-center transition-colors hover:border-black/40 ${
-            isImporting ? "cursor-wait opacity-60" : ""
-          }`}
+      {PDF_IMPORT_ENABLED ? (
+        <section
+          aria-labelledby="launcher-pdf-heading"
+          className="rounded-2xl border border-black/10 bg-background p-6"
         >
-          <UploadSimple size={28} aria-hidden />
-          <span className="text-sm font-medium">
-            {isImporting
-              ? "Reading..."
-              : PDF_IMPORT_ENABLED
-                ? "Choose a JSON backup or PDF"
-                : "Choose a JSON file"}
-          </span>
-          <span className="text-xs opacity-70">
-            Drop it here or tap to browse
-          </span>
-          <input
-            id="resume-json-input"
-            aria-label="Resume file"
-            type="file"
-            accept={
-              PDF_IMPORT_ENABLED
-                ? ".pdf,.json,application/pdf,application/json"
-                : ".json,application/json"
-            }
-            disabled={isImporting}
-            onChange={handleFileChange}
-            className="sr-only"
-          />
-        </label>
+          <div className="flex flex-col gap-1">
+            <h2
+              id="launcher-pdf-heading"
+              className="text-lg font-semibold tracking-tight"
+            >
+              Upload a PDF
+            </h2>
+            <p className="text-sm opacity-70">
+              Choose an existing resume PDF and its text is read locally into
+              editable sections. Scans and image-only files need pasted text.
+            </p>
+          </div>
 
-        {fileName ? (
-          <p className="mt-3 flex items-center gap-2 text-sm" aria-live="polite">
-            <FileText size={16} aria-hidden />
-            <span className="truncate">{fileName}</span>
-            {isImporting ? (
-              <span className="opacity-70">Reading...</span>
-            ) : null}
-          </p>
-        ) : null}
+          <label
+            htmlFor="resume-pdf-input"
+            aria-disabled={isReadingPdf}
+            className={`mt-5 flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-black/20 px-4 py-6 text-center transition-colors hover:border-black/40 ${
+              isReadingPdf ? "cursor-wait opacity-60" : ""
+            }`}
+          >
+            <UploadSimple size={28} aria-hidden />
+            <span className="text-sm font-medium">
+              {isReadingPdf ? "Reading..." : "Choose a PDF"}
+            </span>
+            <span className="text-xs opacity-70">
+              Drop it here or tap to browse
+            </span>
+            <input
+              id="resume-pdf-input"
+              aria-label="Resume PDF"
+              type="file"
+              accept=".pdf,application/pdf"
+              disabled={isReadingPdf}
+              onChange={handlePdfChange}
+              className="sr-only"
+            />
+          </label>
 
-        {error ? (
-          <p role="alert" className="mt-3 text-sm text-red-700">
-            {error}
-          </p>
-        ) : null}
-      </section>
+          {pdfFileName ? (
+            <p
+              className="mt-3 flex items-center gap-2 text-sm"
+              aria-live="polite"
+            >
+              <FileText size={16} aria-hidden />
+              <span className="truncate">{pdfFileName}</span>
+              {isReadingPdf ? (
+                <span className="opacity-70">Reading...</span>
+              ) : null}
+            </p>
+          ) : null}
+
+          {pdfError ? (
+            <p role="alert" className="mt-3 text-sm text-red-700">
+              {pdfError}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section
         aria-labelledby="launcher-scratch-heading"
@@ -336,7 +352,99 @@ export function Launcher() {
             </li>
           ))}
         </ul>
+
+        {createError ? (
+          <p role="alert" className="mt-3 text-sm text-red-700">
+            {createError}
+          </p>
+        ) : null}
       </section>
+
+      <div className="rounded-2xl border border-dashed border-black/10 bg-black/[0.02] p-4">
+        <button
+          type="button"
+          aria-expanded={backupOpen}
+          aria-controls={backupOpen ? "launcher-backup-panel" : undefined}
+          onClick={() => {
+            setBackupOpen((open) => !open);
+            setBackupError(null);
+          }}
+          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <BoxArrowDown size={18} aria-hidden />
+            Backup &amp; Restore
+          </span>
+          <CaretDown
+            size={16}
+            aria-hidden
+            className={`shrink-0 opacity-60 transition-transform ${
+              backupOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        <p className="mt-1 text-xs opacity-70">
+          For moving or safeguarding a resume you already started. Not the main
+          way to begin.
+        </p>
+
+        {backupOpen ? (
+          <div
+            id="launcher-backup-panel"
+            className="mt-4 flex flex-col gap-3 border-t border-black/10 pt-4"
+          >
+            <p className="text-sm opacity-70">
+              Restore a JSON backup you exported earlier. To make a new backup,
+              open a resume and choose <strong>Download JSON backup</strong> in
+              the editor.
+            </p>
+
+            <label
+              htmlFor="resume-backup-input"
+              aria-disabled={isRestoring}
+              className={`flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-black/20 px-4 py-5 text-center transition-colors hover:border-black/40 ${
+                isRestoring ? "cursor-wait opacity-60" : ""
+              }`}
+            >
+              <BoxArrowDown size={24} aria-hidden />
+              <span className="text-sm font-medium">
+                {isRestoring ? "Restoring..." : "Choose a JSON backup"}
+              </span>
+              <span className="text-xs opacity-70">
+                Drop it here or tap to browse
+              </span>
+              <input
+                id="resume-backup-input"
+                aria-label="Resume backup file"
+                type="file"
+                accept=".json,application/json"
+                disabled={isRestoring}
+                onChange={handleBackupChange}
+                className="sr-only"
+              />
+            </label>
+
+            {backupFileName ? (
+              <p
+                className="flex items-center gap-2 text-sm"
+                aria-live="polite"
+              >
+                <FileText size={16} aria-hidden />
+                <span className="truncate">{backupFileName}</span>
+                {isRestoring ? (
+                  <span className="opacity-70">Restoring...</span>
+                ) : null}
+              </p>
+            ) : null}
+
+            {backupError ? (
+              <p role="alert" className="text-sm text-red-700">
+                {backupError}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

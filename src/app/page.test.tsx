@@ -8,14 +8,17 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("Home page", () => {
-  it("renders the Resume Maker heading and both launcher cards", () => {
+  it("renders the Resume Maker heading and primary launcher cards", () => {
     render(<Home />);
 
     expect(
       screen.getByRole("heading", { name: "Resume Maker" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("region", { name: "Import existing resume" }),
+      screen.getByRole("region", { name: "Paste your resume" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Upload a PDF" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "Start from scratch" }),

@@ -9,8 +9,8 @@ export default function Home() {
             Resume Maker
           </h1>
           <p className="max-w-lg text-sm opacity-70 sm:text-base">
-            Build a resume from a role preset or a JSON backup, then print a
-            clean PDF. Everything stays in your browser.
+            Start from a PDF, pasted text, or a role preset, then print a clean
+            PDF. Everything stays in your browser.
           </p>
         </header>
         <Launcher />

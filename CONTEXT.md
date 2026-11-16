@@ -180,6 +180,14 @@ rediscover.
     `parsePastedResume`, so any parser fix benefits both import paths. Two-column
     PDFs can interleave columns; this is a text heuristic, not a geometric
     layout parser.
+21. **JSON is a backup path, not a starting point.** The `/` launcher keeps
+    three primary cards: Paste, Upload a PDF, and Start from scratch. JSON
+    restore lives in a collapsed `Backup & Restore` disclosure at the bottom
+    (`aria-expanded` + `aria-controls`; the panel is a `<div>`, not a
+    `<section>`, so `getAllByRole("region")` still counts only the primary
+    cards). Export stays in the editor header (`ExportJsonButton`), and the
+    disclosure copy points users there. PDF upload now has its own input and
+    error state; do not fold JSON back into the primary file picker.
 
 ## Verification and tooling
 
@@ -233,6 +241,24 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-16 — Backup & Restore is a secondary launcher menu
+- Task: stop presenting JSON import as a primary way to start, and give JSON
+  import/export a clearly secondary home on `/`.
+- `Launcher` primary cards are now Paste your resume, Upload a PDF, and Start
+  from scratch. The PDF card owns its own `Resume PDF` input, reading/error
+  states, and accept list; JSON is no longer a primary file type.
+- A collapsed `Backup & Restore` disclosure at the bottom holds the JSON restore
+  input (`Resume backup file`), explains that backups are for moving or
+  safeguarding an existing resume, and points to **Download JSON backup** in the
+  editor for export. It toggles with `aria-expanded` / `aria-controls`.
+- Split the old shared error state into upload, backup, and preset errors so a
+  failure appears next to the control that caused it.
+- Updated the home-page intro copy and launcher/page tests (primary region
+  count, PDF-only accept, menu open/close and JSON restore).
+- Files: `src/components/launcher/Launcher.tsx` (+ test), `src/app/page.tsx`
+  (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test`.
 
 ### 2026-11-16 — Client-side PDF import
 - Task: let users choose an existing PDF instead of copying its text, using
@@ -398,21 +424,8 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/SectionList.test.tsx`, `README.md`.
 - Verified: `npm run typecheck`, `npm test` (324 pass), `npm run lint`.
 
-### 2026-11-15 — Skills are category + keywords
-- Task: remove the 1–5 proficiency slider from the skills form and make skills
-  read as `Category: keyword, keyword`.
-- `SkillsForm` now shows `Category` (stored in `name`) and `Keywords` with no
-  slider. The form still carries `level` as a pass-through so editing an
-  imported resume does not silently reset its stored values.
-- `SkillEntry` in `SectionRenderer` no longer renders `SkillLevelIndicator`;
-  Languages keep theirs. Levels remain in `SkillItemSchema` for import
-  compatibility.
-- Added `SkillsForm.test.tsx` and extended the skills render test; README tour
-  updated.
-- Verified: `npm run typecheck`, `npm test` (320 pass), `npm run lint`.
-
 <!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
-     standardized month/date, and first autopilot diagnosis details are
-     captured in Decisions & Gotchas (#9, #10) and Autopilot failure modes
-     above. -->
+     standardized month/date, first autopilot diagnosis, and categorized-skills
+     details are captured in Decisions & Gotchas (#9, #10) and Autopilot
+     failure modes above. -->
 

@@ -22,7 +22,6 @@ _None yet._
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
-- [ ] P1: Reframe JSON import/export as a secondary "Backup & Restore" menu on `/` rather than the primary entry point.
 - [ ]     100% Fre·No Sign-Up Works Offline in Your Browser ,text on the front page is spanning in two lines on homepage breaking the homepage look overall . Also I eed some professional colors and styling on the homepage . The homepage needs to be redesigned to make it intuitive for the user to understand entry points and use one of the options to start off with . 
 - [ ] P1: Add action-verb and metric helper chips to `RichTextField.tsx` (Built, Reduced, Led, Automated) with an `[Action] + [What] + [Result by X%]` prompt.
 
@@ -33,6 +32,8 @@ _None yet._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-16 — Reframed JSON as a secondary path: `/` now leads with Paste your resume, Upload a PDF, and Start from scratch, while JSON restore moved into a collapsed `Backup & Restore` disclosure that points to Download JSON backup in the editor; upload, backup, and preset errors are now separate. Verified `npm run typecheck`, `npm test` (381 pass), `npm run lint`. Files: `src/components/launcher/Launcher.tsx`, `src/components/launcher/launcher.test.tsx`, `src/app/page.tsx`, `src/app/page.test.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-16 — Added client-side PDF import: `pdfjs-dist` is lazy-loaded, its worker runs in-thread (no extra static asset or CDN), text items are rebuilt into lines and paragraphs, and the result feeds the existing paste parser. The launcher now accepts PDFs and explains unreadable or scanned files; `PDF_IMPORT_ENABLED` is on. Files: `src/lib/import/pdfResume.ts`, `src/lib/import/pdfResume.test.ts`, `src/types/pdfjs-worker.d.ts`, `src/components/launcher/Launcher.tsx`, `src/components/launcher/launcher.test.tsx`, `src/lib/features.ts`, `package.json`, `package-lock.json`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - [x] 2026-11-16 — Moved the print “Headers and footers” reminder out of the header layout and into an absolutely positioned tooltip on Save PDF (hover/focus on desktop, tap-toggle info button on touch), so Undo/Redo/JSON/print stay on one aligned 44px row; the header title now lets the action group wrap as a unit instead of squeezing the name. Files: `src/components/preview/PrintTriggerButton.tsx`, `src/components/preview/PrintTriggerButton.test.tsx`, `src/components/editor/EditorWorkspace.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.

@@ -39,6 +39,14 @@ function pdfFile(content = "%PDF-1.4", name = "resume.pdf"): File {
   return file;
 }
 
+function backupToggle() {
+  return screen.getByRole("button", { name: /Backup & Restore/ });
+}
+
+async function openBackupMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(backupToggle());
+}
+
 beforeEach(async () => {
   pushMock.mockReset();
   vi.mocked(parsePdfResume).mockReset();
@@ -51,7 +59,7 @@ afterEach(() => {
 });
 
 describe("Launcher", () => {
-  it("renders the three entry cards with the expected accessible names", () => {
+  it("renders the three primary entry cards with the expected accessible names", () => {
     render(<Launcher />);
 
     const cards = screen.getAllByRole("region");
@@ -60,14 +68,14 @@ describe("Launcher", () => {
       screen.getByRole("region", { name: "Paste your resume" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("region", { name: "Import existing resume" }),
+      screen.getByRole("region", { name: "Upload a PDF" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "Start from scratch" }),
     ).toBeInTheDocument();
   });
 
-  it("shows the free/local trust badge above the import card", () => {
+  it("shows the free/local trust badge above the upload card", () => {
     render(<Launcher />);
 
     const badge = screen.getByRole("list", {
@@ -78,24 +86,49 @@ describe("Launcher", () => {
     expect(badge).toHaveTextContent("Works Offline in Your Browser");
     expect(badge.querySelectorAll("a, button")).toHaveLength(0);
 
-    const importCard = screen.getByRole("region", {
-      name: "Import existing resume",
+    const uploadCard = screen.getByRole("region", {
+      name: "Upload a PDF",
     });
     expect(
-      badge.compareDocumentPosition(importCard) &
+      badge.compareDocumentPosition(uploadCard) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
-  it("enables PDF and JSON file import", () => {
+  it("enables PDF upload from the primary card", () => {
     render(<Launcher />);
 
-    const fileInput = screen.getByLabelText("Resume file");
+    const fileInput = screen.getByLabelText("Resume PDF");
 
-    expect(fileInput).toHaveAttribute(
+    expect(fileInput).toHaveAttribute("accept", ".pdf,application/pdf");
+  });
+
+  it("keeps JSON restore in a secondary Backup & Restore menu", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    expect(backupToggle()).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByLabelText("Resume backup file"),
+    ).not.toBeInTheDocument();
+
+    await openBackupMenu(user);
+
+    expect(backupToggle()).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByText(/Download JSON backup/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Resume backup file")).toHaveAttribute(
       "accept",
-      ".pdf,.json,application/pdf,application/json",
+      ".json,application/json",
     );
+
+    await openBackupMenu(user);
+
+    expect(backupToggle()).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByLabelText("Resume backup file"),
+    ).not.toBeInTheDocument();
   });
 
   it("contains no AI wording", () => {
@@ -166,8 +199,9 @@ describe("Launcher", () => {
     const user = userEvent.setup();
     render(<Launcher />);
 
+    await openBackupMenu(user);
     await user.upload(
-      screen.getByLabelText("Resume file"),
+      screen.getByLabelText("Resume backup file"),
       jsonFile("{not valid json"),
     );
 
@@ -182,8 +216,9 @@ describe("Launcher", () => {
     doc.basics.name = "Grace Hopper";
     render(<Launcher />);
 
+    await openBackupMenu(user);
     await user.upload(
-      screen.getByLabelText("Resume file"),
+      screen.getByLabelText("Resume backup file"),
       jsonFile(serializeResume(doc)),
     );
 
@@ -208,7 +243,7 @@ describe("Launcher", () => {
     });
     render(<Launcher />);
 
-    await user.upload(screen.getByLabelText("Resume file"), pdfFile());
+    await user.upload(screen.getByLabelText("Resume PDF"), pdfFile());
 
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith(
@@ -227,7 +262,7 @@ describe("Launcher", () => {
     vi.mocked(parsePdfResume).mockResolvedValue({ text: "  ", doc: null });
     render(<Launcher />);
 
-    await user.upload(screen.getByLabelText("Resume file"), pdfFile());
+    await user.upload(screen.getByLabelText("Resume PDF"), pdfFile());
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "That PDF has no selectable text.",
@@ -241,7 +276,7 @@ describe("Launcher", () => {
     vi.mocked(parsePdfResume).mockRejectedValue(new Error("corrupt pdf"));
     render(<Launcher />);
 
-    await user.upload(screen.getByLabelText("Resume file"), pdfFile());
+    await user.upload(screen.getByLabelText("Resume PDF"), pdfFile());
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Could not read that PDF.",

@@ -35,8 +35,10 @@ in control of every line, and your data stays on your device.
 - **Role presets** for Software Engineer, Product Manager, UX/UI Designer,
   Finance & Operations, and Fresh Graduate, each with a complete editable sample
   including categorized skills you can adapt.
-- **JSON backup import** to continue a resume you exported earlier.
-- **JSON backup export** at any time so you are never locked in.
+- **Backup & Restore** lives at the bottom of the home page as a secondary
+  option: restore a JSON backup you exported earlier, without treating JSON as
+  the main way to start.
+- **JSON backup export** in the editor at any time so you are never locked in.
 
 ### Write and organize
 
