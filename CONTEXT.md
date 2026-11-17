@@ -248,6 +248,15 @@ rediscover.
     handler is fine). Wheel zoom and drag panning on fine pointers are
     unchanged. The old `CanvasControls` toolbar is superseded and no longer
     rendered; delete it in a run that has full shell access.
+27. **Editor inputs read as white fields, and hints never fade below AA.**
+    `RichTextField` is a `bg-surface` shell with a `bg-surface-muted` toolbar
+    strip and a white `.tiptap` area; `TextInput`/`MonthInput` share the
+    `INPUT_CLASS` white surface, and `EntryCard` is tinted (`bg-surface-muted`)
+    so nested white inputs stand out. Placeholders use `text-muted` (#5b6a7a,
+    5.5:1 on white) plus `placeholder:opacity-100` because Firefox dims
+    placeholders by default. Never use `opacity-60` for hint copy on white — it
+    drops below 4.5:1; use `text-muted`. The empty `.tiptap` placeholder is
+    `var(--brand-muted)` for the same reason.
 
 ## Verification and tooling
 
@@ -307,6 +316,29 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — White input surfaces and readable field hints
+- Task: make Summary/Experience/Education text areas read as editable white
+  inputs against the warm paper chrome, and raise placeholder/hint contrast.
+- `RichTextField` is now a `bg-surface text-text` shell with a
+  `bg-surface-muted` toolbar strip (replacing `bg-black/[0.02]`) and an
+  explicit white `.tiptap` area; the helper prompt and action chips use
+  `text-text`/`text-muted` and solid white chips instead of translucent black.
+- `SectionFormControls`: `INPUT_CLASS` gained `caret-primary`,
+  `placeholder:opacity-100` (Firefox dims placeholders by default), and
+  disabled tokens; hint copy uses `text-muted` instead of `opacity-60`, and
+  `EntryCard` is tinted `bg-surface-muted` so the white inputs inside stand out.
+- `globals.css` `.tiptap p.is-editor-empty::before` now uses
+  `var(--brand-muted)` (#5b6a7a, 5.5:1 on white) rather than 45% black.
+- Tests: white shell + subtle toolbar strip, readable helper hint, and a new
+  `SectionFormControls.test.tsx` covering input tokens, hints, `MonthInput`,
+  and the tinted `EntryCard`.
+- Files: `src/components/editor/RichTextField.tsx` (+ test),
+  `src/components/editor/SectionFormControls.tsx` (+ new test),
+  `src/app/globals.css`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (424 pass), `npm run lint`,
+  `npm run build` (static export; the security-advisory nudge needed the usual
+  second run).
 
 ### 2026-11-17 — Launcher preset alignment and a single-capsule tap state
 - Task: even out the role-preset cards in the "Start from scratch" launcher
@@ -526,25 +558,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (380 pass), `npm run lint`,
   `npm run build` (static export succeeds; PDF.js chunks are not in the initial
   `/` script tags).
-
-### 2026-11-16 — Print tip moved into a hover info tooltip
-- Task: stop the “Headers and footers” reminder under Save PDF from stretching
-  the print control and misaligning the Undo/Redo/JSON buttons.
-- `PrintTriggerButton` now renders the reminder as an absolutely positioned
-  `role="tooltip"` bubble: no layout space, shown on `pointer-fine` hover/focus
-  of Save PDF, and toggled by a `pointer-coarse` info button (`aria-expanded` /
-  `aria-controls`). It closes on Escape, blur outside the control, or an outside
-  pointerdown.
-- Header: the title got `basis-24` so the action group wraps as a unit and stays
-  right-aligned instead of squeezing the name; actions are `flex-nowrap` and
-  centered with the other 44px controls, and the print slot is `items-center`.
-- Tests: tooltip copy/position/`aria-describedby` linkage, touch toggle, Escape,
-  and outside-tap dismissal.
-- Files: `src/components/preview/PrintTriggerButton.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx`, `README.md`, `TASKS.md`,
-  `CONTEXT.md`.
-- Verified: `npm run typecheck`, `npm test` (371 pass), `npm run lint`,
-  `npm run build` (confirmed the `pointer:fine` hover rules reach the CSS).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The paste-to-parse,
      fit-to-1-page, standardized month/date, first autopilot diagnosis,

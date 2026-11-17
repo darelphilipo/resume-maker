@@ -15,7 +15,7 @@ import {
 } from "@/lib/date/month";
 
 const INPUT_CLASS =
-  "min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-text transition-colors placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
+  "min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-text caret-primary transition-colors placeholder:text-muted placeholder:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:bg-surface-muted disabled:text-muted";
 
 const ACTION_BUTTON_CLASS =
   "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line disabled:hover:bg-transparent";
@@ -58,7 +58,7 @@ export function TextInput({
         onChange={(event) => onChange(event.currentTarget.value)}
         className={INPUT_CLASS}
       />
-      {hint ? <p className="text-xs opacity-60">{hint}</p> : null}
+      {hint ? <p className="text-xs text-muted">{hint}</p> : null}
     </div>
   );
 }
@@ -133,7 +133,7 @@ export function MonthInput({
         }}
         className={INPUT_CLASS}
       />
-      {hint ? <p className="text-xs opacity-60">{hint}</p> : null}
+      {hint ? <p className="text-xs text-muted">{hint}</p> : null}
     </div>
   );
 }
@@ -210,8 +210,8 @@ export function EntryCard({
   children: ReactNode;
 }) {
   return (
-    <fieldset className="flex flex-col gap-3 rounded-xl border border-black/10 p-3">
-      <legend className="px-1 text-xs font-semibold uppercase tracking-wide opacity-60">
+    <fieldset className="flex flex-col gap-3 rounded-xl border border-line bg-surface-muted p-3">
+      <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-muted">
         Entry {index + 1}
       </legend>
       {children}

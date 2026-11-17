@@ -19,8 +19,6 @@ _empty
 ## In Progress (OpenCode Updates This)
 ### P1 — Visual Consistency & UX/UI Fixes
 
-- [ ] P1: Standardize white input backgrounds and contrast across all editor forms in `src/components/editor/RichTextField.tsx` and `src/components/editor/SectionFormControls.tsx`. Add `bg-surface` (`#ffffff`) to the `RichTextField` outer container (keep toolbar `bg-black/[0.02]` or subtle `#faf9f6` header strip) so Summary, Experience, and Education text areas clearly read as editable white inputs instead of blending into the `#f5f3ee` beige background. Ensure all optional `<input>` placeholders (e.g., Work auth, Picture URL) meet accessible contrast against `#ffffff`.
-
 - [ ] P1: Replace native `<input type="month">` scroll pickers with a unified, fast Month + Year selector component in `src/components/editor/SectionFormControls.tsx` (and wire it across Experience, Education, Certifications, Awards, and Publications). Build a compact dual-dropdown or popover (`Month` select Jan–Dec + `Year` select or 4-digit numeric input + `"Present"` toggle where applicable) with `min-h-11` touch targets and `bg-surface`, eliminating browser-dependent year-scroll popups and unifying date entry across all dated sections.
 
 - [ ] P1: Fix the `"1 page"` / `"2 pages"` badge overlapping the top-left corner of the resume preview in `src/components/preview/LiveCanvasViewport.tsx` and `src/components/preview/PageStack.tsx`. Move the page-count pill and canvas controls into a dedicated non-overlapping top toolbar/header bar above the `<TransformWrapper>` canvas (or add top padding/clearance in the viewport above `(0, 0)`) so the badge never covers the candidate's name or header at any zoom level or paper size (A4 or Letter).
@@ -51,6 +49,8 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-17 — Gave every editor field a clear white input surface and readable hints: the `RichTextField` shell is now `bg-surface` with a `bg-surface-muted` toolbar strip and white TipTap area, `TextInput`/`MonthInput` placeholders use `text-muted` with `placeholder:opacity-100` (Firefox-safe) and disabled fields fall back to `bg-surface-muted`, hint text dropped the 60% opacity wash, entry cards are tinted so nested white inputs stand out, and the empty `.tiptap` placeholder now uses `--brand-muted` (5.5:1 on white). Verified `npm run typecheck`, `npm test` (424 pass), `npm run lint`, `npm run build` (static export). Files: `src/components/editor/RichTextField.tsx`, `src/components/editor/RichTextField.test.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/SectionFormControls.test.tsx`, `src/app/globals.css`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-17 — Aligned the launcher role-preset cards and fixed the tap blink: each preset row now stretches to a shared height, the odd 5th card (`Fresh Graduate`) spans both columns at `sm+`, and only the clicked preset shows a pending state (`aria-busy` + spinner) while siblings become `pointer-events-none` without the old all-buttons `opacity-60` dim. The disabled "Create resume from text" CTA now uses explicit disabled tokens (border, background, text) so its icon and label share the button surface. Verified `npm run typecheck`, `npm test` (418 pass), `npm run lint`. Files: `src/components/launcher/Launcher.tsx`, `src/components/launcher/launcher.test.tsx`, `CONTEXT.md`, `TASKS.md`.
 

@@ -159,6 +159,42 @@ describe("RichTextField", () => {
     );
   });
 
+  it("renders a white editable surface with a subtle toolbar strip", () => {
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description"
+      />,
+    );
+
+    const toolbar = screen.getByRole("toolbar", {
+      name: "Formatting for Description",
+    });
+    const shell = toolbar.parentElement;
+
+    expect(toolbar).toHaveClass("bg-surface-muted", "border-line");
+    expect(shell).toHaveClass("bg-surface", "border-line", "text-text");
+  });
+
+  it("keeps the achievement hint readable on the helper strip", () => {
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description for entry 1"
+        actionHelpers
+      />,
+    );
+
+    const hint = screen.getByText(
+      "e.g. Built a checkout flow that reduced drop-off by 18%.",
+    );
+
+    expect(hint.closest("p")).toHaveClass("text-muted");
+    expect(hint.closest("p")).not.toHaveClass("text-black/50");
+  });
+
   it("does not show action helpers unless requested", () => {
     render(
       <RichTextField

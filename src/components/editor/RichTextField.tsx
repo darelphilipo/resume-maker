@@ -105,7 +105,7 @@ export function RichTextField({
     editorProps: {
       attributes: {
         class:
-          "tiptap min-h-24 w-full px-3 py-2 text-sm leading-relaxed outline-none",
+          "tiptap min-h-24 w-full bg-surface px-3 py-2 text-sm leading-relaxed text-text outline-none",
         "aria-label": ariaLabel,
         "aria-multiline": "true",
         role: "textbox",
@@ -160,11 +160,11 @@ export function RichTextField({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-black/10 transition-shadow focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
+    <div className="overflow-hidden rounded-lg border border-line bg-surface text-text transition-shadow focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
       <div
         role="toolbar"
         aria-label={`Formatting for ${ariaLabel}`}
-        className="flex flex-wrap items-center gap-0.5 border-b border-black/10 bg-black/[0.02] p-1"
+        className="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface-muted p-1"
       >
         <ToolbarButton
           label="Bold"
@@ -231,14 +231,12 @@ export function RichTextField({
         </ToolbarButton>
       </div>
       {actionHelpers ? (
-        <div className="flex flex-col gap-1.5 border-b border-black/10 bg-primary/[0.03] px-2 py-2">
-          <p id={actionHintId} className="text-xs text-black/60">
-            <span className="font-medium text-black/75">
+        <div className="flex flex-col gap-1.5 border-b border-line bg-primary/[0.03] px-2 py-2">
+          <p id={actionHintId} className="text-xs text-muted">
+            <span className="font-medium text-text">
               [Action] + [What] + [Result by X%]
             </span>{" "}
-            <span className="text-black/50">
-              e.g. Built a checkout flow that reduced drop-off by 18%.
-            </span>
+            <span>e.g. Built a checkout flow that reduced drop-off by 18%.</span>
           </p>
           <div
             role="group"
@@ -253,7 +251,7 @@ export function RichTextField({
                 aria-label={`Insert action verb ${verb}`}
                 disabled={!editor}
                 onClick={() => insertActionVerb(verb)}
-                className="inline-flex min-h-11 items-center rounded-full border border-black/10 bg-white/60 px-3 py-2 text-xs font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10"
+                className="inline-flex min-h-11 items-center rounded-full border border-line bg-surface px-3 py-2 text-xs font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line"
               >
                 {verb}
               </button>

@@ -71,7 +71,8 @@ body {
 
 .tiptap p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
-  color: rgba(17, 24, 39, 0.45);
+  /* #5b6a7a on white: 5.5:1, so empty editor hints stay readable. */
+  color: var(--brand-muted);
   float: left;
   height: 0;
   pointer-events: none;
