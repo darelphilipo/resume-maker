@@ -22,16 +22,6 @@ _None._
 
 ## Queue (Ready for Next Run)
 
-### P1 — Visual Consistency & UX/UI Fixes
-
-- [ ]  P1: Add a Playwright visual/layout regression spec in `e2e/layout-consistency.spec.ts` covering both mobile (`390x844`) and desktop (`1280x800`) viewports. Assert:
-  1. Launcher role preset cards in the same grid row have equal bounding-box heights (`Math.abs(a.height - b.height) <= 2`), and clicking one preset does not change the computed opacity of sibling cards.
-  2. All `RichTextField` editor containers in Summary, Experience, and Education have a white computed background (`rgb(255, 255, 255)`).
-  3. No `<input type="month">` elements exist in dated sections (replaced by the unified Month + Year selector).
-  4. The page-count badge (`1 page` / `2 pages`) bounding box does not overlap the `.resume-page` header/name bounding box.
-  5. On desktop (`1280x800`), scrolling the Content column keeps `#panel-preview` visible inside the viewport.
-  6. Clicking the `Letter` card body (not just the radio dot) switches paper size, and clicking `"Match to a job description"` opens the JD Match drawer.
-
 ### P2 — Larger work
 - [ ] P2: Add a template system in `src/templates/registry.ts` with 6 single-column-first templates — Engineering Classic (Jake), Ivy/Executive (Harvard), Modern Accent, Compact 1-Pager, Hybrid Skills-First, and a two-column Studio Sidebar labelled "Best for direct/human review". Show an ATS-Safe badge on single-column options.
 - [ ] P2: Add 4 design controls to `DesignPanel.tsx`: template selector, accent color (5–6 curated swatches + monochrome), font pairing (Sans/Serif/Classic), density (Compact/Normal/Relaxed).
@@ -39,6 +29,20 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-17 — Added `e2e/layout-consistency.spec.ts`, a Playwright regression spec
+  over six previously-fixed visual/layout behaviours. It follows the `a11y.spec.ts`
+  pattern with a `VIEWPORTS` loop (`390x844` mobile, `1280x800` desktop): preset cards
+  in a shared grid row have equal heights and clicking one leaves sibling computed
+  opacity unchanged; Summary/Experience/Education `.tiptap` surfaces compute to
+  white; no `input[type="month"]` remains in dated sections; the page-count badge
+  never overlaps `.resume-name`; a desktop-only case scrolls Content and asserts
+  `#panel-preview` stays in-viewport; and the `Letter` card body plus the JD Match
+  trigger hit their targets (radio checked / dialog open). Verified
+  `npm run typecheck`, `npm test` (467 pass). Files: `e2e/layout-consistency.spec.ts`,
+  `TASKS.md`, `CONTEXT.md`. Playwright execution was not available in this sandbox
+  (shell restricted); next run with browser access should execute
+  `npm run e2e -- e2e/layout-consistency.spec.ts` against a dev server.
 
 - [x] 2026-11-17 — Fixed the three visual/UX rough edges in the editor: the
   `RichTextField` toolbar and entry actions now sit on one compact row (36px

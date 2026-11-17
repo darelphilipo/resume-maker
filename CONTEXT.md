@@ -376,6 +376,37 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-17 — Playwright visual/layout regression spec
+- Task: add the P1 e2e spec guarding six previously-fixed visual/layout behaviours
+  at `390x844` and `1280x800` (`e2e/layout-consistency.spec.ts`).
+- Structure follows `a11y.spec.ts`: a `VIEWPORTS` loop with `test.use({ viewport })`.
+  Assertions 1–4 and 6 run at both viewports; the sticky-panel case is desktop-only.
+  Reuses `createPresetResume`, `showTab`, `showPreview` from `e2e/helpers.ts`.
+- Preset cards are grouped by `getBoundingClientRect().top`, so only cards in the
+  same grid row are height-compared (one column below `sm` means no mobile pairs).
+  The pending-state opacity is sampled in a single `page.evaluate` immediately
+  after a synthetic `.click()` — React flushes discrete click updates
+  synchronously, so this avoids polling a transient `aria-busy` or holding the
+  `/editor` route. Assert the clicked card's `aria-busy` and unchanged sibling
+  `opacity` in that same snapshot.
+- Rich-text surfaces: expand Summary/Experience/Education, then assert every
+  `#panel-content .tiptap` computes `background-color: rgb(255, 255, 255)`;
+  `expect.poll` on editor count because TipTap mounts in an effect. Dated-section
+  case asserts zero `input[type="month"]`. Badge overlap uses
+  `[data-canvas-toolbar] span` (text `/^\d+ pages?$/`) vs
+  `#panel-preview .resume-page .resume-name` rectangle intersection. Desktop
+  sticky case expands Content rows, scrolls to the document bottom, and asserts
+  `#panel-preview` top ≥ 0 with bottom past the header. Letter case clicks the
+  `8.5 × 11 in` detail span (label body) and checks `#page-format-letter`; JD case
+  clicks the trigger and asserts the dialog and its labelled textarea.
+- Test-only task: no source or README change. Files: `e2e/layout-consistency.spec.ts`,
+  `TASKS.md`, `CONTEXT.md`.
+- Verified: `npm run typecheck`, `npm test` (467 pass). Playwright could not run
+  here — the sandbox shell rejected every command except the two npm verification
+  commands — so the spec is typechecked but browser-unverified. Next run with a
+  dev server on :3000 should execute
+  `npm run e2e -- e2e/layout-consistency.spec.ts`.
+
 ### 2026-11-17 — One-row toolbars, full-card paper sizes, reliable JD drawer
 - Task: fix the three P1 visual/UX rough edges — toolbar wrapping in the narrow
   desktop sidebar, partial paper-size card hit targets, and a JD Match trigger
@@ -612,32 +643,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/components/launcher/Launcher.tsx` (+ test), `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (418 pass), `npm run lint`.
-
-### 2026-11-17 — Horizontal pan for the zoomed mobile preview
-- Task: after pinch-zooming, let a one-finger drag move left/right across the
-  page without giving up native vertical page scroll.
-- Added `isPreviewZoomed` and `resolveTouchPanAxis` to
-  `src/lib/zoom/canvasGestures.ts`. Axis resolution waits for an 8px slop, ties
-  and vertical-first movement stay `"vertical"` (page scroll wins), and panning
-  only engages when the scale is above the fit scale.
-- Added `HorizontalTouchPan`, a null-rendering component inside
-  `TransformWrapper`. It listens on the preview pane with a non-passive
-  `touchmove` (the library `stopPropagation()`s moves it handles), locks a
-  horizontal drag, and calls `panBy(deltaX, 0, 0)`; vertical moves are never
-  prevented. Lifting one finger of a pinch re-anchors the drag at the remaining
-  touch so there is no jump. It reuses `state.scale` from `useControls()` inside
-  the handler, where the in-place state mutation is current.
-- `LiveCanvasViewport` renders it for coarse pointers; `touch-action: pan-y`,
-  pinch, desktop wheel/drag, and the Reset-only chrome are unchanged.
-- Tests: zoom gating, slop/axis ties, sideways pan deltas, vertical drags left
-  to the page scroller, fine-pointer no-op, and pinch→one-finger re-anchoring.
-- Files: `src/lib/zoom/canvasGestures.ts` (+ test),
-  `src/components/preview/HorizontalTouchPan.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (415 pass), `npm run lint`,
-  `npm run build` (static export; the CLI's security-advisory nudge needed the
-  usual second run).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary
