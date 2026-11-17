@@ -15,10 +15,10 @@ import {
 } from "@/lib/date/month";
 
 const INPUT_CLASS =
-  "min-h-11 w-full rounded-lg border border-black/10 bg-background px-3 py-2 text-sm transition-colors placeholder:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
+  "min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-text transition-colors placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
 
 const ACTION_BUTTON_CLASS =
-  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border border-black/10 px-2.5 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent";
+  "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line disabled:hover:bg-transparent";
 
 export type TextInputProps = {
   id: string;

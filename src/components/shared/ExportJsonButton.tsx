@@ -36,12 +36,13 @@ export function ExportJsonButton() {
     <button
       type="button"
       aria-label="Download JSON backup"
+      title="Download JSON backup"
       onClick={handleDownload}
-      className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5"
+      className="inline-flex min-h-11 min-w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-line bg-surface px-2 py-2 text-sm font-medium transition-colors hover:border-black/30 hover:bg-black/5 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-w-11 sm:px-3"
     >
       <DownloadSimple size={16} aria-hidden />
-      <span className="sm:hidden">JSON</span>
-      <span className="hidden sm:inline">Download JSON backup</span>
+      <span className="hidden sm:inline lg:hidden">JSON</span>
+      <span className="hidden lg:inline">Download JSON backup</span>
     </button>
   );
 }

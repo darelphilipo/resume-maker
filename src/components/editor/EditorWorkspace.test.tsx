@@ -149,6 +149,26 @@ describe("EditorWorkspace", () => {
     expect(storeFunctions.undo).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps the resume name and print action on one compact header row", async () => {
+    await renderReadyWorkspace();
+
+    const heading = screen.getByRole("heading", { name: "Untitled resume" });
+    const header = heading.closest("header");
+    const row = header?.firstElementChild;
+    const printButton = screen.getByRole("button", { name: "Save PDF" });
+
+    expect(header).not.toBeNull();
+    expect(row).not.toBeNull();
+    expect(row).toHaveClass("flex-nowrap");
+    expect(row).toContainElement(printButton);
+    expect(heading.parentElement).not.toHaveClass("basis-24");
+    expect(printButton).toHaveClass("min-w-10", "shrink-0");
+    expect(screen.getByRole("button", { name: "Undo" })).toHaveClass(
+      "min-w-10",
+      "shrink-0",
+    );
+  });
+
   it("switches the preview between the canvas and ATS plain text", async () => {
     const user = userEvent.setup();
 

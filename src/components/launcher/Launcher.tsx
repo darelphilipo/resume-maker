@@ -239,16 +239,25 @@ export function Launcher() {
     <div className="mt-10 flex flex-col gap-5 sm:mt-12">
       <ul
         aria-label="Resume Maker promises"
-        className="grid gap-2 sm:grid-cols-3"
+        className="flex flex-nowrap items-center justify-center gap-x-2 text-[11px] font-medium leading-tight text-muted sm:gap-x-4 sm:text-sm"
       >
-        {TRUST_POINTS.map(({ label, icon: PromiseIcon }) => (
+        {TRUST_POINTS.map(({ label, icon: PromiseIcon }, index) => (
           <li
             key={label}
-            className="flex items-center gap-2 rounded-xl border border-[#e3ddd2] bg-white/70 px-3 py-2.5 text-[13px] font-medium text-[#33465a] shadow-[0_1px_2px_rgba(23,40,57,0.03)] sm:text-sm"
+            className="flex items-center gap-1.5 whitespace-nowrap"
           >
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#eef2f6] text-[#1b3a57]">
-              <PromiseIcon size={16} weight="bold" aria-hidden />
-            </span>
+            {index > 0 ? (
+              <span
+                aria-hidden
+                className="mr-1 hidden size-1 shrink-0 rounded-full bg-[#c3bbae] sm:block"
+              />
+            ) : null}
+            <PromiseIcon
+              size={14}
+              weight="bold"
+              aria-hidden
+              className="hidden shrink-0 text-primary sm:block"
+            />
             <span className="whitespace-nowrap">{label}</span>
           </li>
         ))}

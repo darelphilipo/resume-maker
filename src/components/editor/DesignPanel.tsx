@@ -19,7 +19,7 @@ export function DesignPanel() {
     <div className="flex flex-col gap-5">
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-medium">Paper size</legend>
-        <p className="text-xs opacity-70">
+        <p className="text-xs text-muted">
           The preview and printed PDF use this page size.
         </p>
         <div className="mt-1 grid gap-2">
@@ -31,8 +31,8 @@ export function DesignPanel() {
                 key={pageFormat.id}
                 className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
                   isCurrent
-                    ? "border-primary/40 bg-black/5"
-                    : "border-black/10 hover:border-black/30"
+                    ? "border-primary/40 bg-primary/5"
+                    : "border-line hover:border-black/30"
                 }`}
               >
                 <input
@@ -49,7 +49,9 @@ export function DesignPanel() {
                 />
                 <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
                   <span className="font-medium">{pageFormat.label}</span>
-                  <span className="text-xs opacity-70">{pageFormat.detail}</span>
+                  <span className="text-xs text-muted">
+                    {pageFormat.detail}
+                  </span>
                 </span>
               </label>
             );
@@ -59,7 +61,7 @@ export function DesignPanel() {
 
       <section
         aria-labelledby="current-template-heading"
-        className="flex flex-col gap-2 rounded-xl border border-black/10 p-4"
+        className="flex flex-col gap-2 rounded-xl border border-line bg-surface-muted p-4"
       >
         <h3
           id="current-template-heading"
@@ -69,11 +71,11 @@ export function DesignPanel() {
         </h3>
         <div className="flex items-center justify-between gap-3">
           <span className="font-serif text-lg font-semibold">Onyx</span>
-          <span className="rounded-full bg-black/5 px-2 py-0.5 text-xs font-medium opacity-70">
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
             Current
           </span>
         </div>
-        <p className="text-xs opacity-70">
+        <p className="text-xs text-muted">
           More templates and design controls arrive in the templates update.
         </p>
       </section>

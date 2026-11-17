@@ -1,9 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --brand-primary: #1f2937;
-  --brand-text: #111827;
-  --brand-background: #ffffff;
+  /* Warm paper + navy editorial palette (home page and editor chrome). */
+  --brand-primary: #1b3a57;
+  --brand-text: #172839;
+  --brand-background: #f5f3ee;
+  --brand-surface: #ffffff;
+  --brand-surface-muted: #fbfaf7;
+  --brand-line: #e3ddd2;
+  --brand-muted: #5b6a7a;
   --page-width: 210mm;
   --page-height: 297mm;
   --page-margin-x: 14pt;
@@ -20,6 +25,10 @@
   --color-primary: var(--brand-primary);
   --color-text: var(--brand-text);
   --color-background: var(--brand-background);
+  --color-surface: var(--brand-surface);
+  --color-surface-muted: var(--brand-surface-muted);
+  --color-line: var(--brand-line);
+  --color-muted: var(--brand-muted);
   --spacing-page-width: var(--page-width);
   --spacing-page-height: var(--page-height);
   --spacing-page-margin-x: var(--page-margin-x);

@@ -18,6 +18,8 @@ in control of every line, and your data stays on your device.
   has no backend, accounts, or analytics on your resume content.
 - **Fast on a phone.** The editor is mobile-first, with large touch targets and
   a layout that works at phone width instead of a desktop screen squeezed down.
+  The resume name, undo/redo, JSON backup, and Save PDF share one compact header
+  row, so the preview keeps the height.
 - **Honest PDF output.** Preview the exact pages before printing, then use your
   browser's print dialog to save a sharp PDF.
 
@@ -28,7 +30,8 @@ in control of every line, and your data stays on your device.
 - **Three clear ways to begin**: the home page asks you to choose between
   pasting text, uploading a PDF, or starting from a role sample, with each
   option explained in plain language. The free, no-sign-up, offline promises sit
-  right above the choices, so you can start in one tap.
+  together on one compact line above the choices, so starting stays one tap and
+  the options stay near the top of a phone screen.
 - **PDF import**: choose a PDF and its text is read locally in your browser,
   then split into editable contact details, summary, experience, education, and
   skills. Scanned or image-only PDFs need to be pasted as text instead.

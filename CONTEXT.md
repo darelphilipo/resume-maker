@@ -201,11 +201,31 @@ rediscover.
     look that heading up by name, so the value proposition stays an `h2`. The
     `Launcher` keeps exactly three entry `<section>`s labelled by their card
     headings, so `getAllByRole("region")` still returns three. Trust promises
-    stay a `ul[aria-label="Resume Maker promises"]` of three `li` pills with
-    `whitespace-nowrap` labels — the old inline `·` separators let phrases like
-    "Works Offline in Your Browser" break across lines on phones. `page.tsx` is
+    stay a `ul[aria-label="Resume Maker promises"]` of three `li` items, but
+    they are one compact nowrap line, not three bordered capsules: per-phrase
+    `whitespace-nowrap` labels never break mid-phrase, dot separators and icons
+    appear only at `sm+`, and items have no capsule padding or border. Keep the
+    separators `aria-hidden`; the old inline `·` text made screen readers read
+    "100% Free · No Sign-Up". `page.tsx` is
     a server component, so do not import Phosphor icons there (they call
     `useContext`); the brand mark is an inline SVG.
+24. **The warm paper/navy theme is token-driven.** `src/app/globals.css` owns
+    `--brand-*` (`background` #f5f3ee, `surface` white, `surface-muted` #fbfaf7,
+    `line` #e3ddd2, `muted` #5b6a7a, `primary` #1b3a57) and exposes them to
+    Tailwind as `bg-background`, `bg-surface`, `border-line`, `text-muted`, and
+    `text-primary`. Use those tokens for app chrome instead of hardcoded hex or
+    heavy `black/10` borders so `/` and `/editor` stay in sync. The printed
+    resume is a separate surface: `.resume-page` is always white, the Onyx
+    template injects its own `metadata.design` colors, and `print.css` forces
+    `body` white. Do not put editor chrome colors on resume surfaces.
+25. **The editor header is one nowrap row.** The old `basis-24` title forced
+    the action group onto a second line at phone width. The title now shrinks
+    (`min-w-0 flex-1`) while the actions stay `flex-nowrap`: icon-only Undo,
+    Redo, JSON, and Save PDF are `min-w-10` (44px tall) on mobile and `sm:min-w-11`,
+    the JSON label only appears from `sm`, the print info button is `min-w-8` on
+    coarse pointers, and the header row itself is `flex-nowrap`. Keep those
+    rules if you add another header action — a label or an extra 44px control
+    eats the resume name at 375px.
 
 ## Verification and tooling
 
@@ -259,6 +279,40 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — Paper/navy theme everywhere and a one-row editor header
+- Task: carry the home-page look to `/editor` and the loading/empty states,
+  collapse the three trust capsules into one line, and stop the resume name and
+  Save PDF from landing on separate rows.
+- `globals.css` now owns the palette as `--brand-*` and exposes `bg-surface`,
+  `bg-surface-muted`, `border-line`, and `text-muted`; `--brand-background` is
+  warm paper (#f5f3ee), so `body` and the editor shell match `/`. `page.tsx`
+  uses the same tokens instead of one-off hex values.
+- Editor chrome: white panel cards with serif headings, warm line borders on the
+  header and bottom nav, white drawer/inputs, white preview and ATS panes, and a
+  brand-tinted Design panel.
+- Header is now one `flex-nowrap` row: the title shrinks, mobile icon controls
+  are 40px wide (44px tall), JSON is icon-only below `sm`, the print info button
+  is 32px wide on coarse pointers, and desktop labels return at `sm`/`lg`.
+- Launcher promises are one `flex-nowrap` line with no per-item capsule; icons
+  and dot separators appear only at `sm+`, and every label stays `nowrap`.
+- Tests: trust-line single-row/uncapsuled assertions and a structural header
+  test (the row contains Save PDF and the title no longer uses `basis-24`).
+- Files: `src/app/globals.css`, `src/app/page.tsx`,
+  `src/components/launcher/Launcher.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/EditorLoading.tsx`,
+  `src/components/editor/EntryDrawer.tsx`,
+  `src/components/editor/MobileBottomNav.tsx`,
+  `src/components/editor/SectionFormControls.tsx`,
+  `src/components/editor/DesignPanel.tsx`,
+  `src/components/preview/PrintTriggerButton.tsx`,
+  `src/components/preview/AtsTextView.tsx`,
+  `src/components/shared/ExportJsonButton.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (387 pass), `npm run lint`,
+  `npm run build` (static export; the CLI's security-advisory nudge needs a
+  second run to finish).
 
 ### 2026-11-16 — Action-verb helper chips for achievement bullets
 - Task: help users write impact-first experience/project bullets without AI.
@@ -436,25 +490,8 @@ npx playwright test    # e2e; needs a dev server on :3000
   `TASKS.md`, `CONTEXT.md`.
 - Verified: `npm run typecheck`, `npm test` (350 pass), `npm run lint`.
 
-### 2026-11-15 — Add/delete custom sections and rename headings
-- Task: finish the custom-section UI. `CustomSectionForm` was wired, but nothing
-  created or deleted a custom section and standard headings could not be renamed.
-- `SectionList` now has an inline `Add custom section` form (name required),
-  appends the new id to `customSections` and `layout.pages[0].main`, expands the
-  new row, and offers a two-step `Delete section` confirm for custom rows that
-  strips the id from every layout page. Standard rows gained a debounced
-  `Section heading` field; custom rows keep editing their title in
-  `CustomSectionForm`. Empty headings fall back to readable row labels but hide
-  the PDF heading.
-- Added four tests: heading rename, custom add + layout append, custom delete +
-  layout cleanup, and the empty-name disabled state.
-- Files: `src/components/editor/SectionList.tsx`,
-  `src/components/editor/SectionList.test.tsx`, `README.md`, `TASKS.md`,
-  `CONTEXT.md`.
-- Verified: `npm run typecheck`, `npm test` (333 pass), `npm run lint`.
-
 <!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
-     standardized month/date, first autopilot diagnosis, and categorized-skills
-     details are captured in Decisions & Gotchas (#9, #10) and Autopilot
-     failure modes above. -->
+     standardized month/date, first autopilot diagnosis, categorized-skills,
+     and custom-section details are captured in Decisions & Gotchas (#9, #10,
+     #16) and Autopilot failure modes above. -->
 

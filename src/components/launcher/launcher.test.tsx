@@ -81,7 +81,7 @@ describe("Launcher", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the free/local trust badge as three intact promise pills above the upload card", () => {
+  it("shows the free/local promises on one compact line above the upload card", () => {
     render(<Launcher />);
 
     const badge = screen.getByRole("list", {
@@ -96,8 +96,13 @@ describe("Launcher", () => {
     expect(badge).not.toHaveTextContent("·");
     expect(badge.querySelectorAll("a, button")).toHaveLength(0);
 
+    expect(badge).toHaveClass("flex-nowrap");
+    expect(badge).not.toHaveClass("grid");
+
     for (const promise of promises) {
       expect(promise.querySelector(".whitespace-nowrap")).not.toBeNull();
+      expect(promise).not.toHaveClass("rounded-xl");
+      expect(promise).not.toHaveClass("border");
     }
 
     const uploadCard = screen.getByRole("region", {

@@ -2,13 +2,13 @@ import { Launcher } from "@/components/launcher/Launcher";
 
 export default function Home() {
   return (
-    <main className="min-h-dvh bg-[#f5f3ee] text-[#172839]">
+    <main className="min-h-dvh bg-background text-text">
       <div className="mx-auto flex w-full max-w-5xl flex-col px-4 pb-16 pt-5 sm:px-6 sm:pt-8 lg:px-8">
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span
               aria-hidden
-              className="flex size-10 items-center justify-center rounded-xl bg-[#172839] text-white shadow-[0_4px_12px_rgba(23,40,57,0.18)]"
+              className="flex size-10 items-center justify-center rounded-xl bg-text text-surface shadow-[0_4px_12px_rgba(23,40,57,0.18)]"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -32,12 +32,12 @@ export default function Home() {
               <h1 className="font-serif text-lg font-semibold leading-tight tracking-tight sm:text-xl">
                 Resume Maker
               </h1>
-              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#78828d]">
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
                 Free resume builder
               </p>
             </div>
           </div>
-          <p className="hidden items-center gap-2 rounded-full border border-[#e2dcd1] bg-white/70 px-3 py-1.5 text-xs font-medium text-[#4f6070] sm:flex">
+          <p className="hidden items-center gap-2 rounded-full border border-line bg-surface/70 px-3 py-1.5 text-xs font-medium text-muted sm:flex">
             <span
               aria-hidden
               className="size-1.5 rounded-full bg-[#2f7d5f]"
@@ -56,7 +56,7 @@ export default function Home() {
           >
             A professional resume, built in your browser.
           </h2>
-          <p className="mt-4 max-w-xl text-sm leading-relaxed text-[#4f6070] sm:text-base">
+          <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
             Bring the resume you already have or start from a role template.
             Everything is edited locally, saved on this device, and printed
             straight from your browser. No account, no AI, no cost.
