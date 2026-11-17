@@ -62,6 +62,10 @@ function defaultTitle(id: string): string {
   return isSectionId(id) ? DEFAULT_SECTION_TITLES[id] : "Custom section";
 }
 
+/** Shared surface so every section action fills one ordered grid cell. */
+const SECTION_ACTION_CLASS =
+  "flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-black/10 px-2 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent";
+
 type SectionRow = {
   id: string;
   title: string;
@@ -399,7 +403,7 @@ export function SectionList({
                   {row.id === openSectionId ? null : (
                     <SectionForm sectionId={row.id} />
                   )}
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
                     <button
                       type="button"
                       aria-label={
@@ -407,7 +411,7 @@ export function SectionList({
                       }
                       aria-pressed={!row.hidden}
                       onClick={() => toggleVisibility(row)}
-                      className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                      className={SECTION_ACTION_CLASS}
                     >
                       {row.hidden ? (
                         <EyeSlash size={16} aria-hidden />
@@ -421,7 +425,7 @@ export function SectionList({
                       aria-label={`Move ${row.title} up`}
                       disabled={atStart}
                       onClick={() => moveRow(row, -1)}
-                      className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent"
+                      className={SECTION_ACTION_CLASS}
                     >
                       <ArrowUp size={16} aria-hidden />
                       <span>Move up</span>
@@ -431,56 +435,56 @@ export function SectionList({
                       aria-label={`Move ${row.title} down`}
                       disabled={atEnd}
                       onClick={() => moveRow(row, 1)}
-                      className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent"
+                      className={SECTION_ACTION_CLASS}
                     >
                       <ArrowDown size={16} aria-hidden />
                       <span>Move down</span>
                     </button>
-                  </div>
-                  {isCustomRow ? (
-                    confirmDeleteId === row.id ? (
-                      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-2">
-                        <p className="text-sm text-red-900">
-                          Delete “{row.title}” and all its entries?
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => deleteCustomSection(row)}
-                          className="inline-flex min-h-11 items-center rounded-lg bg-red-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                        >
-                          Confirm delete section
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDeleteId(null)}
-                          className="inline-flex min-h-11 items-center rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                        >
-                          Cancel delete section
-                        </button>
-                      </div>
-                    ) : (
+                    {onOpenSection ? (
                       <button
                         type="button"
-                        aria-label={`Delete ${row.title} section`}
-                        onClick={() => setConfirmDeleteId(row.id)}
-                        className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-800 transition-colors hover:border-red-400 active:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        onClick={() =>
+                          onOpenSection({ id: row.id, title: row.title })
+                        }
+                        className={`${SECTION_ACTION_CLASS} lg:hidden`}
                       >
-                        <Trash size={16} aria-hidden />
-                        <span>Delete section</span>
+                        Open section editor
                       </button>
-                    )
-                  ) : null}
-                  {onOpenSection ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onOpenSection({ id: row.id, title: row.title })
-                      }
-                      className="mt-1 inline-flex min-h-11 w-fit items-center justify-center rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 lg:hidden"
-                    >
-                      Open section editor
-                    </button>
-                  ) : null}
+                    ) : null}
+                    {isCustomRow ? (
+                      confirmDeleteId === row.id ? (
+                        <div className="col-span-2 flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-2 lg:col-span-3">
+                          <p className="text-sm text-red-900">
+                            Delete “{row.title}” and all its entries?
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => deleteCustomSection(row)}
+                            className="inline-flex min-h-11 items-center rounded-lg bg-red-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                          >
+                            Confirm delete section
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="inline-flex min-h-11 items-center rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                          >
+                            Cancel delete section
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          aria-label={`Delete ${row.title} section`}
+                          onClick={() => setConfirmDeleteId(row.id)}
+                          className="col-span-2 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-800 transition-colors hover:border-red-400 active:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 lg:col-span-3"
+                        >
+                          <Trash size={16} aria-hidden />
+                          <span>Delete section</span>
+                        </button>
+                      )
+                    ) : null}
+                  </div>
                 </div>
               ) : null}
             </li>

@@ -235,6 +235,26 @@ describe("RichTextField", () => {
     }
   });
 
+  it("renders the action verbs as a compact, organized group", () => {
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description for entry 1"
+        actionHelpers
+      />,
+    );
+
+    const group = screen.getByRole("group", { name: "Action verb helpers" });
+    const built = screen.getByRole("button", {
+      name: "Insert action verb Built",
+    });
+
+    expect(group).toHaveClass("flex", "flex-wrap", "items-center", "gap-1");
+    expect(built).toHaveClass("min-h-9", "px-2.5", "py-1");
+    expect(built).not.toHaveClass("min-h-11");
+  });
+
   it("inserts the chosen action verb followed by a space", () => {
     render(
       <RichTextField

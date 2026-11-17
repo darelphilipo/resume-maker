@@ -81,6 +81,35 @@ describe("SectionList", () => {
     expect(moveDown).toBeEnabled();
   });
 
+  it("lays out section actions in one ordered responsive grid", async () => {
+    const user = userEvent.setup();
+
+    render(<SectionList onOpenSection={vi.fn()} />);
+
+    await expandRow(user, LONG_TITLE);
+
+    const hide = screen.getByRole("button", { name: `Hide ${LONG_TITLE}` });
+    const moveUp = screen.getByRole("button", {
+      name: `Move ${LONG_TITLE} up`,
+    });
+    const moveDown = screen.getByRole("button", {
+      name: `Move ${LONG_TITLE} down`,
+    });
+    const open = screen.getByRole("button", { name: "Open section editor" });
+    const grid = hide.parentElement;
+
+    expect(grid).toHaveClass("grid", "grid-cols-2", "lg:grid-cols-3");
+    expect(moveUp.parentElement).toBe(grid);
+    expect(moveDown.parentElement).toBe(grid);
+    expect(open.parentElement).toBe(grid);
+    expect(Array.from(grid?.children ?? [])).toEqual([
+      hide,
+      moveUp,
+      moveDown,
+      open,
+    ]);
+  });
+
   it("toggles visibility from the expanded body", async () => {
     const user = userEvent.setup();
 
@@ -303,9 +332,13 @@ describe("SectionList", () => {
     render(<SectionList />);
 
     await expandRow(user, "Speaking");
-    await user.click(
-      screen.getByRole("button", { name: "Delete Speaking section" }),
-    );
+    const deleteButton = screen.getByRole("button", {
+      name: "Delete Speaking section",
+    });
+    expect(deleteButton.parentElement).toHaveClass("grid");
+    expect(deleteButton).toHaveClass("col-span-2", "lg:col-span-3");
+
+    await user.click(deleteButton);
     expect(
       screen.getByText(/Delete .*Speaking.* and all its entries\?/),
     ).toBeInTheDocument();

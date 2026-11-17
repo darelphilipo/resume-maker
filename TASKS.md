@@ -24,7 +24,6 @@ _None._
 
 ### P1 — Visual Consistency & UX/UI Fixes
 
-- [ ] P1: Hide,Move up,Move down, Open section editor buttons inside section are appearing all haphazard and disorganized with no row or grid order. When a section editor opens up include an x button on top right to close it additionally to the swipe down gesture .make the suggested verb pills more compact and organized 
 - [ ] P1: Fix toolbar wrapping, paper-size card hit targets, and JD Match drawer visibility across `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/DesignPanel.tsx`, and `src/components/editor/JdMatchDrawer.tsx`.
   1. Tighten `RichTextField` toolbar button spacing/sizing (`min-h-9 min-w-9` on desktop, `min-h-11` on touch or horizontal scroll/compact grouping) and `EntryActions` (`Hide`, `Move up`, `Move down`) so controls stay on a single clean row in the `22rem` desktop sidebar without awkward wrapping.
   2. Fix `DesignPanel.tsx` paper-size `<label>` cards with explicit `htmlFor`/`id` pairing and full-card clickability (`w-full`) so clicking anywhere on the A4 or Letter card switches the format.
@@ -45,6 +44,17 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-17 — Tidied the haphazard section controls and gave drawers an X:
+  `SectionList` now puts Hide, Move up, Move down, Open section editor, and
+  (for custom sections) Delete in one ordered `grid-cols-2 lg:grid-cols-3` with
+  shared equal-width 44px buttons; `EntryDrawer` gained a fixed top-right
+  **Close drawer** button next to the title that calls `onOpenChange(false)`
+  while swipe-down and Escape keep working; `RichTextField` action-verb chips
+  are compact (`min-h-9`, tighter padding/gap). Verified `npm run typecheck`,
+  `npm test` (461 pass), `npm run lint`. Files:
+  `src/components/editor/SectionList.tsx` (+ test), `EntryDrawer.tsx` (+ test),
+  `RichTextField.tsx` (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-17 — Fixed the multi-second freeze when opening a section editor
   (Summary, Profiles, Experience, and every other section): the expanded list

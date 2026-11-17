@@ -313,9 +313,11 @@ npx playwright test    # e2e; needs a dev server on :3000
 - `test.use({ ...devices["iPhone 14"] })` spreads `defaultBrowserType: "webkit"`,
   which forces WebKit even inside the `chromium` project — spread fields
   individually when you need CDP.
-- In jsdom, `userEvent.type` inside a vaul drawer throws
-  `setPointerCapture is not a function`; use `fireEvent.change` for drawer form
-  fields in component tests.
+- In jsdom, vaul's pointer press handler throws `setPointerCapture is not a
+  function`: `userEvent.type` inside a drawer and `userEvent.click` on a drawer
+  child both trigger it. Use `fireEvent.change` for drawer form fields and
+  `fireEvent.click` for controls such as the drawer's top-right Close button in
+  component tests.
 - When a test spies on a zustand action with a deferred promise, never resolve
   it after the action mutates the store: `setDoc`/`patchDoc` replace the state
   object while the spy is installed, the new object copies the mock reference,
@@ -353,6 +355,30 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — Ordered section actions, a drawer X, and compact verb chips
+- Task: tidy the haphazard Hide / Move up / Move down / Open section editor
+  controls, add an explicit close affordance to the section editor sheet, and
+  make the achievement verb chips compact.
+- `SectionList` now renders every section-level action in one
+  `grid grid-cols-2 gap-2 lg:grid-cols-3` with a shared `SECTION_ACTION_CLASS`
+  (`flex min-h-11 w-full items-center justify-center`), ordered Hide → Move up →
+  Move down → Open editor (`lg:hidden`) → Delete for custom rows (`col-span-2
+  lg:col-span-3`). The old loose flex-wrap row plus `mt-1 w-fit` buttons are
+  gone, so cells line up evenly at phone and desktop widths.
+- `EntryDrawer` now has a non-scrolling header: drag handle, `Drawer.Title`, and
+  a 44px `min-h-11 min-w-11` **Close drawer** button calling
+  `onOpenChange(false)`. Moving the title out of the scroll area keeps it (and
+  the X) visible while the body scrolls; vaul's swipe-down and Escape paths are
+  untouched. All drawers (section editor, entries, JD matcher) gain the X.
+- `RichTextField` action-verb chips shrank from `min-h-11 px-3 py-2` to
+  `min-h-9 px-2.5 py-1` with a `gap-1` group, keeping the pill look.
+- Tests: ordered-grid child-order assertions in `SectionList.test.tsx`
+  (including custom Delete spanning the grid), a close-button case in
+  `EntryDrawer.test.tsx`, and a compact-chip case in `RichTextField.test.tsx`.
+- Files: `src/components/editor/SectionList.tsx` (+ test), `EntryDrawer.tsx`
+  (+ test), `RichTextField.tsx` (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (461 pass), `npm run lint`.
 
 ### 2026-11-17 — One editor per section when the drawer is open
 - Task: fix the reported multi-second freeze when tapping "Open section editor"
@@ -595,32 +621,8 @@ npx playwright test    # e2e; needs a dev server on :3000
   `npm run build` (static export; the CLI's security-advisory nudge needed the
   usual second run).
 
-### 2026-11-17 — Preview zoom and movement buttons for touch
-- Task: give the resume preview usable zoom on phones without turning swipes
-  into canvas panning.
-- Extracted the desktop-only canvas controls into
-  `CanvasControls.tsx`, now visible at every width. It shows the live zoom
-  percentage and offers `−` / `+` / `Fit` plus four arrow buttons wired to the
-  library's bounds-aware `panBy`. Mobile buttons are 44px tall (`w-9`), the
-  toolbar wraps instead of overflowing at 320–375px, and the arrows are disabled
-  while the whole page is visible at the fit scale.
-- Coarse-pointer behaviour is unchanged on purpose: panning and pinch stay
-  disabled and `touch-action: pan-y` keeps vertical swipes scrolling the page.
-  Wheel zoom and drag panning still work on fine pointers.
-- `useControls().state` is mutable and does not re-render, so the `%` label
-  subscribes through `useTransformComponent`; recorded in Decisions #26.
-- Tests: a new `CanvasControls` suite covers the mobile-visible toolbar, zoom
-  level, multiplicative steps and clamping, Fit, all four pan directions, and
-  the disabled-at-fit state; the viewport test now asserts every control is
-  rendered around the canvas.
-- Files: `src/components/preview/CanvasControls.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (395 pass), `npm run lint`,
-  `npm run build` (static export; the security-advisory nudge needed the usual
-  second run).
-
-<!-- Older entries are trimmed to keep the 10 most recent. The backup-vs-primary
+<!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
+     toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary
      entry points, paste-to-parse, fit-to-1-page, standardized month/date, first
      autopilot diagnosis, categorized-skills, custom-section, contact-network
      detection, and work-auth tag details are captured in Decisions & Gotchas

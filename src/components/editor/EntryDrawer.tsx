@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "@phosphor-icons/react";
 import { Drawer } from "vaul";
 import type { ReactNode } from "react";
 
@@ -38,12 +39,22 @@ export function EntryDrawer({
             aria-hidden
             className="mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full bg-black/20"
           />
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-8 pt-4">
-            <Drawer.Title className="font-serif text-lg font-semibold tracking-tight">
+          <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-3">
+            <Drawer.Title className="min-w-0 flex-1 font-serif text-lg font-semibold tracking-tight">
               {title}
             </Drawer.Title>
+            <button
+              type="button"
+              aria-label="Close drawer"
+              onClick={() => onOpenChange(false)}
+              className="-mr-2 -mt-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-black/5 active:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <X size={20} aria-hidden />
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-8 pt-2">
             <Drawer.Description
-              className={description ? "mt-1 text-sm text-muted" : "sr-only"}
+              className={description ? "text-sm text-muted" : "sr-only"}
             >
               {description ?? title}
             </Drawer.Description>

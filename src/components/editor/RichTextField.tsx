@@ -247,7 +247,7 @@ export function RichTextField({
         </ToolbarButton>
       </div>
       {actionHelpers ? (
-        <div className="flex flex-col gap-1.5 border-b border-line bg-primary/[0.03] px-2 py-2">
+        <div className="flex flex-col gap-1.5 border-b border-line bg-primary/[0.03] px-2 py-1.5">
           <p id={actionHintId} className="text-xs text-muted">
             <span className="font-medium text-text">
               [Action] + [What] + [Result by X%]
@@ -258,7 +258,7 @@ export function RichTextField({
             role="group"
             aria-label="Action verb helpers"
             aria-describedby={actionHintId}
-            className="flex flex-wrap gap-1.5"
+            className="flex flex-wrap items-center gap-1"
           >
             {ACTION_VERBS.map((verb) => (
               <button
@@ -267,7 +267,7 @@ export function RichTextField({
                 aria-label={`Insert action verb ${verb}`}
                 disabled={!editor}
                 onClick={() => insertActionVerb(verb)}
-                className="inline-flex min-h-11 items-center rounded-full border border-line bg-surface px-3 py-2 text-xs font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line"
+                className="inline-flex min-h-9 items-center rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line"
               >
                 {verb}
               </button>

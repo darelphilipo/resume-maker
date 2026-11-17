@@ -60,8 +60,8 @@ in control of every line, and your data stays on your device.
   Certifications, with optional Awards, Languages, Interests, Volunteer,
   Publications, and References.
 - Rich-text descriptions with bold, italic, bullet/numbered lists, links, and
-  editor undo. Experience and project bullets offer one-tap action verbs
-  (**Built**, **Reduced**, **Led**, **Automated**) plus an
+  editor undo. Experience and project bullets offer a compact, tidy row of
+  one-tap action verbs (**Built**, **Reduced**, **Led**, **Automated**) plus an
   `[Action] + [What] + [Result by X%]` prompt, so achievements start with impact
   and end with a number.
 - Skills grouped by category with comma-separated keywords (for example
@@ -75,10 +75,14 @@ in control of every line, and your data stays on your device.
   standard list does not cover, such as speaking, patents, or coursework.
   Custom sections can be deleted when you no longer need them.
 - Show, hide, and reorder whole sections; empty sections stay out of the PDF.
+  The Show/Hide, Move up, Move down, and Open section editor controls line up in
+  an orderly grid with even-sized buttons, so nothing sits at odd angles.
   Awards, Languages, Interests, Volunteer, Publications, and References stay
   tucked behind **Add optional section** until you need them.
 - On a phone, **Open section editor** opens that section in a single full editor
-  sheet, so switching between sections stays quick even on a long resume.
+  sheet, so switching between sections stays quick even on a long resume. The
+  sheet has an **X** in the top-right corner to close it, as well as the familiar
+  swipe-down gesture.
 
 ### Design and preview
 
