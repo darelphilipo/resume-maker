@@ -81,10 +81,11 @@ in control of every line, and your data stays on your device.
 - Clean single-column **Onyx** template designed for readable PDFs.
 - A4 and US Letter page sizes.
 - Live paginated preview that measures real content, not an estimate.
-- On-screen zoom controls (**−**, **+**, and **Fit**) plus four arrow buttons
-  that nudge the preview, so zooming and moving around work on a phone without
-  turning swipes into panning. On desktop, the mouse wheel and dragging still
-  work as before.
+- **Pinch to zoom** the preview on a touch screen: two fingers zoom the resume
+  while a one-finger swipe still scrolls the page, so the toolbar no longer
+  pushes the resume down. A small **Reset** button appears only while you are
+  zoomed in and returns the page to its fitted width. On desktop, the mouse
+  wheel and dragging work as before.
 - **Fit to 1 Page** when a resume spills just past one page.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you

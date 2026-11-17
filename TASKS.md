@@ -22,7 +22,7 @@ _None._
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
-- [ ] P1: the zoom and navigation buttons on the preview look ugly and have pushed the actual resume down below .it's not user friendly .attempt to make pinch to zoom possible while maintaining the page scroll removing the buttons while only having reset small button
+_None._
 
 ### P2 — Larger work
 - [ ] P2: Add a template system in `src/templates/registry.ts` with 6 single-column-first templates — Engineering Classic (Jake), Ivy/Executive (Harvard), Modern Accent, Compact 1-Pager, Hybrid Skills-First, and a two-column Studio Sidebar labelled "Best for direct/human review". Show an ATS-Safe badge on single-column options.
@@ -31,6 +31,8 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-17 — Replaced the preview zoom/pan toolbar with pinch-to-zoom and one small floating reset control: the in-flow toolbar (live percentage, Fit, four pan arrows) is gone so the resume starts at the top of the pane; two-finger pinch now zooms while one-finger swipes still scroll the page, and a compact `Reset` pill appears only once the preview is zoomed. A pointer-transparent page-count chip floats over the page margin. Verified `npm run typecheck`, `npm test` (401 pass), `npm run lint`, `npm run build` (static export). Files: `src/lib/zoom/canvasGestures.ts`, `src/lib/zoom/canvasGestures.test.ts`, `src/components/preview/CanvasResetButton.tsx`, `src/components/preview/CanvasResetButton.test.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/LiveCanvasViewport.test.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-17 — Added preview zoom and movement buttons for touch: the toolbar (zoom out / live percentage / zoom in / Fit and four bounds-aware pan arrows) is now visible at every width instead of desktop-only, with 44px mobile targets, disabled arrows while the page fits, and unchanged swipe-to-scroll and desktop wheel/drag behaviour. Verified `npm run typecheck`, `npm test` (395 pass), `npm run lint`, `npm run build` (static export). Files: `src/components/preview/CanvasControls.tsx`, `src/components/preview/CanvasControls.test.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/LiveCanvasViewport.test.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 

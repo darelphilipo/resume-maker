@@ -12,13 +12,14 @@ import { computeCanvasFrame } from "@/lib/pagination/canvasFrame";
 import type { PageLayout } from "@/lib/pagination/usePageLayout";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
+import { canvasGestureConfig } from "@/lib/zoom/canvasGestures";
 import {
   normalizeWheelDelta,
   wheelZoomTarget,
 } from "@/lib/zoom/wheelZoom";
 
 import { AtsTextView } from "./AtsTextView";
-import { CanvasControls } from "./CanvasControls";
+import { CanvasResetButton } from "./CanvasResetButton";
 import { PageOverflowBanner } from "./PageOverflowBanner";
 import { PageStack } from "./PageStack";
 
@@ -230,6 +231,8 @@ export function LiveCanvasViewport({
     PT_TO_PX *
     doc.metadata.typography.body.lineHeight;
 
+  const gestures = canvasGestureConfig(isCoarsePointer);
+
   return (
     <div
       ref={containerRef}
@@ -262,42 +265,43 @@ export function LiveCanvasViewport({
           limitToBounds
           doubleClick={{ disabled: true }}
           wheel={{ disabled: true }}
-          pinch={{ step: 5, disabled: isCoarsePointer }}
-          panning={{ disabled: isCoarsePointer }}
+          pinch={gestures.pinch}
+          panning={gestures.panning}
         >
-          <div className="editor-chrome flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-1">
-            <span aria-live="polite" className="text-xs opacity-70">
-              {layout.pages.length}{" "}
-              {layout.pages.length === 1 ? "page" : "pages"}
-            </span>
-            <CanvasControls
-              fitScale={fitScale!}
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-x-1 top-1 z-10 flex items-start justify-between gap-2">
+              <span
+                aria-live="polite"
+                className="rounded-full border border-line/70 bg-surface/90 px-2 py-0.5 text-[11px] font-medium text-muted shadow-sm backdrop-blur-sm"
+              >
+                {layout.pages.length}{" "}
+                {layout.pages.length === 1 ? "page" : "pages"}
+              </span>
+              <CanvasResetButton fitScale={fitScale!} />
+            </div>
+            <FitTransform fitScale={fitScale!} />
+            <WheelZoom
               minScale={Math.min(MIN_SCALE, fitScale!)}
               maxScale={MAX_SCALE}
-            />
-          </div>
-          <FitTransform fitScale={fitScale!} />
-          <WheelZoom
-            minScale={Math.min(MIN_SCALE, fitScale!)}
-            maxScale={MAX_SCALE}
-          >
-            <TransformComponent
-              wrapperStyle={{
-                width: "100%",
-                height: `${frame.height}px`,
-                // Touch screens scroll the page instead of panning the canvas.
-                touchAction: isCoarsePointer ? "pan-y" : "auto",
-              }}
-              contentStyle={{ width: `${frame.width / frame.scale}px` }}
-              wrapperProps={
-                {
-                  "data-canvas-height": String(frame.height),
-                } as unknown as HTMLAttributes<HTMLDivElement>
-              }
             >
-              <PageStack doc={doc} pages={layout.pages} />
-            </TransformComponent>
-          </WheelZoom>
+              <TransformComponent
+                wrapperStyle={{
+                  width: "100%",
+                  height: `${frame.height}px`,
+                  // One finger scrolls the page; two fingers pinch the canvas.
+                  touchAction: gestures.touchAction,
+                }}
+                contentStyle={{ width: `${frame.width / frame.scale}px` }}
+                wrapperProps={
+                  {
+                    "data-canvas-height": String(frame.height),
+                  } as unknown as HTMLAttributes<HTMLDivElement>
+                }
+              >
+                <PageStack doc={doc} pages={layout.pages} />
+              </TransformComponent>
+            </WheelZoom>
+          </div>
         </TransformWrapper>
       )}
     </div>

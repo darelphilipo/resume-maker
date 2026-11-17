@@ -226,18 +226,22 @@ rediscover.
     coarse pointers, and the header row itself is `flex-nowrap`. Keep those
     rules if you add another header action — a label or an extra 44px control
     eats the resume name at 375px.
-26. **Preview zoom is button-first on touch.** `CanvasControls` in
-    `src/components/preview/CanvasControls.tsx` is rendered at every viewport
-    (it used to be `hidden lg:flex`, which left phones with no zoom). It offers
-    `−` / `+` / `Fit` through `centerView` and `setTransform`, plus four
-    movement buttons through the library's bounds-aware `panBy`; movement is
-    disabled at the fit scale because the whole page is already visible. Do not
-    re-enable panning/pinch on coarse pointers to get "free" movement: that is
-    exactly what swallowed swipe-to-scroll (`touch-action: pan-y` only works
-    while `panning.disabled` is true). `useControls().state` is mutated in
-    place and does not trigger React renders, so the live `%` label comes from
-    `useTransformComponent`; reading `state.scale` in render alone would show a
-    stale zoom level.
+26. **Preview zoom is pinch-first with one floating reset control.**
+    `src/lib/zoom/canvasGestures.ts` keeps `pinch` enabled at every pointer
+    size, disables `panning` only on coarse pointers, and pairs that with
+    `touch-action: pan-y` so one finger still scrolls the page (see #3). Two
+    fingers are an explicit zoom gesture, so the library's non-passive touch
+    handler can `preventDefault()` without stealing one-finger swipes; the
+    pinch gesture also pans by default. There is **no zoom/pan toolbar**: the
+    page count sits in a small pointer-transparent chip over the page margin and
+    `CanvasResetButton` appears only when `state.scale` differs from the fit
+    scale, so the resume starts at the top of the pane. `useControls().state` is
+    mutated in place and does not trigger renders, so both the percentage-free
+    visibility check and any future label must subscribe through
+    `useTransformComponent`; reading `state.scale` in render shows a stale
+    value. Wheel zoom and drag panning on fine pointers are unchanged. The old
+    `CanvasControls` toolbar is superseded and no longer rendered; delete it in
+    a run that has full shell access.
 
 ## Verification and tooling
 
@@ -291,6 +295,33 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — Pinch-first preview zoom with one floating reset
+- Task: remove the zoom/pan toolbar that pushed the resume below the fold and
+  make pinch zoom the preview without losing one-finger page scrolling.
+- Added `src/lib/zoom/canvasGestures.ts`: `pinch` stays enabled at every
+  pointer size, `panning` is disabled only on coarse pointers, and
+  `touch-action` stays `pan-y` on touch (`auto` on fine pointers). A two-finger
+  pinch is an explicit gesture, so the library's non-passive touch handler can
+  `preventDefault()` without swallowing single-finger swipes.
+- Removed the in-flow toolbar row from `LiveCanvasViewport`. The page count is
+  now a pointer-transparent chip over the page margin, and `CanvasResetButton`
+  renders only while `state.scale` differs from the fit scale, then calls
+  `setTransform(0, 0, fitScale, 150)`. The resume starts at the top of the pane;
+  desktop wheel zoom and drag panning are unchanged.
+- Tests: gesture config (pinch on for touch and desktop, pan off only on
+  touch), reset visibility and transform call, and a viewport test asserting no
+  zoom/pan buttons remain while the page count is still shown.
+- `CanvasControls.tsx` / `CanvasControls.test.tsx` are superseded and no longer
+  imported, but this sandboxed run cannot delete files (shell is limited to the
+  npm scripts). Remove them in a run with full shell access.
+- Files: `src/lib/zoom/canvasGestures.ts` (+ test),
+  `src/components/preview/CanvasResetButton.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (401 pass), `npm run lint`,
+  `npm run build` (static export; the CLI's security-advisory nudge needed the
+  usual second run).
 
 ### 2026-11-17 — Preview zoom and movement buttons for touch
 - Task: give the resume preview usable zoom on phones without turning swipes
@@ -488,28 +519,9 @@ npx playwright test    # e2e; needs a dev server on :3000
   `TASKS.md`, `CONTEXT.md`.
 - Verified: `npm run typecheck`, `npm test` (355 pass), `npm run build`.
 
-### 2026-11-16 — Optional work auth / notice period tag
-- Task: add an optional one-line Work Auth / Notice Period line to `Basics`.
-- `ResumeBasicsSchema` gained `workAuth` (default `""`), so old imports and
-  documents parse unchanged and JSON export keeps the line.
-- `BasicsForm` shows `Work auth / notice period` after Location, plus two
-  toggleable preset chips (`Authorized to work in US`, `Immediate Joiner`);
-  tapping the selected chip clears the line. The value commits through the
-  existing 50 ms debounce with the rest of the basics.
-- `HeaderSlot` inserts the tag between location and website in the contact
-  line, with a `SealCheck` icon (hidden when `hideIcons`) and the
-  `.resume-work-auth` pill styling in `onyx.css`. `buildAtsText` mirrors the
-  same position.
-- Tests: schema default, form commit, preset fill/clear, header tag presence and
-  empty suppression, and ATS header order.
-- Files: `src/lib/schema/resume.schema.ts` (+ test), `BasicsForm.tsx` (+ test),
-  `HeaderSlot.tsx`, `AvatarSlot.test.tsx`, `onyx.css`, `atsText.ts` (+ test),
-  `README.md`, `TASKS.md`, `CONTEXT.md`.
-- Verified: `npm run typecheck`, `npm test` (354 pass).
-
 <!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
      standardized month/date, first autopilot diagnosis, categorized-skills,
-     custom-section, and contact-network detection details are captured in
-     Decisions & Gotchas (#9, #10, #16, #17) and Autopilot failure modes
-     above. -->
+     custom-section, contact-network detection, and work-auth tag details are
+     captured in Decisions & Gotchas (#9, #10, #16, #17, #11) and Autopilot
+     failure modes above. -->
 

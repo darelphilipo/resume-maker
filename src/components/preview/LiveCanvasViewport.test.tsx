@@ -182,8 +182,10 @@ describe("LiveCanvasViewport", () => {
     );
   });
 
-  it("offers zoom and movement controls around the canvas", async () => {
-    await renderCanvas();
+  it("shows a page count without a zoom toolbar over the resume", async () => {
+    await renderCanvas(2);
+
+    expect(screen.getByText("2 pages")).toBeVisible();
 
     for (const name of [
       "Zoom out",
@@ -194,8 +196,14 @@ describe("LiveCanvasViewport", () => {
       "Move preview down",
       "Move preview right",
     ]) {
-      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     }
+    expect(
+      screen.queryByRole("group", { name: "Preview zoom" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Reset preview zoom" }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps native page scrolling for coarse pointers", async () => {
