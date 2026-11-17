@@ -22,7 +22,7 @@ _None._
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
-_empty_
+- [ ] P1: the zoom and navigation buttons on the preview look ugly and have pushed the actual resume down below .it's not user friendly .attempt to make pinch to zoom possible while maintaining the page scroll removing the buttons while only having reset small button
 
 ### P2 — Larger work
 - [ ] P2: Add a template system in `src/templates/registry.ts` with 6 single-column-first templates — Engineering Classic (Jake), Ivy/Executive (Harvard), Modern Accent, Compact 1-Pager, Hybrid Skills-First, and a two-column Studio Sidebar labelled "Best for direct/human review". Show an ATS-Safe badge on single-column options.
