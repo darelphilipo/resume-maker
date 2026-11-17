@@ -24,6 +24,7 @@ _None._
 
 ### P1 — Visual Consistency & UX/UI Fixes
 
+- [ ] P1: clicking the open section edit for summary ,profile and experience causes a freeze for a few seconds and the section editor does not open . Check what's wrong and fix ,also check across other sections if th Le same issue persists 
 - [ ] P1: Fix toolbar wrapping, paper-size card hit targets, and JD Match drawer visibility across `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/DesignPanel.tsx`, and `src/components/editor/JdMatchDrawer.tsx`.
   1. Tighten `RichTextField` toolbar button spacing/sizing (`min-h-9 min-w-9` on desktop, `min-h-11` on touch or horizontal scroll/compact grouping) and `EntryActions` (`Hide`, `Move up`, `Move down`) so controls stay on a single clean row in the `22rem` desktop sidebar without awkward wrapping.
   2. Fix `DesignPanel.tsx` paper-size `<label>` cards with explicit `htmlFor`/`id` pairing and full-card clickability (`w-full`) so clicking anywhere on the A4 or Letter card switches the format.
