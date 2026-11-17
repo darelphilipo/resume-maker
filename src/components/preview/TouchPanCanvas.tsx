@@ -7,7 +7,9 @@ import { useControls } from "react-zoom-pan-pinch";
 import {
   hasClearedTouchSlop,
   isPreviewZoomed,
+  resolveVerticalPanHandoff,
 } from "@/lib/zoom/canvasGestures";
+import { scrollPageBy } from "@/lib/zoom/touchScroll";
 
 /**
  * One-finger free panning for a zoomed preview on touch screens.
@@ -19,6 +21,12 @@ import {
  * canvas so every part of the resume is reachable, and the page scroller must
  * not steal the vertical half of the gesture. `canvasTouchAction` locks native
  * scrolling out (`touch-action: none`) for that zoomed state.
+ *
+ * That lock also strands the toolbar above a long, multi-page canvas. When a
+ * vertical drag reaches the canvas top or bottom bound, the leftover delta is
+ * handed to the nearest page scroller (`resolveVerticalPanHandoff`), so the
+ * editor can still be scrolled back up to Reset and Save PDF without zooming
+ * out first.
  *
  * Listeners are attached to the preview pane (outside the transform wrapper)
  * because the library calls `stopPropagation()` on touch moves it handles.
@@ -33,14 +41,16 @@ export function TouchPanCanvas({
   fitScale: number;
   enabled: boolean;
 }) {
-  const { panBy, state } = useControls();
+  const { panBy, instance, state } = useControls();
   const panByRef = useRef(panBy);
   const stateRef = useRef(state);
+  const instanceRef = useRef(instance);
 
   useEffect(() => {
     panByRef.current = panBy;
     stateRef.current = state;
-  }, [panBy, state]);
+    instanceRef.current = instance;
+  }, [panBy, state, instance]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -114,7 +124,19 @@ export function TouchPanCanvas({
         event.preventDefault();
       }
 
-      void panByRef.current(deltaX, deltaY, 0);
+      const handoff = resolveVerticalPanHandoff(
+        stateRef.current.positionY,
+        deltaY,
+        instanceRef.current.bounds,
+      );
+
+      if (deltaX !== 0 || handoff.pan !== 0) {
+        void panByRef.current(deltaX, handoff.pan, 0);
+      }
+
+      if (handoff.scroll !== 0) {
+        scrollPageBy(host, handoff.scroll);
+      }
     };
 
     const handleTouchEnd = (event: TouchEvent): void => {

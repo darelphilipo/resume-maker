@@ -4,18 +4,33 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TouchPanCanvas } from "./TouchPanCanvas";
 
-const controls = vi.hoisted(() => ({
-  panBy: vi.fn(),
-  state: {
+const controls = vi.hoisted(() => {
+  const state = {
     scale: 1,
     positionX: 0,
-    positionY: 0,
+    positionY: -100,
     previousScale: 1,
-  },
-}));
+  };
+
+  return {
+    panBy: vi.fn(),
+    state,
+    instance: {
+      state,
+      bounds: { minPositionY: -400, maxPositionY: 0 } as {
+        minPositionY: number;
+        maxPositionY: number;
+      } | null,
+    },
+  };
+});
 
 vi.mock("react-zoom-pan-pinch", () => ({
-  useControls: () => ({ panBy: controls.panBy, state: controls.state }),
+  useControls: () => ({
+    panBy: controls.panBy,
+    state: controls.state,
+    instance: controls.instance,
+  }),
 }));
 
 const FIT_SCALE = 0.5;
@@ -48,14 +63,50 @@ function Harness({ enabled = true }: { enabled?: boolean }) {
   );
 }
 
+function ScrollableHarness() {
+  const hostRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div
+      data-testid="scroller"
+      style={{ overflowY: "auto", height: "200px" }}
+    >
+      <div ref={hostRef} data-testid="host">
+        <TouchPanCanvas hostRef={hostRef} fitScale={FIT_SCALE} enabled />
+      </div>
+    </div>
+  );
+}
+
 function renderPan(enabled = true): HTMLElement {
   return render(<Harness enabled={enabled} />).getByTestId("host");
+}
+
+function renderPanInScroller(): {
+  host: HTMLElement;
+  scroller: HTMLElement;
+} {
+  const view = render(<ScrollableHarness />);
+  const scroller = view.getByTestId("scroller");
+
+  Object.defineProperty(scroller, "clientHeight", {
+    value: 200,
+    configurable: true,
+  });
+  Object.defineProperty(scroller, "scrollHeight", {
+    value: 800,
+    configurable: true,
+  });
+
+  return { host: view.getByTestId("host"), scroller };
 }
 
 beforeEach(() => {
   controls.panBy.mockReset();
   controls.panBy.mockResolvedValue(undefined);
   controls.state.scale = 1;
+  controls.state.positionY = -100;
+  controls.instance.bounds = { minPositionY: -400, maxPositionY: 0 };
 });
 
 describe("TouchPanCanvas", () => {
@@ -138,5 +189,50 @@ describe("TouchPanCanvas", () => {
     fireEvent(host, touchEvent("touchmove", [{ clientX: 160, clientY: 140 }]));
 
     expect(controls.panBy).toHaveBeenCalledWith(-40, -60, 0);
+  });
+
+  it("scrolls the editor back up when the canvas is at its top bound", () => {
+    controls.state.positionY = 0;
+
+    const { host, scroller } = renderPanInScroller();
+
+    scroller.scrollTop = 300;
+
+    fireEvent(host, touchEvent("touchstart", [{ clientX: 160, clientY: 100 }]));
+
+    const allowed = fireEvent(
+      host,
+      touchEvent("touchmove", [{ clientX: 160, clientY: 160 }]),
+    );
+
+    expect(allowed).toBe(false);
+    expect(controls.panBy).not.toHaveBeenCalled();
+    expect(scroller.scrollTop).toBe(240);
+  });
+
+  it("splits the drag when it crosses the canvas edge", () => {
+    controls.state.positionY = -10;
+
+    const { host, scroller } = renderPanInScroller();
+
+    scroller.scrollTop = 300;
+
+    fireEvent(host, touchEvent("touchstart", [{ clientX: 160, clientY: 100 }]));
+    fireEvent(host, touchEvent("touchmove", [{ clientX: 160, clientY: 140 }]));
+
+    expect(controls.panBy).toHaveBeenCalledWith(0, 10, 0);
+    expect(scroller.scrollTop).toBe(270);
+  });
+
+  it("keeps panning mid-canvas without moving the page", () => {
+    const { host, scroller } = renderPanInScroller();
+
+    scroller.scrollTop = 300;
+
+    fireEvent(host, touchEvent("touchstart", [{ clientX: 160, clientY: 100 }]));
+    fireEvent(host, touchEvent("touchmove", [{ clientX: 120, clientY: 140 }]));
+
+    expect(controls.panBy).toHaveBeenCalledWith(-40, 40, 0);
+    expect(scroller.scrollTop).toBe(300);
   });
 });

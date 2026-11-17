@@ -24,7 +24,6 @@ _None._
 
 ### P1 — Visual Consistency & UX/UI Fixes
 
-- [ ] P1: the pinch zoom and moving around runs fine ,however a small qurirk is if the resume spans multiple pages and then if I have page 2 in view and I zoom in , there's no way for me to scroll up on the page to access the print and reset buttons .I have to zoom out completely and to be able to do that 
 - [ ] P1: Make desktop Preview and Design panels sticky and independently scrollable in `src/components/editor/EditorWorkspace.tsx`. On `lg:` viewports, apply `lg:sticky lg:top-[var(--header-height,3.5rem)] lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto` to `#panel-preview` and `#panel-design` so scrolling through long Content sections keeps the live resume preview and Design controls visible at all times.
 
 - [ ] P1: Fix toolbar wrapping, paper-size card hit targets, and JD Match drawer visibility across `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/DesignPanel.tsx`, and `src/components/editor/JdMatchDrawer.tsx`.
@@ -47,6 +46,8 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-17 — Restored page scrolling from a pinch-zoomed multi-page preview: `TouchPanCanvas` now clamps vertical drags to the library's `instance.bounds` and hands the leftover delta to the nearest page scroller once the canvas hits its top/bottom edge, so dragging down at the canvas top scrolls the editor back up to Reset and Save PDF instead of forcing a zoom-out. New `resolveVerticalPanHandoff` (pure), `findScrollableAncestor`/`scrollPageBy` (DOM), plus 16 tests. Verified `npm run typecheck`, `npm test` (451 pass), `npm run lint`. Files: `src/lib/zoom/canvasGestures.ts`, `src/lib/zoom/canvasGestures.test.ts`, `src/lib/zoom/touchScroll.ts`, `src/lib/zoom/touchScroll.test.ts`, `src/components/preview/TouchPanCanvas.tsx`, `src/components/preview/TouchPanCanvas.test.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-17 — Lifted the page-count pill and Reset out of the resume into a normal-flow `[data-canvas-toolbar]` row above the transform canvas, so preview chrome can never cover the candidate's name/header at any zoom level or paper size, and made a pinch-zoomed touch preview pan freely on both axes: `TouchPanCanvas` calls `panBy(deltaX, deltaY, 0)` past the 8px slop, `canvasTouchAction` returns `pan-y` at fit (page still scrolls) and `none` while zoomed (the browser cannot steal the vertical drag), and `hasClearedTouchSlop` replaces the old axis lock. `HorizontalTouchPan` is now a deprecated re-export shim. Verified `npm run typecheck`, `npm test` (435 pass), `npm run lint`. Files: `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/LiveCanvasViewport.test.tsx`, `src/components/preview/TouchPanCanvas.tsx`, `src/components/preview/TouchPanCanvas.test.tsx`, `src/components/preview/HorizontalTouchPan.tsx`, `src/components/preview/HorizontalTouchPan.test.tsx`, `src/lib/zoom/canvasGestures.ts`, `src/lib/zoom/canvasGestures.test.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 

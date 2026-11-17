@@ -1,0 +1,70 @@
+const SCROLLABLE_OVERFLOW = /(auto|scroll|overlay)/;
+
+/**
+ * True when an element is a vertical scroll container with content to scroll.
+ *
+ * Used by the zoomed-preview hand-off: the canvas already owns the touch, so
+ * once it hits its pan bounds the remaining delta must be applied to the page
+ * scroller by hand instead of relying on native scrolling.
+ */
+export function isScrollableElement(element: Element | null): boolean {
+  if (!(element instanceof HTMLElement)) {
+    return false;
+  }
+
+  if (element.scrollHeight <= element.clientHeight) {
+    return false;
+  }
+
+  if (typeof window === "undefined" || typeof window.getComputedStyle !== "function") {
+    return false;
+  }
+
+  return SCROLLABLE_OVERFLOW.test(window.getComputedStyle(element).overflowY);
+}
+
+/**
+ * Finds the nearest ancestor that scrolls vertically, walking out from a host
+ * element. On the mobile editor shell this resolves to `<main>`, which is the
+ * only scroll container (see CONTEXT Decisions #1).
+ */
+export function findScrollableAncestor(
+  element: Element | null,
+): HTMLElement | null {
+  let node = element?.parentElement ?? null;
+
+  while (node) {
+    if (isScrollableElement(node)) {
+      return node;
+    }
+
+    node = node.parentElement;
+  }
+
+  return null;
+}
+
+/**
+ * Scrolls the closest scrollable ancestor of `origin` by `deltaY` pixels,
+ * falling back to the window when the page itself is the scroller (desktop).
+ * Returns false when there was nothing to scroll.
+ */
+export function scrollPageBy(origin: Element | null, deltaY: number): boolean {
+  if (!Number.isFinite(deltaY) || deltaY === 0) {
+    return false;
+  }
+
+  const scroller = findScrollableAncestor(origin);
+
+  if (scroller) {
+    scroller.scrollTop += deltaY;
+    return true;
+  }
+
+  if (typeof window === "undefined" || typeof window.scrollBy !== "function") {
+    return false;
+  }
+
+  window.scrollBy(0, deltaY);
+  return true;
+}

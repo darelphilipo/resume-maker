@@ -65,6 +65,55 @@ export function isPreviewZoomed(scale: number, fitScale: number): boolean {
   );
 }
 
+export type CanvasVerticalBounds = {
+  minPositionY: number;
+  maxPositionY: number;
+};
+
+export type VerticalPanHandoff = {
+  /** Vertical movement the zoomed canvas can still absorb. */
+  pan: number;
+  /** Leftover movement for the page scroller, as a `scrollTop` delta. */
+  scroll: number;
+};
+
+/**
+ * Splits a vertical drag between the zoomed canvas and the page scroller.
+ *
+ * While zoomed, the resume is clipped inside a fixed-height canvas, so
+ * `TouchPanCanvas` pans it instead of letting the page scroll. That is correct
+ * for exploring the page, but a multi-page resume can leave the preview toolbar
+ * (and its Reset button) scrolled off-screen with no way back: native scrolling
+ * is locked out by `touch-action: none`. Once the canvas reaches its top or
+ * bottom bound the drag has nowhere left to go inside it, so the leftover delta
+ * is returned as a `scrollTop` delta for the page scroller. Dragging down at the
+ * canvas top gives a negative delta, i.e. scrolling the editor back up.
+ */
+export function resolveVerticalPanHandoff(
+  positionY: number,
+  deltaY: number,
+  bounds: CanvasVerticalBounds | null | undefined,
+): VerticalPanHandoff {
+  if (
+    !bounds ||
+    !Number.isFinite(positionY) ||
+    !Number.isFinite(deltaY) ||
+    !Number.isFinite(bounds.minPositionY) ||
+    !Number.isFinite(bounds.maxPositionY)
+  ) {
+    return { pan: deltaY, scroll: 0 };
+  }
+
+  const target = positionY + deltaY;
+  const clamped = Math.min(
+    Math.max(target, bounds.minPositionY),
+    bounds.maxPositionY,
+  );
+  const pan = clamped - positionY;
+
+  return { pan, scroll: pan - deltaY };
+}
+
 /**
  * True once a touch has travelled far enough to be a drag instead of a tap.
  *

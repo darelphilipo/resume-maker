@@ -88,7 +88,9 @@ in control of every line, and your data stays on your device.
   At normal size a one-finger swipe still scrolls the editor, so no toolbar
   pushes the resume down. A small **Reset** button appears in the preview
   toolbar only while you are zoomed in and returns the page to its fitted
-  width. On desktop, the mouse wheel and dragging work as before.
+  width. When a drag reaches the top or bottom of the zoomed page, the editor
+  keeps scrolling, so you can always get back up to Reset and Save PDF even on
+  a multi-page resume. On desktop, the mouse wheel and dragging work as before.
 - **Fit to 1 Page** when a resume spills just past one page.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you

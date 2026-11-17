@@ -243,7 +243,14 @@ rediscover.
     pans **both** `deltaX` and `deltaY` through `panBy`. The zoomed canvas is
     clipped inside a fixed-height transform wrapper, so vertical panning is the
     only way to reach the bottom of the page; page scrolling returns as soon as
-    the user resets to fit. Panning is gated by `isPreviewZoomed`. There is
+    the user resets to fit. Panning is gated by `isPreviewZoomed`. Because
+    `touch-action: none` also locks out native scrolling, vertical drags are
+    clamped to the library's `instance.bounds`: once the canvas hits its top or
+    bottom edge, `resolveVerticalPanHandoff` hands the leftover delta to
+    `scrollPageBy` (`src/lib/zoom/touchScroll.ts`), which scrolls the nearest
+    scrolling ancestor (`<main>` on mobile). Dragging down at the canvas top
+    therefore scrolls the editor back up to the preview toolbar and Reset
+    instead of stranding them off-screen on a multi-page resume. There is
     **no zoom/pan toolbar**: page count and the `CanvasResetButton` sit in a
     normal-flow `[data-canvas-toolbar]` row *above* the `TransformComponent`
     (never floating over the paper), and Reset appears only when
@@ -323,6 +330,33 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — Scroll the editor back up from a zoomed multi-page preview
+- Task: with page 2 of a multi-page resume in view, pinching in left no way to
+  scroll the editor back up to Reset (preview toolbar) and Save PDF (header);
+  the only escape was zooming out completely.
+- `canvasTouchAction` still locks native scrolling (`touch-action: none`) while
+  zoomed, so scrolling had to be restored from inside the pan gesture. Added
+  `resolveVerticalPanHandoff` to `src/lib/zoom/canvasGestures.ts`: it clamps a
+  vertical drag to the library's `instance.bounds` and returns the leftover as
+  a `scrollTop` delta (dragging down at the canvas top yields a negative delta,
+  i.e. the page scrolls up).
+- New `src/lib/zoom/touchScroll.ts` owns the DOM side: `isScrollableElement`,
+  `findScrollableAncestor` (walks out to `<main>`, the mobile shell's only
+  scroll container) and `scrollPageBy` (window fallback for desktop).
+- `TouchPanCanvas` now reads `instance`/`state` from `useControls()`, pans with
+  the clamped delta, and calls `scrollPageBy(host, handoff.scroll)` at the
+  canvas edges. Horizontal panning, the slop, pinch, and the fit-scale
+  scroll-through are unchanged. Mid-canvas drags never move the page.
+- Tests: handoff math (full pan, top/bottom edge, crossing the edge, missing
+  bounds), scroll-ancestor resolution and `scrollPageBy` clamping/fallbacks, and
+  three component cases (top-bound drag scrolls the editor, edge-crossing drag
+  splits pan/scroll, mid-canvas drag leaves `scrollTop` alone).
+- Files: `src/lib/zoom/canvasGestures.ts` (+ test),
+  `src/lib/zoom/touchScroll.ts` (+ test, new),
+  `src/components/preview/TouchPanCanvas.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (451 pass), `npm run lint`.
 
 ### 2026-11-17 — Page count out of the page, free two-axis preview panning
 - Task: stop the `1 page` / `2 pages` badge from covering the resume header and
@@ -568,27 +602,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/ProjectsForm.tsx`, `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (386 pass), `npm run lint`.
-
-### 2026-11-16 — Home page entry-point redesign
-- Task: stop the trust badge wrapping mid-phrase, give `/` professional
-  styling, and make the three ways to start obvious.
-- `page.tsx` is now a warm paper/navy editorial landing page: brand header with
-  the only `h1` (`Resume Maker`) plus an inline SVG mark, a “Private by default”
-  note on desktop, and an `h2` value proposition over the launcher.
-- `Launcher` trust promises are three separate icon pills
-  (`CurrencyDollar`, `ShieldCheck`, `WifiSlash`) with `whitespace-nowrap`
-  labels, so each phrase stays intact; the `·` separators are gone.
-- Added a “Choose one way to start” `h2` and a shared `EntryCard` with icon
-  tiles. The paste card is marked Recommended and uses a filled navy action;
-  PDF gets a larger dashed dropzone; presets sit in a two-column grid on
-  desktop; `Backup & Restore` stays muted and collapsed. All ids, labels,
-  `aria-live` regions, and error roles are unchanged.
-- Tests: exact promise list-item text and nowrap spans, no separator text,
-  three regions, and the choose-one guidance; page tests assert one `h1` and
-  the value-prop heading.
-- Files: `src/app/page.tsx` (+ test), `Launcher.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (383 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The backup-vs-primary
      entry points, paste-to-parse, fit-to-1-page, standardized month/date, first

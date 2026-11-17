@@ -8,6 +8,7 @@ import {
   canvasTouchAction,
   hasClearedTouchSlop,
   isPreviewZoomed,
+  resolveVerticalPanHandoff,
 } from "./canvasGestures";
 
 describe("canvasGestureConfig", () => {
@@ -63,6 +64,60 @@ describe("isPreviewZoomed", () => {
   it("ignores non-finite scales", () => {
     expect(isPreviewZoomed(Number.NaN, 0.5)).toBe(false);
     expect(isPreviewZoomed(1, Number.POSITIVE_INFINITY)).toBe(false);
+  });
+});
+
+describe("resolveVerticalPanHandoff", () => {
+  const bounds = { minPositionY: -400, maxPositionY: 0 };
+
+  it("pans the whole delta while the canvas still has room", () => {
+    expect(resolveVerticalPanHandoff(-120, -40, bounds)).toEqual({
+      pan: -40,
+      scroll: 0,
+    });
+    expect(resolveVerticalPanHandoff(-120, 50, bounds)).toEqual({
+      pan: 50,
+      scroll: 0,
+    });
+  });
+
+  it("hands a downward drag at the canvas top back to the page", () => {
+    // Dragging down at the top edge must scroll the editor back up.
+    expect(resolveVerticalPanHandoff(0, 60, bounds)).toEqual({
+      pan: 0,
+      scroll: -60,
+    });
+  });
+
+  it("hands an upward drag at the canvas bottom back to the page", () => {
+    expect(resolveVerticalPanHandoff(-400, -60, bounds)).toEqual({
+      pan: 0,
+      scroll: 60,
+    });
+  });
+
+  it("splits a drag that crosses the canvas edge", () => {
+    expect(resolveVerticalPanHandoff(-10, 40, bounds)).toEqual({
+      pan: 10,
+      scroll: -30,
+    });
+    expect(resolveVerticalPanHandoff(-390, -30, bounds)).toEqual({
+      pan: -10,
+      scroll: 20,
+    });
+  });
+
+  it("pans normally when the library has not measured bounds yet", () => {
+    expect(resolveVerticalPanHandoff(-10, 40, null)).toEqual({
+      pan: 40,
+      scroll: 0,
+    });
+    expect(
+      resolveVerticalPanHandoff(0, 40, {
+        minPositionY: Number.NaN,
+        maxPositionY: 0,
+      }),
+    ).toEqual({ pan: 40, scroll: 0 });
   });
 });
 
