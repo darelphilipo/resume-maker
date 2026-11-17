@@ -17,7 +17,23 @@
 _empty
 
 ## In Progress (OpenCode Updates This)
-_None._
+### P1 — Visual Consistency & UX/UI Fixes
+
+- [ ] P1: Fix Launcher role preset capsule grid alignment and tap-blink feedback in `src/components/launcher/Launcher.tsx`. Add `h-full items-start` to `<li>` and `h-full` to each preset `<button>` so cards in the same `sm:grid-cols-2` row match heights; make the 5th card (`Fresh Graduate`) span full width on `sm:` or center cleanly when odd-numbered. Fix the tap-blink bug by only showing a loading/active state on the clicked capsule (`creatingId === archetype.id`) and keeping `pointer-events-none` on siblings without dimming them (`opacity-60`). Also fix the disabled "Create resume from text" button styling so its inner icon/label background matches the button container seamlessly.
+
+- [ ] P1: Standardize white input backgrounds and contrast across all editor forms in `src/components/editor/RichTextField.tsx` and `src/components/editor/SectionFormControls.tsx`. Add `bg-surface` (`#ffffff`) to the `RichTextField` outer container (keep toolbar `bg-black/[0.02]` or subtle `#faf9f6` header strip) so Summary, Experience, and Education text areas clearly read as editable white inputs instead of blending into the `#f5f3ee` beige background. Ensure all optional `<input>` placeholders (e.g., Work auth, Picture URL) meet accessible contrast against `#ffffff`.
+
+- [ ] P1: Replace native `<input type="month">` scroll pickers with a unified, fast Month + Year selector component in `src/components/editor/SectionFormControls.tsx` (and wire it across Experience, Education, Certifications, Awards, and Publications). Build a compact dual-dropdown or popover (`Month` select Jan–Dec + `Year` select or 4-digit numeric input + `"Present"` toggle where applicable) with `min-h-11` touch targets and `bg-surface`, eliminating browser-dependent year-scroll popups and unifying date entry across all dated sections.
+
+- [ ] P1: Fix the `"1 page"` / `"2 pages"` badge overlapping the top-left corner of the resume preview in `src/components/preview/LiveCanvasViewport.tsx` and `src/components/preview/PageStack.tsx`. Move the page-count pill and canvas controls into a dedicated non-overlapping top toolbar/header bar above the `<TransformWrapper>` canvas (or add top padding/clearance in the viewport above `(0, 0)`) so the badge never covers the candidate's name or header at any zoom level or paper size (A4 or Letter).
+
+- [ ] P1: Make desktop Preview and Design panels sticky and independently scrollable in `src/components/editor/EditorWorkspace.tsx`. On `lg:` viewports, apply `lg:sticky lg:top-[var(--header-height,3.5rem)] lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto` to `#panel-preview` and `#panel-design` so scrolling through long Content sections keeps the live resume preview and Design controls visible at all times.
+
+- [ ] P1: Fix toolbar wrapping, paper-size card hit targets, and JD Match drawer visibility across `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/DesignPanel.tsx`, and `src/components/editor/JdMatchDrawer.tsx`.
+  1. Tighten `RichTextField` toolbar button spacing/sizing (`min-h-9 min-w-9` on desktop, `min-h-11` on touch or horizontal scroll/compact grouping) and `EntryActions` (`Hide`, `Move up`, `Move down`) so controls stay on a single clean row in the `22rem` desktop sidebar without awkward wrapping.
+  2. Fix `DesignPanel.tsx` paper-size `<label>` cards with explicit `htmlFor`/`id` pairing and full-card clickability (`w-full`) so clicking anywhere on the A4 or Letter card switches the format.
+  3. Audit and fix the `"Match to a job description"` button and `JdMatchDrawer.tsx` trigger/portal state so clicking it reliably opens the drawer on both desktop and mobile.
+
 
 ## Queue (Ready for Next Run)
 
