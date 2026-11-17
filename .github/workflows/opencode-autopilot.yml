@@ -2,7 +2,6 @@ name: OpenCode Autopilot
 
 on:
   schedule:
-    # Runs every 3 hours (8 runs/day). Change to "0 */2 * * *" for 12 runs/day.
     - cron: "0 */3 * * *"
   workflow_dispatch:
 
@@ -92,10 +91,10 @@ jobs:
             primaryModel = "opencode/hy4-flash-free";
           } else if (deepseekCooling && hy4Cooling) {
             const minsLeft = Math.ceil(
-              Math.min(state.deepseekCooldownUntil, state.hy4CooldownUntil) - now
-            ) / 60000;
+              (Math.min(state.deepseekCooldownUntil, state.hy4CooldownUntil) - now) / 60000
+            );
             skip = true;
-            skipReason = `Both DeepSeek and Hy4 Flash in cooldown (~${Math.ceil(minsLeft)}m left)`;
+            skipReason = `Both DeepSeek and Hy4 Flash in cooldown (~${minsLeft}m left)`;
           } else if (softCapHit && hy4Cooling) {
             skip = true;
             skipReason = `24h soft cap reached (reqs24h=${reqs24h}, runs24h=${state.recentRuns.length}) and Hy4 in cooldown`;
@@ -160,12 +159,14 @@ jobs:
 
           run_model() {
             local model="$1"
-            echo "=== Attempting model: $model ===" \vert{} tee -a "$LOG_FILE"
+            echo "=== Attempting model: $model (timeout=${TIMEOUT_MINS}m) ===" >> "$LOG_FILE"
             timeout "${TIMEOUT_MINS}m" opencode run \
               --dangerously-skip-permissions \
               -m "$model" \
-              "$PROMPT" 2>&1 \vert{} tee -a "$LOG_FILE"
-            return "${PIPESTATUS[0]}"
+              "$PROMPT" >> "$LOG_FILE" 2>&1
+            local rc=$?
+            cat "$LOG_FILE"
+            return "$rc"
           }
 
           ACTIVE_MODEL="$PRIMARY_MODEL"
@@ -178,20 +179,20 @@ jobs:
             if grep -qiE "429|FreeUsageLimitError|Free usage limit reached|usage limit reached" "$LOG_FILE"; then
               DEEPSEEK_LIMITED="true"
               if [ "$HY4_COOLING" != "true" ]; then
-                echo "DeepSeek limit hit; falling back to opencode/hy4-flash-free..." | tee -a "$LOG_FILE"
+                echo "DeepSeek limit hit; falling back to opencode/hy4-flash-free..." >> "$LOG_FILE"
                 ACTIVE_MODEL="opencode/hy4-flash-free"
                 run_model "$ACTIVE_MODEL"
                 EXIT_CODE=$?
                 if [ "$EXIT_CODE" -ne 0 ]; then
                   HY4_FAILED="true"
-                  echo "Hy4 Flash fallback also failed (exit $EXIT_CODE); reverting default to DeepSeek." | tee -a "$LOG_FILE"
+                  echo "Hy4 Flash fallback also failed (exit $EXIT_CODE); reverting default to DeepSeek." >> "$LOG_FILE"
                   ACTIVE_MODEL="opencode/deepseek-v4.1-flash-free"
                 fi
               fi
             fi
           elif [ "$ACTIVE_MODEL" = "opencode/hy4-flash-free" ] && [ "$EXIT_CODE" -ne 0 ]; then
             HY4_FAILED="true"
-            echo "Hy4 Flash failed (exit $EXIT_CODE); reverting default to DeepSeek." | tee -a "$LOG_FILE"
+            echo "Hy4 Flash failed (exit $EXIT_CODE); reverting default to DeepSeek." >> "$LOG_FILE"
             ACTIVE_MODEL="opencode/deepseek-v4.1-flash-free"
           fi
 
@@ -241,13 +242,12 @@ jobs:
 
           if (deepseekLimited) {
             state.consecutiveDeepseekLimits = (state.consecutiveDeepseekLimits || 0) + 1;
-            const backoffMins = Math.min(240, 60 * Math.pow(2, state.consecutiveDeepseekLimits - 1)); // 1h -> 2h -> 4h
+            const backoffMins = Math.min(240, 60 * Math.pow(2, state.consecutiveDeepseekLimits - 1));
             state.deepseekCooldownUntil = now + backoffMins * 60 * 1000;
             notes.push(`DeepSeek limit hit (${backoffMins}m cooldown)`);
           }
 
           if (hy4Failed) {
-            // 6h cooldown on Hy4 Flash if it errors or promo ends; reverts to DeepSeek
             state.hy4CooldownUntil = now + 6 * 60 * 60 * 1000;
             notes.push("Hy4 Flash failed (6h cooldown, reverted to DeepSeek)");
           }
@@ -309,7 +309,7 @@ jobs:
         if: steps.gate.outputs.skip != 'true' && env.opencode_exit != '' && env.opencode_exit != '0'
         run: |
           echo "::error::opencode exited with ${opencode_exit} - see Summary tab or opencode-run-log artifact"
-          tail -n 40 "$RUNNER_TEMP/opencode-run.log" || true
+          cat "$RUNNER_TEMP/opencode-run.log" || true
           exit 1
 
       # opencode can print an error and still exit 0 (observed: the free-tier
@@ -324,7 +324,7 @@ jobs:
             exit 0
           fi
           echo "::error::OpenCode made no file changes - it errored or refused to work. Log tail:"
-          tail -n 40 "$RUNNER_TEMP/opencode-run.log" || true
+          cat "$RUNNER_TEMP/opencode-run.log" || true
           exit 1
 
       # opencode.json denies edits to these paths, but the run uses
