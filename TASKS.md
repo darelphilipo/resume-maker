@@ -22,8 +22,9 @@ _None._
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
-_None._
 
+- [ ] P1: pinch to zoom works but I can move left right on the zoomed version .that needs to happen without breaking the page scroll
+      
 ### P2 — Larger work
 - [ ] P2: Add a template system in `src/templates/registry.ts` with 6 single-column-first templates — Engineering Classic (Jake), Ivy/Executive (Harvard), Modern Accent, Compact 1-Pager, Hybrid Skills-First, and a two-column Studio Sidebar labelled "Best for direct/human review". Show an ATS-Safe badge on single-column options.
 - [ ] P2: Add 4 design controls to `DesignPanel.tsx`: template selector, accent color (5–6 curated swatches + monochrome), font pairing (Sans/Serif/Classic), density (Compact/Normal/Relaxed).
