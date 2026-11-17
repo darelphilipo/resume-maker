@@ -22,9 +22,8 @@ _None._
 ## Queue (Ready for Next Run)
 
 ### P1 — High-value features
+_empty_
 
-- [ ] the resume preview needs to have zoom functionality in it.if the pinch and scroll to zoom are risky and might break the scrolling , implement simple zoom in zoom out and movement buttons
-      
 ### P2 — Larger work
 - [ ] P2: Add a template system in `src/templates/registry.ts` with 6 single-column-first templates — Engineering Classic (Jake), Ivy/Executive (Harvard), Modern Accent, Compact 1-Pager, Hybrid Skills-First, and a two-column Studio Sidebar labelled "Best for direct/human review". Show an ATS-Safe badge on single-column options.
 - [ ] P2: Add 4 design controls to `DesignPanel.tsx`: template selector, accent color (5–6 curated swatches + monochrome), font pairing (Sans/Serif/Classic), density (Compact/Normal/Relaxed).
@@ -32,6 +31,8 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-17 — Added preview zoom and movement buttons for touch: the toolbar (zoom out / live percentage / zoom in / Fit and four bounds-aware pan arrows) is now visible at every width instead of desktop-only, with 44px mobile targets, disabled arrows while the page fits, and unchanged swipe-to-scroll and desktop wheel/drag behaviour. Verified `npm run typecheck`, `npm test` (395 pass), `npm run lint`, `npm run build` (static export). Files: `src/components/preview/CanvasControls.tsx`, `src/components/preview/CanvasControls.test.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/LiveCanvasViewport.test.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-17 — Applied the home-page paper/navy theme to every page (shared `--brand-*` tokens, white panel cards, serif headings, warm borders, themed loading/empty/drawer/form/preview surfaces), collapsed the three trust capsules into one nowrap promise line, and made the editor header one `flex-nowrap` row where the resume name and Save PDF stay together on phones. Verified `npm run typecheck`, `npm test` (387 pass), `npm run lint`, `npm run build` (static export). Files: `src/app/globals.css`, `src/app/page.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/launcher/launcher.test.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/components/editor/EditorWorkspace.test.tsx`, `src/components/editor/EditorLoading.tsx`, `src/components/editor/EntryDrawer.tsx`, `src/components/editor/MobileBottomNav.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/DesignPanel.tsx`, `src/components/preview/PrintTriggerButton.tsx`, `src/components/preview/AtsTextView.tsx`, `src/components/shared/ExportJsonButton.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 

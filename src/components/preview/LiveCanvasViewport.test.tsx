@@ -1,4 +1,4 @@
-import { render, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -180,6 +180,22 @@ describe("LiveCanvasViewport", () => {
       geometry.widthPx,
       1,
     );
+  });
+
+  it("offers zoom and movement controls around the canvas", async () => {
+    await renderCanvas();
+
+    for (const name of [
+      "Zoom out",
+      "Zoom in",
+      "Fit preview to width",
+      "Move preview left",
+      "Move preview up",
+      "Move preview down",
+      "Move preview right",
+    ]) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
   });
 
   it("keeps native page scrolling for coarse pointers", async () => {

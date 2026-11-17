@@ -18,6 +18,7 @@ import {
 } from "@/lib/zoom/wheelZoom";
 
 import { AtsTextView } from "./AtsTextView";
+import { CanvasControls } from "./CanvasControls";
 import { PageOverflowBanner } from "./PageOverflowBanner";
 import { PageStack } from "./PageStack";
 
@@ -33,64 +34,6 @@ const useIsomorphicLayoutEffect =
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
-}
-
-const ZOOM_BUTTON_FACTOR = 1.15;
-const ZOOM_BUTTON_ANIMATION_MS = 150;
-
-function CanvasControls({
-  fitScale,
-  minScale,
-  maxScale,
-}: {
-  fitScale: number;
-  minScale: number;
-  maxScale: number;
-}) {
-  const { centerView, setTransform, state } = useControls();
-
-  const zoomTo = (scale: number): void => {
-    void centerView(
-      clamp(scale, minScale, maxScale),
-      ZOOM_BUTTON_ANIMATION_MS,
-      "easeOut",
-    );
-  };
-
-  return (
-    <div className="hidden items-center gap-1 rounded-lg bg-white/90 p-1 shadow-sm lg:flex">
-      <button
-        type="button"
-        aria-label="Zoom out"
-        onClick={() => {
-          zoomTo(state.scale / ZOOM_BUTTON_FACTOR);
-        }}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-sm font-medium hover:bg-black/5"
-      >
-        −
-      </button>
-      <button
-        type="button"
-        aria-label="Zoom in"
-        onClick={() => {
-          zoomTo(state.scale * ZOOM_BUTTON_FACTOR);
-        }}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-sm font-medium hover:bg-black/5"
-      >
-        +
-      </button>
-      <button
-        type="button"
-        aria-label="Fit"
-        onClick={() => {
-          void setTransform(0, 0, fitScale);
-        }}
-        className="h-7 rounded-md px-2 text-xs font-medium hover:bg-black/5"
-      >
-        Fit
-      </button>
-    </div>
-  );
 }
 
 function FitTransform({ fitScale }: { fitScale: number }) {
@@ -322,7 +265,7 @@ export function LiveCanvasViewport({
           pinch={{ step: 5, disabled: isCoarsePointer }}
           panning={{ disabled: isCoarsePointer }}
         >
-          <div className="editor-chrome flex items-center justify-between gap-2 px-1">
+          <div className="editor-chrome flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-1">
             <span aria-live="polite" className="text-xs opacity-70">
               {layout.pages.length}{" "}
               {layout.pages.length === 1 ? "page" : "pages"}

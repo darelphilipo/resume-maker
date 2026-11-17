@@ -226,6 +226,18 @@ rediscover.
     coarse pointers, and the header row itself is `flex-nowrap`. Keep those
     rules if you add another header action — a label or an extra 44px control
     eats the resume name at 375px.
+26. **Preview zoom is button-first on touch.** `CanvasControls` in
+    `src/components/preview/CanvasControls.tsx` is rendered at every viewport
+    (it used to be `hidden lg:flex`, which left phones with no zoom). It offers
+    `−` / `+` / `Fit` through `centerView` and `setTransform`, plus four
+    movement buttons through the library's bounds-aware `panBy`; movement is
+    disabled at the fit scale because the whole page is already visible. Do not
+    re-enable panning/pinch on coarse pointers to get "free" movement: that is
+    exactly what swallowed swipe-to-scroll (`touch-action: pan-y` only works
+    while `panning.disabled` is true). `useControls().state` is mutated in
+    place and does not trigger React renders, so the live `%` label comes from
+    `useTransformComponent`; reading `state.scale` in render alone would show a
+    stale zoom level.
 
 ## Verification and tooling
 
@@ -279,6 +291,31 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — Preview zoom and movement buttons for touch
+- Task: give the resume preview usable zoom on phones without turning swipes
+  into canvas panning.
+- Extracted the desktop-only canvas controls into
+  `CanvasControls.tsx`, now visible at every width. It shows the live zoom
+  percentage and offers `−` / `+` / `Fit` plus four arrow buttons wired to the
+  library's bounds-aware `panBy`. Mobile buttons are 44px tall (`w-9`), the
+  toolbar wraps instead of overflowing at 320–375px, and the arrows are disabled
+  while the whole page is visible at the fit scale.
+- Coarse-pointer behaviour is unchanged on purpose: panning and pinch stay
+  disabled and `touch-action: pan-y` keeps vertical swipes scrolling the page.
+  Wheel zoom and drag panning still work on fine pointers.
+- `useControls().state` is mutable and does not re-render, so the `%` label
+  subscribes through `useTransformComponent`; recorded in Decisions #26.
+- Tests: a new `CanvasControls` suite covers the mobile-visible toolbar, zoom
+  level, multiplicative steps and clamping, Fit, all four pan directions, and
+  the disabled-at-fit state; the viewport test now asserts every control is
+  rendered around the canvas.
+- Files: `src/components/preview/CanvasControls.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (395 pass), `npm run lint`,
+  `npm run build` (static export; the security-advisory nudge needed the usual
+  second run).
 
 ### 2026-11-17 — Paper/navy theme everywhere and a one-row editor header
 - Task: carry the home-page look to `/editor` and the loading/empty states,
@@ -470,28 +507,9 @@ npx playwright test    # e2e; needs a dev server on :3000
   `README.md`, `TASKS.md`, `CONTEXT.md`.
 - Verified: `npm run typecheck`, `npm test` (354 pass).
 
-### 2026-11-15 — Auto-detect contact networks and derive the website label
-- Task: simplify contact inputs so users paste a profile URL instead of typing
-  a network/icon, and drop the manual `Website label` field.
-- Added `src/lib/links/contactLinks.ts`: `detectProfileLink` (known-host table
-  for GitHub, GitLab, LinkedIn, Stack Overflow, Dribbble, Mastodon, etc.;
-  skips route prefixes like `in`/`users`, leading `@`/`~`, handles `www.` and
-  subdomains) and `websiteLabelFromUrl` (protocol, `www.`, query, hash, and
-  trailing slashes removed). Ten colocated unit tests cover both.
-- `profiles` fields are now URL → Network → Username, with `Icon` kept as a
-  `hidden: true` pass-through so imports still round-trip. `GenericSectionForm`
-  fills the three fields when the URL changes, replacing only values that are
-  empty or match the previous URL's detection; hand-typed values win.
-- `BasicsForm` dropped the label input, derives `website.label` on URL changes,
-  preserves an imported custom label until the URL changes, and shows a
-  `Shown as …` hint under the URL.
-- Files: `src/lib/links/contactLinks.ts` (+ test), `sectionFields.ts`,
-  `GenericSectionForm.tsx` (+ new test), `BasicsForm.tsx` (+ tests), `README.md`,
-  `TASKS.md`, `CONTEXT.md`.
-- Verified: `npm run typecheck`, `npm test` (350 pass), `npm run lint`.
-
 <!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
      standardized month/date, first autopilot diagnosis, categorized-skills,
-     and custom-section details are captured in Decisions & Gotchas (#9, #10,
-     #16) and Autopilot failure modes above. -->
+     custom-section, and contact-network detection details are captured in
+     Decisions & Gotchas (#9, #10, #16, #17) and Autopilot failure modes
+     above. -->
 
