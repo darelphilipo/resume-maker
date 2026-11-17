@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { UserEvent } from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
 import { CustomSectionSchema } from "@/lib/schema/resume.schema";
@@ -212,6 +212,40 @@ describe("SectionList", () => {
     expect(
       screen.getByRole("button", { name: /^Work History/ }),
     ).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("unmounts the inline form while the same section is open in the drawer", async () => {
+    const user = userEvent.setup();
+    const onOpenSection = vi.fn();
+
+    render(
+      <SectionList onOpenSection={onOpenSection} openSectionId="summary" />,
+    );
+
+    await expandRow(user, LONG_TITLE);
+
+    // The drawer owns the editor, so the inline copy must not mount a second
+    // form (and a second TipTap editor) behind the overlay.
+    expect(screen.queryByRole("form", { name: "Summary" })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Open section editor" }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Open section editor" }));
+    expect(onOpenSection).toHaveBeenCalledWith({
+      id: "summary",
+      title: LONG_TITLE,
+    });
+  });
+
+  it("keeps the inline form for a section that is not open in the drawer", async () => {
+    const user = userEvent.setup();
+
+    render(<SectionList onOpenSection={vi.fn()} openSectionId="summary" />);
+
+    await expandRow(user, "Experience");
+
+    expect(screen.getByRole("form", { name: "Experience" })).toBeInTheDocument();
   });
 
   it("adds a custom section and appends it to the page layout", async () => {

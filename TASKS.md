@@ -24,7 +24,6 @@ _None._
 
 ### P1 — Visual Consistency & UX/UI Fixes
 
-- [ ] P1: clicking the open section edit for summary ,profile and experience causes a freeze for a few seconds and the section editor does not open . Check what's wrong and fix ,also check across other sections if th Le same issue persists 
 - [ ] P1: Fix toolbar wrapping, paper-size card hit targets, and JD Match drawer visibility across `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/DesignPanel.tsx`, and `src/components/editor/JdMatchDrawer.tsx`.
   1. Tighten `RichTextField` toolbar button spacing/sizing (`min-h-9 min-w-9` on desktop, `min-h-11` on touch or horizontal scroll/compact grouping) and `EntryActions` (`Hide`, `Move up`, `Move down`) so controls stay on a single clean row in the `22rem` desktop sidebar without awkward wrapping.
   2. Fix `DesignPanel.tsx` paper-size `<label>` cards with explicit `htmlFor`/`id` pairing and full-card clickability (`w-full`) so clicking anywhere on the A4 or Letter card switches the format.
@@ -45,6 +44,18 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-17 — Fixed the multi-second freeze when opening a section editor
+  (Summary, Profiles, Experience, and every other section): the expanded list
+  row was mounting a second copy of the form behind the drawer, so a 12-entry
+  Experience initialized 24 TipTap editors at once. `EditorWorkspace` now passes
+  `openSectionId` to `SectionList`, which unmounts that row's inline form while
+  the drawer owns it, and `RichTextField` memoizes its TipTap `extensions` and
+  `editorProps` so `useEditor` no longer rebinds the view on every transaction.
+  Verified `npm run typecheck`, `npm test` (458 pass). Files:
+  `src/components/editor/EditorWorkspace.tsx`, `SectionList.tsx`,
+  `RichTextField.tsx`, `SectionList.test.tsx`,
+  `sectionEditorDrawer.test.tsx` (new), `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-17 — Kept the desktop Preview and Design columns in view while a long Content section scrolls: `panelClass()` in `EditorWorkspace` now opts those two tabpanels into `lg:sticky lg:top-[var(--header-height,3.5rem)] lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:overscroll-contain`, so each sticks under the header and scrolls on its own while Content keeps normal page flow. Mobile keeps the single-tab layout and the existing `lg:items-start` grid needed for sticky. Verified `npm run typecheck`, `npm test` (452 pass), `npm run lint`, `npm run build` (static export). Files: `src/components/editor/EditorWorkspace.tsx`, `src/components/editor/EditorWorkspace.test.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 

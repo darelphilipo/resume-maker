@@ -77,6 +77,8 @@ in control of every line, and your data stays on your device.
 - Show, hide, and reorder whole sections; empty sections stay out of the PDF.
   Awards, Languages, Interests, Volunteer, Publications, and References stay
   tucked behind **Add optional section** until you need them.
+- On a phone, **Open section editor** opens that section in a single full editor
+  sheet, so switching between sections stays quick even on a long resume.
 
 ### Design and preview
 

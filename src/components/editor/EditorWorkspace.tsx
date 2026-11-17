@@ -317,7 +317,10 @@ export function EditorWorkspace() {
               </h3>
               <BasicsForm />
             </section>
-            <SectionList onOpenSection={setDrawerSection} />
+            <SectionList
+              onOpenSection={setDrawerSection}
+              openSectionId={drawerSection?.id ?? null}
+            />
           </div>
         </section>
 

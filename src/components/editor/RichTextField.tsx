@@ -14,7 +14,7 @@ import Link from "@tiptap/extension-link";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, type ReactNode } from "react";
 
 import { sanitizeRichText } from "@/lib/richtext/sanitize";
 
@@ -72,10 +72,14 @@ export function RichTextField({
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  const editor = useEditor({
-    immediatelyRender: false,
-    shouldRerenderOnTransaction: true,
-    extensions: [
+  // `useEditor` compares its options by identity on every render and calls
+  // `setOptions` (which rebinds the ProseMirror view) when anything changed.
+  // Extensions and editorProps are object arrays, so building them inline made
+  // every transaction — with `shouldRerenderOnTransaction` that is every
+  // keystroke and every toolbar click — reconfigure every editor on the page.
+  // Keep their identities stable so only a real placeholder/aria change does.
+  const extensions = useMemo(
+    () => [
       StarterKit.configure({
         heading: false,
         blockquote: false,
@@ -101,8 +105,11 @@ export function RichTextField({
         placeholder: placeholder ?? "",
       }),
     ],
-    content: sanitizeRichText(value),
-    editorProps: {
+    [placeholder],
+  );
+
+  const editorProps = useMemo(
+    () => ({
       attributes: {
         class:
           "tiptap min-h-24 w-full bg-surface px-3 py-2 text-sm leading-relaxed text-text outline-none",
@@ -110,7 +117,16 @@ export function RichTextField({
         "aria-multiline": "true",
         role: "textbox",
       },
-    },
+    }),
+    [ariaLabel],
+  );
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    shouldRerenderOnTransaction: true,
+    extensions,
+    content: sanitizeRichText(value),
+    editorProps,
     onUpdate: ({ editor: currentEditor }) => {
       onChangeRef.current(sanitizeRichText(currentEditor.getHTML()));
     },

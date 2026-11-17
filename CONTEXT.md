@@ -283,6 +283,17 @@ rediscover.
     the one-row header; update it if the header ever grows. The preview column's
     scrollbar is the only way to wheel-scroll it over the paper: `WheelZoom`
     still `preventDefault()`s wheel events to zoom.
+29. **A section has one editor at a time.** `EditorWorkspace` passes
+    `openSectionId={drawerSection?.id}` to `SectionList`; the expanded row
+    skips its inline `<SectionForm>` for that id while the drawer is open.
+    Rendering both copies mounted two TipTap editors per rich-text field (24
+    editors for a 12-entry Experience resume) and duplicated entry field ids,
+    which made the drawer stall for seconds on phones. The inline form returns
+    when the drawer closes. For the same reason, `RichTextField` memoizes its
+    `extensions` and `editorProps`: `@tiptap/react`'s `useEditor` compares
+    options by identity on every render and calls `setOptions` (rebinding the
+    ProseMirror view) when they differ, so inline-constructed object arrays
+    reconfigured every editor on every transaction (`shouldRerenderOnTransaction`).
 
 ## Verification and tooling
 
@@ -342,6 +353,30 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — One editor per section when the drawer is open
+- Task: fix the reported multi-second freeze when tapping "Open section editor"
+  on Summary, Profiles, and Experience (and any other section).
+- Root cause: the expanded `SectionList` row kept its inline `<SectionForm>`
+  mounted while `EntryDrawer` mounted a second copy in a portal. A 12-entry
+  Experience therefore initialized 24 TipTap editors in one commit, duplicated
+  every entry field id, and made vaul's snap-point measurement thrash on phones.
+- `EditorWorkspace` now passes `openSectionId={drawerSection?.id ?? null}` to
+  `SectionList`, which skips the inline form for that row while the drawer owns
+  it. Other rows and all desktop behaviour are unchanged; the inline form
+  remounts when the drawer closes.
+- `RichTextField` now memoizes its TipTap `extensions` and `editorProps`.
+  `@tiptap/react` compares options by identity on every render and calls
+  `setOptions` when they differ, so inline-constructed arrays were rebinding
+  the ProseMirror view on every transaction. Recorded as Decisions #29.
+- Tests: `SectionList.test.tsx` covers inline-form suppression and the retained
+  handler; `sectionEditorDrawer.test.tsx` opens Summary, Profiles, and
+  Experience from the real workspace and asserts exactly one form (and one
+  editor per entry), plus restoration on close.
+- Files: `src/components/editor/SectionList.tsx`, `EditorWorkspace.tsx`,
+  `RichTextField.tsx`, `SectionList.test.tsx`,
+  `sectionEditorDrawer.test.tsx` (new), `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (458 pass).
 
 ### 2026-11-17 — Sticky desktop Preview and Design columns
 - Task: keep the live resume preview and the Design controls visible while
@@ -584,40 +619,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (395 pass), `npm run lint`,
   `npm run build` (static export; the security-advisory nudge needed the usual
   second run).
-
-### 2026-11-17 — Paper/navy theme everywhere and a one-row editor header
-- Task: carry the home-page look to `/editor` and the loading/empty states,
-  collapse the three trust capsules into one line, and stop the resume name and
-  Save PDF from landing on separate rows.
-- `globals.css` now owns the palette as `--brand-*` and exposes `bg-surface`,
-  `bg-surface-muted`, `border-line`, and `text-muted`; `--brand-background` is
-  warm paper (#f5f3ee), so `body` and the editor shell match `/`. `page.tsx`
-  uses the same tokens instead of one-off hex values.
-- Editor chrome: white panel cards with serif headings, warm line borders on the
-  header and bottom nav, white drawer/inputs, white preview and ATS panes, and a
-  brand-tinted Design panel.
-- Header is now one `flex-nowrap` row: the title shrinks, mobile icon controls
-  are 40px wide (44px tall), JSON is icon-only below `sm`, the print info button
-  is 32px wide on coarse pointers, and desktop labels return at `sm`/`lg`.
-- Launcher promises are one `flex-nowrap` line with no per-item capsule; icons
-  and dot separators appear only at `sm+`, and every label stays `nowrap`.
-- Tests: trust-line single-row/uncapsuled assertions and a structural header
-  test (the row contains Save PDF and the title no longer uses `basis-24`).
-- Files: `src/app/globals.css`, `src/app/page.tsx`,
-  `src/components/launcher/Launcher.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/EditorLoading.tsx`,
-  `src/components/editor/EntryDrawer.tsx`,
-  `src/components/editor/MobileBottomNav.tsx`,
-  `src/components/editor/SectionFormControls.tsx`,
-  `src/components/editor/DesignPanel.tsx`,
-  `src/components/preview/PrintTriggerButton.tsx`,
-  `src/components/preview/AtsTextView.tsx`,
-  `src/components/shared/ExportJsonButton.tsx`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (387 pass), `npm run lint`,
-  `npm run build` (static export; the CLI's security-advisory nudge needs a
-  second run to finish).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The backup-vs-primary
      entry points, paste-to-parse, fit-to-1-page, standardized month/date, first

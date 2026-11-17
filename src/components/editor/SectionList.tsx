@@ -76,6 +76,8 @@ export type SectionListEntry = {
 
 export type SectionListProps = {
   onOpenSection?: (entry: SectionListEntry) => void;
+  /** Section currently edited in the drawer; its inline form is unmounted. */
+  openSectionId?: string | null;
 };
 
 function countLabel(count: number): string {
@@ -171,7 +173,10 @@ function SectionHeadingInput({
   );
 }
 
-export function SectionList({ onOpenSection }: SectionListProps) {
+export function SectionList({
+  onOpenSection,
+  openSectionId,
+}: SectionListProps) {
   const doc = useResumeStore((state) => state.doc);
   const patchDoc = useResumeStore((state) => state.patchDoc);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -385,7 +390,15 @@ export function SectionList({ onOpenSection }: SectionListProps) {
                       onCommit={(title) => renameSection(row, title)}
                     />
                   )}
-                  <SectionForm sectionId={row.id} />
+                  {/*
+                   * The drawer owns this section's editor while it is open.
+                   * Rendering the inline copy as well mounts two forms (and two
+                   * TipTap editors per rich-text field) at once, which stalls
+                   * the drawer on phones and duplicates entry field ids.
+                   */}
+                  {row.id === openSectionId ? null : (
+                    <SectionForm sectionId={row.id} />
+                  )}
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
