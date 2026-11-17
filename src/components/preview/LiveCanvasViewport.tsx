@@ -20,6 +20,7 @@ import {
 
 import { AtsTextView } from "./AtsTextView";
 import { CanvasResetButton } from "./CanvasResetButton";
+import { HorizontalTouchPan } from "./HorizontalTouchPan";
 import { PageOverflowBanner } from "./PageOverflowBanner";
 import { PageStack } from "./PageStack";
 
@@ -280,6 +281,11 @@ export function LiveCanvasViewport({
               <CanvasResetButton fitScale={fitScale!} />
             </div>
             <FitTransform fitScale={fitScale!} />
+            <HorizontalTouchPan
+              hostRef={containerRef}
+              fitScale={fitScale!}
+              enabled={isCoarsePointer}
+            />
             <WheelZoom
               minScale={Math.min(MIN_SCALE, fitScale!)}
               maxScale={MAX_SCALE}
@@ -288,7 +294,8 @@ export function LiveCanvasViewport({
                 wrapperStyle={{
                   width: "100%",
                   height: `${frame.height}px`,
-                  // One finger scrolls the page; two fingers pinch the canvas.
+                  // One finger scrolls the page (horizontal drags pan a zoomed
+                  // page); two fingers pinch the canvas.
                   touchAction: gestures.touchAction,
                 }}
                 contentStyle={{ width: `${frame.width / frame.scale}px` }}

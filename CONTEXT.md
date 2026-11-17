@@ -232,16 +232,22 @@ rediscover.
     `touch-action: pan-y` so one finger still scrolls the page (see #3). Two
     fingers are an explicit zoom gesture, so the library's non-passive touch
     handler can `preventDefault()` without stealing one-finger swipes; the
-    pinch gesture also pans by default. There is **no zoom/pan toolbar**: the
-    page count sits in a small pointer-transparent chip over the page margin and
-    `CanvasResetButton` appears only when `state.scale` differs from the fit
-    scale, so the resume starts at the top of the pane. `useControls().state` is
-    mutated in place and does not trigger renders, so both the percentage-free
-    visibility check and any future label must subscribe through
-    `useTransformComponent`; reading `state.scale` in render shows a stale
-    value. Wheel zoom and drag panning on fine pointers are unchanged. The old
-    `CanvasControls` toolbar is superseded and no longer rendered; delete it in
-    a run that has full shell access.
+    pinch gesture also pans by default. After a zoom, `HorizontalTouchPan`
+    reintroduces one-finger horizontal panning: it listens on the preview pane
+    (the library stops propagation on moves it handles), commits to an axis
+    after `TOUCH_AXIS_SLOP_PX`, calls `panBy(deltaX, 0, 0)` only for horizontal
+    drags, and never prevents vertical moves so the page scroller keeps the
+    gesture. Panning is gated by `isPreviewZoomed`; ties go to vertical/scroll.
+    There is **no zoom/pan toolbar**: the page count sits in a small
+    pointer-transparent chip over the page margin and `CanvasResetButton`
+    appears only when `state.scale` differs from the fit scale, so the resume
+    starts at the top of the pane. `useControls().state` is mutated in place and
+    does not trigger renders, so both the percentage-free visibility check and
+    any future label must subscribe through `useTransformComponent`; reading
+    `state.scale` in render shows a stale value (reading it inside a touch
+    handler is fine). Wheel zoom and drag panning on fine pointers are
+    unchanged. The old `CanvasControls` toolbar is superseded and no longer
+    rendered; delete it in a run that has full shell access.
 
 ## Verification and tooling
 
@@ -295,6 +301,32 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — Horizontal pan for the zoomed mobile preview
+- Task: after pinch-zooming, let a one-finger drag move left/right across the
+  page without giving up native vertical page scroll.
+- Added `isPreviewZoomed` and `resolveTouchPanAxis` to
+  `src/lib/zoom/canvasGestures.ts`. Axis resolution waits for an 8px slop, ties
+  and vertical-first movement stay `"vertical"` (page scroll wins), and panning
+  only engages when the scale is above the fit scale.
+- Added `HorizontalTouchPan`, a null-rendering component inside
+  `TransformWrapper`. It listens on the preview pane with a non-passive
+  `touchmove` (the library `stopPropagation()`s moves it handles), locks a
+  horizontal drag, and calls `panBy(deltaX, 0, 0)`; vertical moves are never
+  prevented. Lifting one finger of a pinch re-anchors the drag at the remaining
+  touch so there is no jump. It reuses `state.scale` from `useControls()` inside
+  the handler, where the in-place state mutation is current.
+- `LiveCanvasViewport` renders it for coarse pointers; `touch-action: pan-y`,
+  pinch, desktop wheel/drag, and the Reset-only chrome are unchanged.
+- Tests: zoom gating, slop/axis ties, sideways pan deltas, vertical drags left
+  to the page scroller, fine-pointer no-op, and pinch→one-finger re-anchoring.
+- Files: `src/lib/zoom/canvasGestures.ts` (+ test),
+  `src/components/preview/HorizontalTouchPan.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (415 pass), `npm run lint`,
+  `npm run build` (static export; the CLI's security-advisory nudge needed the
+  usual second run).
 
 ### 2026-11-17 — Pinch-first preview zoom with one floating reset
 - Task: remove the zoom/pan toolbar that pushed the resume below the fold and
@@ -503,21 +535,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/lib/import/pasteResume.ts` (+ test), `Launcher.tsx` (+ test),
   `README.md`, `TASKS.md`, `CONTEXT.md`.
 - Verified: `npm run typecheck`, `npm test` (369 pass), `npm run lint`.
-
-### 2026-11-16 — Touch-only print headers/footers tip
-- Task: remind phone users to turn off browser headers/footers so URLs and dates
-  stay out of the printed PDF.
-- `PrintTriggerButton` wraps the button in a small column and renders a one-line
-  `<p>` under it, hidden by default and shown with the `pointer-coarse:block`
-  variant. The tip is linked to the button through `useId` +
-  `aria-describedby`. No JS pointer detection means no hydration flicker; the
-  tip lives in the app root, so print CSS hides it with the rest of the editor.
-- Tests: copy, `hidden`/`pointer-coarse:block` classes, and the `aria-describedby`
-  linkage in `PrintTriggerButton.test.tsx`. Verified the production build emits
-  the rule under `@media (pointer:coarse)`.
-- Files: `src/components/preview/PrintTriggerButton.tsx` (+ test), `README.md`,
-  `TASKS.md`, `CONTEXT.md`.
-- Verified: `npm run typecheck`, `npm test` (355 pass), `npm run build`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
      standardized month/date, first autopilot diagnosis, categorized-skills,

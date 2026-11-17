@@ -21,10 +21,6 @@ _None._
 
 ## Queue (Ready for Next Run)
 
-### P1 — High-value features
-
-- [ ] P1: pinch to zoom works but I can move left right on the zoomed version .that needs to happen without breaking the page scroll
-      
 ### P2 — Larger work
 - [ ] P2: Add a template system in `src/templates/registry.ts` with 6 single-column-first templates — Engineering Classic (Jake), Ivy/Executive (Harvard), Modern Accent, Compact 1-Pager, Hybrid Skills-First, and a two-column Studio Sidebar labelled "Best for direct/human review". Show an ATS-Safe badge on single-column options.
 - [ ] P2: Add 4 design controls to `DesignPanel.tsx`: template selector, accent color (5–6 curated swatches + monochrome), font pairing (Sans/Serif/Classic), density (Compact/Normal/Relaxed).
@@ -32,6 +28,8 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-17 — Made the pinch-zoomed preview pannable left/right on touch: a new `HorizontalTouchPan` axis-locks one-finger drags (8px slop, ties prefer page scroll) and moves the canvas with `panBy(deltaX, 0, 0)` only while the scale is above the fit scale. Vertical drags are never `preventDefault()`ed, so the editor keeps scrolling natively; lifting one finger of a pinch re-anchors the drag without a jump. Pinch, `touch-action: pan-y`, desktop wheel/drag, and the Reset-only chrome are unchanged. Verified `npm run typecheck`, `npm test` (415 pass), `npm run lint`, `npm run build` (static export). Files: `src/lib/zoom/canvasGestures.ts`, `src/lib/zoom/canvasGestures.test.ts`, `src/components/preview/HorizontalTouchPan.tsx`, `src/components/preview/HorizontalTouchPan.test.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-17 — Replaced the preview zoom/pan toolbar with pinch-to-zoom and one small floating reset control: the in-flow toolbar (live percentage, Fit, four pan arrows) is gone so the resume starts at the top of the pane; two-finger pinch now zooms while one-finger swipes still scroll the page, and a compact `Reset` pill appears only once the preview is zoomed. A pointer-transparent page-count chip floats over the page margin. Verified `npm run typecheck`, `npm test` (401 pass), `npm run lint`, `npm run build` (static export). Files: `src/lib/zoom/canvasGestures.ts`, `src/lib/zoom/canvasGestures.test.ts`, `src/components/preview/CanvasResetButton.tsx`, `src/components/preview/CanvasResetButton.test.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/LiveCanvasViewport.test.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
