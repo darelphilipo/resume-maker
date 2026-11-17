@@ -24,7 +24,7 @@ _None._
 
 ### P1 — Visual Consistency & UX/UI Fixes
 
-- [ ] P1: Fix the `"1 page"` / `"2 pages"` badge overlapping the top-left corner of the resume preview in `src/components/preview/LiveCanvasViewport.tsx` and `src/components/preview/PageStack.tsx`. Move the page-count pill and canvas controls into a dedicated non-overlapping top toolbar/header bar above the `<TransformWrapper>` canvas (or add top padding/clearance in the viewport above `(0, 0)`) so the badge never covers the candidate's name or header at any zoom level or paper size (A4 or Letter).
+- [ ] P1: Fix the `"1 page"` / `"2 pages"` badge overlapping the top-left corner of the resume preview in `src/components/preview/LiveCanvasViewport.tsx` and `src/components/preview/PageStack.tsx`. Move the page-count pill and canvas controls into a dedicated non-overlapping top toolbar/header bar above the `<TransformWrapper>` canvas (or add top padding/clearance in the viewport above `(0, 0)`) so the badge never covers the candidate's name or header at any zoom level or paper size (A4 or Letter). The zoom pinch is working however you are only able to navigate sideways in zoomed version and can't freely pan to any area of the resume preview 
 
 - [ ] P1: Make desktop Preview and Design panels sticky and independently scrollable in `src/components/editor/EditorWorkspace.tsx`. On `lg:` viewports, apply `lg:sticky lg:top-[var(--header-height,3.5rem)] lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto` to `#panel-preview` and `#panel-design` so scrolling through long Content sections keeps the live resume preview and Design controls visible at all times.
 
