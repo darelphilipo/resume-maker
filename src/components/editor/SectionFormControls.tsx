@@ -25,7 +25,7 @@ export type TextInputProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  type?: "text" | "email" | "tel" | "url" | "month";
+  type?: "text" | "email" | "tel" | "url";
   inputMode?: "text" | "email" | "tel" | "url" | "numeric";
   autoComplete?: string;
   placeholder?: string;
@@ -54,11 +54,167 @@ export function TextInput({
         inputMode={inputMode}
         autoComplete={autoComplete}
         placeholder={placeholder}
-        value={type === "month" ? toMonthValue(value) : value}
+        value={value}
         onChange={(event) => onChange(event.currentTarget.value)}
         className={INPUT_CLASS}
       />
       {hint ? <p className="text-xs text-muted">{hint}</p> : null}
+    </div>
+  );
+}
+
+const MONTH_OPTIONS = [
+  { value: "01", label: "Jan" },
+  { value: "02", label: "Feb" },
+  { value: "03", label: "Mar" },
+  { value: "04", label: "Apr" },
+  { value: "05", label: "May" },
+  { value: "06", label: "Jun" },
+  { value: "07", label: "Jul" },
+  { value: "08", label: "Aug" },
+  { value: "09", label: "Sep" },
+  { value: "10", label: "Oct" },
+  { value: "11", label: "Nov" },
+  { value: "12", label: "Dec" },
+] as const;
+
+const YEAR_PATTERN = /^\d{4}$/;
+
+export type MonthSelectProps = {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  hint?: string;
+  /** End-date only: show a Present toggle and disable the picker while on. */
+  present?: boolean;
+  onPresentChange?: (present: boolean) => void;
+};
+
+/**
+ * One fast Month + Year picker for every dated section. Native
+ * `<input type="month">` opens a browser-dependent year scroller (often a
+ * modal wheel on phones), so this pairs a Jan–Dec select with a four-digit
+ * year field instead. Both controls keep the shared white `min-h-11` surface
+ * and the stored value stays canonical `YYYY-MM`.
+ */
+export function MonthSelect({
+  id,
+  label,
+  value,
+  onChange,
+  hint,
+  present,
+  onPresentChange,
+}: MonthSelectProps) {
+  const monthValue = toMonthValue(value);
+  const storedYear = monthValue === "" ? "" : monthValue.slice(0, 4);
+  const storedMonth = monthValue === "" ? "" : monthValue.slice(5, 7);
+  const [monthDraft, setMonthDraft] = useState(storedMonth);
+  const [yearDraft, setYearDraft] = useState(storedYear);
+  const [lastValue, setLastValue] = useState(value);
+
+  if (value !== lastValue) {
+    setLastValue(value);
+    setMonthDraft(storedMonth);
+    setYearDraft(storedYear);
+  }
+
+  const isPresent = present === true;
+  const labelId = `${id}-label`;
+  const monthId = `${id}-month`;
+  const yearId = `${id}-year`;
+
+  function commit(nextYear: string, nextMonth: string): void {
+    if (nextMonth === "" || !YEAR_PATTERN.test(nextYear)) {
+      return;
+    }
+
+    const next = `${nextYear}-${nextMonth}`;
+
+    if (next !== monthValue) {
+      onChange(next);
+    }
+  }
+
+  function changeMonth(nextMonth: string): void {
+    setMonthDraft(nextMonth);
+
+    if (nextMonth === "") {
+      setYearDraft("");
+      onChange("");
+      return;
+    }
+
+    commit(yearDraft, nextMonth);
+  }
+
+  function changeYear(rawYear: string): void {
+    const nextYear = rawYear.replace(/\D/g, "").slice(0, 4);
+    setYearDraft(nextYear);
+
+    if (nextYear === "") {
+      setMonthDraft("");
+      onChange("");
+      return;
+    }
+
+    commit(nextYear, monthDraft);
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <span id={labelId} className="text-sm font-medium">
+        {label}
+      </span>
+      <div
+        role="group"
+        aria-labelledby={labelId}
+        className="grid grid-cols-[minmax(0,1fr)_6rem] gap-2"
+      >
+        <select
+          id={monthId}
+          aria-label={`${label} month`}
+          value={monthDraft}
+          disabled={isPresent}
+          onChange={(event) => changeMonth(event.currentTarget.value)}
+          className={INPUT_CLASS}
+        >
+          <option value="">Month</option>
+          {MONTH_OPTIONS.map((month) => (
+            <option key={month.value} value={month.value}>
+              {month.label}
+            </option>
+          ))}
+        </select>
+        <input
+          id={yearId}
+          type="text"
+          aria-label={`${label} year`}
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder="Year"
+          maxLength={4}
+          value={yearDraft}
+          disabled={isPresent}
+          onChange={(event) => changeYear(event.currentTarget.value)}
+          onBlur={() => {
+            if (!YEAR_PATTERN.test(yearDraft)) {
+              setYearDraft(storedYear);
+            }
+          }}
+          className={INPUT_CLASS}
+        />
+      </div>
+      {hint ? <p className="text-xs text-muted">{hint}</p> : null}
+      {onPresentChange ? (
+        <BooleanInput
+          id={`${id}-present`}
+          label="Present"
+          checked={isPresent}
+          onChange={onPresentChange}
+        />
+      ) : null}
     </div>
   );
 }

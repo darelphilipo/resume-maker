@@ -84,12 +84,17 @@ rediscover.
    every item a distinct `id`.
 9. **Date fields store `YYYY-MM`.** Shared helpers live in
    `src/lib/date/month.ts` (`formatMonth`, `toMonthValue`, `parseMonthInput`);
-   `DateRange` re-exports `formatMonth` for compatibility. Native
-   `<input type="month">` labels are locale-controlled and clip in half-width
-   cells, so date pairs stay single-column (Experience, Education, and now
-   Projects). Projects uses native month pickers and converts imported
-   `YYYY-MM-DD` values to their month. `MonthInput` remains the compact fallback
-   if a genuinely narrow cell needs one.
+   `DateRange` re-exports `formatMonth` for compatibility. Every dated form now
+   uses the shared `MonthSelect` (a Jan–Dec `<select>` plus a four-digit numeric
+   year input, both `min-h-11` and `bg-surface`): native `<input type="month">`
+   is deliberately gone because its year scroller is browser-dependent (a modal
+   wheel on phones). `MonthSelect` commits only a complete `YYYY-MM`, keeps
+   partial drafts local, and clears on an empty month/year. Experience and
+   Education end dates own the **Present** toggle and disable the picker while
+   current; `GenericSectionForm` pairs Volunteer's `current` field the same way
+   (its standalone checkbox is skipped). Projects has no `current` flag. Keep
+   every future date field on `MonthSelect`; `MonthInput` remains the compact
+   free-text fallback if a genuinely narrow cell needs one.
 10. **Fit-to-one-page is persisted in `metadata.page.fitScale`** (0.5–1,
     default 1). The scale is applied to the existing Onyx `--resume-*`
     variables and to `gapPx` so preview, measurement, and print agree.
@@ -262,7 +267,7 @@ rediscover.
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~369 tests
+npm test               # vitest, ~430 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -316,6 +321,42 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — One Month + Year selector for every dated section
+- Task: remove the browser-dependent `<input type="month">` year scrollers and
+  make date entry identical across Experience, Education, Projects, Custom
+  sections, Certifications, Awards, Publications, and Volunteer.
+- Added `MonthSelect` to `SectionFormControls.tsx`: a labelled group with a
+  Jan–Dec `<select>` and a four-digit numeric year input, both on the shared
+  white `min-h-11` surface. Neither control commits alone: a month needs a
+  four-digit year (and vice versa), which keeps partial typing local while the
+  store only ever sees canonical `YYYY-MM`. An empty month or year clears the
+  date and resets the partner draft. The `MonthInput` free-text fallback is
+  unchanged and still available.
+- End dates can own a **Present** toggle (`present` + `onPresentChange`): the
+  month/year controls are disabled while current, but the stored end date is
+  preserved so toggling back restores it. Experience and Education pass their
+  `current` flag; `GenericSectionForm` detects a month `endDate` plus boolean
+  `current` pair (Volunteer) and suppresses the duplicate standalone checkbox.
+- Removed the `"month"` option from `TextInput` and deleted its
+  `toMonthValue` branch. Every `type="month"` occurrence in `src/` is gone; the
+  new e2e layout spec can assert `input[type="month"]` is absent.
+- Tests: `SectionFormControls.test.tsx` covers canonical values, the
+  numeric/select styling, month-only and year-only drafts, clearing, the
+  optional Present toggle, disabled-while-present, and no native month input.
+  `ProjectsForm.test.tsx` now drives the month select + year field instead of a
+  single `YYYY-MM` change event.
+- Files: `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/ProjectsForm.test.tsx`,
+  `src/components/editor/ExperienceForm.tsx`,
+  `src/components/editor/EducationForm.tsx`,
+  `src/components/editor/ProjectsForm.tsx`,
+  `src/components/editor/CustomSectionForm.tsx`,
+  `src/components/editor/GenericSectionForm.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (432 pass), `npm run lint`,
+  `npm run build` (static export; the CLI's security-advisory nudge needed the
+  usual second run).
 
 ### 2026-11-17 — White input surfaces and readable field hints
 - Task: make Summary/Experience/Education text areas read as editable white
@@ -533,31 +574,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/components/launcher/Launcher.tsx` (+ test), `src/app/page.tsx`
   (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test`.
-
-### 2026-11-16 — Client-side PDF import
-- Task: let users choose an existing PDF instead of copying its text, using
-  PDF.js locally and the same heuristic parser as the paste importer.
-- Added `pdfjs-dist` (lazy-loaded) and `src/lib/import/pdfResume.ts`:
-  `groupPdfTextItems` rebuilds lines from PDF text-item coordinates (Y grouping,
-  X ordering, visual word gaps, paragraph gaps, page breaks), and
-  `extractPdfText`/`parsePdfResume` load PDF.js plus its worker module only when
-  a PDF is chosen. Importing the worker module registers `globalThis.pdfjsWorker`
-  so PDF.js uses its in-thread fake worker: no separate static worker asset, no
-  CDN, no `basePath` coupling.
-- `Launcher` now detects `.pdf`/`application/pdf` uploads, shows `Reading...`,
-  and distinguishes unreadable PDFs, PDFs with no selectable text (scans), and
-  text that does not parse as a resume. JSON import is unchanged.
-- Flipped `PDF_IMPORT_ENABLED` to `true` and expanded the file picker to accept
-  PDFs alongside JSON backups.
-- Tests: line reconstruction (X order, fragment joining, paragraph gaps, page
-  separation, empty items), a PDF-text-to-resume integration case, and launcher
-  success/no-text/unreadable-PDF cases.
-- Files: `src/lib/import/pdfResume.ts` (+ test), `src/types/pdfjs-worker.d.ts`,
-  `src/components/launcher/Launcher.tsx` (+ test), `src/lib/features.ts`,
-  `package.json`, `package-lock.json`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (380 pass), `npm run lint`,
-  `npm run build` (static export succeeds; PDF.js chunks are not in the initial
-  `/` script tags).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The paste-to-parse,
      fit-to-1-page, standardized month/date, first autopilot diagnosis,

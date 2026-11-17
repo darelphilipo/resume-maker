@@ -23,6 +23,7 @@ import {
   EntryCard,
   FormActions,
   LevelInput,
+  MonthSelect,
   TextInput,
 } from "./SectionFormControls";
 import {
@@ -321,7 +322,44 @@ export function GenericSectionForm({
       );
     }
 
+    if (field.kind === "month") {
+      const pairsWithPresent = fields.some(
+        (candidate) => candidate.kind === "boolean" && candidate.key === "current",
+      );
+
+      return (
+        <MonthSelect
+          key={field.key}
+          id={id}
+          label={field.label}
+          value={stringValue(item[field.key])}
+          onChange={(value) => updateItem(index, field.key, value)}
+          present={
+            pairsWithPresent && field.key === "endDate"
+              ? booleanValue(item.current)
+              : undefined
+          }
+          onPresentChange={
+            pairsWithPresent && field.key === "endDate"
+              ? (checked) => updateItem(index, "current", checked)
+              : undefined
+          }
+        />
+      );
+    }
+
     if (field.kind === "boolean") {
+      // End dates own the Present toggle (see the month branch above), so the
+      // separate `current` checkbox would be a duplicate.
+      if (
+        field.key === "current" &&
+        fields.some(
+          (candidate) => candidate.kind === "month" && candidate.key === "endDate",
+        )
+      ) {
+        return null;
+      }
+
       return (
         <BooleanInput
           key={field.key}
@@ -341,10 +379,7 @@ export function GenericSectionForm({
         value={stringValue(item[field.key])}
         onChange={(value) => updateItem(index, field.key, value)}
         type={
-          field.kind === "email" ||
-          field.kind === "tel" ||
-          field.kind === "url" ||
-          field.kind === "month"
+          field.kind === "email" || field.kind === "tel" || field.kind === "url"
             ? field.kind
             : "text"
         }

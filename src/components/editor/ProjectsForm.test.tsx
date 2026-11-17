@@ -49,7 +49,7 @@ describe("ProjectsForm", () => {
     vi.useRealTimers();
   });
 
-  it("renders project dates as month pickers with canonical values", () => {
+  it("renders project dates with the shared month and year selector", () => {
     setup([
       makeItem("project-1", {
         name: "Ledger API",
@@ -60,13 +60,16 @@ describe("ProjectsForm", () => {
 
     render(<ProjectsForm />);
 
-    const startDate = screen.getByLabelText("Start date");
-    const endDate = screen.getByLabelText("End date");
+    const startMonth = screen.getByLabelText("Start date month");
+    const startYear = screen.getByLabelText("Start date year");
+    const endMonth = screen.getByLabelText("End date month");
+    const endYear = screen.getByLabelText("End date year");
 
-    expect(startDate).toHaveAttribute("type", "month");
-    expect(endDate).toHaveAttribute("type", "month");
-    expect(startDate).toHaveValue("2023-02");
-    expect(endDate).toHaveValue("2023-11");
+    expect(startMonth).toHaveValue("02");
+    expect(startYear).toHaveValue("2023");
+    expect(endMonth).toHaveValue("11");
+    expect(endYear).toHaveValue("2023");
+    expect(document.querySelector('input[type="month"]')).toBeNull();
   });
 
   it("normalizes imported ISO dates to their month", () => {
@@ -79,19 +82,27 @@ describe("ProjectsForm", () => {
 
     render(<ProjectsForm />);
 
-    expect(screen.getByLabelText("Start date")).toHaveValue("2023-02");
-    expect(screen.getByLabelText("End date")).toHaveValue("2023-11");
+    expect(screen.getByLabelText("Start date month")).toHaveValue("02");
+    expect(screen.getByLabelText("Start date year")).toHaveValue("2023");
+    expect(screen.getByLabelText("End date month")).toHaveValue("11");
+    expect(screen.getByLabelText("End date year")).toHaveValue("2023");
   });
 
-  it("commits months selected from the picker", () => {
+  it("commits months selected from the selector", () => {
     setup([makeItem("project-1")]);
     render(<ProjectsForm />);
 
-    fireEvent.change(screen.getByLabelText("Start date"), {
-      target: { value: "2024-03" },
+    fireEvent.change(screen.getByLabelText("Start date year"), {
+      target: { value: "2024" },
     });
-    fireEvent.change(screen.getByLabelText("End date"), {
-      target: { value: "2024-08" },
+    fireEvent.change(screen.getByLabelText("Start date month"), {
+      target: { value: "03" },
+    });
+    fireEvent.change(screen.getByLabelText("End date year"), {
+      target: { value: "2024" },
+    });
+    fireEvent.change(screen.getByLabelText("End date month"), {
+      target: { value: "08" },
     });
 
     act(() => {

@@ -17,9 +17,12 @@
 _empty
 
 ## In Progress (OpenCode Updates This)
-### P1 — Visual Consistency & UX/UI Fixes
 
-- [ ] P1: Replace native `<input type="month">` scroll pickers with a unified, fast Month + Year selector component in `src/components/editor/SectionFormControls.tsx` (and wire it across Experience, Education, Certifications, Awards, and Publications). Build a compact dual-dropdown or popover (`Month` select Jan–Dec + `Year` select or 4-digit numeric input + `"Present"` toggle where applicable) with `min-h-11` touch targets and `bg-surface`, eliminating browser-dependent year-scroll popups and unifying date entry across all dated sections.
+_None._
+
+## Queue (Ready for Next Run)
+
+### P1 — Visual Consistency & UX/UI Fixes
 
 - [ ] P1: Fix the `"1 page"` / `"2 pages"` badge overlapping the top-left corner of the resume preview in `src/components/preview/LiveCanvasViewport.tsx` and `src/components/preview/PageStack.tsx`. Move the page-count pill and canvas controls into a dedicated non-overlapping top toolbar/header bar above the `<TransformWrapper>` canvas (or add top padding/clearance in the viewport above `(0, 0)`) so the badge never covers the candidate's name or header at any zoom level or paper size (A4 or Letter).
 
@@ -38,10 +41,6 @@ _empty
   5. On desktop (`1280x800`), scrolling the Content column keeps `#panel-preview` visible inside the viewport.
   6. Clicking the `Letter` card body (not just the radio dot) switches paper size, and clicking `"Match to a job description"` opens the JD Match drawer.
 
-
-
-## Queue (Ready for Next Run)
-
 ### P2 — Larger work
 - [ ] P2: Add a template system in `src/templates/registry.ts` with 6 single-column-first templates — Engineering Classic (Jake), Ivy/Executive (Harvard), Modern Accent, Compact 1-Pager, Hybrid Skills-First, and a two-column Studio Sidebar labelled "Best for direct/human review". Show an ATS-Safe badge on single-column options.
 - [ ] P2: Add 4 design controls to `DesignPanel.tsx`: template selector, accent color (5–6 curated swatches + monochrome), font pairing (Sans/Serif/Classic), density (Compact/Normal/Relaxed).
@@ -49,6 +48,8 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-17 — Replaced every native month picker with one fast Month + Year selector: new `MonthSelect` pairs a Jan–Dec select with a four-digit numeric year field on the shared white `min-h-11` surface, stores canonical `YYYY-MM`, offers a **Present** toggle on Experience and Education end dates (disabling the picker while current), and is wired through Experience, Education, Projects, Custom sections, Certifications, Awards, Publications, and Volunteer. The `TextInput` month branch is gone, so no browser year-scroll popup is reachable. Verified `npm run typecheck`, `npm test` (432 pass), `npm run lint`, `npm run build` (static export). Files: `src/components/editor/SectionFormControls.tsx`, `src/components/editor/SectionFormControls.test.tsx`, `src/components/editor/ProjectsForm.test.tsx`, `src/components/editor/ExperienceForm.tsx`, `src/components/editor/EducationForm.tsx`, `src/components/editor/ProjectsForm.tsx`, `src/components/editor/CustomSectionForm.tsx`, `src/components/editor/GenericSectionForm.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-17 — Gave every editor field a clear white input surface and readable hints: the `RichTextField` shell is now `bg-surface` with a `bg-surface-muted` toolbar strip and white TipTap area, `TextInput`/`MonthInput` placeholders use `text-muted` with `placeholder:opacity-100` (Firefox-safe) and disabled fields fall back to `bg-surface-muted`, hint text dropped the 60% opacity wash, entry cards are tinted so nested white inputs stand out, and the empty `.tiptap` placeholder now uses `--brand-muted` (5.5:1 on white). Verified `npm run typecheck`, `npm test` (424 pass), `npm run lint`, `npm run build` (static export). Files: `src/components/editor/RichTextField.tsx`, `src/components/editor/RichTextField.test.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/SectionFormControls.test.tsx`, `src/app/globals.css`, `CONTEXT.md`, `TASKS.md`.
 

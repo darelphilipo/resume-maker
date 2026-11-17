@@ -67,7 +67,9 @@ in control of every line, and your data stays on your device.
 - Skills grouped by category with comma-separated keywords (for example
   `Languages: Python, SQL`), with no self-ratings to maintain; projects and
   interests use the same comma-separated tags.
-- Month pickers for dates, so `2023-10` stays consistent everywhere.
+- One Month + Year picker for every date field (month list plus a four-digit
+  year), so `2023-10` stays consistent and no browser opens a slow year
+  scroller. End dates for current roles have a **Present** toggle.
 - Add, delete, hide, and reorder entries inside each section.
 - Rename any section heading, and create your own sections for anything the
   standard list does not cover, such as speaking, patents, or coursework.

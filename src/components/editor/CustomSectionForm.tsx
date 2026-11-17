@@ -17,6 +17,7 @@ import {
   EntryActions,
   EntryCard,
   FormActions,
+  MonthSelect,
   TextInput,
 } from "./SectionFormControls";
 import { useDebouncedCommit } from "./useDebouncedCommit";
@@ -183,10 +184,9 @@ export function CustomSectionForm({ sectionId }: { sectionId: string }) {
             ariaLabel={`Description for entry ${index + 1}`}
             placeholder="Describe this entry."
           />
-          <TextInput
+          <MonthSelect
             id={`custom-${sectionId}-${item.id}-date`}
             label="Date"
-            type="month"
             value={item.date}
             onChange={(value) => updateItem(index, "date", value)}
           />

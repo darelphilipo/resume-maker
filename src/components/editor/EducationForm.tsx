@@ -17,6 +17,7 @@ import {
   EntryActions,
   EntryCard,
   FormActions,
+  MonthSelect,
   TextInput,
 } from "./SectionFormControls";
 import { useDebouncedCommit } from "./useDebouncedCommit";
@@ -174,27 +175,23 @@ export function EducationForm() {
             placeholder="Berlin, Germany"
           />
           <div className="grid gap-3">
-            <TextInput
+            <MonthSelect
               id={`education-${item.id}-start-date`}
               label="Start date"
-              type="month"
               value={item.startDate}
               onChange={(value) => updateItem(index, "startDate", value)}
             />
-            <TextInput
+            <MonthSelect
               id={`education-${item.id}-end-date`}
               label="End date"
-              type="month"
               value={item.endDate}
               onChange={(value) => updateItem(index, "endDate", value)}
+              present={item.current}
+              onPresentChange={(checked) =>
+                updateItem(index, "current", checked)
+              }
             />
           </div>
-          <BooleanInput
-            id={`education-${item.id}-current`}
-            label="Present"
-            checked={item.current}
-            onChange={(checked) => updateItem(index, "current", checked)}
-          />
           <TextInput
             id={`education-${item.id}-grade`}
             label="Grade"

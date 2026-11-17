@@ -17,6 +17,7 @@ import {
   EntryActions,
   EntryCard,
   FormActions,
+  MonthSelect,
   TextInput,
 } from "./SectionFormControls";
 import { useDebouncedCommit } from "./useDebouncedCommit";
@@ -164,27 +165,23 @@ export function ExperienceForm() {
             placeholder="Remote"
           />
           <div className="grid gap-3">
-            <TextInput
+            <MonthSelect
               id={`experience-${item.id}-start-date`}
               label="Start date"
-              type="month"
               value={item.startDate}
               onChange={(value) => updateItem(index, "startDate", value)}
             />
-            <TextInput
+            <MonthSelect
               id={`experience-${item.id}-end-date`}
               label="End date"
-              type="month"
               value={item.endDate}
               onChange={(value) => updateItem(index, "endDate", value)}
+              present={item.current}
+              onPresentChange={(checked) =>
+                updateItem(index, "current", checked)
+              }
             />
           </div>
-          <BooleanInput
-            id={`experience-${item.id}-current`}
-            label="Present"
-            checked={item.current}
-            onChange={(checked) => updateItem(index, "current", checked)}
-          />
           <RichTextField
             value={item.summary}
             onChange={(html) => updateItem(index, "summary", html)}
