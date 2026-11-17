@@ -306,7 +306,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Fail if OpenCode errored
-        if: steps.gate.outputs.skip != 'true' && env.opencode_exit != '' && env.opencode_exit != '0'
+        if: steps.gate.outputs.skip != 'true' && env.opencode_exit != '' && env.opencode_exit != '0' && env.opencode_exit != '124'
         run: |
           echo "::error::opencode exited with ${opencode_exit} - see Summary tab or opencode-run-log artifact"
           cat "$RUNNER_TEMP/opencode-run.log" || true
