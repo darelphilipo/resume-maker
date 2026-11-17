@@ -31,6 +31,15 @@ _empty
   1. Tighten `RichTextField` toolbar button spacing/sizing (`min-h-9 min-w-9` on desktop, `min-h-11` on touch or horizontal scroll/compact grouping) and `EntryActions` (`Hide`, `Move up`, `Move down`) so controls stay on a single clean row in the `22rem` desktop sidebar without awkward wrapping.
   2. Fix `DesignPanel.tsx` paper-size `<label>` cards with explicit `htmlFor`/`id` pairing and full-card clickability (`w-full`) so clicking anywhere on the A4 or Letter card switches the format.
   3. Audit and fix the `"Match to a job description"` button and `JdMatchDrawer.tsx` trigger/portal state so clicking it reliably opens the drawer on both desktop and mobile.
+     
+- [ ]  P1: Add a Playwright visual/layout regression spec in `e2e/layout-consistency.spec.ts` covering both mobile (`390x844`) and desktop (`1280x800`) viewports. Assert:
+  1. Launcher role preset cards in the same grid row have equal bounding-box heights (`Math.abs(a.height - b.height) <= 2`), and clicking one preset does not change the computed opacity of sibling cards.
+  2. All `RichTextField` editor containers in Summary, Experience, and Education have a white computed background (`rgb(255, 255, 255)`).
+  3. No `<input type="month">` elements exist in dated sections (replaced by the unified Month + Year selector).
+  4. The page-count badge (`1 page` / `2 pages`) bounding box does not overlap the `.resume-page` header/name bounding box.
+  5. On desktop (`1280x800`), scrolling the Content column keeps `#panel-preview` visible inside the viewport.
+  6. Clicking the `Letter` card body (not just the radio dot) switches paper size, and clicking `"Match to a job description"` opens the JD Match drawer.
+
 
 
 ## Queue (Ready for Next Run)
