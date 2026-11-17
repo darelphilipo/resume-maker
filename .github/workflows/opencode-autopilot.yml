@@ -2,7 +2,8 @@ name: OpenCode Autopilot
 
 on:
   schedule:
-    - cron: "0 */6 * * *"
+    # Runs every 3 hours (8 runs/day). Change to "0 */2 * * *" for 12 runs/day.
+    - cron: "0 */3 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -25,7 +26,101 @@ jobs:
           token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
+      - name: Setup Node 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Restore OpenCode state & stats DB
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.local/share/opencode
+          key: opencode-state-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            opencode-state-${{ runner.os }}-
+
+      - name: Install OpenCode CLI
+        # The free tier refuses to run below 1.18.0 and still exits 0:
+        #   "Error: OpenCode 1.18.0 or newer is required to use the free tier"
+        # Do not downgrade this pin.
+        run: npm install -g @opencode/cli@latest
+
+      - name: Pre-run adaptive gate & model selection
+        id: gate
+        run: |
+          mkdir -p "$HOME/.local/share/opencode"
+          STATE_FILE="$HOME/.local/share/opencode/autopilot-state.json"
+          STATS_JSON=$(opencode stats --days 1 --format json 2>/dev/null || echo "{}")
+          export STATS_JSON STATE_FILE
+
+          node - <<'NODE_EOF' >> "$GITHUB_OUTPUT"
+          const fs = require("fs");
+          const stateFile = process.env.STATE_FILE;
+
+          let state = {
+            deepseekCooldownUntil: 0,
+            hy4CooldownUntil: 0,
+            consecutiveDeepseekLimits: 0,
+            consecutiveTimeouts: 0,
+            timeoutMins: 12,
+            recentRuns: []
+          };
+          if (fs.existsSync(stateFile)) {
+            try { state = { ...state, ...JSON.parse(fs.readFileSync(stateFile, "utf8")) }; } catch {}
+          }
+
+          const now = Date.now();
+          const dayAgo = now - 24 * 60 * 60 * 1000;
+          state.recentRuns = (state.recentRuns || []).filter((ts) => ts > dayAgo);
+
+          let reqs24h = 0;
+          try {
+            const stats = JSON.parse(process.env.STATS_JSON || "{}");
+            reqs24h = Number(stats.totalRequests ?? stats.requests ?? stats.total_requests ?? 0) || 0;
+          } catch {}
+
+          const deepseekCooling = now < (state.deepseekCooldownUntil || 0);
+          const hy4Cooling = now < (state.hy4CooldownUntil || 0);
+          const softCapHit = reqs24h >= 320 || state.recentRuns.length >= 10;
+
+          let primaryModel = "opencode/deepseek-v4.1-flash-free";
+          let skip = false;
+          let skipReason = "none";
+
+          if (deepseekCooling && !hy4Cooling) {
+            primaryModel = "opencode/hy4-flash-free";
+          } else if (deepseekCooling && hy4Cooling) {
+            const minsLeft = Math.ceil(
+              Math.min(state.deepseekCooldownUntil, state.hy4CooldownUntil) - now
+            ) / 60000;
+            skip = true;
+            skipReason = `Both DeepSeek and Hy4 Flash in cooldown (~${Math.ceil(minsLeft)}m left)`;
+          } else if (softCapHit && hy4Cooling) {
+            skip = true;
+            skipReason = `24h soft cap reached (reqs24h=${reqs24h}, runs24h=${state.recentRuns.length}) and Hy4 in cooldown`;
+          } else if (softCapHit && !hy4Cooling) {
+            primaryModel = "opencode/hy4-flash-free";
+          }
+
+          const timeoutMins = Math.min(20, Math.max(12, Number(state.timeoutMins) || 12));
+          console.log(`skip=${skip}`);
+          console.log(`skip_reason=${skipReason}`);
+          console.log(`primary_model=${primaryModel}`);
+          console.log(`hy4_cooling=${hy4Cooling}`);
+          console.log(`timeout_mins=${timeoutMins}`);
+          NODE_EOF
+
+      - name: Log gate skip to summary
+        if: steps.gate.outputs.skip == 'true'
+        run: |
+          {
+            echo "### OpenCode Autopilot Skipped"
+            echo "- **Reason:** ${{ steps.gate.outputs.skip_reason }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Resume WIP checkpoint if ahead of main
+        if: steps.gate.outputs.skip != 'true'
         run: |
           if git ls-remote --exit-code --heads origin wip/opencode-checkpoint >/dev/null 2>&1; then
             AHEAD=$(git rev-list --count origin/main..origin/wip/opencode-checkpoint)
@@ -35,24 +130,17 @@ jobs:
             fi
           fi
 
-      - name: Setup Node 24
-        uses: actions/setup-node@v5
-        with:
-          node-version: "24"
-          cache: "npm"
-
       - name: Install dependencies
+        if: steps.gate.outputs.skip != 'true'
         run: npm ci
 
-      - name: Install OpenCode CLI
-        # The free tier refuses to run below 1.18.0 and still exits 0:
-        #   "Error: OpenCode 1.18.0 or newer is required to use the free tier"
-        # Do not downgrade this pin.
-        run: npm install -g @opencode/cli@latest
-
-      - name: Run OpenCode on 1 task from TASKS.md
+      - name: Run OpenCode on 1 task from TASKS.md (with Hy4 Flash fallback)
+        if: steps.gate.outputs.skip != 'true'
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_KEY }}
+          TIMEOUT_MINS: ${{ steps.gate.outputs.timeout_mins }}
+          PRIMARY_MODEL: ${{ steps.gate.outputs.primary_model }}
+          HY4_COOLING: ${{ steps.gate.outputs.hy4_cooling }}
         run: |
           set +e
           PROMPT=$(cat <<'PROMPT_EOF'
@@ -66,16 +154,161 @@ jobs:
           6. Stop after this single task. Do NOT run git commit or git push.
           PROMPT_EOF
           )
-          timeout 20m opencode run \
-            --dangerously-skip-permissions \
-            -m opencode/deepseek-v4.1-flash-free \
-            "$PROMPT" 2>&1 | tee "$RUNNER_TEMP/opencode-run.log"
-          echo "opencode_exit=${PIPESTATUS[0]}" >> "$GITHUB_ENV"
+
+          LOG_FILE="$RUNNER_TEMP/opencode-run.log"
+          : > "$LOG_FILE"
+
+          run_model() {
+            local model="$1"
+            echo "=== Attempting model: $model ===" \vert{} tee -a "$LOG_FILE"
+            timeout "${TIMEOUT_MINS}m" opencode run \
+              --dangerously-skip-permissions \
+              -m "$model" \
+              "$PROMPT" 2>&1 \vert{} tee -a "$LOG_FILE"
+            return "${PIPESTATUS[0]}"
+          }
+
+          ACTIVE_MODEL="$PRIMARY_MODEL"
+          run_model "$ACTIVE_MODEL"
+          EXIT_CODE=$?
+          DEEPSEEK_LIMITED="false"
+          HY4_FAILED="false"
+
+          if [ "$ACTIVE_MODEL" = "opencode/deepseek-v4.1-flash-free" ] && [ "$EXIT_CODE" -ne 0 ]; then
+            if grep -qiE "429|FreeUsageLimitError|Free usage limit reached|usage limit reached" "$LOG_FILE"; then
+              DEEPSEEK_LIMITED="true"
+              if [ "$HY4_COOLING" != "true" ]; then
+                echo "DeepSeek limit hit; falling back to opencode/hy4-flash-free..." | tee -a "$LOG_FILE"
+                ACTIVE_MODEL="opencode/hy4-flash-free"
+                run_model "$ACTIVE_MODEL"
+                EXIT_CODE=$?
+                if [ "$EXIT_CODE" -ne 0 ]; then
+                  HY4_FAILED="true"
+                  echo "Hy4 Flash fallback also failed (exit $EXIT_CODE); reverting default to DeepSeek." | tee -a "$LOG_FILE"
+                  ACTIVE_MODEL="opencode/deepseek-v4.1-flash-free"
+                fi
+              fi
+            fi
+          elif [ "$ACTIVE_MODEL" = "opencode/hy4-flash-free" ] && [ "$EXIT_CODE" -ne 0 ]; then
+            HY4_FAILED="true"
+            echo "Hy4 Flash failed (exit $EXIT_CODE); reverting default to DeepSeek." | tee -a "$LOG_FILE"
+            ACTIVE_MODEL="opencode/deepseek-v4.1-flash-free"
+          fi
+
+          {
+            echo "opencode_exit=$EXIT_CODE"
+            echo "active_model=$ACTIVE_MODEL"
+            echo "deepseek_limited=$DEEPSEEK_LIMITED"
+            echo "hy4_failed=$HY4_FAILED"
+          } >> "$GITHUB_ENV"
+
+      - name: Post-run adaptive adjustment & summary
+        if: always() && steps.gate.outputs.skip != 'true'
+        run: |
+          STATE_FILE="$HOME/.local/share/opencode/autopilot-state.json"
+          LOG_FILE="$RUNNER_TEMP/opencode-run.log"
+          export STATE_FILE LOG_FILE
+
+          node - <<'NODE_EOF'
+          const fs = require("fs");
+          const stateFile = process.env.STATE_FILE;
+          const logFile = process.env.LOG_FILE;
+
+          const exitCode = Number(process.env.opencode_exit ?? 1);
+          const activeModel = process.env.active_model || "opencode/deepseek-v4.1-flash-free";
+          const deepseekLimited = process.env.deepseek_limited === "true";
+          const hy4Failed = process.env.hy4_failed === "true";
+          const logText = fs.existsSync(logFile) ? fs.readFileSync(logFile, "utf8") : "";
+
+          let state = {
+            deepseekCooldownUntil: 0,
+            hy4CooldownUntil: 0,
+            consecutiveDeepseekLimits: 0,
+            consecutiveTimeouts: 0,
+            timeoutMins: 12,
+            recentRuns: []
+          };
+          if (fs.existsSync(stateFile)) {
+            try { state = { ...state, ...JSON.parse(fs.readFileSync(stateFile, "utf8")) }; } catch {}
+          }
+
+          const now = Date.now();
+          const dayAgo = now - 24 * 60 * 60 * 1000;
+          state.recentRuns = (state.recentRuns || []).filter((ts) => ts > dayAgo);
+          state.recentRuns.push(now);
+
+          const notes = [];
+
+          if (deepseekLimited) {
+            state.consecutiveDeepseekLimits = (state.consecutiveDeepseekLimits || 0) + 1;
+            const backoffMins = Math.min(240, 60 * Math.pow(2, state.consecutiveDeepseekLimits - 1)); // 1h -> 2h -> 4h
+            state.deepseekCooldownUntil = now + backoffMins * 60 * 1000;
+            notes.push(`DeepSeek limit hit (${backoffMins}m cooldown)`);
+          }
+
+          if (hy4Failed) {
+            // 6h cooldown on Hy4 Flash if it errors or promo ends; reverts to DeepSeek
+            state.hy4CooldownUntil = now + 6 * 60 * 60 * 1000;
+            notes.push("Hy4 Flash failed (6h cooldown, reverted to DeepSeek)");
+          }
+
+          if (exitCode === 124) {
+            state.consecutiveTimeouts = (state.consecutiveTimeouts || 0) + 1;
+            state.timeoutMins = Math.min(20, (Number(state.timeoutMins) || 12) + 4);
+            notes.push(`Timeout 124 (next timeoutMins=${state.timeoutMins})`);
+          } else if (exitCode === 0) {
+            if (!deepseekLimited && activeModel === "opencode/deepseek-v4.1-flash-free") {
+              state.deepseekCooldownUntil = 0;
+              state.consecutiveDeepseekLimits = 0;
+            }
+            if (activeModel === "opencode/hy4-flash-free") {
+              state.hy4CooldownUntil = 0;
+            }
+            state.consecutiveTimeouts = 0;
+            state.timeoutMins = Math.max(12, (Number(state.timeoutMins) || 12) - 2);
+            notes.push(`Succeeded on ${activeModel} (next timeoutMins=${state.timeoutMins})`);
+          }
+
+          fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+
+          const summary = [
+            "### OpenCode Autopilot Run",
+            `- **Final model:** \`${activeModel}\``,
+            `- **Exit code:** \`${exitCode}\``,
+            `- **State update:** ${notes.join("; ") || "None"}`,
+            `- **24h tracked runs:** ${state.recentRuns.length}`,
+            "",
+            "<details><summary>OpenCode log tail (last 60 lines)</summary>",
+            "",
+            "```text",
+            logText.split(/\r?\n/).slice(-60).join("\n"),
+            "```",
+            "</details>"
+          ].join("\n");
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + "\n");
+          NODE_EOF
+
+          opencode stats --days 1 || true
+
+      - name: Save OpenCode state & stats DB
+        if: always() && steps.gate.outputs.skip != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.local/share/opencode
+          key: opencode-state-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Upload OpenCode log
+        if: always() && steps.gate.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-run-log
+          path: ${{ runner.temp }}/opencode-run.log
+          if-no-files-found: ignore
 
       - name: Fail if OpenCode errored
-        if: env.opencode_exit != '' && env.opencode_exit != '0'
+        if: steps.gate.outputs.skip != 'true' && env.opencode_exit != '' && env.opencode_exit != '0'
         run: |
-          echo "::error::opencode exited with ${opencode_exit} - see the opencode-run-log artifact"
+          echo "::error::opencode exited with ${opencode_exit} - see Summary tab or opencode-run-log artifact"
           tail -n 40 "$RUNNER_TEMP/opencode-run.log" || true
           exit 1
 
@@ -84,6 +317,7 @@ jobs:
       # that leaves the tree untouched made no progress: fail loudly instead of
       # reporting a green no-op.
       - name: Fail if the agent made no changes
+        if: steps.gate.outputs.skip != 'true'
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             echo "Agent touched $(git status --porcelain | wc -l) path(s)."
@@ -97,6 +331,7 @@ jobs:
       # --dangerously-skip-permissions, so enforce the same rule here before
       # anything can be committed.
       - name: Refuse to commit human-owned files
+        if: steps.gate.outputs.skip != 'true'
         run: |
           CHANGED=$(git status --porcelain -- .github/workflows opencode.json)
           if [ -n "$CHANGED" ]; then
@@ -105,15 +340,8 @@ jobs:
             exit 1
           fi
 
-      - name: Upload OpenCode log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: opencode-run-log
-          path: ${{ runner.temp }}/opencode-run.log
-          if-no-files-found: ignore
-
       - name: Verify build & tests
+        if: steps.gate.outputs.skip != 'true'
         id: verify
         continue-on-error: true
         run: |
@@ -122,6 +350,7 @@ jobs:
           PAGES_BASE_PATH="/resume-maker" npm run build
 
       - name: Commit & push progress
+        if: steps.gate.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           PAT: ${{ secrets.GH_PAT }}
