@@ -24,6 +24,7 @@ _None._
 
 ### P1 — Visual Consistency & UX/UI Fixes
 
+- [ ] P1: the pinch zoom and moving around runs fine ,however a small qurirk is if the resume spans multiple pages and then if I have page 2 in view and I zoom in , there's no way for me to scroll up on the page to access the print and reset buttons .I have to zoom out completely and to be able to do that 
 - [ ] P1: Make desktop Preview and Design panels sticky and independently scrollable in `src/components/editor/EditorWorkspace.tsx`. On `lg:` viewports, apply `lg:sticky lg:top-[var(--header-height,3.5rem)] lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto` to `#panel-preview` and `#panel-design` so scrolling through long Content sections keeps the live resume preview and Design controls visible at all times.
 
 - [ ] P1: Fix toolbar wrapping, paper-size card hit targets, and JD Match drawer visibility across `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/DesignPanel.tsx`, and `src/components/editor/JdMatchDrawer.tsx`.
