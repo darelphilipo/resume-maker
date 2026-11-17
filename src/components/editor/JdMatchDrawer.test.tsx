@@ -41,6 +41,26 @@ describe("JdMatchDrawer", () => {
     expect(screen.getByLabelText("Job description")).toBeInTheDocument();
   });
 
+  it("wires the trigger to the drawer portal through the dialog primitive", async () => {
+    const user = userEvent.setup();
+
+    render(<JdMatchDrawer doc={buildDoc()} />);
+
+    const trigger = screen.getByRole("button", {
+      name: "Match to a job description",
+    });
+
+    expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(trigger);
+
+    const dialog = await screen.findByRole("dialog");
+
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(trigger.getAttribute("aria-controls")).toBe(dialog.id);
+  });
+
   it("splits pasted job keywords into matched and missing chips", async () => {
     const user = userEvent.setup();
 

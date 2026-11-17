@@ -56,6 +56,31 @@ describe("EntryDrawer", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it("opens from an optional trigger rendered through the dialog primitive", async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+
+    render(
+      <EntryDrawer
+        open={false}
+        onOpenChange={onOpenChange}
+        title="Experience"
+        trigger={<button type="button">Open drawer</button>}
+      >
+        <p>Drawer body</p>
+      </EntryDrawer>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Open drawer" });
+
+    expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(trigger);
+
+    expect(onOpenChange).toHaveBeenCalledWith(true);
+  });
+
   it("reports close requests through onOpenChange", async () => {
     const user = userEvent.setup();
     const onOpenChange = vi.fn();

@@ -51,7 +51,7 @@ function ToolbarButton({
       aria-pressed={active ?? false}
       disabled={disabled}
       onClick={onClick}
-      className="flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-30 disabled:hover:bg-transparent aria-pressed:bg-black/10"
+      className="flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-30 disabled:hover:bg-transparent aria-pressed:bg-black/10 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
     >
       {children}
     </button>
@@ -180,7 +180,7 @@ export function RichTextField({
       <div
         role="toolbar"
         aria-label={`Formatting for ${ariaLabel}`}
-        className="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface-muted p-1"
+        className="flex flex-nowrap items-center gap-0.5 overflow-x-auto border-b border-line bg-surface-muted p-1"
       >
         <ToolbarButton
           label="Bold"

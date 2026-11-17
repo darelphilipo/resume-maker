@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  EntryActions,
   EntryCard,
   MonthInput,
   MonthSelect,
@@ -65,6 +66,38 @@ describe("SectionFormControls", () => {
 
     expect(input).toHaveClass("bg-surface", "text-text", "border-line");
     expect(screen.getByText("Month is enough.")).toHaveClass("text-muted");
+  });
+
+  it("keeps entry actions on one compact row in the narrow sidebar", () => {
+    render(
+      <EntryActions
+        index={0}
+        total={2}
+        onMoveUp={vi.fn()}
+        onMoveDown={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    const up = screen.getByRole("button", { name: "Move up entry 1" });
+    const row = up.parentElement;
+
+    expect(row).toHaveClass("flex-nowrap");
+    expect(row).not.toHaveClass("flex-wrap");
+
+    for (const button of [
+      up,
+      screen.getByRole("button", { name: "Move down entry 1" }),
+      screen.getByRole("button", { name: "Delete entry 1" }),
+    ]) {
+      expect(button).toHaveClass(
+        "min-h-9",
+        "min-w-9",
+        "shrink-0",
+        "pointer-coarse:min-h-11",
+        "pointer-coarse:min-w-11",
+      );
+    }
   });
 
   it("tints entry cards so nested white inputs stand out", () => {

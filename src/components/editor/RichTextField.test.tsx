@@ -177,6 +177,32 @@ describe("RichTextField", () => {
     expect(shell).toHaveClass("bg-surface", "border-line", "text-text");
   });
 
+  it("keeps the formatting toolbar on one compact row", () => {
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description"
+      />,
+    );
+
+    const toolbar = screen.getByRole("toolbar", {
+      name: "Formatting for Description",
+    });
+    const bold = screen.getByRole("button", { name: "Bold" });
+
+    expect(toolbar).toHaveClass("flex-nowrap", "overflow-x-auto", "gap-0.5");
+    expect(toolbar).not.toHaveClass("flex-wrap");
+    expect(bold).toHaveClass(
+      "min-h-9",
+      "min-w-9",
+      "shrink-0",
+      "pointer-coarse:min-h-11",
+      "pointer-coarse:min-w-11",
+    );
+    expect(bold).not.toHaveClass("min-h-11");
+  });
+
   it("keeps the achievement hint readable on the helper strip", () => {
     render(
       <RichTextField

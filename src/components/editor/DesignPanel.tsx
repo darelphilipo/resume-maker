@@ -25,17 +25,20 @@ export function DesignPanel() {
         <div className="mt-1 grid gap-2">
           {PAGE_FORMATS.map((pageFormat) => {
             const isCurrent = format === pageFormat.id;
+            const inputId = `page-format-${pageFormat.id}`;
 
             return (
               <label
                 key={pageFormat.id}
-                className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
+                htmlFor={inputId}
+                className={`flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
                   isCurrent
                     ? "border-primary/40 bg-primary/5"
                     : "border-line hover:border-black/30"
                 }`}
               >
                 <input
+                  id={inputId}
                   type="radio"
                   name="page-format"
                   value={pageFormat.id}

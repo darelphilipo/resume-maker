@@ -60,85 +60,78 @@ export function JdMatchDrawer({ doc }: { doc: ResumeDocument }) {
   const percent = Math.round(result.coverage * 100);
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => {
-          setOpen(true);
-        }}
-        className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-      >
-        <Target size={18} aria-hidden />
-        Match to a job description
-      </button>
-
-      <EntryDrawer
-        open={open}
-        onOpenChange={setOpen}
-        title="Job description keywords"
-        description="Paste a job description to compare its keywords with your resume. Everything stays in your browser."
-      >
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="jd-match-textarea"
-              className="text-sm font-medium"
-            >
-              Job description
-            </label>
-            <textarea
-              id="jd-match-textarea"
-              value={jobDescription}
-              onChange={(event) => {
-                setJobDescription(event.currentTarget.value);
-              }}
-              rows={6}
-              placeholder="Paste the job posting here…"
-              className="min-h-32 w-full resize-y rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
-            />
-          </div>
-
-          <div aria-live="polite" className="flex flex-col gap-4">
-            {total === 0 ? (
-              <p className="text-sm opacity-70">
-                No keywords yet. Paste a job description and we will compare it
-                with the text an ATS reads from your resume.
-              </p>
-            ) : (
-              <>
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm font-medium">
-                    {result.matched.length} of {total} keywords matched ({percent}%)
-                  </p>
-                  <div
-                    aria-hidden
-                    className="h-2 overflow-hidden rounded-full bg-black/10"
-                  >
-                    <div
-                      className="h-full rounded-full bg-emerald-600"
-                      style={{ width: `${percent}%` }}
-                    />
-                  </div>
-                </div>
-                <KeywordChips
-                  label="Matched"
-                  keywords={result.matched}
-                  tone="matched"
-                />
-                <KeywordChips
-                  label="Missing"
-                  keywords={result.missing}
-                  tone="missing"
-                />
-                <p className="text-xs opacity-60">
-                  Keywords are extracted with simple word heuristics. Use them
-                  as a prompt, not a score.
-                </p>
-              </>
-            )}
-          </div>
+    <EntryDrawer
+      open={open}
+      onOpenChange={setOpen}
+      title="Job description keywords"
+      description="Paste a job description to compare its keywords with your resume. Everything stays in your browser."
+      trigger={
+        <button
+          type="button"
+          className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
+          <Target size={18} aria-hidden />
+          Match to a job description
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="jd-match-textarea" className="text-sm font-medium">
+            Job description
+          </label>
+          <textarea
+            id="jd-match-textarea"
+            value={jobDescription}
+            onChange={(event) => {
+              setJobDescription(event.currentTarget.value);
+            }}
+            rows={6}
+            placeholder="Paste the job posting here…"
+            className="min-h-32 w-full resize-y rounded-lg border border-black/10 bg-transparent px-3 py-2 text-sm outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+          />
         </div>
-      </EntryDrawer>
-    </>
+
+        <div aria-live="polite" className="flex flex-col gap-4">
+          {total === 0 ? (
+            <p className="text-sm opacity-70">
+              No keywords yet. Paste a job description and we will compare it
+              with the text an ATS reads from your resume.
+            </p>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium">
+                  {result.matched.length} of {total} keywords matched ({percent}%)
+                </p>
+                <div
+                  aria-hidden
+                  className="h-2 overflow-hidden rounded-full bg-black/10"
+                >
+                  <div
+                    className="h-full rounded-full bg-emerald-600"
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+              </div>
+              <KeywordChips
+                label="Matched"
+                keywords={result.matched}
+                tone="matched"
+              />
+              <KeywordChips
+                label="Missing"
+                keywords={result.missing}
+                tone="missing"
+              />
+              <p className="text-xs opacity-60">
+                Keywords are extracted with simple word heuristics. Use them
+                as a prompt, not a score.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    </EntryDrawer>
   );
 }

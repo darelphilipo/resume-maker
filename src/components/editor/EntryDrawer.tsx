@@ -12,6 +12,12 @@ export type EntryDrawerProps = {
   title: string;
   description?: string;
   children: ReactNode;
+  /**
+   * Optional trigger rendered inside `Drawer.Root`. vaul owns its click and
+   * ARIA wiring (`aria-haspopup`/`aria-expanded`/`aria-controls`) so the portal
+   * opens reliably from the same element on desktop and touch.
+   */
+  trigger?: ReactNode;
 };
 
 export function EntryDrawer({
@@ -20,6 +26,7 @@ export function EntryDrawer({
   title,
   description,
   children,
+  trigger,
 }: EntryDrawerProps) {
   const viewportOffset = useVisualViewportOffset();
 
@@ -29,6 +36,7 @@ export function EntryDrawer({
       onOpenChange={onOpenChange}
       snapPoints={[0.6, 0.95]}
     >
+      {trigger ? <Drawer.Trigger asChild>{trigger}</Drawer.Trigger> : null}
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-40 bg-black/40" />
         <Drawer.Content

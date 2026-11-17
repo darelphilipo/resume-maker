@@ -87,7 +87,7 @@ in control of every line, and your data stays on your device.
 ### Design and preview
 
 - Clean single-column **Onyx** template designed for readable PDFs.
-- A4 and US Letter page sizes.
+- A4 and US Letter page sizes — click anywhere on a page-size card to switch.
 - Live paginated preview that measures real content, not an estimate.
 - **Preview and Design stay in view on desktop**: on a wide window the resume
   preview and the Design controls stay pinned below the header while you scroll
@@ -105,9 +105,10 @@ in control of every line, and your data stays on your device.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
   apply.
-- **Job description keyword matcher**: paste a posting to see which of its
-  keywords already appear in your resume and which are missing. Matching runs
-  locally with simple word heuristics, not AI.
+- **Job description keyword matcher**: tap **Match to a job description** in
+  Content to open the matcher on any device, then paste a posting to see which
+  of its keywords already appear in your resume and which are missing. Matching
+  runs locally with simple word heuristics, not AI.
 - A page-count pill in the preview toolbar above the page, so it never covers
   your name or header, plus an overflow warning before you print.
 - Print/PDF filenames are generated from your name, headline, and date.

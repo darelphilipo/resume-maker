@@ -294,6 +294,26 @@ rediscover.
     options by identity on every render and calls `setOptions` (rebinding the
     ProseMirror view) when they differ, so inline-constructed object arrays
     reconfigured every editor on every transaction (`shouldRerenderOnTransaction`).
+30. **Drawer triggers belong to vaul, not a bare `onClick`.** `EntryDrawer`
+    accepts an optional `trigger: ReactNode` rendered as
+    `<Drawer.Trigger asChild>` inside `Drawer.Root`. vaul/Radix then own the
+    open toggle and set `aria-haspopup="dialog"`, `aria-expanded`, and
+    `aria-controls` pointing at the portalled content, so the drawer opens
+    identically on desktop and touch. `JdMatchDrawer` passes its button this
+    way instead of calling `setOpen(true)` itself. `Drawer.Trigger` is Radix's
+    primitive (no pointer-capture handler), so `userEvent.click` on it is safe
+    in jsdom; only children *inside* `Drawer.Content` need `fireEvent.click`.
+31. **The 22rem Content sidebar is the layout budget.** Inside the
+    `lg:grid-cols-[minmax(0,22rem)_...]` panel, eight `min-h-11 min-w-11` (44px)
+    `RichTextField` toolbar buttons plus gaps overflow and wrap. The toolbar
+    now uses `flex-nowrap overflow-x-auto` with `min-h-9 min-w-9 shrink-0`
+    buttons on fine pointers and `pointer-coarse:min-h-11
+    pointer-coarse:min-w-11` on touch; `EntryActions` follows the same sizing
+    with `flex-nowrap gap-1`. Keep both rows single-line and let coarse pointers
+    scroll instead of wrapping. Paper-size cards need an explicit
+    `htmlFor`/`id` pair plus `w-full` — a bare `<label><input/></label>` does
+    not reliably forward a click on the detail `<span>` to the radio in every
+    browser.
 
 ## Verification and tooling
 
@@ -355,6 +375,31 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — One-row toolbars, full-card paper sizes, reliable JD drawer
+- Task: fix the three P1 visual/UX rough edges — toolbar wrapping in the narrow
+  desktop sidebar, partial paper-size card hit targets, and a JD Match trigger
+  that did not reliably open its portalled drawer.
+- `RichTextField`'s toolbar is now `flex-nowrap overflow-x-auto`; buttons are
+  `min-h-9 min-w-9 shrink-0` on fine pointers and `pointer-coarse:min-h-11
+  pointer-coarse:min-w-11` on touch, so eight controls fit the 22rem Content
+  column without wrapping. `EntryActions` uses the same sizing in a
+  `flex-nowrap gap-1` row. Recorded as Decision #31.
+- `DesignPanel` now pairs each radio with an explicit `id` / label `htmlFor`
+  (`page-format-a4`, `page-format-letter`) and gives the label `w-full`, so
+  clicking the A4/Letter detail text switches the format.
+- `EntryDrawer` gained an optional `trigger` rendered as `<Drawer.Trigger
+  asChild>`; `JdMatchDrawer` passes its button there instead of calling
+  `setOpen(true)`, so vaul owns the open state and the dialog ARIA wiring
+  (`aria-haspopup`, `aria-expanded`, `aria-controls`). Recorded as Decision #30.
+- Tests: compact toolbar/action classes, label pairing + detail-text click for
+  both paper sizes, trigger ARIA/portal id and open call, and the existing
+  workspace JD-open case still passes. New `DesignPanel.test.tsx`.
+- Files: `src/components/editor/RichTextField.tsx` (+ test),
+  `SectionFormControls.tsx` (+ test), `DesignPanel.tsx` (+ test),
+  `EntryDrawer.tsx` (+ test), `JdMatchDrawer.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (467 pass), `npm run lint`.
 
 ### 2026-11-17 — Ordered section actions, a drawer X, and compact verb chips
 - Task: tidy the haphazard Hide / Move up / Move down / Open section editor
@@ -591,33 +636,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/preview/LiveCanvasViewport.tsx`, `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (415 pass), `npm run lint`,
-  `npm run build` (static export; the CLI's security-advisory nudge needed the
-  usual second run).
-
-### 2026-11-17 — Pinch-first preview zoom with one floating reset
-- Task: remove the zoom/pan toolbar that pushed the resume below the fold and
-  make pinch zoom the preview without losing one-finger page scrolling.
-- Added `src/lib/zoom/canvasGestures.ts`: `pinch` stays enabled at every
-  pointer size, `panning` is disabled only on coarse pointers, and
-  `touch-action` stays `pan-y` on touch (`auto` on fine pointers). A two-finger
-  pinch is an explicit gesture, so the library's non-passive touch handler can
-  `preventDefault()` without swallowing single-finger swipes.
-- Removed the in-flow toolbar row from `LiveCanvasViewport`. The page count is
-  now a pointer-transparent chip over the page margin, and `CanvasResetButton`
-  renders only while `state.scale` differs from the fit scale, then calls
-  `setTransform(0, 0, fitScale, 150)`. The resume starts at the top of the pane;
-  desktop wheel zoom and drag panning are unchanged.
-- Tests: gesture config (pinch on for touch and desktop, pan off only on
-  touch), reset visibility and transform call, and a viewport test asserting no
-  zoom/pan buttons remain while the page count is still shown.
-- `CanvasControls.tsx` / `CanvasControls.test.tsx` are superseded and no longer
-  imported, but this sandboxed run cannot delete files (shell is limited to the
-  npm scripts). Remove them in a run with full shell access.
-- Files: `src/lib/zoom/canvasGestures.ts` (+ test),
-  `src/components/preview/CanvasResetButton.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (401 pass), `npm run lint`,
   `npm run build` (static export; the CLI's security-advisory nudge needed the
   usual second run).
 

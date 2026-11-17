@@ -24,11 +24,6 @@ _None._
 
 ### P1 — Visual Consistency & UX/UI Fixes
 
-- [ ] P1: Fix toolbar wrapping, paper-size card hit targets, and JD Match drawer visibility across `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/DesignPanel.tsx`, and `src/components/editor/JdMatchDrawer.tsx`.
-  1. Tighten `RichTextField` toolbar button spacing/sizing (`min-h-9 min-w-9` on desktop, `min-h-11` on touch or horizontal scroll/compact grouping) and `EntryActions` (`Hide`, `Move up`, `Move down`) so controls stay on a single clean row in the `22rem` desktop sidebar without awkward wrapping.
-  2. Fix `DesignPanel.tsx` paper-size `<label>` cards with explicit `htmlFor`/`id` pairing and full-card clickability (`w-full`) so clicking anywhere on the A4 or Letter card switches the format.
-  3. Audit and fix the `"Match to a job description"` button and `JdMatchDrawer.tsx` trigger/portal state so clicking it reliably opens the drawer on both desktop and mobile.
-     
 - [ ]  P1: Add a Playwright visual/layout regression spec in `e2e/layout-consistency.spec.ts` covering both mobile (`390x844`) and desktop (`1280x800`) viewports. Assert:
   1. Launcher role preset cards in the same grid row have equal bounding-box heights (`Math.abs(a.height - b.height) <= 2`), and clicking one preset does not change the computed opacity of sibling cards.
   2. All `RichTextField` editor containers in Summary, Experience, and Education have a white computed background (`rgb(255, 255, 255)`).
@@ -44,6 +39,20 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-17 — Fixed the three visual/UX rough edges in the editor: the
+  `RichTextField` toolbar and entry actions now sit on one compact row (36px
+  targets on fine pointers, 44px on touch, horizontal scroll fallback), paper
+  size cards are fully clickable via `htmlFor`/`id` and `w-full`, and the JD
+  Match trigger is rendered through vaul's `Drawer.Trigger asChild` so the
+  portal opens reliably with correct dialog ARIA wiring. Verified
+  `npm run typecheck`, `npm test` (467 pass), `npm run lint`. Files:
+  `src/components/editor/RichTextField.tsx` (+ test),
+  `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/DesignPanel.tsx` (+ new test),
+  `src/components/editor/EntryDrawer.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-17 — Tidied the haphazard section controls and gave drawers an X:
   `SectionList` now puts Hide, Move up, Move down, Open section editor, and
