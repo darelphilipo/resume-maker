@@ -271,6 +271,18 @@ rediscover.
     placeholders by default. Never use `opacity-60` for hint copy on white — it
     drops below 4.5:1; use `text-muted`. The empty `.tiptap` placeholder is
     `var(--brand-muted)` for the same reason.
+28. **Only Preview and Design stick at `lg`.** `panelClass()` in
+    `EditorWorkspace` takes `{ sticky: true }` for `#panel-preview` and
+    `#panel-design`, adding `lg:sticky lg:top-[var(--header-height,3.5rem)]
+    lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:overscroll-contain`.
+    Content stays in normal page flow so the other two `top-0`-sticky columns
+    have something to scroll past. Sticky needs the existing `lg:items-start` on
+    `<main>` (otherwise grid stretch kills it) and `lg:h-auto lg:overflow-visible`
+    on the shell (on mobile `<main>` must stay the only scroll container, see
+    #1). `--header-height` is not defined yet, so the `3.5rem` fallback matches
+    the one-row header; update it if the header ever grows. The preview column's
+    scrollbar is the only way to wheel-scroll it over the paper: `WheelZoom`
+    still `preventDefault()`s wheel events to zoom.
 
 ## Verification and tooling
 
@@ -330,6 +342,29 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — Sticky desktop Preview and Design columns
+- Task: keep the live resume preview and the Design controls visible while
+  scrolling a long Content section on desktop, without changing the mobile tab
+  layout.
+- `panelClass()` in `EditorWorkspace` now takes an optional `{ sticky: true }`.
+  Only `#panel-preview` and `#panel-design` receive `lg:sticky
+  lg:top-[var(--header-height,3.5rem)] lg:max-h-[calc(100dvh-4rem)]
+  lg:overflow-y-auto lg:overscroll-contain`; `#panel-content` keeps normal page
+  flow so the sticky columns have a scroll runway. Mobile visibility
+  (`hidden`/`block` per active tab) is untouched because every new utility is
+  `lg:`-prefixed.
+- No structural change was needed: `<main>` already has `lg:items-start` and the
+  shell already drops its fixed-height scroller at `lg`, which sticky depends
+  on. Recorded as Decisions #28.
+- Tests: `EditorWorkspace.test.tsx` asserts both sticky panels carry the
+  sticky/offset/max-height/overflow classes while Content does not, and that no
+  unprefixed `sticky`/`overflow-y-auto` leaks into the mobile layout.
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (452 pass), `npm run lint`,
+  `npm run build` (static export; confirmed the new `top`/`max-height` utilities
+  in the emitted CSS).
 
 ### 2026-11-17 — Scroll the editor back up from a zoomed multi-page preview
 - Task: with page 2 of a multi-page resume in view, pinching in left no way to
@@ -583,25 +618,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (387 pass), `npm run lint`,
   `npm run build` (static export; the CLI's security-advisory nudge needs a
   second run to finish).
-
-### 2026-11-16 — Action-verb helper chips for achievement bullets
-- Task: help users write impact-first experience/project bullets without AI.
-- `RichTextField` gained an opt-in `actionHelpers` prop. When enabled it renders
-  a wrapped helper strip between the toolbar and the editor: the
-  `[Action] + [What] + [Result by X%]` prompt with a worked example, plus four
-  44px chips (Built, Reduced, Led, Automated). A chip inserts the verb and a
-  trailing space at the cursor through TipTap `insertContent`.
-- The helper group is linked to the prompt via `useId` +
-  `aria-describedby`; chips are labelled `Insert action verb <Verb>` and are
-  disabled until the editor exists. Enabled only in `ExperienceForm` and
-  `ProjectsForm`; Summary and other rich-text notes remain plain prose.
-- Tests cover the default-hidden state, prompt/group linkage, all four chip
-  labels, and the inserted `"Reduced "` payload.
-- Files: `src/components/editor/RichTextField.tsx` (+ test),
-  `src/components/editor/ExperienceForm.tsx`,
-  `src/components/editor/ProjectsForm.tsx`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (386 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The backup-vs-primary
      entry points, paste-to-parse, fit-to-1-page, standardized month/date, first

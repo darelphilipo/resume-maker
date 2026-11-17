@@ -83,6 +83,10 @@ in control of every line, and your data stays on your device.
 - Clean single-column **Onyx** template designed for readable PDFs.
 - A4 and US Letter page sizes.
 - Live paginated preview that measures real content, not an estimate.
+- **Preview and Design stay in view on desktop**: on a wide window the resume
+  preview and the Design controls stay pinned below the header while you scroll
+  a long Content list, and each of those two columns scrolls on its own. Phones
+  keep the one-tab-at-a-time layout, so nothing is squeezed.
 - **Pinch to zoom** the preview on a touch screen: two fingers zoom the resume,
   then a one-finger drag moves freely in any direction across the zoomed page.
   At normal size a one-finger swipe still scrolls the editor, so no toolbar

@@ -124,6 +124,31 @@ describe("EditorWorkspace", () => {
     ]);
   });
 
+  it("sticks the desktop preview and design panels while content scrolls", async () => {
+    await renderReadyWorkspace();
+
+    const content = screen.getByRole("tabpanel", { name: "Content" });
+    const design = screen.getByRole("tabpanel", { name: "Design" });
+    const preview = screen.getByRole("tabpanel", { name: "Preview" });
+    const stickyClasses = [
+      "lg:sticky",
+      "lg:top-[var(--header-height,3.5rem)]",
+      "lg:max-h-[calc(100dvh-4rem)]",
+      "lg:overflow-y-auto",
+    ];
+
+    for (const panel of [design, preview]) {
+      expect(panel).toHaveClass(...stickyClasses);
+      // Sticky behaviour is desktop-only; mobile keeps one tab panel at a time.
+      expect(panel).not.toHaveClass("sticky");
+      expect(panel).not.toHaveClass("overflow-y-auto");
+    }
+
+    // Content keeps scrolling with the page so the other two can stick.
+    expect(content).not.toHaveClass("lg:sticky");
+    expect(content).not.toHaveClass("lg:overflow-y-auto");
+  });
+
   it("opens the job description keyword matcher from the content panel", async () => {
     const user = userEvent.setup();
 

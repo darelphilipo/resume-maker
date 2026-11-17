@@ -218,10 +218,22 @@ export function EditorWorkspace() {
   const statusLabel = saveStatusLabel(saveState, lastSavedAt);
   const isError = saveState === "error";
 
-  function panelClass(tab: EditorTab, orderClass: string): string {
+  /**
+   * Tabs collapse to one visible panel below `lg`; at `lg` all three show.
+   * The preview and design panels opt into a sticky, independently scrolling
+   * column so a long Content section never pushes them out of view.
+   */
+  function panelClass(
+    tab: EditorTab,
+    orderClass: string,
+    { sticky = false }: { sticky?: boolean } = {},
+  ): string {
     const visibility = activeTab === tab ? "block" : "hidden";
+    const stickyClass = sticky
+      ? " lg:sticky lg:top-[var(--header-height,3.5rem)] lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:overscroll-contain"
+      : "";
 
-    return `${visibility} lg:block ${orderClass} min-w-0`;
+    return `${visibility} lg:block ${orderClass} min-w-0${stickyClass}`;
   }
 
   return (
@@ -313,7 +325,7 @@ export function EditorWorkspace() {
           id="panel-design"
           role="tabpanel"
           aria-labelledby="tab-design"
-          className={panelClass("design", "lg:order-3")}
+          className={panelClass("design", "lg:order-3", { sticky: true })}
         >
           <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_8px_rgba(23,40,57,0.04)]">
             <h2 className="font-serif text-xl font-semibold tracking-tight">
@@ -327,7 +339,7 @@ export function EditorWorkspace() {
           id="panel-preview"
           role="tabpanel"
           aria-labelledby="tab-preview"
-          className={panelClass("preview", "lg:order-2")}
+          className={panelClass("preview", "lg:order-2", { sticky: true })}
         >
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2 px-1">
