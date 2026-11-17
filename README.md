@@ -84,11 +84,11 @@ in control of every line, and your data stays on your device.
 - A4 and US Letter page sizes.
 - Live paginated preview that measures real content, not an estimate.
 - **Pinch to zoom** the preview on a touch screen: two fingers zoom the resume,
-  then a one-finger sideways drag moves across the zoomed page. Vertical
-  swipes still scroll the editor, so the toolbar no longer pushes the resume
-  down. A small **Reset** button appears only while you are zoomed in and
-  returns the page to its fitted width. On desktop, the mouse wheel and
-  dragging work as before.
+  then a one-finger drag moves freely in any direction across the zoomed page.
+  At normal size a one-finger swipe still scrolls the editor, so no toolbar
+  pushes the resume down. A small **Reset** button appears in the preview
+  toolbar only while you are zoomed in and returns the page to its fitted
+  width. On desktop, the mouse wheel and dragging work as before.
 - **Fit to 1 Page** when a resume spills just past one page.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
@@ -96,7 +96,8 @@ in control of every line, and your data stays on your device.
 - **Job description keyword matcher**: paste a posting to see which of its
   keywords already appear in your resume and which are missing. Matching runs
   locally with simple word heuristics, not AI.
-- A page-count and overflow warning before you print.
+- A page-count pill in the preview toolbar above the page, so it never covers
+  your name or header, plus an overflow warning before you print.
 - Print/PDF filenames are generated from your name, headline, and date.
 
 ### Keep your work

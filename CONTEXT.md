@@ -62,13 +62,14 @@ rediscover.
    Use `min-h-dvh`, not `min-h-screen`.
 2. **`viewport-fit=cover` is required** (`src/app/layout.tsx` `viewport` export)
    or `env(safe-area-inset-*)` silently resolves to 0.
-3. **Canvas gestures differ by pointer type.** On coarse pointers `panning` and
-   `pinch` are disabled and `touch-action: pan-y` is set, so vertical swipes
-   scroll the page. `react-zoom-pan-pinch` only calls `preventDefault()` once
-   `isPanning` is true, so disabling pan restores native scrolling. Desktop
-   wheel/pinch/drag must stay untouched. For touch-only UI, prefer Tailwind's
-   built-in `pointer-coarse:` variant (Tailwind 4) over JS `matchMedia`, so
-   there is no hydration flicker.
+3. **Canvas gestures differ by pointer type.** Pinch is enabled everywhere.
+   On coarse pointers `panning` stays disabled so a one-finger swipe scrolls
+   the page while the resume is fitted; `touch-action: pan-y` reinforces that.
+   Once the preview is zoomed, `TouchPanCanvas` takes over both axes and the
+   canvas switches to `touch-action: none` (see #26). Desktop wheel/pinch/drag
+   must stay untouched. For touch-only UI, prefer Tailwind's built-in
+   `pointer-coarse:` variant (Tailwind 4) over JS `matchMedia`, so there is no
+   hydration flicker.
 4. **PDF filename comes from `document.title`.** There is no HTTP response in a
    static export, so title is the only lever. Format:
    `{name}-{headline}-{YYYY-MM-DD}-resume`, lowercase-kebab, local date. A
@@ -231,28 +232,29 @@ rediscover.
     coarse pointers, and the header row itself is `flex-nowrap`. Keep those
     rules if you add another header action — a label or an extra 44px control
     eats the resume name at 375px.
-26. **Preview zoom is pinch-first with one floating reset control.**
+26. **Preview zoom is pinch-first with free two-axis panning.**
     `src/lib/zoom/canvasGestures.ts` keeps `pinch` enabled at every pointer
     size, disables `panning` only on coarse pointers, and pairs that with
-    `touch-action: pan-y` so one finger still scrolls the page (see #3). Two
-    fingers are an explicit zoom gesture, so the library's non-passive touch
-    handler can `preventDefault()` without stealing one-finger swipes; the
-    pinch gesture also pans by default. After a zoom, `HorizontalTouchPan`
-    reintroduces one-finger horizontal panning: it listens on the preview pane
-    (the library stops propagation on moves it handles), commits to an axis
-    after `TOUCH_AXIS_SLOP_PX`, calls `panBy(deltaX, 0, 0)` only for horizontal
-    drags, and never prevents vertical moves so the page scroller keeps the
-    gesture. Panning is gated by `isPreviewZoomed`; ties go to vertical/scroll.
-    There is **no zoom/pan toolbar**: the page count sits in a small
-    pointer-transparent chip over the page margin and `CanvasResetButton`
-    appears only when `state.scale` differs from the fit scale, so the resume
-    starts at the top of the pane. `useControls().state` is mutated in place and
-    does not trigger renders, so both the percentage-free visibility check and
-    any future label must subscribe through `useTransformComponent`; reading
+    `canvasTouchAction`: `pan-y` at the fit scale so one finger still scrolls
+    the page (see #3), `none` once zoomed so the browser cannot begin a vertical
+    page scroll before the canvas claims the drag. `TouchPanCanvas` (renamed
+    from `HorizontalTouchPan`) listens on the preview pane (the library
+    `stopPropagation()`s moves it handles), waits for `TOUCH_AXIS_SLOP_PX`, then
+    pans **both** `deltaX` and `deltaY` through `panBy`. The zoomed canvas is
+    clipped inside a fixed-height transform wrapper, so vertical panning is the
+    only way to reach the bottom of the page; page scrolling returns as soon as
+    the user resets to fit. Panning is gated by `isPreviewZoomed`. There is
+    **no zoom/pan toolbar**: page count and the `CanvasResetButton` sit in a
+    normal-flow `[data-canvas-toolbar]` row *above* the `TransformComponent`
+    (never floating over the paper), and Reset appears only when
+    `state.scale` differs from the fit scale. `useControls().state` is mutated
+    in place and does not trigger renders, so both the zoom check and the
+    dynamic `touch-action` subscribe through `useTransformComponent`; reading
     `state.scale` in render shows a stale value (reading it inside a touch
     handler is fine). Wheel zoom and drag panning on fine pointers are
-    unchanged. The old `CanvasControls` toolbar is superseded and no longer
-    rendered; delete it in a run that has full shell access.
+    unchanged. `HorizontalTouchPan.tsx` is now a deprecated re-export shim, and
+    the old `CanvasControls` toolbar is superseded; delete both in a run with
+    file-delete access.
 27. **Editor inputs read as white fields, and hints never fade below AA.**
     `RichTextField` is a `bg-surface` shell with a `bg-surface-muted` toolbar
     strip and a white `.tiptap` area; `TextInput`/`MonthInput` share the
@@ -321,6 +323,37 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — Page count out of the page, free two-axis preview panning
+- Task: stop the `1 page` / `2 pages` badge from covering the resume header and
+  let a pinch-zoomed touch preview be panned to any area instead of sideways
+  only.
+- `LiveCanvasViewport` now renders a `[data-canvas-toolbar]` row in normal flow
+  between `PageOverflowBanner` and the `TransformComponent`: the page-count pill
+  on the left, the Reset button on the right. Nothing floats over the paper, so
+  the badge cannot overlap the name/header at any zoom or paper size. The old
+  `absolute inset-x-1 top-1` overlay is gone.
+- `HorizontalTouchPan` was generalized into `TouchPanCanvas`: after the 8px
+  slop it pans `panBy(deltaX, deltaY, 0)` on both axes. `canvasGestures` gained
+  `canvasTouchAction(isCoarsePointer, isZoomed)` (`pan-y` at fit, `none` while
+  zoomed) and `hasClearedTouchSlop` replaced `resolveTouchPanAxis`. The canvas
+  subscribes to the zoom level with `useTransformComponent`, so `touch-action`
+  flips exactly when `isPreviewZoomed` does. At fit, one-finger swipes still
+  scroll the editor; while zoomed, Reset is the way back to fit.
+- `HorizontalTouchPan.tsx` is now a deprecated re-export shim and
+  `HorizontalTouchPan.test.tsx` only checks the alias. The sandbox can edit but
+  not delete files, so delete the shim (and the already-dead `CanvasControls*`)
+  in a run with shell access.
+- Tests: free horizontal+vertical pan deltas, per-move deltas, slop commit,
+  page-scroll handoff at fit, fine-pointer no-op, pinch→drag re-anchoring,
+  toolbar placement outside `.react-transform-wrapper`, and the new gesture
+  helpers.
+- Files: `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/TouchPanCanvas.tsx` (+ test),
+  `src/components/preview/HorizontalTouchPan.tsx` (+ test),
+  `src/lib/zoom/canvasGestures.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (435 pass), `npm run lint`.
 
 ### 2026-11-17 — One Month + Year selector for every dated section
 - Task: remove the browser-dependent `<input type="month">` year scrollers and
@@ -557,27 +590,8 @@ npx playwright test    # e2e; needs a dev server on :3000
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (383 pass), `npm run lint`.
 
-### 2026-11-16 — Backup & Restore is a secondary launcher menu
-- Task: stop presenting JSON import as a primary way to start, and give JSON
-  import/export a clearly secondary home on `/`.
-- `Launcher` primary cards are now Paste your resume, Upload a PDF, and Start
-  from scratch. The PDF card owns its own `Resume PDF` input, reading/error
-  states, and accept list; JSON is no longer a primary file type.
-- A collapsed `Backup & Restore` disclosure at the bottom holds the JSON restore
-  input (`Resume backup file`), explains that backups are for moving or
-  safeguarding an existing resume, and points to **Download JSON backup** in the
-  editor for export. It toggles with `aria-expanded` / `aria-controls`.
-- Split the old shared error state into upload, backup, and preset errors so a
-  failure appears next to the control that caused it.
-- Updated the home-page intro copy and launcher/page tests (primary region
-  count, PDF-only accept, menu open/close and JSON restore).
-- Files: `src/components/launcher/Launcher.tsx` (+ test), `src/app/page.tsx`
-  (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test`.
-
-<!-- Older entries are trimmed to keep the 10 most recent. The paste-to-parse,
-     fit-to-1-page, standardized month/date, first autopilot diagnosis,
-     categorized-skills, custom-section, contact-network detection, and
-     work-auth tag details are captured in Decisions & Gotchas (#9, #10, #16,
-     #17, #18, #11) and Autopilot failure modes above. -->
-
+<!-- Older entries are trimmed to keep the 10 most recent. The backup-vs-primary
+     entry points, paste-to-parse, fit-to-1-page, standardized month/date, first
+     autopilot diagnosis, categorized-skills, custom-section, contact-network
+     detection, and work-auth tag details are captured in Decisions & Gotchas
+     (#21, #18, #10, #9, #16, #17, #11) and Autopilot failure modes above. -->

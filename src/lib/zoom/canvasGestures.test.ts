@@ -5,8 +5,9 @@ import {
   PREVIEW_ZOOM_EPSILON,
   TOUCH_AXIS_SLOP_PX,
   canvasGestureConfig,
+  canvasTouchAction,
+  hasClearedTouchSlop,
   isPreviewZoomed,
-  resolveTouchPanAxis,
 } from "./canvasGestures";
 
 describe("canvasGestureConfig", () => {
@@ -19,19 +20,32 @@ describe("canvasGestureConfig", () => {
     });
   });
 
-  it("keeps one-finger touch drags as native page scroll", () => {
+  it("keeps one-finger touch drags as native page scroll at fit", () => {
     const config = canvasGestureConfig(true);
 
     expect(config.panning.disabled).toBe(true);
-    expect(config.touchAction).toBe("pan-y");
   });
 
-  it("leaves desktop drag panning and wheel behaviour untouched", () => {
+  it("leaves desktop drag panning untouched", () => {
     const config = canvasGestureConfig(false);
 
     expect(config.pinch.disabled).toBe(false);
     expect(config.panning.disabled).toBe(false);
-    expect(config.touchAction).toBe("auto");
+  });
+});
+
+describe("canvasTouchAction", () => {
+  it("keeps vertical page scrolling while the page fits", () => {
+    expect(canvasTouchAction(true, false)).toBe("pan-y");
+  });
+
+  it("locks native scrolling out while the page is zoomed", () => {
+    expect(canvasTouchAction(true, true)).toBe("none");
+  });
+
+  it("uses the browser default on fine pointers", () => {
+    expect(canvasTouchAction(false, false)).toBe("auto");
+    expect(canvasTouchAction(false, true)).toBe("auto");
   });
 });
 
@@ -52,28 +66,20 @@ describe("isPreviewZoomed", () => {
   });
 });
 
-describe("resolveTouchPanAxis", () => {
-  it("stays uncommitted until the finger clears the slop threshold", () => {
-    expect(resolveTouchPanAxis(TOUCH_AXIS_SLOP_PX, 1)).toBeNull();
-    expect(resolveTouchPanAxis(-3, 4)).toBeNull();
+describe("hasClearedTouchSlop", () => {
+  it("keeps small and ambiguous movement uncommitted", () => {
+    expect(hasClearedTouchSlop(TOUCH_AXIS_SLOP_PX, 2)).toBe(false);
+    expect(hasClearedTouchSlop(-3, 4)).toBe(false);
   });
 
-  it("locks to horizontal for a sideways drag", () => {
-    expect(resolveTouchPanAxis(-18, 4)).toBe("horizontal");
-    expect(resolveTouchPanAxis(30, 12)).toBe("horizontal");
-  });
-
-  it("locks to vertical for a scrolling drag", () => {
-    expect(resolveTouchPanAxis(3, -24)).toBe("vertical");
-    expect(resolveTouchPanAxis(12, 30)).toBe("vertical");
-  });
-
-  it("prefers page scroll when both axes match", () => {
-    expect(resolveTouchPanAxis(20, 20)).toBe("vertical");
+  it("commits a drag once either axis clears the slop", () => {
+    expect(hasClearedTouchSlop(-18, 4)).toBe(true);
+    expect(hasClearedTouchSlop(3, -24)).toBe(true);
+    expect(hasClearedTouchSlop(TOUCH_AXIS_SLOP_PX + 1, 0)).toBe(true);
   });
 
   it("ignores non-finite movement", () => {
-    expect(resolveTouchPanAxis(Number.NaN, 30)).toBeNull();
-    expect(resolveTouchPanAxis(30, Number.POSITIVE_INFINITY)).toBeNull();
+    expect(hasClearedTouchSlop(Number.NaN, 30)).toBe(false);
+    expect(hasClearedTouchSlop(30, Number.POSITIVE_INFINITY)).toBe(false);
   });
 });

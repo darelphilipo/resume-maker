@@ -1,18 +1,24 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { HTMLAttributes, ReactNode } from "react";
+import type { HTMLAttributes, ReactNode, RefObject } from "react";
 import {
   TransformComponent,
   TransformWrapper,
   useControls,
+  useTransformComponent,
 } from "react-zoom-pan-pinch";
 
+import type { CanvasFrame } from "@/lib/pagination/canvasFrame";
 import { computeCanvasFrame } from "@/lib/pagination/canvasFrame";
 import type { PageLayout } from "@/lib/pagination/usePageLayout";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
-import { canvasGestureConfig } from "@/lib/zoom/canvasGestures";
+import {
+  canvasGestureConfig,
+  canvasTouchAction,
+  isPreviewZoomed,
+} from "@/lib/zoom/canvasGestures";
 import {
   normalizeWheelDelta,
   wheelZoomTarget,
@@ -20,9 +26,9 @@ import {
 
 import { AtsTextView } from "./AtsTextView";
 import { CanvasResetButton } from "./CanvasResetButton";
-import { HorizontalTouchPan } from "./HorizontalTouchPan";
 import { PageOverflowBanner } from "./PageOverflowBanner";
 import { PageStack } from "./PageStack";
+import { TouchPanCanvas } from "./TouchPanCanvas";
 
 export type PreviewMode = "canvas" | "ats";
 
@@ -134,6 +140,77 @@ function WheelZoom({
   }, [minScale, maxScale]);
 
   return <div ref={hostRef}>{children}</div>;
+}
+
+/**
+ * The canvas plus its chrome, rendered inside `TransformWrapper`.
+ *
+ * The page count and Reset live in a normal-flow toolbar *above* the transform
+ * component instead of floating over the paper, so they can never cover the
+ * candidate's name or header at any zoom level or paper size. The same
+ * component subscribes to the zoom level so the touch action can switch from
+ * "scroll the page" at fit to "pan the canvas freely" while zoomed.
+ */
+function CanvasSurface({
+  frame,
+  fitScale,
+  isCoarsePointer,
+  pageCount,
+  hostRef,
+  children,
+}: {
+  frame: CanvasFrame;
+  fitScale: number;
+  isCoarsePointer: boolean;
+  pageCount: number;
+  hostRef: RefObject<HTMLDivElement | null>;
+  children: ReactNode;
+}) {
+  const isZoomed = useTransformComponent(({ state }) =>
+    isPreviewZoomed(state.scale, fitScale),
+  );
+
+  return (
+    <>
+      <div
+        data-canvas-toolbar=""
+        className="flex min-h-8 flex-wrap items-center justify-between gap-2 pb-2"
+      >
+        <span
+          aria-live="polite"
+          className="rounded-full border border-line/70 bg-surface px-2 py-0.5 text-[11px] font-medium text-muted shadow-sm"
+        >
+          {pageCount} {pageCount === 1 ? "page" : "pages"}
+        </span>
+        <CanvasResetButton fitScale={fitScale} />
+      </div>
+      <FitTransform fitScale={fitScale} />
+      <TouchPanCanvas
+        hostRef={hostRef}
+        fitScale={fitScale}
+        enabled={isCoarsePointer}
+      />
+      <WheelZoom minScale={Math.min(MIN_SCALE, fitScale)} maxScale={MAX_SCALE}>
+        <TransformComponent
+          wrapperStyle={{
+            width: "100%",
+            height: `${frame.height}px`,
+            // At fit, one finger scrolls the page. While zoomed, the canvas is
+            // clipped and both axes must pan, so native scrolling is disabled.
+            touchAction: canvasTouchAction(isCoarsePointer, isZoomed),
+          }}
+          contentStyle={{ width: `${frame.width / frame.scale}px` }}
+          wrapperProps={
+            {
+              "data-canvas-height": String(frame.height),
+            } as unknown as HTMLAttributes<HTMLDivElement>
+          }
+        >
+          {children}
+        </TransformComponent>
+      </WheelZoom>
+    </>
+  );
 }
 
 export function LiveCanvasViewport({
@@ -269,46 +346,15 @@ export function LiveCanvasViewport({
           pinch={gestures.pinch}
           panning={gestures.panning}
         >
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-x-1 top-1 z-10 flex items-start justify-between gap-2">
-              <span
-                aria-live="polite"
-                className="rounded-full border border-line/70 bg-surface/90 px-2 py-0.5 text-[11px] font-medium text-muted shadow-sm backdrop-blur-sm"
-              >
-                {layout.pages.length}{" "}
-                {layout.pages.length === 1 ? "page" : "pages"}
-              </span>
-              <CanvasResetButton fitScale={fitScale!} />
-            </div>
-            <FitTransform fitScale={fitScale!} />
-            <HorizontalTouchPan
-              hostRef={containerRef}
-              fitScale={fitScale!}
-              enabled={isCoarsePointer}
-            />
-            <WheelZoom
-              minScale={Math.min(MIN_SCALE, fitScale!)}
-              maxScale={MAX_SCALE}
-            >
-              <TransformComponent
-                wrapperStyle={{
-                  width: "100%",
-                  height: `${frame.height}px`,
-                  // One finger scrolls the page (horizontal drags pan a zoomed
-                  // page); two fingers pinch the canvas.
-                  touchAction: gestures.touchAction,
-                }}
-                contentStyle={{ width: `${frame.width / frame.scale}px` }}
-                wrapperProps={
-                  {
-                    "data-canvas-height": String(frame.height),
-                  } as unknown as HTMLAttributes<HTMLDivElement>
-                }
-              >
-                <PageStack doc={doc} pages={layout.pages} />
-              </TransformComponent>
-            </WheelZoom>
-          </div>
+          <CanvasSurface
+            frame={frame}
+            fitScale={fitScale!}
+            isCoarsePointer={isCoarsePointer}
+            pageCount={layout.pages.length}
+            hostRef={containerRef}
+          >
+            <PageStack doc={doc} pages={layout.pages} />
+          </CanvasSurface>
         </TransformWrapper>
       )}
     </div>

@@ -206,6 +206,23 @@ describe("LiveCanvasViewport", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("renders the page count in a toolbar above the canvas, never over the page", async () => {
+    const { wrapper } = await renderCanvas(2);
+
+    const badge = screen.getByText("2 pages");
+    const toolbar = badge.closest("[data-canvas-toolbar]");
+
+    expect(toolbar).not.toBeNull();
+    // The badge and the Reset control live outside the transform wrapper, so
+    // no zoom level or paper size can make them cover the resume header.
+    expect(wrapper.contains(toolbar)).toBe(false);
+    expect(wrapper.contains(badge)).toBe(false);
+    expect(
+      toolbar!.compareDocumentPosition(wrapper) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("keeps native page scrolling for coarse pointers", async () => {
     stubPointer(true);
 

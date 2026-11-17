@@ -4,28 +4,24 @@ export const CANVAS_PINCH_STEP = 5;
 /** Smallest scale change that counts as a real zoom level. */
 export const PREVIEW_ZOOM_EPSILON = 0.001;
 
-/** Finger travel before a touch gesture commits to one axis. */
+/** Finger travel before a touch gesture commits to panning. */
 export const TOUCH_AXIS_SLOP_PX = 8;
-
-export type TouchPanAxis = "horizontal" | "vertical";
 
 export type CanvasGestureConfig = {
   pinch: { step: number; disabled: boolean };
   panning: { disabled: boolean };
-  touchAction: "auto" | "pan-y";
 };
 
 /**
  * Preview gestures differ by pointer type but pinch is always available.
  *
  * Two fingers are an explicit zoom gesture, so it does not compete with the
- * page scroller. A single touch must stay native scroll: leaving `panning`
- * enabled on coarse pointers would make the library call `preventDefault()` and
- * swallow the swipe (see CONTEXT Decisions #3 and #26). `touch-action: pan-y`
- * then lets the browser keep vertical scrolling while the library handles the
- * two-finger pinch itself. Horizontal dragging is added back only after a zoom,
- * by `HorizontalTouchPan`, which axis-locks the gesture instead of handing
- * one-finger panning to the library.
+ * page scroller. A single touch must stay native scroll while the page is at
+ * its fitted size: leaving `panning` enabled on coarse pointers would make the
+ * library call `preventDefault()` and swallow the swipe (see CONTEXT Decisions
+ * #3 and #26). Once the preview is zoomed, `TouchPanCanvas` takes over
+ * one-finger drags in both axes and `canvasTouchAction` locks the canvas out of
+ * native scrolling for the duration of the zoom.
  */
 export function canvasGestureConfig(
   isCoarsePointer: boolean,
@@ -33,14 +29,33 @@ export function canvasGestureConfig(
   return {
     pinch: { step: CANVAS_PINCH_STEP, disabled: false },
     panning: { disabled: isCoarsePointer },
-    touchAction: isCoarsePointer ? "pan-y" : "auto",
   };
 }
 
 /**
- * True when the preview is zoomed in past its fitted width, i.e. when there is
- * horizontal overflow to explore. Zooming out below the fit scale leaves the
- * page narrower than the pane, so panning is pointless.
+ * CSS `touch-action` for the transform wrapper.
+ *
+ * At the fit scale, `pan-y` keeps one-finger swipes scrolling the editor.
+ * While zoomed, the page is clipped inside a fixed-height canvas and can only
+ * be explored by panning, so `none` stops the browser from beginning a vertical
+ * page scroll before `TouchPanCanvas` can claim the gesture. Fine pointers use
+ * the browser default; the library's mouse panning is unaffected.
+ */
+export function canvasTouchAction(
+  isCoarsePointer: boolean,
+  isZoomed: boolean,
+): "auto" | "pan-y" | "none" {
+  if (!isCoarsePointer) {
+    return "auto";
+  }
+
+  return isZoomed ? "none" : "pan-y";
+}
+
+/**
+ * True when the preview is zoomed in past its fitted width, i.e. when the page
+ * overflows the canvas and can be panned. Zooming out below the fit scale
+ * leaves the page narrower than the pane, so panning is pointless.
  */
 export function isPreviewZoomed(scale: number, fitScale: number): boolean {
   return (
@@ -51,28 +66,20 @@ export function isPreviewZoomed(scale: number, fitScale: number): boolean {
 }
 
 /**
- * Decides which axis a one-finger touch is travelling along.
+ * True once a touch has travelled far enough to be a drag instead of a tap.
  *
- * Returning `null` keeps the gesture uncommitted (and the page scroller in
- * charge) until the finger has moved past the slop threshold. Ties and
- * vertical-first movement return `"vertical"` so page scrolling always wins
- * over panning when the direction is ambiguous.
+ * Both axes are considered so a drag in any direction starts panning; the
+ * first few pixels stay uncommitted so a tap on the page never nudges the
+ * canvas.
  */
-export function resolveTouchPanAxis(
+export function hasClearedTouchSlop(
   deltaX: number,
   deltaY: number,
   slopPx: number = TOUCH_AXIS_SLOP_PX,
-): TouchPanAxis | null {
+): boolean {
   if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY)) {
-    return null;
+    return false;
   }
 
-  const distanceX = Math.abs(deltaX);
-  const distanceY = Math.abs(deltaY);
-
-  if (distanceX <= slopPx && distanceY <= slopPx) {
-    return null;
-  }
-
-  return distanceX > distanceY ? "horizontal" : "vertical";
+  return Math.abs(deltaX) > slopPx || Math.abs(deltaY) > slopPx;
 }
