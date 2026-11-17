@@ -270,6 +270,12 @@ npx playwright test    # e2e; needs a dev server on :3000
 - In jsdom, `userEvent.type` inside a vaul drawer throws
   `setPointerCapture is not a function`; use `fireEvent.change` for drawer form
   fields in component tests.
+- When a test spies on a zustand action with a deferred promise, never resolve
+  it after the action mutates the store: `setDoc`/`patchDoc` replace the state
+  object while the spy is installed, the new object copies the mock reference,
+  and `vi.restoreAllMocks()` cannot repair it — later tests then call the mock
+  and never navigate. Either keep the deferred pending (assert the busy state
+  only) or restore the action before any store update.
 
 ## CI and deployment
 
@@ -301,6 +307,30 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-17 — Launcher preset alignment and a single-capsule tap state
+- Task: even out the role-preset cards in the "Start from scratch" launcher
+  card, stop the odd fifth card from leaving a ragged half-row, and replace the
+  tap-blink where every preset dimmed while one was creating.
+- Preset `<li>`s are `h-full items-start`, each `<button>` is `h-full`, and the
+  odd-count last card (`Fresh Graduate`) gets `sm:col-span-2`, so paired cards
+  share a row height and the fifth spans cleanly.
+- Only `creatingId === archetype.id` gets the pending treatment now: the button
+  is disabled, `aria-busy` is set, the arrow swaps for an animated
+  `CircleNotch`, and the border/bg change. Siblings get
+  `pointer-events-none` + `aria-disabled` but no opacity, so there is no
+  full-block flash; `handleArchetype` still guards against double creation.
+- The disabled "Create resume from text" CTA no longer fades with
+  `disabled:opacity-60`; it uses explicit disabled background/border/text tokens
+  (`enabled:hover`/`enabled:active` for the live state) so the icon and label
+  sit on one seamless surface.
+- Tests: preset list has five `h-full`/`items-start` rows with `h-full` buttons,
+  only the last row gets `sm:col-span-2`, the pending state is scoped to the
+  clicked preset with undimmed siblings, and the disabled CTA keeps its explicit
+  disabled tokens.
+- Files: `src/components/launcher/Launcher.tsx` (+ test), `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (418 pass), `npm run lint`.
 
 ### 2026-11-17 — Horizontal pan for the zoomed mobile preview
 - Task: after pinch-zooming, let a one-finger drag move left/right across the
@@ -516,29 +546,9 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (371 pass), `npm run lint`,
   `npm run build` (confirmed the `pointer:fine` hover rules reach the CSS).
 
-### 2026-11-16 — Paste-to-Parse launcher import
-- Task: let users paste plain resume text (PDF copy, LinkedIn profile, another
-  tool) instead of needing a JSON backup or a role preset.
-- Added `src/lib/import/pasteResume.ts`: a pure parser that normalizes lines,
-  splits known section headings, reads the header contact block (email, phone,
-  location, known profile links via `detectProfileLink`, first unknown URL as
-  the website), and builds summary/experience/education/skills items. Date
-  ranges become `YYYY-MM`; bullets become escaped `<ul><li>` rich text.
-- `Launcher` gained a first card, "Paste your resume", with a mobile-sized
-  textarea and `Create resume from text` action. It parses, sanitizes, calls the
-  existing `importResume`, and routes to the editor. Invalid text shows an
-  inline alert and never navigates.
-- Tests: 11 parser cases (header/contact, experience, education, skills, summary,
-  title/company order, year-only dates, no-blank-line entries, ignored sections,
-  unlabeled skills, HTML escaping, junk input) plus launcher success/error and
-  disabled-button coverage.
-- Files: `src/lib/import/pasteResume.ts` (+ test), `Launcher.tsx` (+ test),
-  `README.md`, `TASKS.md`, `CONTEXT.md`.
-- Verified: `npm run typecheck`, `npm test` (369 pass), `npm run lint`.
-
-<!-- Older entries are trimmed to keep the 10 most recent. The fit-to-1-page,
-     standardized month/date, first autopilot diagnosis, categorized-skills,
-     custom-section, contact-network detection, and work-auth tag details are
-     captured in Decisions & Gotchas (#9, #10, #16, #17, #11) and Autopilot
-     failure modes above. -->
+<!-- Older entries are trimmed to keep the 10 most recent. The paste-to-parse,
+     fit-to-1-page, standardized month/date, first autopilot diagnosis,
+     categorized-skills, custom-section, contact-network detection, and
+     work-auth tag details are captured in Decisions & Gotchas (#9, #10, #16,
+     #17, #18, #11) and Autopilot failure modes above. -->
 

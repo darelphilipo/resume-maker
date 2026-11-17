@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BoxArrowDown,
   CaretDown,
+  CircleNotch,
   ClipboardText,
   CurrencyDollar,
   FilePdf,
@@ -303,7 +304,7 @@ export function Launcher() {
             type="button"
             onClick={() => void handlePasteImport()}
             disabled={pastedText.trim() === "" || isPasting}
-            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#172839] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#24496b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 active:bg-[#10202f] disabled:opacity-60"
+            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-transparent bg-[#172839] px-4 py-3 text-sm font-semibold text-white transition-colors enabled:hover:bg-[#24496b] enabled:active:bg-[#10202f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-[#d8d2c6] disabled:bg-[#e8e4dc] disabled:text-[#5b6a7a]"
           >
             <ClipboardText size={18} aria-hidden />
             {isPasting ? "Creating..." : "Create resume from text"}
@@ -379,30 +380,56 @@ export function Launcher() {
           className="lg:col-span-2"
         >
           <ul className="grid gap-2.5 sm:grid-cols-2">
-            {ARCHETYPES.map((archetype) => (
-              <li key={archetype.id}>
-                <button
-                  type="button"
-                  onClick={() => void handleArchetype(archetype)}
-                  disabled={creatingId !== null}
-                  className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#e3ddd2] bg-[#fbfaf7] px-4 py-3 text-left transition-colors hover:border-[#1b3a57] hover:bg-white active:bg-[#f1ede5] disabled:opacity-60"
+            {ARCHETYPES.map((archetype, index) => {
+              const isPending = creatingId === archetype.id;
+              const isSiblingPending = creatingId !== null && !isPending;
+              const isLastOdd =
+                index === ARCHETYPES.length - 1 && ARCHETYPES.length % 2 === 1;
+
+              return (
+                <li
+                  key={archetype.id}
+                  className={`h-full items-start ${
+                    isLastOdd ? "sm:col-span-2" : ""
+                  }`}
                 >
-                  <span className="flex flex-col gap-1">
-                    <span className="font-medium text-[#172839]">
-                      {archetype.label}
+                  <button
+                    type="button"
+                    onClick={() => void handleArchetype(archetype)}
+                    disabled={isPending}
+                    aria-busy={isPending}
+                    aria-disabled={isSiblingPending || undefined}
+                    className={`flex h-full min-h-11 w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 ${
+                      isPending
+                        ? "cursor-wait border-[#1b3a57] bg-white"
+                        : "border-[#e3ddd2] bg-[#fbfaf7] hover:border-[#1b3a57] hover:bg-white active:bg-[#f1ede5]"
+                    } ${isSiblingPending ? "pointer-events-none" : ""}`}
+                  >
+                    <span className="flex flex-col gap-1">
+                      <span className="font-medium text-[#172839]">
+                        {archetype.label}
+                      </span>
+                      <span className="text-sm text-[#5b6a7a]">
+                        {archetype.description}
+                      </span>
                     </span>
-                    <span className="text-sm text-[#5b6a7a]">
-                      {archetype.description}
-                    </span>
-                  </span>
-                  <ArrowRight
-                    size={18}
-                    aria-hidden
-                    className="shrink-0 text-[#7a8794]"
-                  />
-                </button>
-              </li>
-            ))}
+                    {isPending ? (
+                      <CircleNotch
+                        size={18}
+                        aria-hidden
+                        className="shrink-0 animate-spin text-[#1b3a57]"
+                      />
+                    ) : (
+                      <ArrowRight
+                        size={18}
+                        aria-hidden
+                        className="shrink-0 text-[#7a8794]"
+                      />
+                    )}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
 
           {createError ? (

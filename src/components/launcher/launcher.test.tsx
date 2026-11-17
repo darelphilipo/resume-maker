@@ -170,6 +170,59 @@ describe("Launcher", () => {
     expect(text).not.toMatch(/\b(assistant|refine|scorecard|rewrite)\b/i);
   });
 
+  it("matches preset card heights and spans the odd last preset", () => {
+    render(<Launcher />);
+
+    const presets = within(
+      screen.getByRole("region", { name: "Start from scratch" }),
+    ).getAllByRole("listitem");
+
+    expect(presets).toHaveLength(5);
+
+    for (const preset of presets) {
+      expect(preset).toHaveClass("h-full");
+      expect(preset).toHaveClass("items-start");
+      expect(within(preset).getByRole("button")).toHaveClass("h-full");
+    }
+
+    expect(presets.at(-1)).toHaveClass("sm:col-span-2");
+    expect(presets[0]).not.toHaveClass("sm:col-span-2");
+    expect(presets.at(-1)).toHaveTextContent("Fresh Graduate");
+  });
+
+  it("shows the creating state only on the chosen preset", async () => {
+    vi.spyOn(useResumeStore.getState(), "createResume").mockImplementation(
+      () => new Promise<string>(() => {}),
+    );
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    const clicked = screen.getByRole("button", { name: /Software Engineer/ });
+    const sibling = screen.getByRole("button", { name: /Fresh Graduate/ });
+
+    await user.click(clicked);
+
+    expect(clicked).toHaveAttribute("aria-busy", "true");
+    expect(clicked).toBeDisabled();
+    expect(clicked).not.toHaveClass("pointer-events-none");
+    expect(clicked).not.toHaveClass("opacity-60");
+    expect(sibling).toHaveClass("pointer-events-none");
+    expect(sibling).not.toHaveClass("opacity-60");
+    expect(sibling).not.toHaveAttribute("aria-busy", "true");
+  });
+
+  it("keeps the disabled paste action readable instead of fading the whole button", () => {
+    render(<Launcher />);
+
+    const button = screen.getByRole("button", {
+      name: "Create resume from text",
+    });
+
+    expect(button).toBeDisabled();
+    expect(button).toHaveClass("disabled:bg-[#e8e4dc]");
+    expect(button).not.toHaveClass("disabled:opacity-60");
+  });
+
   it("opens the editor from the Software Engineer preset", async () => {
     const user = userEvent.setup();
     render(<Launcher />);
