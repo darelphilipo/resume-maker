@@ -104,4 +104,12 @@ describe("useVisualViewportOffset", () => {
 
     expect(result.current).toBe(0);
   });
+
+  it("clamps to zero when the visual viewport is taller than the layout viewport", () => {
+    installVisualViewport(window.innerHeight + 120, 0);
+
+    const { result } = renderHook(() => useVisualViewportOffset());
+
+    expect(result.current).toBe(0);
+  });
 });

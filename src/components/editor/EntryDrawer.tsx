@@ -40,7 +40,10 @@ export function EntryDrawer({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-40 bg-black/40" />
         <Drawer.Content
-          style={{ bottom: viewportOffset }}
+          style={{
+            bottom: viewportOffset,
+            maxHeight: `calc(95dvh - ${viewportOffset}px)`,
+          }}
           className="fixed inset-x-0 bottom-0 z-50 flex max-h-[95dvh] flex-col rounded-t-2xl border-t border-line bg-surface text-text shadow-xl outline-none"
         >
           <div
@@ -60,13 +63,13 @@ export function EntryDrawer({
               <X size={20} aria-hidden />
             </button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-8 pt-2">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-5 pb-8 pt-2">
             <Drawer.Description
               className={description ? "text-sm text-muted" : "sr-only"}
             >
               {description ?? title}
             </Drawer.Description>
-            <div className="mt-4">{children}</div>
+            <div className="mt-4 min-w-0 overflow-x-hidden">{children}</div>
           </div>
         </Drawer.Content>
       </Drawer.Portal>

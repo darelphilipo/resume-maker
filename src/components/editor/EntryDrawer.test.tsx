@@ -6,9 +6,34 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { EntryDrawer } from "./EntryDrawer";
+
+const originalVisualViewport = Object.getOwnPropertyDescriptor(
+  window,
+  "visualViewport",
+);
+
+afterEach(() => {
+  if (originalVisualViewport) {
+    Object.defineProperty(window, "visualViewport", originalVisualViewport);
+  } else {
+    Reflect.deleteProperty(window, "visualViewport");
+  }
+});
+
+function installVisualViewport(height: number, offsetTop = 0): void {
+  Object.defineProperty(window, "visualViewport", {
+    configurable: true,
+    value: {
+      height,
+      offsetTop,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    },
+  });
+}
 
 describe("EntryDrawer", () => {
   it("mounts the drawer content while open", async () => {
@@ -97,5 +122,45 @@ describe("EntryDrawer", () => {
     await waitFor(() => {
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
+  });
+
+  it("shrinks above the mobile keyboard so the header stays on screen", async () => {
+    const keyboardHeight = 320;
+    installVisualViewport(window.innerHeight - keyboardHeight);
+
+    render(
+      <EntryDrawer open onOpenChange={vi.fn()} title="Experience">
+        <p>Drawer body</p>
+      </EntryDrawer>,
+    );
+
+    const dialog = await screen.findByRole("dialog");
+
+    await waitFor(() => {
+      expect(dialog.style.maxHeight).toBe(
+        `calc(95dvh - ${keyboardHeight}px)`,
+      );
+      expect(dialog.style.bottom).toBe(`${keyboardHeight}px`);
+    });
+  });
+
+  it("never scrolls sideways when a field overflows", async () => {
+    render(
+      <EntryDrawer open onOpenChange={vi.fn()} title="Experience">
+        <p>Drawer body</p>
+      </EntryDrawer>,
+    );
+
+    const dialog = await screen.findByRole("dialog");
+    const body = screen.getByText("Drawer body").parentElement;
+    const scrollRegion = body?.parentElement;
+
+    expect(scrollRegion).toHaveClass(
+      "min-w-0",
+      "overflow-x-hidden",
+      "overflow-y-auto",
+    );
+    expect(body).toHaveClass("min-w-0", "overflow-x-hidden");
+    expect(dialog).toHaveClass("max-h-[95dvh]");
   });
 });

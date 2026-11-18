@@ -230,7 +230,12 @@ describe("EditorWorkspace", () => {
   });
 
   it("makes the mobile preview a fixed-height column above a scrolling canvas", async () => {
+    const user = userEvent.setup();
+
     await renderReadyWorkspace();
+
+    // The preview panel is the active mobile tab; inactive panels are `hidden`.
+    await user.click(screen.getByRole("tab", { name: "Preview" }));
 
     const main = screen.getByRole("main");
     const preview = screen.getByRole("tabpanel", { name: "Preview" });

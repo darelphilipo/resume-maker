@@ -82,7 +82,9 @@ in control of every line, and your data stays on your device.
 - On a phone, **Open section editor** opens that section in a single full editor
   sheet, so switching between sections stays quick even on a long resume. The
   sheet has an **X** in the top-right corner to close it, as well as the familiar
-  swipe-down gesture.
+  swipe-down gesture. When the on-screen keyboard opens, the sheet shrinks to
+  stay above it, so the title and close button remain in reach, and the fields
+  never slide sideways.
 
 ### Design and preview
 

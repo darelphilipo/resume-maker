@@ -424,6 +424,19 @@ rediscover.
     now finds that canvas box rather than `<main>`; that is the intended
     hand-off target.
 
+38. **Drawer sheets shrink above the mobile keyboard.** `useVisualViewportOffset`
+    reports the keyboard overlap as
+    `max(0, innerHeight - visualViewport.height - visualViewport.offsetTop)` and
+    `EntryDrawer` uses it twice: `bottom` lifts the sheet above the keyboard and
+    inline `maxHeight: calc(95dvh - ${offset}px)` clamps it so a 95dvh sheet
+    lifted by the keyboard cannot push its drag handle, title, and X off the top
+    of the screen. Both are needed; the `bottom` lift alone overflows upward.
+    The `max-h-[95dvh]` class stays as the pre-hydration fallback (the inline
+    style wins once the hook measures). The sheet body and its child wrapper are
+    `min-w-0 overflow-x-hidden` so a wide TipTap field or long unbroken URL
+    cannot create a sideways scroll strip inside the sheet; keep those classes
+    when adding section forms.
+
 ## Verification and tooling
 
 ```powershell
@@ -484,6 +497,32 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-18 — Drawer sheet shrinks above the mobile keyboard
+- Task: top P1 Queue item — stop `EntryDrawer`'s header/close button from being
+  pushed off-screen when the mobile keyboard opens, and stop sheet fields from
+  creating sideways scroll.
+- `Drawer.Content` now sets `maxHeight: calc(95dvh - ${viewportOffset}px)` in
+  addition to the existing `bottom: viewportOffset` lift; both are required, as
+  the lift by itself can push a 95dvh sheet past the top of the screen. The
+  scrollable body gained `min-w-0 overflow-x-hidden`, and its children wrapper
+  `min-w-0 overflow-x-hidden`. Recorded as Decision #38.
+- Added two `EntryDrawer.test.tsx` cases (fake `visualViewport`, asserts the
+  inline `maxHeight`/`bottom` and the body/wrapper overflow classes) and a hook
+  case proving the offset clamps to 0 when the visual viewport is taller than
+  the layout viewport.
+- Also fixed a stale pre-existing red test: `EditorWorkspace.test.tsx` asserted
+  a `flex` class on the mobile Preview tabpanel while Content was still the
+  active tab, so the panel legitimately had `hidden`. The case now taps the
+  Preview tab first (matching real use) before asserting the fixed-height
+  column. That test was failing at HEAD, independent of this change.
+- Files: `src/components/editor/EntryDrawer.tsx` (+ test),
+  `useVisualViewportOffset.test.ts`, `src/components/editor/EditorWorkspace.test.tsx`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (528 pass). Playwright remains
+  blocked in this sandbox; a browser-enabled run should still execute
+  `npm run e2e -- e2e/layout-consistency.spec.ts` at `390x844`/`1280x800` and
+  confirm the drawer above a real keyboard.
 
 ### 2026-11-18 — Fixed-height mobile preview with its own scroller
 - Task: top P0 Queue item — stop multi-page preview jitter on phones and keep
@@ -735,30 +774,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/components/editor/SectionList.tsx` (+ test), `EntryDrawer.tsx`
   (+ test), `RichTextField.tsx` (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (461 pass), `npm run lint`.
-
-### 2026-11-17 — One editor per section when the drawer is open
-- Task: fix the reported multi-second freeze when tapping "Open section editor"
-  on Summary, Profiles, and Experience (and any other section).
-- Root cause: the expanded `SectionList` row kept its inline `<SectionForm>`
-  mounted while `EntryDrawer` mounted a second copy in a portal. A 12-entry
-  Experience therefore initialized 24 TipTap editors in one commit, duplicated
-  every entry field id, and made vaul's snap-point measurement thrash on phones.
-- `EditorWorkspace` now passes `openSectionId={drawerSection?.id ?? null}` to
-  `SectionList`, which skips the inline form for that row while the drawer owns
-  it. Other rows and all desktop behaviour are unchanged; the inline form
-  remounts when the drawer closes.
-- `RichTextField` now memoizes its TipTap `extensions` and `editorProps`.
-  `@tiptap/react` compares options by identity on every render and calls
-  `setOptions` when they differ, so inline-constructed arrays were rebinding
-  the ProseMirror view on every transaction. Recorded as Decisions #29.
-- Tests: `SectionList.test.tsx` covers inline-form suppression and the retained
-  handler; `sectionEditorDrawer.test.tsx` opens Summary, Profiles, and
-  Experience from the real workspace and asserts exactly one form (and one
-  editor per entry), plus restoration on close.
-- Files: `src/components/editor/SectionList.tsx`, `EditorWorkspace.tsx`,
-  `RichTextField.tsx`, `SectionList.test.tsx`,
-  `sectionEditorDrawer.test.tsx` (new), `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (458 pass).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary

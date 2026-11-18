@@ -29,8 +29,6 @@ _None — the mobile multi-page preview scroll fix is Done below._
 
 ### P1 — Visual Consistency, Mobile Drawer & Editor UX
 
-- [ ] P1: Fix mobile `EntryDrawer` keyboard overlap and horizontal overflow in `src/components/editor/EntryDrawer.tsx` and `src/components/editor/useVisualViewportOffset.ts`. Subtract `viewportOffset` from `Drawer.Content` max-height (`maxHeight: calc(95dvh - ${viewportOffset}px)`) so opening the mobile keyboard never pushes the drawer header off-screen, and add `overflow-x-hidden min-w-0` to the scrollable body and inner wrapper.
-
 - [ ] P1: Fix Launcher capsule tap-blink, uneven heights, missing Recent Resumes / Blank start, and Paste parser bugs in `src/components/launcher/Launcher.tsx` and `src/lib/import/` (paste parser).
   1. Add `h-full` to preset `<li>` / `<button>` cards so row heights match, span/center the 5th card cleanly, and only show a loading state on the tapped card (`creatingId === archetype.id`) without dimming siblings (`opacity-60`).
   2. Fix disabled `"Create resume from text"` button inner-box styling and immediate `onChange` enablement (no blur delay).
@@ -57,6 +55,22 @@ _None — the mobile multi-page preview scroll fix is Done below._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-18 — Fixed the mobile `EntryDrawer` keyboard overlap and sideways
+  scroll: `Drawer.Content` now sets `maxHeight: calc(95dvh -
+  ${viewportOffset}px)` alongside the existing `bottom` keyboard lift, so
+  focusing a field in a 95dvh sheet keeps the drag handle, title, and X on
+  screen. The scrollable body and its children wrapper gained `min-w-0
+  overflow-x-hidden` so wide TipTap fields and long URLs cannot create a
+  horizontal scroll strip. Also repaired the stale `EditorWorkspace` preview
+  test (it asserted `flex` while the Content tab was active, so the panel
+  legitimately had `hidden`; it now taps Preview first). Verified
+  `npm run typecheck`, `npm test` (528 pass). Playwright remains blocked in this
+  sandbox; a browser-enabled run should check the sheet above a real keyboard at
+  `390x844`. Files: `src/components/editor/EntryDrawer.tsx` (+ test),
+  `src/components/editor/useVisualViewportOffset.test.ts`,
+  `src/components/editor/EditorWorkspace.test.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-18 — Fixed mobile multi-page preview scrolling: the preview tab is
   now a fixed-height flex column (`<main>` is `flex flex-col`,
