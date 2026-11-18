@@ -354,6 +354,27 @@ rediscover.
     touches instead of snapping by the full leftover delta on contact; any
     move with no leftover resets the ramp.
 
+34. **Pagination splits entries, not whole sections.** `MeasureLayer` now
+    measures one block per entry of a splittable section, plus a heading+first-
+    entry fused block. Ids come from `getSectionPlans`/`planBlockKeys` in
+    `src/lib/pagination/sectionPlans.ts` and are encoded as strings by
+    `blockIds.ts` (`__entry:<section>:<entry>:<1|0>`, URI-escaped). Keeping the
+    encoding a **string** preserves `pages: string[][]` for all six templates,
+    `PageStack`, `PrintPortal` and the canvas-frame math — do not switch that
+    contract to objects without updating every consumer. Fusing the heading
+    into the first entry block is how keep-with-next is enforced: a heading can
+    never be packed onto a page without its first entry. Only single-column,
+    non-`keepTogether`, non-summary sections with more than one visible entry
+    split; multi-column grids and `keepTogether` stay atomic. `SectionRenderer`
+    decodes ids and re-groups *consecutive* entry blocks into ONE `<section>` —
+    otherwise each entry gets its own page-gap and the grid columns break.
+    `StudioSidebarTemplate` must route blocks by the decoded section id. The
+    visibility/primary-field rules and `resolveSection` now live in
+    `src/templates/shared/sectionData.ts` and are shared with the measure layer;
+    keep them in sync with `atsText.ts` (see #11). `buildPackBlocks` falls back
+    to a whole-section height when no entry heights were reported, which is why
+    injected-measurement tests and empty sections still work.
+
 ## Verification and tooling
 
 ```powershell
@@ -414,6 +435,36 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-18 — Entry-level pagination fills Page 1
+- Task: top P0 — fix the 80%-blank Page 1 caused by packing a whole multi-entry
+  section as one indivisible block. The wheel-scroll Queue item was already in
+  Done from the previous run, so it was removed from Queue and this was the
+  next genuine item.
+- `blockIds.ts` encodes per-entry blocks as strings, so `pages: string[][]` and
+  all templates, `PageStack`, `PrintPortal` and canvas-frame math are unchanged.
+  `sectionData.ts` extracts shared section-resolution/visibility rules from
+  `SectionRenderer`; `sectionPlans.ts` decides what splits. Recorded as Decision
+  #34. The heading is fused with the first entry's block (keep-with-next without
+  gap arithmetic); only single-column, non-`keepTogether` sections with >1
+  visible entry split.
+- `MeasureLayer` reports one height per block; `computePages`/`usePageLayout`
+  pack and size fit-scale from those blocks; `SectionRenderer` re-groups
+  consecutive entry blocks into one `<section>`; Studio Sidebar routes by the
+  decoded section id. ATS text and forced page breaks are untouched.
+- Tests: new `blockIds.test.ts` and `sectionPlans.test.ts`, plus cases in
+  `computePages.test.ts`, `MeasureLayer.test.tsx`, `SectionRenderer.test.tsx`
+  and `usePageLayout.test.tsx` (the hook case asserts Page 1 takes 3 of 4
+  entries before breaking). 515 pass.
+- Files: `src/lib/pagination/blockIds.ts` (+ test, new), `sectionPlans.ts`
+  (+ test, new), `computePages.ts` (+ test), `index.ts`,
+  `src/templates/shared/sectionData.ts` (new), `SectionRenderer.tsx` (+ test),
+  `MeasureLayer.tsx` (+ test), `StudioSidebarTemplate.tsx`, `usePageLayout.ts`
+  (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (515 pass), `npm run build` (static
+  export; the Next.js security-advisory nudge needed the usual second run).
+  Playwright is blocked in this sandbox; a browser-enabled run should execute
+  `npm run e2e -- e2e/layout-consistency.spec.ts`.
 
 ### 2026-11-18 — Native wheel scroll and sticky preview chrome
 - Task: top P0 — stop the preview from hijacking the mouse wheel, smooth the
@@ -659,42 +710,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/lib/zoom/canvasGestures.ts` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (435 pass), `npm run lint`.
-
-### 2026-11-17 — One Month + Year selector for every dated section
-- Task: remove the browser-dependent `<input type="month">` year scrollers and
-  make date entry identical across Experience, Education, Projects, Custom
-  sections, Certifications, Awards, Publications, and Volunteer.
-- Added `MonthSelect` to `SectionFormControls.tsx`: a labelled group with a
-  Jan–Dec `<select>` and a four-digit numeric year input, both on the shared
-  white `min-h-11` surface. Neither control commits alone: a month needs a
-  four-digit year (and vice versa), which keeps partial typing local while the
-  store only ever sees canonical `YYYY-MM`. An empty month or year clears the
-  date and resets the partner draft. The `MonthInput` free-text fallback is
-  unchanged and still available.
-- End dates can own a **Present** toggle (`present` + `onPresentChange`): the
-  month/year controls are disabled while current, but the stored end date is
-  preserved so toggling back restores it. Experience and Education pass their
-  `current` flag; `GenericSectionForm` detects a month `endDate` plus boolean
-  `current` pair (Volunteer) and suppresses the duplicate standalone checkbox.
-- Removed the `"month"` option from `TextInput` and deleted its
-  `toMonthValue` branch. Every `type="month"` occurrence in `src/` is gone; the
-  new e2e layout spec can assert `input[type="month"]` is absent.
-- Tests: `SectionFormControls.test.tsx` covers canonical values, the
-  numeric/select styling, month-only and year-only drafts, clearing, the
-  optional Present toggle, disabled-while-present, and no native month input.
-  `ProjectsForm.test.tsx` now drives the month select + year field instead of a
-  single `YYYY-MM` change event.
-- Files: `src/components/editor/SectionFormControls.tsx` (+ test),
-  `src/components/editor/ProjectsForm.test.tsx`,
-  `src/components/editor/ExperienceForm.tsx`,
-  `src/components/editor/EducationForm.tsx`,
-  `src/components/editor/ProjectsForm.tsx`,
-  `src/components/editor/CustomSectionForm.tsx`,
-  `src/components/editor/GenericSectionForm.tsx`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (432 pass), `npm run lint`,
-  `npm run build` (static export; the CLI's security-advisory nudge needed the
-  usual second run).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary

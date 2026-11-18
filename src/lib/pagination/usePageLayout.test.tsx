@@ -5,8 +5,12 @@ import { describe, expect, it } from "vitest";
 
 import type { MeasureLayerProps } from "@/components/preview/MeasureLayer";
 import { createEmptyResume } from "@/lib/schema/defaults";
-import type { ResumeDocument } from "@/lib/schema/resume.schema";
+import {
+  ExperienceItemSchema,
+  type ResumeDocument,
+} from "@/lib/schema/resume.schema";
 
+import { getSectionPlans, planBlockKeys } from "./sectionPlans";
 import {
   isMeasurementComplete,
   usePageLayout,
@@ -131,6 +135,36 @@ describe("usePageLayout", () => {
 
     expect(result.current.pages).toHaveLength(2);
     expect(result.current.fitScale).toBeNull();
+  });
+
+  it("splits a multi-entry section so Page 1 fills before breaking", () => {
+    const doc = createEmptyResume();
+    doc.metadata.page.gapY = 0;
+    doc.metadata.layout.pages = [
+      {
+        fullWidth: false,
+        main: ["experience"],
+        sidebar: [],
+      },
+    ];
+    doc.sections.experience.items = Array.from({ length: 4 }, (_, index) =>
+      ExperienceItemSchema.parse({
+        id: `e${index + 1}`,
+        company: `Company ${index + 1}`,
+        position: "Engineer",
+      }),
+    );
+    const keys = planBlockKeys(getSectionPlans(doc, ["experience"])[0]);
+    const heights = Object.fromEntries(keys.map((key) => [key, 250]));
+    const measure: MeasureFn = () => ({ headerHeightPx: 100, heights });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    expect(result.current.pages).toEqual([
+      ["__header", keys[0], keys[1], keys[2]],
+      [keys[3]],
+    ]);
+    expect(result.current.pages[0]).toHaveLength(4);
   });
 
   it("derives the render order from main then sidebar", () => {
@@ -276,5 +310,17 @@ describe("isMeasurementComplete", () => {
     expect(isMeasurementComplete(["a"], true, {})).toBe(false);
     expect(isMeasurementComplete(["a"], true, { a: 0 })).toBe(true);
     expect(isMeasurementComplete(["a", "b"], true, { a: 0, b: 0 })).toBe(true);
+  });
+
+  it("accepts explicit entry-block keys for split sections", () => {
+    expect(
+      isMeasurementComplete(["experience"], true, { e1: 10, e2: 20 }, [
+        "e1",
+        "e2",
+      ]),
+    ).toBe(true);
+    expect(
+      isMeasurementComplete(["experience"], true, { e1: 10 }, ["e1", "e2"]),
+    ).toBe(false);
   });
 });

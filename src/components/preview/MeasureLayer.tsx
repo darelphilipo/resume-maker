@@ -3,11 +3,17 @@
 import {
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   type CSSProperties,
 } from "react";
 
 import { HEADER_BLOCK_ID } from "@/lib/pagination/constants";
+import {
+  getSectionPlans,
+  planBlockKeys,
+  type SectionPlan,
+} from "@/lib/pagination/sectionPlans";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { HeaderSlot } from "@/templates/shared/HeaderSlot";
 import { SectionRenderer } from "@/templates/shared/SectionRenderer";
@@ -18,6 +24,8 @@ export type MeasureLayerProps = {
   order: readonly string[];
   contentWidthPx: number;
   onMeasure: (id: string, heightPx: number) => void;
+  /** Precomputed by `usePageLayout`; derived from `doc`/`order` when omitted. */
+  plans?: readonly SectionPlan[];
 };
 
 const MEASURED_SELECTOR = "[data-measure-id]";
@@ -34,9 +42,14 @@ export function MeasureLayer({
   order,
   contentWidthPx,
   onMeasure,
+  plans,
 }: MeasureLayerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const onMeasureRef = useRef(onMeasure);
+  const resolvedPlans = useMemo(
+    () => plans ?? getSectionPlans(doc, order),
+    [plans, doc, order],
+  );
 
   useEffect(() => {
     onMeasureRef.current = onMeasure;
@@ -110,7 +123,7 @@ export function MeasureLayer({
       disposed = true;
       observer?.disconnect();
     };
-  }, [doc, order, contentWidthPx]);
+  }, [doc, order, contentWidthPx, resolvedPlans]);
 
   const themeStyle = {
     "--resume-font-size": scaledPt(
@@ -157,11 +170,13 @@ export function MeasureLayer({
       <div data-measure-id={HEADER_BLOCK_ID}>
         <HeaderSlot doc={doc} />
       </div>
-      {order.map((sectionId, index) => (
-        <div key={`${sectionId}-${index}`} data-measure-id={sectionId}>
-          <SectionRenderer doc={doc} pageSectionIds={[sectionId]} />
-        </div>
-      ))}
+      {resolvedPlans.flatMap((plan) =>
+        planBlockKeys(plan).map((key) => (
+          <div key={key} data-measure-id={key}>
+            <SectionRenderer doc={doc} pageSectionIds={[key]} />
+          </div>
+        )),
+      )}
     </div>
   );
 }

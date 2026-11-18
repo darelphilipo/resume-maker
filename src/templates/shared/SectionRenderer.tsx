@@ -1,56 +1,23 @@
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 
-import {
-  SECTION_IDS,
-  type ResumeDocument,
-  type SectionConfig,
-  type SectionId,
-} from "@/lib/schema/resume.schema";
+import { decodeBlock } from "@/lib/pagination/blockIds";
+import type { ResumeDocument, SectionId } from "@/lib/schema/resume.schema";
 
 import { DateRange } from "./DateRange";
+import {
+  itemId,
+  resolveSection,
+  text,
+  type ItemRecord,
+  type ListKind,
+  type ResolvedSection,
+} from "./sectionData";
 import { SkillLevelIndicator } from "./SkillLevelIndicator";
-
-type ItemRecord = Record<string, unknown>;
-
-type ListKind = SectionId | "custom";
-
-type ResolvedSummary = {
-  kind: "summary";
-  config: SectionConfig;
-};
-
-type ResolvedList = {
-  kind: ListKind;
-  config: SectionConfig;
-  items: ItemRecord[];
-};
-
-type ResolvedSection = ResolvedSummary | ResolvedList;
 
 type GenericKind = Exclude<
   SectionId,
   "experience" | "education" | "projects" | "skills"
 > | "custom";
-
-const PRIMARY_FIELDS: Record<SectionId, string> = {
-  profiles: "network",
-  experience: "company",
-  education: "school",
-  projects: "name",
-  skills: "name",
-  certifications: "name",
-  awards: "title",
-  languages: "name",
-  interests: "name",
-  volunteer: "organization",
-  publications: "title",
-  references: "name",
-};
-
-function text(item: ItemRecord, field: string): string {
-  const value = item[field];
-  return typeof value === "string" ? value : "";
-}
 
 function keywordList(item: ItemRecord): string[] {
   const value = item.keywords;
@@ -63,68 +30,6 @@ function keywordList(item: ItemRecord): string[] {
     (keyword): keyword is string =>
       typeof keyword === "string" && keyword.trim() !== "",
   );
-}
-
-function visibleItems(items: readonly unknown[], primaryField: string): ItemRecord[] {
-  return items
-    .map((item) => item as ItemRecord)
-    .filter(
-      (item) =>
-        item.hidden !== true && text(item, primaryField).trim() !== "",
-    );
-}
-
-function resolveSection(
-  doc: ResumeDocument,
-  sectionId: string,
-): ResolvedSection | null {
-  if (sectionId === "summary") {
-    if (doc.summary.hidden || doc.summary.content.trim() === "") {
-      return null;
-    }
-
-    return { kind: "summary", config: doc.summary };
-  }
-
-  const customSection = doc.customSections.find(
-    (section) => section.id === sectionId,
-  );
-
-  if (customSection) {
-    if (customSection.hidden) {
-      return null;
-    }
-
-    const items = visibleItems(customSection.items, "name");
-
-    if (items.length === 0) {
-      return null;
-    }
-
-    return { kind: "custom", config: customSection, items };
-  }
-
-  const knownSectionId = SECTION_IDS.find(
-    (candidate) => candidate === sectionId,
-  );
-
-  if (!knownSectionId) {
-    return null;
-  }
-
-  const section = doc.sections[knownSectionId];
-
-  if (section.hidden) {
-    return null;
-  }
-
-  const items = visibleItems(section.items, PRIMARY_FIELDS[knownSectionId]);
-
-  if (items.length === 0) {
-    return null;
-  }
-
-  return { kind: knownSectionId, config: section, items };
 }
 
 function EntryShell({
@@ -392,7 +297,7 @@ function renderItem(
   item: ItemRecord,
   index: number,
 ): ReactNode {
-  const id = typeof item.id === "string" ? item.id : `item-${index}`;
+  const id = itemId(item, index);
   let entry: ReactNode;
 
   switch (kind) {
@@ -416,6 +321,66 @@ function renderItem(
   return <Fragment key={id}>{entry}</Fragment>;
 }
 
+type BlockGroup = {
+  sectionId: string;
+  resolved: ResolvedSection;
+  /** `null` means every visible entry (a plain, atomic section id). */
+  entryIds: string[] | null;
+  withHeading: boolean;
+};
+
+/**
+ * A split section contributes several consecutive ids to a page. They must
+ * still render as ONE `<section>`: collapsing them here preserves the grid row
+ * gaps, multi-column layout and CSS section-level break rules that measuring
+ * the entries individually would otherwise change.
+ */
+function groupBlocks(
+  doc: ResumeDocument,
+  ids: readonly string[],
+): BlockGroup[] {
+  const groups: BlockGroup[] = [];
+
+  for (const id of ids) {
+    const block = decodeBlock(id);
+
+    if (block.kind !== "section") {
+      continue;
+    }
+
+    const last = groups[groups.length - 1];
+
+    if (last && last.sectionId === block.sectionId) {
+      if (block.entryIds === null) {
+        last.entryIds = null;
+      } else if (last.entryIds !== null) {
+        for (const entryId of block.entryIds) {
+          if (!last.entryIds.includes(entryId)) {
+            last.entryIds.push(entryId);
+          }
+        }
+      }
+      last.withHeading = last.withHeading || block.withHeading;
+      continue;
+    }
+
+    const resolved = resolveSection(doc, block.sectionId);
+
+    if (!resolved) {
+      continue;
+    }
+
+    groups.push({
+      sectionId: block.sectionId,
+      resolved,
+      entryIds: block.entryIds ? [...block.entryIds] : null,
+      withHeading: block.withHeading,
+    });
+  }
+
+  return groups;
+}
+
 export function SectionRenderer({
   doc,
   pageSectionIds,
@@ -425,21 +390,25 @@ export function SectionRenderer({
 }) {
   return (
     <>
-      {pageSectionIds.map((sectionId, sectionIndex) => {
-        const resolved = resolveSection(doc, sectionId);
-
-        if (!resolved) {
-          return null;
-        }
-
+      {groupBlocks(doc, pageSectionIds).map((group, sectionIndex) => {
+        const { resolved } = group;
         const { config } = resolved;
-        const hasHeading = config.showHeading && config.title.trim() !== "";
+        const hasHeading =
+          group.withHeading && config.showHeading && config.title.trim() !== "";
+        const items =
+          resolved.kind === "summary"
+            ? []
+            : group.entryIds === null
+              ? resolved.items
+              : resolved.items.filter((item, itemIndex) =>
+                  group.entryIds?.includes(itemId(item, itemIndex)) ?? true,
+                );
 
         return (
           <section
-            key={`${sectionId}-${sectionIndex}`}
+            key={`${group.sectionId}-${sectionIndex}`}
             className="resume-section"
-            data-section-id={sectionId}
+            data-section-id={group.sectionId}
             data-keep-together={config.keepTogether ? "true" : undefined}
             data-start-new-page={config.startOnNewPage ? "true" : undefined}
             aria-label={hasHeading ? undefined : config.title || undefined}
@@ -459,7 +428,7 @@ export function SectionRenderer({
                   { "--section-columns": config.columns } as CSSProperties
                 }
               >
-                {resolved.items.map((item, index) =>
+                {items.map((item, index) =>
                   renderItem(doc, resolved.kind, item, index),
                 )}
               </div>

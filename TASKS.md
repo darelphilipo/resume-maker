@@ -25,11 +25,7 @@ _None._
 
 ### P0 — Multi-Page & Scroll Fixes
 
-- [ ] P0: Fix mouse-wheel scroll hijacking and mobile cross-page scroll jerk in `src/components/preview/LiveCanvasViewport.tsx` and `src/components/preview/TouchPanCanvas.tsx`.
-  1. In `WheelZoom` (`LiveCanvasViewport.tsx`), only intercept `wheel` events to zoom when `event.ctrlKey || event.metaKey` is pressed (pinch-to-zoom on trackpads); let normal wheel/two-finger scrolling pass through natively to scroll multi-page resumes smoothly.
-  2. Smooth out `TouchPanCanvas.tsx` vertical pan-to-scroll handoff (avoid abrupt `scrollPageBy` jumps at pan bounds, or allow native vertical page scrolling when horizontal zoom fits viewport width) and make the Preview header (`Visual`/`ATS text`, page count pill, overflow banner) sticky without overlapping Page 1.
-
-- [ ] P0: Fix multi-page section splitting (80%-blank Page 1 bug) in `src/components/preview/MeasureLayer.tsx`, `src/lib/pagination/packPages.ts`, and `src/components/preview/PageStack.tsx`. Measure and paginate individual entries within multi-entry sections (`Experience`, `Education`, `Projects`, `Certifications`, `Awards`, `Publications`, `Custom`) rather than treating an entire section as one indivisible block, keeping section headings attached to at least their first entry (`keep-with-next`) so Page 1 fills naturally before breaking to Page 2.
+_(The wheel-scroll / sticky-header item was completed 2026-11-18 and is in Done.)_
 
 - [ ] P0: Fix mid-word line breaking in `src/templates/onyx/onyx.css` (and any shared template CSS). Replace `overflow-wrap: anywhere` on `.onyx` with `overflow-wrap: break-word; word-break: normal;` (reserving `overflow-wrap: anywhere` strictly for URLs/links) so normal prose and bullets never break mid-word.
 
@@ -67,6 +63,26 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-18 — Fixed the 80%-blank Page 1 bug: multi-entry sections are now
+  measured and packed entry by entry instead of as one indivisible block, with
+  each heading fused to its first entry (`keep-with-next`) so Page 1 fills
+  naturally. `getSectionPlans`/`planBlockKeys` keep summaries, `keepTogether`
+  and multi-column sections atomic; new encoded entry ids preserve the existing
+  `pages: string[][]` contract across all templates and print; `SectionRenderer`
+  groups consecutive entry blocks back into one `<section>` so grid gaps,
+  columns and CSS break rules still apply. `startOnNewPage`, canonical order,
+  zero-height filtering and ATS text are unchanged. Also removed the stale
+  wheel-scroll Queue item (already in Done from 2026-11-18). Verified
+  `npm run typecheck`, `npm test` (515 pass), `npm run build` (static export;
+  the usual Next.js security-advisory nudge needed a second run). Files:
+  `src/lib/pagination/blockIds.ts` (+ test, new), `sectionPlans.ts` (+ test,
+  new), `computePages.ts` (+ test), `index.ts`,
+  `src/templates/shared/sectionData.ts` (new), `SectionRenderer.tsx` (+ test),
+  `MeasureLayer.tsx` (+ test), `StudioSidebarTemplate.tsx`, `usePageLayout.ts`
+  (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`. Playwright remains blocked in
+  this sandbox; `npm run e2e -- e2e/layout-consistency.spec.ts` should be run
+  with a browser.
 
 - [x] 2026-11-18 — Fixed preview scroll hijacking and sticky chrome: plain wheel
   and two-finger scrolling now pass through to the page scroller while only

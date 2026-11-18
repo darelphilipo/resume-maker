@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { encodeEntryBlock } from "@/lib/pagination/blockIds";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
   ExperienceItemSchema,
@@ -145,6 +146,59 @@ describe("SectionRenderer", () => {
     expect(
       container.querySelectorAll(".resume-entry-keep-together"),
     ).toHaveLength(2);
+  });
+
+  it("renders a split section's entries as one section with the heading on the first block", () => {
+    const doc = createEmptyResume();
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+      }),
+      ExperienceItemSchema.parse({
+        id: "e2",
+        company: "Globex",
+        position: "Manager",
+      }),
+      ExperienceItemSchema.parse({
+        id: "e3",
+        company: "Initech",
+        position: "Director",
+      }),
+    ];
+
+    const { container, rerender } = render(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={[
+          encodeEntryBlock("experience", "e1", true),
+          encodeEntryBlock("experience", "e2", false),
+        ]}
+      />,
+    );
+
+    expect(container.querySelectorAll(".resume-section")).toHaveLength(1);
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Experience" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Acme")).toBeInTheDocument();
+    expect(screen.getByText("Globex")).toBeInTheDocument();
+    expect(screen.queryByText("Initech")).toBeNull();
+
+    rerender(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={[encodeEntryBlock("experience", "e3", false)]}
+      />,
+    );
+
+    expect(container.querySelectorAll(".resume-section")).toHaveLength(1);
+    expect(
+      screen.queryByRole("heading", { level: 2, name: "Experience" }),
+    ).toBeNull();
+    expect(screen.getByText("Initech")).toBeInTheDocument();
+    expect(screen.queryByText("Acme")).toBeNull();
   });
 
   it("renders skill keywords as pills or as an inline comma list", () => {

@@ -14,6 +14,12 @@ import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
 import { HEADER_BLOCK_ID } from "./constants";
 import { computePages } from "./computePages";
 import { computeFitScale } from "./fitScale";
+import {
+  buildPackBlocks,
+  getSectionPlans,
+  planBlockKeys,
+  type SectionPlan,
+} from "./sectionPlans";
 
 export type MeasureResult = {
   headerHeightPx: number;
@@ -53,12 +59,14 @@ export function isMeasurementComplete(
   order: readonly string[],
   headerMeasured: boolean,
   heights: Readonly<Record<string, number>>,
+  /** Defaults to `order`; split sections report one height per entry block. */
+  expectedKeys: readonly string[] = order,
 ): boolean {
   if (!headerMeasured) {
     return false;
   }
 
-  return order.every((id) => hasMeasuredHeight(heights, id));
+  return expectedKeys.every((id) => hasMeasuredHeight(heights, id));
 }
 
 export function usePageLayout(
@@ -79,6 +87,15 @@ export function usePageLayout(
   }, [layoutPages]);
 
   const orderKey = order.join("|");
+
+  const plans = useMemo<SectionPlan[]>(
+    () => getSectionPlans(doc, order),
+    [doc, order],
+  );
+  const expectedKeys = useMemo(
+    () => plans.flatMap(planBlockKeys),
+    [plans],
+  );
 
   const { contentWidthPx, contentHeightPx } = useMemo(
     () =>
@@ -177,6 +194,7 @@ export function usePageLayout(
         order,
         currentCollected.headerMeasured,
         currentCollected.heights,
+        expectedKeys,
       );
 
   const measureLayer = measure
@@ -186,6 +204,7 @@ export function usePageLayout(
         order,
         contentWidthPx,
         onMeasure: handleMeasurement,
+        plans,
       });
 
   if (isMeasuring || !measurements) {
@@ -208,15 +227,18 @@ export function usePageLayout(
     gapPx,
     contentHeightPx,
     startOnNewPage,
+    plans,
   });
 
-  const sectionHeights = order
-    .map((id) => measurements.heights[id] ?? 0)
-    .filter((heightPx) => heightPx > 0);
+  const blockHeights = buildPackBlocks(
+    plans,
+    measurements.heights,
+    startOnNewPage,
+  ).map((block) => block.heightPx);
   const totalHeightPx =
     measurements.headerHeightPx +
-    sectionHeights.reduce((sum, heightPx) => sum + heightPx, 0) +
-    gapPx * sectionHeights.length;
+    blockHeights.reduce((sum, heightPx) => sum + heightPx, 0) +
+    gapPx * blockHeights.length;
   const fitScale =
     startOnNewPage.size > 0
       ? null

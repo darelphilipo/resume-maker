@@ -1,7 +1,9 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { encodeEntryBlock } from "@/lib/pagination/blockIds";
 import { createEmptyResume } from "@/lib/schema/defaults";
+import { ExperienceItemSchema } from "@/lib/schema/resume.schema";
 
 import { MeasureLayer } from "./MeasureLayer";
 
@@ -52,6 +54,49 @@ describe("MeasureLayer", () => {
       expect(onMeasure).toHaveBeenCalledWith("__header", 0);
       expect(onMeasure).toHaveBeenCalledWith("experience", 0);
       expect(onMeasure).toHaveBeenCalledWith("skills", 0);
+    } finally {
+      restore();
+    }
+  });
+
+  it("measures each entry of a multi-entry section separately", () => {
+    const restore = mockLayoutWidth(700);
+
+    try {
+      const doc = createEmptyResume();
+      doc.sections.experience.items = [
+        ExperienceItemSchema.parse({
+          id: "e1",
+          company: "Acme",
+          position: "Engineer",
+        }),
+        ExperienceItemSchema.parse({
+          id: "e2",
+          company: "Globex",
+          position: "Manager",
+        }),
+      ];
+      const onMeasure = vi.fn();
+
+      render(
+        <MeasureLayer
+          doc={doc}
+          order={["experience"]}
+          contentWidthPx={700}
+          onMeasure={onMeasure}
+        />,
+      );
+
+      expect(onMeasure).toHaveBeenCalledWith("__header", 0);
+      expect(onMeasure).toHaveBeenCalledWith(
+        encodeEntryBlock("experience", "e1", true),
+        0,
+      );
+      expect(onMeasure).toHaveBeenCalledWith(
+        encodeEntryBlock("experience", "e2", false),
+        0,
+      );
+      expect(onMeasure).not.toHaveBeenCalledWith("experience", 0);
     } finally {
       restore();
     }
