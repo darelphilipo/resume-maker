@@ -32,14 +32,23 @@ import { scrollPageBy } from "@/lib/zoom/touchScroll";
  * Listeners are attached to the preview pane (outside the transform wrapper)
  * because the library calls `stopPropagation()` on touch moves it handles.
  * `touchmove` must be non-passive so a drag can call `preventDefault()`.
+ *
+ * Nothing is attached while the preview sits at its fitted width: a non-passive
+ * `touchmove` listener anywhere on the path blocks the browser's own scroll
+ * compositing, which is what made a multi-page preview stutter. At fit the
+ * canvas is exactly as tall as its scroller, so native `touch-action: pan-y`
+ * scrolling is both correct and smooth.
  */
 export function TouchPanCanvas({
   hostRef,
   fitScale,
+  isZoomed,
   enabled,
 }: {
   hostRef: RefObject<HTMLDivElement | null>;
   fitScale: number;
+  /** Mirrored from `useTransformComponent`; re-renders on every zoom change. */
+  isZoomed: boolean;
   enabled: boolean;
 }) {
   const { panBy, instance, state } = useControls();
@@ -56,7 +65,7 @@ export function TouchPanCanvas({
   useEffect(() => {
     const host = hostRef.current;
 
-    if (!host || !enabled) {
+    if (!host || !enabled || !isZoomed) {
       return;
     }
 
@@ -173,7 +182,7 @@ export function TouchPanCanvas({
       host.removeEventListener("touchend", handleTouchEnd);
       host.removeEventListener("touchcancel", handleTouchEnd);
     };
-  }, [enabled, fitScale, hostRef]);
+  }, [enabled, fitScale, isZoomed, hostRef]);
 
   return null;
 }

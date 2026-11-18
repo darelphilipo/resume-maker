@@ -156,10 +156,12 @@ function WheelZoom({
 }
 
 /**
- * Sticky preview chrome: the page overflow banner and the page count / Reset
- * toolbar. Both stay in normal flow at the top of the pane (never floating over
- * the paper), and stick below the `Visual`/`ATS text` row while the editor
- * scrolls, so Page 1 is never covered by the controls at rest.
+ * Preview chrome: the page overflow banner and the page count / Reset toolbar.
+ *
+ * On phones this is a `shrink-0` row in the Preview column's flex stack, so it
+ * sits *outside* the canvas scroller and pages can never bleed above or behind
+ * it. At `lg` the preview panel itself scrolls, so the same block sticks below
+ * the `Visual`/`ATS text` row instead (see CONTEXT Decisions #33 and #37).
  */
 function PreviewChrome({
   banner,
@@ -171,7 +173,7 @@ function PreviewChrome({
   return (
     <div
       data-preview-header=""
-      className="sticky top-14 z-10 -mx-4 -mt-4 flex flex-col gap-2 border-b border-line/70 bg-background/95 px-4 pb-2 pt-3 backdrop-blur"
+      className="z-10 -mx-4 -mt-4 flex shrink-0 flex-col gap-2 border-b border-line/70 bg-background/95 px-4 pb-2 pt-3 backdrop-blur lg:sticky lg:top-14"
     >
       {banner}
       {children}
@@ -258,6 +260,7 @@ function CanvasSurface({
       <TouchPanCanvas
         hostRef={hostRef}
         fitScale={fitScale}
+        isZoomed={isZoomed}
         enabled={isCoarsePointer}
       />
       <WheelZoom minScale={Math.min(MIN_SCALE, fitScale)} maxScale={MAX_SCALE}>
@@ -447,7 +450,7 @@ export function LiveCanvasViewport({
   return (
     <div
       ref={containerRef}
-      className="relative flex w-full flex-col gap-4 overflow-clip rounded-xl bg-black/5 p-4"
+      className="relative flex min-h-0 w-full flex-1 flex-col gap-4 overflow-clip rounded-xl bg-black/5 p-4 lg:flex-none"
     >
       {layout.measureLayer}
       {(mode === "canvas" || showOverflowBanner) ? (
@@ -463,41 +466,51 @@ export function LiveCanvasViewport({
           ) : null}
         </PreviewChrome>
       ) : null}
-      {showCanvas ? (
-        <TransformWrapper
-          ref={wrapperRef}
-          onTransform={handleTransform}
-          initialScale={fitScale!}
-          initialPositionX={0}
-          initialPositionY={0}
-          minScale={Math.min(MIN_SCALE, fitScale!)}
-          maxScale={MAX_SCALE}
-          centerOnInit={false}
-          limitToBounds
-          doubleClick={{ disabled: true }}
-          wheel={{ disabled: true }}
-          pinch={gestures.pinch}
-          panning={gestures.panning}
-        >
-          <CanvasSurface
-            frame={frame!}
-            fitScale={fitScale!}
-            isCoarsePointer={isCoarsePointer}
-            hostRef={containerRef}
+      {/*
+       * The only mobile scroll container in the preview: the chrome above stays
+       * fixed, and pages are clipped at its bottom edge instead of scrolling
+       * under it. Desktop keeps the panel as the scroller.
+       */}
+      <div
+        data-canvas-scroll=""
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain lg:flex-none lg:overflow-visible"
+      >
+        {showCanvas ? (
+          <TransformWrapper
+            ref={wrapperRef}
+            onTransform={handleTransform}
+            initialScale={fitScale!}
+            initialPositionX={0}
+            initialPositionY={0}
+            minScale={Math.min(MIN_SCALE, fitScale!)}
+            maxScale={MAX_SCALE}
+            centerOnInit={false}
+            limitToBounds
+            doubleClick={{ disabled: true }}
+            wheel={{ disabled: true }}
+            pinch={gestures.pinch}
+            panning={gestures.panning}
           >
-            <PageStack doc={doc} pages={layout.pages} />
-          </CanvasSurface>
-        </TransformWrapper>
-      ) : null}
-      {mode === "ats" ? (
-        <AtsTextView doc={doc} />
-      ) : frame === null || layout.isMeasuring ? (
-        <div
-          aria-busy="true"
-          data-canvas-placeholder=""
-          className="min-h-[240px] w-full rounded-lg bg-white/40"
-        />
-      ) : null}
+            <CanvasSurface
+              frame={frame!}
+              fitScale={fitScale!}
+              isCoarsePointer={isCoarsePointer}
+              hostRef={containerRef}
+            >
+              <PageStack doc={doc} pages={layout.pages} />
+            </CanvasSurface>
+          </TransformWrapper>
+        ) : null}
+        {mode === "ats" ? (
+          <AtsTextView doc={doc} />
+        ) : frame === null || layout.isMeasuring ? (
+          <div
+            aria-busy="true"
+            data-canvas-placeholder=""
+            className="min-h-[240px] w-full rounded-lg bg-white/40"
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

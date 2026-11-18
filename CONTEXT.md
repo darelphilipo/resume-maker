@@ -352,7 +352,8 @@ rediscover.
     pan-to-scroll hand-off now calls `dampHandoffScroll` (`HANDOFF_RAMP_MOVES =
     4`): the page-scroller contribution ramps in over the first four at-bound
     touches instead of snapping by the full leftover delta on contact; any
-    move with no leftover resets the ramp.
+    move with no leftover resets the ramp. On phones the same two rows are
+    static (`shrink-0`) inside the fixed-height preview column — see #37.
 
 34. **Pagination splits entries, not whole sections.** `MeasureLayer` now
     measures one block per entry of a splittable section, plus a heading+first-
@@ -400,6 +401,28 @@ rediscover.
     `ReactZoomPanPinchContentRef`; `CanvasResetButton` takes `onReset` as a prop.
     The schema still allows `fitScale` down to `0.5` so older saved documents
     load, but no new fit target is suggested below 0.78.
+
+37. **The mobile preview is a fixed-height column with its own scroller.** At
+    `< lg`, `<main>` is `flex flex-col` and `#panel-preview` is
+    `flex min-h-0 flex-1 flex-col`, so the tab fills the space between the
+    header and the bottom nav instead of growing with the page stack. Inside
+    it, the `Visual`/`ATS text` mode header and `PreviewChrome` (overflow banner
+    + page-count / Reset pills) are `shrink-0` rows, and only
+    `[data-canvas-scroll]` inside `LiveCanvasViewport` scrolls
+    (`min-h-0 flex-1 overflow-y-auto overscroll-contain`). The paper is
+    therefore clipped at the chrome's bottom edge and can never slide behind or
+    above it, and the toolbar can never scroll off-screen. Everything is
+    mobile-only: `lg:block` on the panel, `lg:flex-none` on the stage/root, and
+    `lg:sticky lg:top-0` / `lg:sticky lg:top-14` restore the desktop behaviour
+    from #28/#33 — do not drop those variants or desktop loses its sticky
+    columns. `TouchPanCanvas` only attaches its non-passive `touchmove` listener
+    while `isZoomed` (mirrored from `useTransformComponent` into a prop); at the
+    fitted scale there is no JS touch handler and no `scrollPageBy` hand-off, so
+    native `touch-action: pan-y` scrolling is smooth instead of jittery. A
+    fitted canvas is exactly as tall as its scroller, so `TransformWrapper` has
+    no pan range to fight the scroll. While zoomed, `findScrollableAncestor`
+    now finds that canvas box rather than `<main>`; that is the intended
+    hand-off target.
 
 ## Verification and tooling
 
@@ -461,6 +484,39 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-18 — Fixed-height mobile preview with its own scroller
+- Task: top P0 Queue item — stop multi-page preview jitter on phones and keep
+  pages from scrolling behind/above the Preview header.
+- The mobile preview column now fills the space between the header and the
+  bottom tab bar: `<main>` is `flex flex-col`, `#panel-preview` is
+  `flex min-h-0 flex-1 flex-col`, and the mode header + `PreviewChrome` are
+  `shrink-0` rows above `[data-canvas-scroll]`
+  (`min-h-0 flex-1 overflow-y-auto overscroll-contain`). Only the paper scrolls,
+  so it is clipped at the chrome's bottom edge and the page-count/Reset pills
+  never leave the screen. All of it is `lg:`-reverted so the sticky desktop
+  columns from #28/#33 are untouched. Recorded as Decision #37.
+- `TouchPanCanvas` gained an `isZoomed` prop (mirrored from
+  `useTransformComponent` in `CanvasSurface`) and only attaches its non-passive
+  `touchmove` listener while zoomed. At fit there is no JS touch handler and no
+  `scrollPageBy` hand-off, so native `touch-action: pan-y` handles multi-page
+  scrolling without the former non-passive-listener jitter.
+- Tests updated: `LiveCanvasViewport.test.tsx` asserts the scroll region owns
+  the transform wrapper and excludes the chrome, and that the chrome is
+  `shrink-0` + `lg:sticky` rather than base-sticky; `EditorWorkspace.test.tsx`
+  asserts the mobile flex column and that the mode header is its first row;
+  `TouchPanCanvas.test.tsx` gains a fitted-scale case proving no interception,
+  no `panBy`, and no page scroll. 525 pass.
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/TouchPanCanvas.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (525 pass), `npm run lint`,
+  `npm run build` (static export; the usual Next.js security-advisory nudge
+  needed the second run). Playwright is still blocked in this sandbox, so the
+  `390x844` scroll/jitter check at real touch speed remains browser-unverified;
+  a browser-enabled run should execute
+  `npm run e2e -- e2e/layout-consistency.spec.ts`.
 
 ### 2026-11-18 — Readable fit floor, Reset fit, and a toolbar above the canvas
 - Task: P1 — stop the page-count badge from covering the candidate's name and
@@ -704,32 +760,10 @@ npx playwright test    # e2e; needs a dev server on :3000
   `sectionEditorDrawer.test.tsx` (new), `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (458 pass).
 
-### 2026-11-17 — Sticky desktop Preview and Design columns
-- Task: keep the live resume preview and the Design controls visible while
-  scrolling a long Content section on desktop, without changing the mobile tab
-  layout.
-- `panelClass()` in `EditorWorkspace` now takes an optional `{ sticky: true }`.
-  Only `#panel-preview` and `#panel-design` receive `lg:sticky
-  lg:top-[var(--header-height,3.5rem)] lg:max-h-[calc(100dvh-4rem)]
-  lg:overflow-y-auto lg:overscroll-contain`; `#panel-content` keeps normal page
-  flow so the sticky columns have a scroll runway. Mobile visibility
-  (`hidden`/`block` per active tab) is untouched because every new utility is
-  `lg:`-prefixed.
-- No structural change was needed: `<main>` already has `lg:items-start` and the
-  shell already drops its fixed-height scroller at `lg`, which sticky depends
-  on. Recorded as Decisions #28.
-- Tests: `EditorWorkspace.test.tsx` asserts both sticky panels carry the
-  sticky/offset/max-height/overflow classes while Content does not, and that no
-  unprefixed `sticky`/`overflow-y-auto` leaks into the mobile layout.
-- Files: `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (452 pass), `npm run lint`,
-  `npm run build` (static export; confirmed the new `top`/`max-height` utilities
-  in the emitted CSS).
-
 <!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary
      entry points, paste-to-parse, fit-to-1-page, standardized month/date, first
      autopilot diagnosis, categorized-skills, custom-section, contact-network
      detection, and work-auth tag details are captured in Decisions & Gotchas
      (#21, #18, #10, #9, #16, #17, #11) and Autopilot failure modes above. -->
+

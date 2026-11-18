@@ -49,7 +49,13 @@ function touchEvent(
   return event;
 }
 
-function Harness({ enabled = true }: { enabled?: boolean }) {
+function Harness({
+  enabled = true,
+  isZoomed = true,
+}: {
+  enabled?: boolean;
+  isZoomed?: boolean;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -57,13 +63,14 @@ function Harness({ enabled = true }: { enabled?: boolean }) {
       <TouchPanCanvas
         hostRef={hostRef}
         fitScale={FIT_SCALE}
+        isZoomed={isZoomed}
         enabled={enabled}
       />
     </div>
   );
 }
 
-function ScrollableHarness() {
+function ScrollableHarness({ isZoomed = true }: { isZoomed?: boolean }) {
   const hostRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -72,21 +79,28 @@ function ScrollableHarness() {
       style={{ overflowY: "auto", height: "200px" }}
     >
       <div ref={hostRef} data-testid="host">
-        <TouchPanCanvas hostRef={hostRef} fitScale={FIT_SCALE} enabled />
+        <TouchPanCanvas
+          hostRef={hostRef}
+          fitScale={FIT_SCALE}
+          isZoomed={isZoomed}
+          enabled
+        />
       </div>
     </div>
   );
 }
 
-function renderPan(enabled = true): HTMLElement {
-  return render(<Harness enabled={enabled} />).getByTestId("host");
+function renderPan(enabled = true, isZoomed = true): HTMLElement {
+  return render(<Harness enabled={enabled} isZoomed={isZoomed} />).getByTestId(
+    "host",
+  );
 }
 
-function renderPanInScroller(): {
+function renderPanInScroller(isZoomed = true): {
   host: HTMLElement;
   scroller: HTMLElement;
 } {
-  const view = render(<ScrollableHarness />);
+  const view = render(<ScrollableHarness isZoomed={isZoomed} />);
   const scroller = view.getByTestId("scroller");
 
   Object.defineProperty(scroller, "clientHeight", {
@@ -153,7 +167,7 @@ describe("TouchPanCanvas", () => {
   it("leaves drags to the page scroller while the page still fits", () => {
     controls.state.scale = FIT_SCALE;
 
-    const host = renderPan();
+    const host = renderPan(true, false);
 
     fireEvent(host, touchEvent("touchstart", [{ clientX: 160, clientY: 100 }]));
 
@@ -164,6 +178,28 @@ describe("TouchPanCanvas", () => {
 
     expect(allowed).toBe(true);
     expect(controls.panBy).not.toHaveBeenCalled();
+  });
+
+  it("attaches no touch interception at the fitted scale", () => {
+    controls.state.scale = FIT_SCALE;
+    controls.state.positionY = 0;
+
+    const { host, scroller } = renderPanInScroller(false);
+
+    scroller.scrollTop = 300;
+
+    fireEvent(host, touchEvent("touchstart", [{ clientX: 160, clientY: 100 }]));
+
+    const allowed = fireEvent(
+      host,
+      touchEvent("touchmove", [{ clientX: 160, clientY: 180 }]),
+    );
+
+    // A fitted multi-page preview scrolls natively: the non-passive listener
+    // and the pan-bound hand-off must not run at all.
+    expect(allowed).toBe(true);
+    expect(controls.panBy).not.toHaveBeenCalled();
+    expect(scroller.scrollTop).toBe(300);
   });
 
   it("does nothing on fine pointers", () => {

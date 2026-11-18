@@ -214,16 +214,47 @@ describe("EditorWorkspace", () => {
     expect(canvas).toHaveAttribute("data-mode", "ats");
   });
 
-  it("keeps the preview mode toggle in a sticky header above the canvas", async () => {
+  it("keeps the preview mode toggle in a fixed header above the canvas", async () => {
     await renderReadyWorkspace();
 
     const visual = screen.getByRole("button", { name: "Visual" });
     const header = visual.closest("[data-preview-mode-header]");
 
     expect(header).not.toBeNull();
-    expect(header).toHaveClass("sticky", "top-0", "z-20", "min-h-14");
+    // Fixed on phones; sticky only while the desktop panel scrolls.
+    expect(header).toHaveClass("shrink-0", "z-10", "min-h-14");
+    expect(header).toHaveClass("lg:sticky", "lg:top-0", "lg:z-20");
+    expect(header).not.toHaveClass("sticky");
     expect(header).toContainElement(visual);
     expect(header).toContainElement(screen.getByRole("button", { name: "ATS text" }));
+  });
+
+  it("makes the mobile preview a fixed-height column above a scrolling canvas", async () => {
+    await renderReadyWorkspace();
+
+    const main = screen.getByRole("main");
+    const preview = screen.getByRole("tabpanel", { name: "Preview" });
+    const canvas = screen.getByTestId("preview-canvas");
+    const stage = canvas.parentElement;
+    const header = screen
+      .getByRole("button", { name: "Visual" })
+      .closest<HTMLElement>("[data-preview-mode-header]");
+
+    // The preview tab fills the available height instead of growing with the
+    // page stack, so the canvas gets its own scroll region.
+    expect(main).toHaveClass("flex", "flex-col");
+    expect(preview).toHaveClass("flex", "min-h-0", "flex-1", "flex-col");
+    expect(stage).not.toBeNull();
+    expect(stage).toHaveClass("flex", "min-h-0", "flex-1", "flex-col");
+    expect(stage).toContainElement(canvas);
+    // The chrome is the first, non-scrolling row of that column, above the
+    // canvas region (whose own scroller is covered by the viewport tests).
+    expect(header).not.toBeNull();
+    expect(stage!.firstElementChild).toBe(header);
+    expect(
+      header!.compareDocumentPosition(canvas) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("shows the save state from the store", async () => {

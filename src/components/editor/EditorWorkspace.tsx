@@ -222,13 +222,21 @@ export function EditorWorkspace() {
    * Tabs collapse to one visible panel below `lg`; at `lg` all three show.
    * The preview and design panels opt into a sticky, independently scrolling
    * column so a long Content section never pushes them out of view.
+   *
+   * `display` picks the mobile display for the active state. The preview passes
+   * `flex` because it owns a fixed-height column with its own scroller; using
+   * one display utility (instead of layering `block`/`flex`) keeps `hidden`
+   * authoritative for inactive tabs without depending on class order.
    */
   function panelClass(
     tab: EditorTab,
     orderClass: string,
-    { sticky = false }: { sticky?: boolean } = {},
+    {
+      sticky = false,
+      display = "block",
+    }: { sticky?: boolean; display?: "block" | "flex" } = {},
   ): string {
-    const visibility = activeTab === tab ? "block" : "hidden";
+    const visibility = activeTab === tab ? display : "hidden";
     const stickyClass = sticky
       ? " lg:sticky lg:top-[var(--header-height,3.5rem)] lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:overscroll-contain"
       : "";
@@ -291,7 +299,7 @@ export function EditorWorkspace() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1600px] flex-1 overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-5 lg:overflow-visible lg:pb-8">
+      <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-5 lg:overflow-visible lg:pb-8">
         <section
           id="panel-content"
           role="tabpanel"
@@ -342,12 +350,15 @@ export function EditorWorkspace() {
           id="panel-preview"
           role="tabpanel"
           aria-labelledby="tab-preview"
-          className={panelClass("preview", "lg:order-2", { sticky: true })}
+          className={`${panelClass("preview", "lg:order-2", {
+            sticky: true,
+            display: "flex",
+          })} min-h-0 flex-1 flex-col`}
         >
-          <div className="flex flex-col gap-3">
+          <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-none">
             <div
               data-preview-mode-header=""
-              className="editor-chrome sticky top-0 z-20 flex min-h-14 flex-wrap items-center justify-between gap-2 border-b border-line/70 bg-background/95 px-1 backdrop-blur"
+              className="editor-chrome z-10 flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line/70 bg-background/95 px-1 backdrop-blur lg:sticky lg:top-0 lg:z-20"
             >
               <h2 className="font-serif text-xl font-semibold tracking-tight">
                 Preview

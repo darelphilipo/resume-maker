@@ -25,9 +25,7 @@ _none._
 
 ### P0 — Multi-Page & Scroll Fixes
 
-- [ ] P0: Fix mobile multi-page preview scroll jitter and prevent resume pages from scrolling behind/above the Preview header (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/TouchPanCanvas.tsx`).
-  1. **Separate the Preview header from the scroll container:** On mobile (`< lg`), make `#panel-preview` a `flex h-full min-h-0 flex-col` container where the Preview header (`Preview` title, `Visual`/`ATS text` toggle, `PageOverflowBanner`, and `N pages` pill) sits in a `shrink-0 bg-background z-10` top block **outside** the scrollable canvas, and only the canvas viewport below it has `min-h-0 flex-1 overflow-y-auto overscroll-contain`. This guarantees scrolled pages are cleanly clipped at the bottom edge of the Preview header and can never bleed behind or above it.
-  2. **Eliminate mobile scroll jitter:** When the preview is at default fit-to-width scale (not pinched/zoomed in), let native browser vertical scrolling (`touch-action: pan-y`) handle multi-page scrolling directly without `TouchPanCanvas` intercepting `touchmove` or running `scrollPageBy` handoffs, and ensure `TransformWrapper` does not apply competing transforms during normal vertical page scrolls.
+_None — the mobile multi-page preview scroll fix is Done below._
 
 ### P1 — Visual Consistency, Mobile Drawer & Editor UX
 
@@ -59,6 +57,26 @@ _none._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-18 — Fixed mobile multi-page preview scrolling: the preview tab is
+  now a fixed-height flex column (`<main>` is `flex flex-col`,
+  `#panel-preview` is `flex min-h-0 flex-1 flex-col`) whose mode header and
+  `PreviewChrome` (overflow banner + page-count/`Reset fit`/Reset pills) are
+  `shrink-0` rows **outside** a dedicated `[data-canvas-scroll]`
+  (`min-h-0 flex-1 overflow-y-auto overscroll-contain`), so pages are clipped at
+  the chrome's bottom edge and the controls never scroll away.
+  `TouchPanCanvas` gained an `isZoomed` prop and only attaches its non-passive
+  `touchmove` listener while zoomed, so a fitted multi-page preview scrolls
+  natively with `touch-action: pan-y` and no `scrollPageBy` hand-off. All new
+  utilities are `lg:`-reverted, preserving the sticky desktop columns. Verified
+  `npm run typecheck`, `npm test` (525 pass), `npm run lint`, `npm run build`
+  (static export; the security-advisory nudge needed the usual second run).
+  Playwright is blocked in this sandbox; a browser-enabled run should execute
+  `npm run e2e -- e2e/layout-consistency.spec.ts` at `390x844` / `1280x800`.
+  Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/TouchPanCanvas.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-18 — Moved the preview toolbar above the canvas and made
   "Fit to 1 Page" readable: the page-count pill plus **Reset fit** / Reset zoom

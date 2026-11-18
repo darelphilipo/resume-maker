@@ -300,18 +300,45 @@ describe("LiveCanvasViewport", () => {
     }
   });
 
-  it("groups the banner and page count in a sticky header above Page 1", async () => {
+  it("groups the banner and page count in a header above Page 1", async () => {
     const { wrapper } = await renderCanvas(2);
 
     const badge = screen.getByText("2 pages");
     const header = badge.closest("[data-preview-header]");
 
     expect(header).not.toBeNull();
-    expect(header).toHaveClass("sticky", "top-14", "z-10");
+    // Fixed chrome on phones; sticky only once the desktop panel scrolls.
+    expect(header).toHaveClass("shrink-0", "z-10");
+    expect(header).toHaveClass("lg:sticky", "lg:top-14");
+    expect(header).not.toHaveClass("sticky");
     expect(header).toContainElement(badge);
     expect(wrapper.contains(header)).toBe(false);
     expect(
       header!.compareDocumentPosition(wrapper) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("scrolls the paper in its own region below the preview chrome", async () => {
+    const { wrapper } = await renderCanvas(2);
+
+    const scroll = wrapper.closest("[data-canvas-scroll]");
+    const header = screen.getByText("2 pages").closest("[data-preview-header]");
+
+    expect(scroll).not.toBeNull();
+    expect(header).not.toBeNull();
+    // The paper (and only the paper) scrolls, so pages are clipped at the
+    // bottom edge of the chrome instead of scrolling behind it.
+    expect(scroll).toHaveClass(
+      "min-h-0",
+      "flex-1",
+      "overflow-y-auto",
+      "overscroll-contain",
+    );
+    expect(scroll).toContainElement(wrapper);
+    expect(scroll!.contains(header)).toBe(false);
+    expect(
+      header!.compareDocumentPosition(scroll!) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });

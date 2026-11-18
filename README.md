@@ -105,11 +105,12 @@ in control of every line, and your data stays on your device.
   keep the one-tab-at-a-time layout, so nothing is squeezed.
 - **Scroll or zoom the preview naturally**: on a phone, two fingers zoom the
   resume and a one-finger drag moves freely in any direction across the zoomed
-  page. At normal size a one-finger swipe still scrolls the editor. When a drag
-  reaches the top or bottom of the zoomed page, scrolling the editor eases in
-  smoothly, so you can always get back to Reset and Save PDF even on a
-  multi-page resume. A small **Reset** button appears only while zoomed and
-  returns the page to its fitted width. On a computer, the mouse wheel and
+  page. At normal size a one-finger swipe scrolls a multi-page preview smoothly
+  and natively, while the preview header stays fixed, so pages stop cleanly at
+  its edge instead of slipping behind the page-count pill. When a drag reaches
+  the top or bottom of the zoomed page, scrolling eases in smoothly, so you can
+  always reach every page. A small **Reset** button appears only while zoomed
+  and returns the page to its fitted width. On a computer, the mouse wheel and
   two-finger scrolling move the editor; hold **Ctrl** (or **⌘**) while
   scrolling to zoom the resume.
 - **Fit to 1 Page** when a resume spills just past one page. Fitting never
@@ -124,8 +125,9 @@ in control of every line, and your data stays on your device.
   of its keywords already appear in your resume and which are missing. Matching
   runs locally with simple word heuristics, not AI.
 - The **Visual / ATS text** switch, page-count pill, fit/zoom reset pills, and
-  overflow warning stay pinned at the top of the Preview pane while you scroll,
-  above the paper rather than covering your name or header.
+  overflow warning stay pinned above the paper while you scroll, so they never
+  cover your name or header — and the paper stops cleanly below that header
+  instead of sliding underneath it.
 - Print/PDF filenames are generated from your name, headline, and date.
 
 ### Keep your work
