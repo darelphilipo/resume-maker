@@ -21,6 +21,45 @@ _empty
 _None._
 
 ## Queue (Ready for Next Run)
+- Verification rule: For any UI/layout task, run `npm run build` and Playwright checks across both mobile (`390x844`) and desktop (`1280x800`) viewports before moving the task to *Done*.
+
+### P0 — Multi-Page & Scroll Fixes
+
+- [ ] P0: Fix mouse-wheel scroll hijacking and mobile cross-page scroll jerk in `src/components/preview/LiveCanvasViewport.tsx` and `src/components/preview/TouchPanCanvas.tsx`.
+  1. In `WheelZoom` (`LiveCanvasViewport.tsx`), only intercept `wheel` events to zoom when `event.ctrlKey || event.metaKey` is pressed (pinch-to-zoom on trackpads); let normal wheel/two-finger scrolling pass through natively to scroll multi-page resumes smoothly.
+  2. Smooth out `TouchPanCanvas.tsx` vertical pan-to-scroll handoff (avoid abrupt `scrollPageBy` jumps at pan bounds, or allow native vertical page scrolling when horizontal zoom fits viewport width) and make the Preview header (`Visual`/`ATS text`, page count pill, overflow banner) sticky without overlapping Page 1.
+
+- [ ] P0: Fix multi-page section splitting (80%-blank Page 1 bug) in `src/components/preview/MeasureLayer.tsx`, `src/lib/pagination/packPages.ts`, and `src/components/preview/PageStack.tsx`. Measure and paginate individual entries within multi-entry sections (`Experience`, `Education`, `Projects`, `Certifications`, `Awards`, `Publications`, `Custom`) rather than treating an entire section as one indivisible block, keeping section headings attached to at least their first entry (`keep-with-next`) so Page 1 fills naturally before breaking to Page 2.
+
+- [ ] P0: Fix mid-word line breaking in `src/templates/onyx/onyx.css` (and any shared template CSS). Replace `overflow-wrap: anywhere` on `.onyx` with `overflow-wrap: break-word; word-break: normal;` (reserving `overflow-wrap: anywhere` strictly for URLs/links) so normal prose and bullets never break mid-word.
+
+### P1 — Visual Consistency, Mobile Drawer & Editor UX
+
+- [ ] P1: Fix `"1 page"` / `"2 pages"` badge overlap and `"Fit to 1 Page"` UX in `src/components/preview/LiveCanvasViewport.tsx` and `src/components/preview/PageOverflowBanner.tsx`.
+  1. Move the page-count badge and zoom/reset controls into a dedicated non-overlapping top bar above `<TransformWrapper>` so it never covers the candidate's name in the top-left corner.
+  2. Enforce a readable minimum scale floor (e.g. `0.78`) on `"Fit to 1 Page"`—if 1 page isn't achievable above the floor, show a clear message instead of microscopic text—and show an inline `"Reset fit"` pill whenever `fitScale < 1` so users don't have to rely on Undo.
+
+- [ ] P1: Fix mobile `EntryDrawer` keyboard overlap and horizontal overflow in `src/components/editor/EntryDrawer.tsx` and `src/components/editor/useVisualViewportOffset.ts`. Subtract `viewportOffset` from `Drawer.Content` max-height (`maxHeight: calc(95dvh - ${viewportOffset}px)`) so opening the mobile keyboard never pushes the drawer header off-screen, and add `overflow-x-hidden min-w-0` to the scrollable body and inner wrapper.
+
+- [ ] P1: Fix Launcher capsule tap-blink, uneven heights, missing Recent Resumes / Blank start, and Paste parser bugs in `src/components/launcher/Launcher.tsx` and `src/lib/import/` (paste parser).
+  1. Add `h-full` to preset `<li>` / `<button>` cards so row heights match, span/center the 5th card cleanly, and only show a loading state on the tapped card (`creatingId === archetype.id`) without dimming siblings (`opacity-60`).
+  2. Fix disabled `"Create resume from text"` button inner-box styling and immediate `onChange` enablement (no blur delay).
+  3. Surface `"Start blank"` and the Dexie-backed `"Recent resumes"` list (open, rename, delete) on `/`.
+  4. Fix the paste-to-parse logic so commas inside institution names (e.g., `University of California, Berkeley`) are not split into separate fields and `Skills` sections are preserved.
+
+- [ ] P1: Standardize white input backgrounds, unified Month/Year date pickers, and sidebar layout in `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`, and `src/components/editor/EditorWorkspace.tsx`.
+  1. Add `bg-surface` (`#ffffff`) to `RichTextField` containers (removing the beige `#f5f3ee` bleed-through) and improve placeholder contrast on optional inputs.
+  2. Replace native `<input type="month">` scroll popups and inconsistent text date inputs with one unified Month + Year selector component across Experience, Education, Certifications, Awards, and Publications.
+  3. Fix horizontal clipping of inputs and the Rich Text `Redo` button inside the `22rem` desktop Content column, prevent sidebar scroll-to-top jumps when reordering entries (`Move up` / `Move down`), and make desktop `#panel-preview` and `#panel-design` `lg:sticky` with independent scrolling.
+
+- [ ] P1: Fix editor micro-interactions and Design panel controls in `src/components/editor/BasicsForm.tsx`, `src/components/editor/RichTextField.tsx`, `src/components/editor/DesignPanel.tsx`, and `src/components/editor/JdMatchDrawer.tsx`.
+  1. Update `Name` preview live on `onChange` (not only on blur) and show a clean fallback/validation state when `Picture URL` fails to load.
+  2. Prepend a leading space when inserting an action-verb chip after non-whitespace text (e.g., `...merges. Built `).
+  3. Add explicit `htmlFor`/`id` and full-card clickability to `DesignPanel` paper-size cards (`A4` / `Letter`), verify `Studio Sidebar` renders its two-column layout on Page 1, and ensure `"Match to a job description"` is wired and opens `JdMatchDrawer` on desktop and mobile.
+
+### P2 — Automated Multi-Viewport Regression Gate
+
+- [ ] P2: Add `e2e/layout-consistency.spec.ts` testing both `390x844` (mobile) and `1280x800` (desktop) viewports for: equal preset card heights & no sibling blink on tap, white `RichTextField` backgrounds, no `<input type="month">`, non-overlapping page-count badge, multi-page pagination filling Page 1 before breaking, normal mouse-wheel scrolling without unintended zoom, and sticky desktop Preview/Design panels.
 
 ### P2 — Larger work
 - [ ] P2: Add 4 design controls to `DesignPanel.tsx`: template selector, accent color (5–6 curated swatches + monochrome), font pairing (Sans/Serif/Classic), density (Compact/Normal/Relaxed).
