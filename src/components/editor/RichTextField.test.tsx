@@ -177,7 +177,7 @@ describe("RichTextField", () => {
     expect(shell).toHaveClass("bg-surface", "border-line", "text-text");
   });
 
-  it("keeps the formatting toolbar on one compact row", () => {
+  it("lays out every formatting control without clipping", () => {
     render(
       <RichTextField
         value=""
@@ -190,9 +190,15 @@ describe("RichTextField", () => {
       name: "Formatting for Description",
     });
     const bold = screen.getByRole("button", { name: "Bold" });
+    const redo = screen.getByRole("button", { name: "Redo" });
 
-    expect(toolbar).toHaveClass("flex-nowrap", "overflow-x-auto", "gap-0.5");
-    expect(toolbar).not.toHaveClass("flex-wrap");
+    // The 22rem Content column cannot fit eight targets on one line, so the
+    // row wraps instead of hiding Undo/Redo behind a horizontal scroll strip.
+    expect(toolbar).toHaveClass("flex-wrap", "gap-0.5");
+    expect(toolbar).not.toHaveClass("flex-nowrap");
+    expect(toolbar).not.toHaveClass("overflow-x-auto");
+    expect(toolbar).toContainElement(bold);
+    expect(toolbar).toContainElement(redo);
     expect(bold).toHaveClass(
       "min-h-9",
       "min-w-9",

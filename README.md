@@ -69,10 +69,11 @@ in control of every line, and your data stays on your device.
   Certifications, with optional Awards, Languages, Interests, Volunteer,
   Publications, and References.
 - Rich-text descriptions with bold, italic, bullet/numbered lists, links, and
-  editor undo. Experience and project bullets offer a compact, tidy row of
-  one-tap action verbs (**Built**, **Reduced**, **Led**, **Automated**) plus an
-  `[Action] + [What] + [Result by X%]` prompt, so achievements start with impact
-  and end with a number.
+  editor undo. Every formatting control stays in reach, even in the narrow
+  desktop Content column. Experience and project bullets offer a compact, tidy
+  row of one-tap action verbs (**Built**, **Reduced**, **Led**, **Automated**)
+  plus an `[Action] + [What] + [Result by X%]` prompt, so achievements start
+  with impact and end with a number.
 - Skills grouped by category with comma-separated keywords (for example
   `Languages: Python, SQL`), with no self-ratings to maintain; projects and
   interests use the same comma-separated tags.
@@ -112,8 +113,10 @@ in control of every line, and your data stays on your device.
   break anywhere they need to.
 - **Preview and Design stay in view on desktop**: on a wide window the resume
   preview and the Design controls stay pinned below the header while you scroll
-  a long Content list, and each of those two columns scrolls on its own. Phones
-  keep the one-tab-at-a-time layout, so nothing is squeezed.
+  a long Content list, and each of those two columns scrolls on its own. Moving
+  a section up or down keeps your place in the preview, so it never snaps back
+  to Page 1 while the pages re-measure. Phones keep the one-tab-at-a-time
+  layout, so nothing is squeezed.
 - **Scroll or zoom the preview naturally**: on a phone, two fingers zoom the
   resume and a one-finger drag moves freely in any direction across the zoomed
   page. At normal size a one-finger swipe scrolls a multi-page preview smoothly

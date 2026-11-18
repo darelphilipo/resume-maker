@@ -11,9 +11,14 @@ import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { pageGeometry } from "@/lib/units/pageGeometry";
 
 import { LiveCanvasViewport } from "./LiveCanvasViewport";
+import { usePreservedScroll } from "./usePreservedScroll";
 
 vi.mock("./PageStack", () => ({
   PageStack: () => <div data-testid="page-stack" />,
+}));
+
+vi.mock("./usePreservedScroll", () => ({
+  usePreservedScroll: vi.fn(),
 }));
 
 function createLayout(pageCount: number): PageLayout {
@@ -358,5 +363,19 @@ describe("LiveCanvasViewport", () => {
     const { wrapper } = await renderCanvas();
 
     expect(wrapper.style.touchAction).toBe("auto");
+  });
+
+  it("holds the preview scroll while a reorder re-measures the pages", () => {
+    render(
+      <LiveCanvasViewport
+        doc={createEmptyResume()}
+        layout={{ ...createLayout(1), pages: [[]], isMeasuring: true }}
+      />,
+    );
+
+    expect(vi.mocked(usePreservedScroll)).toHaveBeenLastCalledWith(
+      expect.anything(),
+      true,
+    );
   });
 });

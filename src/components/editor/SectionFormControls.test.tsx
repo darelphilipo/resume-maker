@@ -28,10 +28,28 @@ describe("SectionFormControls", () => {
       "bg-surface",
       "text-text",
       "border-line",
+      "min-w-0",
       "placeholder:text-muted",
       "placeholder:opacity-100",
     );
+    expect(input.parentElement).toHaveClass("min-w-0");
     expect(input).toHaveAttribute("placeholder", "Authorized to work in US");
+  });
+
+  it("cannot force horizontal overflow in the narrow Content column", () => {
+    render(
+      <TextInput
+        id="basics-website-url"
+        label="Website URL"
+        value="https://example.com/a/very/long/path/that/never/ends"
+        onChange={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByLabelText("Website URL");
+
+    expect(input).toHaveClass("w-full", "min-w-0");
+    expect(input.parentElement).toHaveClass("flex", "min-w-0", "flex-col");
   });
 
   it("renders hints with the muted token instead of translucent text", () => {
@@ -155,7 +173,7 @@ describe("MonthSelect", () => {
     expect(month).toHaveValue("10");
     expect(year).toHaveValue("2023");
     expect(month).toHaveClass("bg-surface", "min-h-11");
-    expect(year).toHaveClass("bg-surface", "min-h-11");
+    expect(year).toHaveClass("bg-surface", "min-h-11", "min-w-0");
     expect(year).toHaveAttribute("inputmode", "numeric");
   });
 

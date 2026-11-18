@@ -309,16 +309,19 @@ rediscover.
     primitive (no pointer-capture handler), so `userEvent.click` on it is safe
     in jsdom; only children *inside* `Drawer.Content` need `fireEvent.click`.
 31. **The 22rem Content sidebar is the layout budget.** Inside the
-    `lg:grid-cols-[minmax(0,22rem)_...]` panel, eight `min-h-11 min-w-11` (44px)
-    `RichTextField` toolbar buttons plus gaps overflow and wrap. The toolbar
-    now uses `flex-nowrap overflow-x-auto` with `min-h-9 min-w-9 shrink-0`
-    buttons on fine pointers and `pointer-coarse:min-h-11
-    pointer-coarse:min-w-11` on touch; `EntryActions` follows the same sizing
-    with `flex-nowrap gap-1`. Keep both rows single-line and let coarse pointers
-    scroll instead of wrapping. Paper-size cards need an explicit
-    `htmlFor`/`id` pair plus `w-full` — a bare `<label><input/></label>` does
-    not reliably forward a click on the detail `<span>` to the radio in every
-    browser.
+    `lg:grid-cols-[minmax(0,22rem)_...]` panel, eight `RichTextField` toolbar
+    buttons plus gaps are wider than the usable cell (≈250px after the card,
+    entry-card, and toolbar padding), so the formatting row is `flex flex-wrap`
+    with `min-h-9 min-w-9 shrink-0` buttons on fine pointers and
+    `pointer-coarse:min-h-11 pointer-coarse:min-w-11` on touch. Wrapping is
+    deliberate: the old `flex-nowrap overflow-x-auto` row put Undo/Redo behind an
+    invisible horizontal scroll strip, so users could not see that Redo existed.
+    `EntryActions` still fits on one line and keeps `flex-nowrap gap-1`. All
+    shared inputs carry `min-w-0` (`INPUT_CLASS` plus the `TextInput` /
+    `MonthInput` wrapper) so a control's intrinsic width can never force the
+    narrow column sideways. Paper-size cards need an explicit `htmlFor`/`id`
+    pair plus `w-full` — a bare `<label><input/></label>` does not reliably
+    forward a click on the detail `<span>` to the radio in every browser.
 32. **Six templates, one rendering contract.** `src/templates/registry.ts`
     registers all six `TEMPLATE_IDS` with `TemplateDefinition` metadata
     (`label`, `description`, `columns`, `atsSafe`, optional `badge`) and exports
@@ -469,11 +472,27 @@ rediscover.
     title-case `Languages: TypeScript, Python` stays a skills category inside
     the current section (it must not switch to the spoken-languages section).
 
+41. **A re-measure must not reset the preview's scroll.** Moving a section up or
+    down changes the canonical order, so `usePageLayout` returns `pages: [[]]`
+    with `isMeasuring: true` for a frame. On desktop `#panel-preview` is its own
+    scroller (`lg:max-h-… lg:overflow-y-auto`); the paper stack is replaced by a
+    240px placeholder, the panel stops overflowing, and the browser clamps its
+    `scrollTop` to 0. `usePreservedScroll` (`src/components/preview/
+    usePreservedScroll.ts`) listens for scroll events in the capture phase on
+    `document`, records the last offset of any ancestor scroller of the preview
+    root, and restores it in a layout effect once `isMeasuring` clears. It
+    ignores offsets recorded while the container has nothing to scroll
+    (`scrollHeight <= clientHeight`), because that is the placeholder clamp, not
+    a user scroll. Do not switch that guard back to a ref written during render:
+    `react-hooks/refs` rejects it, and `react-hooks/immutability` rejects a
+    cross-effect mutable scroller ref. Section reordering is the trigger; entry
+    reordering keeps the same block keys and does not blank the canvas.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~430 tests
+npm test               # vitest, ~557 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -529,6 +548,41 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-18 — Formatting toolbar wraps; reorder keeps the preview's place
+- Task: finish the P1 "white inputs / unified Month+Year pickers / sidebar
+  layout" item. Sub-points 1–2 and the `lg:sticky` Preview/Design columns landed
+  2026-11-17; this run closed the remaining sub-point 3.
+- `RichTextField`'s toolbar is now `flex flex-wrap` (no `overflow-x-auto`). Eight
+  36px targets plus gaps cannot fit the ~250px usable width of the 22rem Content
+  column, and the old nowrap row hid Undo/Redo behind an invisible horizontal
+  scroll strip. The TipTap surface gained `min-w-0 break-words`, and
+  `INPUT_CLASS` plus the `TextInput` wrapper gained `min-w-0`, so neither typed
+  URLs nor an input's intrinsic width can push the column sideways. Recorded in
+  Decision #31.
+- New `usePreservedScroll` (+ wiring in `LiveCanvasViewport`) fixes the desktop
+  Preview jumping to Page 1 after `Move up` / `Move down`: a section reorder
+  blanks `layout.pages` while re-measuring, the panel stops overflowing, and the
+  browser clamps `scrollTop` to 0. The hook records ancestor-scroller offsets
+  from capture-phase scroll events and restores the last one when
+  `isMeasuring` clears, ignoring the placeholder clamp. Recorded as Decision
+  #41; do not reintroduce a ref written during render (`react-hooks/refs`) or a
+  cross-effect mutable scroller ref (`react-hooks/immutability`) — both fail
+  `npm run lint`.
+- Tests: the RichTextField toolbar case now asserts wrapping and that Redo stays
+  inside the toolbar; SectionFormControls covers `min-w-0` on the input and its
+  wrapper; new `usePreservedScroll.test.tsx` (restore + no-ancestor cases) and a
+  `LiveCanvasViewport` case proving the hook is told when measuring. 557 pass.
+- E2E: `layout-consistency.spec.ts` gained a both-viewport case asserting the
+  toolbar has no horizontal overflow and its last button (Redo) stays within the
+  box. Playwright still cannot run in this sandbox, so the `390x844`/`1280x800`
+  visual check remains browser-unverified.
+- Files: `src/components/editor/RichTextField.tsx` (+ test),
+  `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/preview/usePreservedScroll.ts` (new) + test,
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (557 pass), `npm run lint`.
 
 ### 2026-11-18 — Launcher blank start, recent resumes, and paste-parser fixes
 - Task: finish the top Queue item (launcher, sub-points 3–4; 1–2 landed
@@ -788,38 +842,8 @@ npx playwright test    # e2e; needs a dev server on :3000
   `npm run build` (static export; the usual Next.js security-advisory nudge
   needed a second run).
 
-### 2026-11-17 — Playwright visual/layout regression spec
-- Task: add the P1 e2e spec guarding six previously-fixed visual/layout behaviours
-  at `390x844` and `1280x800` (`e2e/layout-consistency.spec.ts`).
-- Structure follows `a11y.spec.ts`: a `VIEWPORTS` loop with `test.use({ viewport })`.
-  Assertions 1–4 and 6 run at both viewports; the sticky-panel case is desktop-only.
-  Reuses `createPresetResume`, `showTab`, `showPreview` from `e2e/helpers.ts`.
-- Preset cards are grouped by `getBoundingClientRect().top`, so only cards in the
-  same grid row are height-compared (one column below `sm` means no mobile pairs).
-  The pending-state opacity is sampled in a single `page.evaluate` immediately
-  after a synthetic `.click()` — React flushes discrete click updates
-  synchronously, so this avoids polling a transient `aria-busy` or holding the
-  `/editor` route. Assert the clicked card's `aria-busy` and unchanged sibling
-  `opacity` in that same snapshot.
-- Rich-text surfaces: expand Summary/Experience/Education, then assert every
-  `#panel-content .tiptap` computes `background-color: rgb(255, 255, 255)`;
-  `expect.poll` on editor count because TipTap mounts in an effect. Dated-section
-  case asserts zero `input[type="month"]`. Badge overlap uses
-  `[data-canvas-toolbar] span` (text `/^\d+ pages?$/`) vs
-  `#panel-preview .resume-page .resume-name` rectangle intersection. Desktop
-  sticky case expands Content rows, scrolls to the document bottom, and asserts
-  `#panel-preview` top ≥ 0 with bottom past the header. Letter case clicks the
-  `8.5 × 11 in` detail span (label body) and checks `#page-format-letter`; JD case
-  clicks the trigger and asserts the dialog and its labelled textarea.
-- Test-only task: no source or README change. Files: `e2e/layout-consistency.spec.ts`,
-  `TASKS.md`, `CONTEXT.md`.
-- Verified: `npm run typecheck`, `npm test` (467 pass). Playwright could not run
-  here — the sandbox shell rejected every command except the two npm verification
-  commands — so the spec is typechecked but browser-unverified. Next run with a
-  dev server on :3000 should execute
-  `npm run e2e -- e2e/layout-consistency.spec.ts`.
-
-<!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
+<!-- Older entries are trimmed to keep the 10 most recent. The Playwright
+     visual/layout spec (2026-11-17), preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary
      entry points, paste-to-parse, fit-to-1-page, standardized month/date, first
      autopilot diagnosis, categorized-skills, custom-section, contact-network

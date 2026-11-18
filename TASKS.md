@@ -27,11 +27,6 @@ _none._
 
 - [x] P1: Fix Launcher capsule tap-blink, uneven heights, missing Recent Resumes / Blank start, and Paste parser bugs in `src/components/launcher/Launcher.tsx` and `src/lib/import/` (paste parser). _(started 2026-11-17, finished 2026-11-18 — see Done)_
 
-- [ ] P1: Standardize white input backgrounds, unified Month/Year date pickers, and sidebar layout in `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`, and `src/components/editor/EditorWorkspace.tsx`.
-  1. Add `bg-surface` (`#ffffff`) to `RichTextField` containers (removing the beige `#f5f3ee` bleed-through) and improve placeholder contrast on optional inputs.
-  2. Replace native `<input type="month">` scroll popups and inconsistent text date inputs with one unified Month + Year selector component across Experience, Education, Certifications, Awards, and Publications.
-  3. Fix horizontal clipping of inputs and the Rich Text `Redo` button inside the `22rem` desktop Content column, prevent sidebar scroll-to-top jumps when reordering entries (`Move up` / `Move down`), and make desktop `#panel-preview` and `#panel-design` `lg:sticky` with independent scrolling.
-
 - [ ] P1: Fix editor micro-interactions and Design panel controls in `src/components/editor/BasicsForm.tsx`, `src/components/editor/RichTextField.tsx`, `src/components/editor/DesignPanel.tsx`, and `src/components/editor/JdMatchDrawer.tsx`.
   1. Update `Name` preview live on `onChange` (not only on blur) and show a clean fallback/validation state when `Picture URL` fails to load.
   2. Prepend a leading space when inserting an action-verb chip after non-whitespace text (e.g., `...merges. Built `).
@@ -47,6 +42,26 @@ _none._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-18 — Finished the P1 visual-consistency item: **Month + Year**
+  pickers, white fields, and the sticky desktop Preview/Design columns had
+  already landed (2026-11-17); this run closed the remaining narrow-column and
+  reorder work. The `RichTextField` toolbar now wraps (`flex flex-wrap`) so all
+  eight controls, including **Redo**, stay visible in the `22rem` Content column
+  instead of hiding behind an invisible horizontal scroll strip; the TipTap
+  surface breaks long words, and shared inputs carry `min-w-0` so intrinsic
+  control widths cannot push a cell sideways. Moving a section up or down no
+  longer throws the desktop Preview back to Page 1: new `usePreservedScroll`
+  records the preview panel's offset and restores it after the re-measure
+  placeholder clamps it to 0. Verified `npm run typecheck`, `npm test`
+  (557 pass), `npm run lint`. Playwright remains blocked in this sandbox, so the
+  new both-viewport toolbar-overflow case in
+  `e2e/layout-consistency.spec.ts` is browser-unverified. Files:
+  `src/components/editor/RichTextField.tsx` (+ test),
+  `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/preview/usePreservedScroll.ts` (new) + test,
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-18 — Finished the launcher item: **Start with a blank resume** and a
   Dexie-backed **Recent resumes** list (open, inline rename to `basics.name`,

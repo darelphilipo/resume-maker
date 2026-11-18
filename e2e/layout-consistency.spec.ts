@@ -151,6 +151,44 @@ for (const viewport of VIEWPORTS) {
       expect(await page.locator('input[type="month"]').count()).toBe(0);
     });
 
+    test("the Rich Text toolbar never clips its last control", async ({
+      page,
+    }) => {
+      await createPresetResume(page);
+      await showTab(page, "Content");
+      await expandSection(page, "experience");
+
+      const toolbar = page.locator('#panel-content [role="toolbar"]').first();
+      await expect(toolbar).toBeVisible();
+
+      const metrics = await toolbar.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        const buttons = Array.from(element.querySelectorAll("button")).map(
+          (button) => button.getBoundingClientRect(),
+        );
+
+        return {
+          clientWidth: element.clientWidth,
+          scrollWidth: element.scrollWidth,
+          boxRight: box.right,
+          boxBottom: box.bottom,
+          lastButtonRight: Math.max(...buttons.map((rect) => rect.right)),
+          lastButtonBottom: Math.max(...buttons.map((rect) => rect.bottom)),
+        };
+      });
+
+      // The 22rem Content column cannot fit eight targets on one line, so the
+      // row must wrap. A nowrap row used to hide Undo/Redo behind an
+      // invisible horizontal overflow strip.
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
+      expect(metrics.lastButtonRight).toBeLessThanOrEqual(
+        metrics.boxRight + 0.5,
+      );
+      expect(metrics.lastButtonBottom).toBeLessThanOrEqual(
+        metrics.boxBottom + 0.5,
+      );
+    });
+
     test("the page-count badge never overlaps the resume name", async ({
       page,
     }) => {

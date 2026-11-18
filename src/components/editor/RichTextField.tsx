@@ -112,7 +112,7 @@ export function RichTextField({
     () => ({
       attributes: {
         class:
-          "tiptap min-h-24 w-full bg-surface px-3 py-2 text-sm leading-relaxed text-text outline-none",
+          "tiptap min-h-24 w-full min-w-0 break-words bg-surface px-3 py-2 text-sm leading-relaxed text-text outline-none",
         "aria-label": ariaLabel,
         "aria-multiline": "true",
         role: "textbox",
@@ -177,10 +177,16 @@ export function RichTextField({
 
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-surface text-text transition-shadow focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
+      {/*
+        * The 22rem Content column is narrower than eight 36px targets plus
+        * gaps, so a nowrap row hid Undo/Redo behind an invisible horizontal
+        * scroll strip. Wrapping keeps every control reachable while still
+        * staying a single row on wide panels.
+        */}
       <div
         role="toolbar"
         aria-label={`Formatting for ${ariaLabel}`}
-        className="flex flex-nowrap items-center gap-0.5 overflow-x-auto border-b border-line bg-surface-muted p-1"
+        className="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface-muted p-1"
       >
         <ToolbarButton
           label="Bold"

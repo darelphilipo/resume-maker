@@ -35,6 +35,7 @@ import { PageOverflowBanner } from "./PageOverflowBanner";
 import { PageStack } from "./PageStack";
 import { TouchPanCanvas } from "./TouchPanCanvas";
 import { useFitTransform } from "./useFitTransform";
+import { usePreservedScroll } from "./usePreservedScroll";
 
 export type PreviewMode = "canvas" | "ats";
 
@@ -298,6 +299,12 @@ export function LiveCanvasViewport({
   const wrapperRef = useRef<ReactZoomPanPinchContentRef | null>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
+  /**
+   * A re-measure blanks the paper stack for a frame. On desktop the Preview
+   * panel is its own scroller, so without this its `scrollTop` would clamp to 0
+   * whenever a section is moved (or any other order change re-paginates).
+   */
+  usePreservedScroll(containerRef, layout.isMeasuring);
   /**
    * Zoom state is stamped with the fit scale it was observed at, so a resize
    * (which changes the fit target and re-fits the canvas) cannot leave a stale
