@@ -223,6 +223,51 @@ describe("LiveCanvasViewport", () => {
     ).toBeTruthy();
   });
 
+  it("lets plain wheel and two-finger scrolling pass through to the page", async () => {
+    const { wrapper } = await renderCanvas(2);
+
+    const event = new WheelEvent("wheel", {
+      bubbles: true,
+      cancelable: true,
+      deltaY: 120,
+    });
+
+    expect(wrapper.dispatchEvent(event)).toBe(true);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("zooms only for Ctrl/⌘ + wheel (the trackpad pinch gesture)", async () => {
+    const { wrapper } = await renderCanvas();
+
+    for (const modifier of [{ ctrlKey: true }, { metaKey: true }]) {
+      const event = new WheelEvent("wheel", {
+        bubbles: true,
+        cancelable: true,
+        deltaY: -100,
+        ...modifier,
+      });
+
+      expect(wrapper.dispatchEvent(event)).toBe(false);
+      expect(event.defaultPrevented).toBe(true);
+    }
+  });
+
+  it("groups the banner and page count in a sticky header above Page 1", async () => {
+    const { wrapper } = await renderCanvas(2);
+
+    const badge = screen.getByText("2 pages");
+    const header = badge.closest("[data-preview-header]");
+
+    expect(header).not.toBeNull();
+    expect(header).toHaveClass("sticky", "top-14", "z-10");
+    expect(header).toContainElement(badge);
+    expect(wrapper.contains(header)).toBe(false);
+    expect(
+      header!.compareDocumentPosition(wrapper) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("keeps native page scrolling for coarse pointers", async () => {
     stubPointer(true);
 

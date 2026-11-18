@@ -20,6 +20,7 @@ import {
   isPreviewZoomed,
 } from "@/lib/zoom/canvasGestures";
 import {
+  isZoomWheel,
   normalizeWheelDelta,
   wheelZoomTarget,
 } from "@/lib/zoom/wheelZoom";
@@ -105,6 +106,13 @@ function WheelZoom({
     };
 
     const handleWheel = (event: WheelEvent): void => {
+      // Plain wheel / two-finger scrolling belongs to the page scroller so a
+      // multi-page resume scrolls smoothly; only Ctrl/⌘ + wheel (the pinch
+      // gesture browsers synthesize on trackpads) zooms the canvas.
+      if (!isZoomWheel(event)) {
+        return;
+      }
+
       if (event.cancelable) {
         event.preventDefault();
       }
@@ -143,26 +151,69 @@ function WheelZoom({
 }
 
 /**
- * The canvas plus its chrome, rendered inside `TransformWrapper`.
+ * Sticky preview chrome: the page overflow banner and the page count / Reset
+ * toolbar. Both stay in normal flow at the top of the pane (never floating over
+ * the paper), and stick below the `Visual`/`ATS text` row while the editor
+ * scrolls, so Page 1 is never covered by the controls at rest.
+ */
+function PreviewChrome({
+  banner,
+  children,
+}: {
+  banner: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div
+      data-preview-header=""
+      className="sticky top-14 z-10 -mx-4 -mt-4 flex flex-col gap-2 border-b border-line/70 bg-background/95 px-4 pb-2 pt-3 backdrop-blur"
+    >
+      {banner}
+      {children}
+    </div>
+  );
+}
+
+/** Page-count pill and Reset, rendered inside `TransformWrapper` for context. */
+function CanvasToolbar({
+  pageCount,
+  fitScale,
+}: {
+  pageCount: number;
+  fitScale: number;
+}) {
+  return (
+    <div
+      data-canvas-toolbar=""
+      className="flex min-h-8 flex-wrap items-center justify-between gap-2"
+    >
+      <span
+        aria-live="polite"
+        className="rounded-full border border-line/70 bg-surface px-2 py-0.5 text-[11px] font-medium text-muted shadow-sm"
+      >
+        {pageCount} {pageCount === 1 ? "page" : "pages"}
+      </span>
+      <CanvasResetButton fitScale={fitScale} />
+    </div>
+  );
+}
+
+/**
+ * The canvas only (no chrome), rendered inside `TransformWrapper`.
  *
- * The page count and Reset live in a normal-flow toolbar *above* the transform
- * component instead of floating over the paper, so they can never cover the
- * candidate's name or header at any zoom level or paper size. The same
- * component subscribes to the zoom level so the touch action can switch from
- * "scroll the page" at fit to "pan the canvas freely" while zoomed.
+ * The transform component subscribes to the zoom level so the touch action can
+ * switch from "scroll the page" at fit to "pan the canvas freely" while zoomed.
  */
 function CanvasSurface({
   frame,
   fitScale,
   isCoarsePointer,
-  pageCount,
   hostRef,
   children,
 }: {
   frame: CanvasFrame;
   fitScale: number;
   isCoarsePointer: boolean;
-  pageCount: number;
   hostRef: RefObject<HTMLDivElement | null>;
   children: ReactNode;
 }) {
@@ -172,18 +223,6 @@ function CanvasSurface({
 
   return (
     <>
-      <div
-        data-canvas-toolbar=""
-        className="flex min-h-8 flex-wrap items-center justify-between gap-2 pb-2"
-      >
-        <span
-          aria-live="polite"
-          className="rounded-full border border-line/70 bg-surface px-2 py-0.5 text-[11px] font-medium text-muted shadow-sm"
-        >
-          {pageCount} {pageCount === 1 ? "page" : "pages"}
-        </span>
-        <CanvasResetButton fitScale={fitScale} />
-      </div>
       <FitTransform fitScale={fitScale} />
       <TouchPanCanvas
         hostRef={hostRef}
@@ -311,19 +350,57 @@ export function LiveCanvasViewport({
 
   const gestures = canvasGestureConfig(isCoarsePointer);
 
+  const banner = (
+    <PageOverflowBanner
+      overflowPx={layout.overflowPx}
+      pageCount={layout.pages.length}
+      lineHeightPx={lineHeightPx}
+      fitScale={layout.fitScale}
+      onFit={onFit}
+    />
+  );
+  const showOverflowBanner = layout.overflowPx > 0 || layout.pages.length > 1;
+
   return (
     <div
       ref={containerRef}
-      className="relative flex w-full flex-col gap-4 overflow-hidden rounded-xl bg-black/5 p-4"
+      className="relative flex w-full flex-col gap-4 overflow-clip rounded-xl bg-black/5 p-4"
     >
       {layout.measureLayer}
-      <PageOverflowBanner
-        overflowPx={layout.overflowPx}
-        pageCount={layout.pages.length}
-        lineHeightPx={lineHeightPx}
-        fitScale={layout.fitScale}
-        onFit={onFit}
-      />
+      {(mode === "canvas" || showOverflowBanner) ? (
+        mode === "canvas" && frame !== null && !layout.isMeasuring ? (
+          <TransformWrapper
+            initialScale={fitScale!}
+            initialPositionX={0}
+            initialPositionY={0}
+            minScale={Math.min(MIN_SCALE, fitScale!)}
+            maxScale={MAX_SCALE}
+            centerOnInit={false}
+            limitToBounds
+            doubleClick={{ disabled: true }}
+            wheel={{ disabled: true }}
+            pinch={gestures.pinch}
+            panning={gestures.panning}
+          >
+            <PreviewChrome banner={banner}>
+              <CanvasToolbar
+                pageCount={layout.pages.length}
+                fitScale={fitScale!}
+              />
+            </PreviewChrome>
+            <CanvasSurface
+              frame={frame}
+              fitScale={fitScale!}
+              isCoarsePointer={isCoarsePointer}
+              hostRef={containerRef}
+            >
+              <PageStack doc={doc} pages={layout.pages} />
+            </CanvasSurface>
+          </TransformWrapper>
+        ) : (
+          <PreviewChrome banner={banner} />
+        )
+      ) : null}
       {mode === "ats" ? (
         <AtsTextView doc={doc} />
       ) : frame === null || layout.isMeasuring ? (
@@ -332,31 +409,7 @@ export function LiveCanvasViewport({
           data-canvas-placeholder=""
           className="min-h-[240px] w-full rounded-lg bg-white/40"
         />
-      ) : (
-        <TransformWrapper
-          initialScale={fitScale!}
-          initialPositionX={0}
-          initialPositionY={0}
-          minScale={Math.min(MIN_SCALE, fitScale!)}
-          maxScale={MAX_SCALE}
-          centerOnInit={false}
-          limitToBounds
-          doubleClick={{ disabled: true }}
-          wheel={{ disabled: true }}
-          pinch={gestures.pinch}
-          panning={gestures.panning}
-        >
-          <CanvasSurface
-            frame={frame}
-            fitScale={fitScale!}
-            isCoarsePointer={isCoarsePointer}
-            pageCount={layout.pages.length}
-            hostRef={containerRef}
-          >
-            <PageStack doc={doc} pages={layout.pages} />
-          </CanvasSurface>
-        </TransformWrapper>
-      )}
+      ) : null}
     </div>
   );
 }

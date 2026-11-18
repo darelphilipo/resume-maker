@@ -5,6 +5,7 @@ import type { RefObject } from "react";
 import { useControls } from "react-zoom-pan-pinch";
 
 import {
+  dampHandoffScroll,
   hasClearedTouchSlop,
   isPreviewZoomed,
   resolveVerticalPanHandoff,
@@ -61,6 +62,7 @@ export function TouchPanCanvas({
 
     let active = false;
     let committed = false;
+    let handoffMoves = 0;
     let startX = 0;
     let startY = 0;
     let lastX = 0;
@@ -69,6 +71,7 @@ export function TouchPanCanvas({
     const begin = (touch: Touch): void => {
       active = true;
       committed = false;
+      handoffMoves = 0;
       startX = touch.clientX;
       startY = touch.clientY;
       lastX = touch.clientX;
@@ -80,6 +83,7 @@ export function TouchPanCanvas({
       if (event.touches.length !== 1) {
         active = false;
         committed = false;
+        handoffMoves = 0;
         return;
       }
 
@@ -134,8 +138,14 @@ export function TouchPanCanvas({
         void panByRef.current(deltaX, handoff.pan, 0);
       }
 
-      if (handoff.scroll !== 0) {
-        scrollPageBy(host, handoff.scroll);
+      // Ease the page-scroller contribution in so reaching a pan bound never
+      // snaps the editor by the full remaining delta in a single move.
+      const eased = dampHandoffScroll(handoff.scroll, handoffMoves);
+
+      handoffMoves = eased.moves;
+
+      if (eased.scroll !== 0) {
+        scrollPageBy(host, eased.scroll);
       }
     };
 
@@ -149,6 +159,7 @@ export function TouchPanCanvas({
 
       active = false;
       committed = false;
+      handoffMoves = 0;
     };
 
     host.addEventListener("touchstart", handleTouchStart, { passive: true });

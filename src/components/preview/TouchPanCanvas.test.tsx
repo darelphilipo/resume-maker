@@ -207,7 +207,50 @@ describe("TouchPanCanvas", () => {
 
     expect(allowed).toBe(false);
     expect(controls.panBy).not.toHaveBeenCalled();
-    expect(scroller.scrollTop).toBe(240);
+    // The first at-bound move eases into the scroll instead of snapping the
+    // editor by the whole 60px leftover.
+    expect(scroller.scrollTop).toBe(285);
+  });
+
+  it("ramps the page scroll in over repeated at-bound moves", () => {
+    controls.state.positionY = 0;
+
+    const { host, scroller } = renderPanInScroller();
+
+    scroller.scrollTop = 300;
+
+    fireEvent(host, touchEvent("touchstart", [{ clientX: 160, clientY: 100 }]));
+
+    for (const y of [140, 180, 220, 260]) {
+      fireEvent(host, touchEvent("touchmove", [{ clientX: 160, clientY: y }]));
+    }
+
+    expect(controls.panBy).not.toHaveBeenCalled();
+    expect(scroller.scrollTop).toBe(200);
+  });
+
+  it("resets the scroll ease when panning resumes mid-canvas", () => {
+    controls.state.positionY = 0;
+
+    const { host, scroller } = renderPanInScroller();
+
+    scroller.scrollTop = 300;
+
+    fireEvent(host, touchEvent("touchstart", [{ clientX: 160, clientY: 100 }]));
+    fireEvent(host, touchEvent("touchmove", [{ clientX: 160, clientY: 140 }]));
+
+    expect(scroller.scrollTop).toBe(290);
+
+    controls.state.positionY = -100;
+    fireEvent(host, touchEvent("touchmove", [{ clientX: 160, clientY: 180 }]));
+
+    expect(controls.panBy).toHaveBeenCalledWith(0, 40, 0);
+    expect(scroller.scrollTop).toBe(290);
+
+    controls.state.positionY = 0;
+    fireEvent(host, touchEvent("touchmove", [{ clientX: 160, clientY: 220 }]));
+
+    expect(scroller.scrollTop).toBe(280);
   });
 
   it("splits the drag when it crosses the canvas edge", () => {
@@ -221,7 +264,7 @@ describe("TouchPanCanvas", () => {
     fireEvent(host, touchEvent("touchmove", [{ clientX: 160, clientY: 140 }]));
 
     expect(controls.panBy).toHaveBeenCalledWith(0, 10, 0);
-    expect(scroller.scrollTop).toBe(270);
+    expect(scroller.scrollTop).toBeCloseTo(292.5);
   });
 
   it("keeps panning mid-canvas without moving the page", () => {

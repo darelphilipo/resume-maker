@@ -74,7 +74,12 @@ rediscover.
    static export, so title is the only lever. Format:
    `{name}-{headline}-{YYYY-MM-DD}-resume`, lowercase-kebab, local date. A
    1200 ms grace on coarse pointers keeps the title alive after `afterprint`.
-5. **Wheel zoom is intercept-and-scale**, not native scroll (`src/lib/zoom/`).
+5. **Wheel zoom is intercept-and-scale, and modifier-gated** (`src/lib/zoom/`).
+   Only Ctrl/⌘ + wheel zooms (`isZoomWheel` in `wheelZoom.ts`): browsers
+   synthesize `ctrlKey` on trackpad pinch, while a plain wheel or two-finger
+   scroll must reach the page scroller untouched so multi-page resumes scroll
+   natively. `WheelZoom` returns before `preventDefault()` for every other
+   wheel event.
 6. **Pagination measures real DOM.** Height comes from `MeasureLayer`; changing
    print CSS or template line-height changes page counts and breaks snapshots.
 7. **`npm ci` is the CI contract.** Editing `package.json` without a matching
@@ -332,6 +337,23 @@ rediscover.
     order used by `atsText.ts` and `MeasureLayer`; treat that as a known
     limitation until the measure layer is template-aware.
 
+33. **Preview chrome is sticky, and hand-off scroll eases in.** The
+    `Visual`/`ATS text` row in `EditorWorkspace` is `sticky top-0 z-20
+    min-h-14`, and the overflow banner + page-count/Reset toolbar are grouped
+    in `PreviewChrome` (`[data-preview-header]`, `sticky top-14 z-10`) inside
+    `LiveCanvasViewport`. `top-14` (56px) is the mode row height — keep the two
+    offsets in sync. The viewport root uses `overflow-clip`, **not**
+    `overflow-hidden`: `hidden` creates a scroll container, which would pin the
+    sticky child to that non-scrolling box and break stickiness. `CanvasToolbar`
+    (with `CanvasResetButton`) lives inside `TransformWrapper` so it keeps
+    transform context; the wrapper is a context-only provider with no DOM node,
+    so wrapping extra siblings is safe. Both headers stay in normal flow, so
+    Page 1 starts below them instead of being covered at rest. The vertical
+    pan-to-scroll hand-off now calls `dampHandoffScroll` (`HANDOFF_RAMP_MOVES =
+    4`): the page-scroller contribution ramps in over the first four at-bound
+    touches instead of snapping by the full leftover delta on contact; any
+    move with no leftover resets the ramp.
+
 ## Verification and tooling
 
 ```powershell
@@ -392,6 +414,36 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-18 — Native wheel scroll and sticky preview chrome
+- Task: top P0 — stop the preview from hijacking the mouse wheel, smooth the
+  touch pan-to-scroll hand-off, and make the preview header sticky.
+- `isZoomWheel` gates `WheelZoom`: only Ctrl/⌘ + wheel (trackpad pinch) calls
+  `preventDefault()` and zooms; plain wheel/two-finger scroll now reaches the
+  page scroller. Recorded in Decision #5.
+- `dampHandoffScroll` ramps the page-scroller half of a pan-bound hand-off over
+  four moves (reset whenever panning resumes), replacing the old 1:1
+  `scrollPageBy` jump. `TouchPanCanvas` owns the per-gesture move count. Two new
+  component cases cover the ramp and the reset; the two old exact-scroll cases
+  were updated to the eased values.
+- Sticky chrome: the mode row is `sticky top-0 z-20 min-h-14`; the banner +
+  page-count/Reset toolbar are one `sticky top-14` `PreviewChrome` block. Root
+  switched `overflow-hidden` → `overflow-clip` so sticky still resolves against
+  `<main>` / `#panel-preview`; `TransformWrapper` now wraps the header too so
+  `CanvasResetButton` keeps context. Recorded as Decision #33.
+- E2E: two new cases in `layout-consistency.spec.ts` at both viewports assert a
+  plain wheel event is never prevented, and that the sticky chrome sits in
+  normal flow above Page 1. Playwright could not run here (sandbox shell
+  rejects the `npm run e2e` command); a browser-enabled run should execute
+  `npm run e2e -- e2e/layout-consistency.spec.ts`.
+- Files: `src/lib/zoom/wheelZoom.ts` (+ test), `src/lib/zoom/canvasGestures.ts`
+  (+ test), `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/TouchPanCanvas.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (497 pass), `npm run build`
+  (static export; the Next.js security-advisory nudge needed the usual second
+  run).
 
 ### 2026-11-18 — Six-template registry and ATS-Safe badges
 - Task: register all six templates and show an ATS-Safe badge on every
@@ -643,29 +695,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (432 pass), `npm run lint`,
   `npm run build` (static export; the CLI's security-advisory nudge needed the
   usual second run).
-
-### 2026-11-17 — White input surfaces and readable field hints
-- Task: make Summary/Experience/Education text areas read as editable white
-  inputs against the warm paper chrome, and raise placeholder/hint contrast.
-- `RichTextField` is now a `bg-surface text-text` shell with a
-  `bg-surface-muted` toolbar strip (replacing `bg-black/[0.02]`) and an
-  explicit white `.tiptap` area; the helper prompt and action chips use
-  `text-text`/`text-muted` and solid white chips instead of translucent black.
-- `SectionFormControls`: `INPUT_CLASS` gained `caret-primary`,
-  `placeholder:opacity-100` (Firefox dims placeholders by default), and
-  disabled tokens; hint copy uses `text-muted` instead of `opacity-60`, and
-  `EntryCard` is tinted `bg-surface-muted` so the white inputs inside stand out.
-- `globals.css` `.tiptap p.is-editor-empty::before` now uses
-  `var(--brand-muted)` (#5b6a7a, 5.5:1 on white) rather than 45% black.
-- Tests: white shell + subtle toolbar strip, readable helper hint, and a new
-  `SectionFormControls.test.tsx` covering input tokens, hints, `MonthInput`,
-  and the tinted `EntryCard`.
-- Files: `src/components/editor/RichTextField.tsx` (+ test),
-  `src/components/editor/SectionFormControls.tsx` (+ new test),
-  `src/app/globals.css`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (424 pass), `npm run lint`,
-  `npm run build` (static export; the security-advisory nudge needed the usual
-  second run).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary

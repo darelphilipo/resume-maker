@@ -68,6 +68,23 @@ _None._
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-18 — Fixed preview scroll hijacking and sticky chrome: plain wheel
+  and two-finger scrolling now pass through to the page scroller while only
+  Ctrl/⌘ + wheel zooms (`isZoomWheel`); the touch pan-to-scroll hand-off eases
+  in over the first four at-bound moves instead of snapping (`dampHandoffScroll`);
+  and the `Visual`/`ATS text`, page-count/Reset, and overflow banner chrome now
+  form a sticky header that stays above Page 1 in normal flow. Verified
+  `npm run typecheck`, `npm test` (497 pass), `npm run build` (static export;
+  the Next.js security-advisory nudge needed the usual second run). Files:
+  `src/lib/zoom/wheelZoom.ts` (+ test), `src/lib/zoom/canvasGestures.ts` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/TouchPanCanvas.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  Playwright could not run in this sandbox (shell rejects `npm run e2e`); the two
+  new viewport cases are typechecked but browser-unverified — next run with a
+  browser should execute `npm run e2e -- e2e/layout-consistency.spec.ts`.
+
 - [x] 2026-11-18 — Registered all six templates with user-facing metadata and an
   ordered picker list. Engineering Classic (Jake), Ivy/Executive (Harvard),
   Modern Accent, Compact 1-Pager, and Hybrid Skills-First are single-column CSS

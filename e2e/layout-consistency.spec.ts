@@ -189,6 +189,91 @@ for (const viewport of VIEWPORTS) {
       expect(overlaps).toBe(false);
     });
 
+    test("plain wheel scrolling is not intercepted by preview zoom", async ({
+      page,
+    }) => {
+      await createPresetResume(page);
+      await showPreview(page);
+
+      const canvas = page.locator(".react-transform-wrapper").first();
+      await expect(canvas).toBeVisible();
+      const box = await canvas.boundingBox();
+      expect(box).not.toBeNull();
+
+      await page.evaluate(() => {
+        const probe = window as Window & { preventedWheels?: number };
+
+        probe.preventedWheels = 0;
+        document.addEventListener(
+          "wheel",
+          (event) => {
+            if (event.defaultPrevented) {
+              probe.preventedWheels = (probe.preventedWheels ?? 0) + 1;
+            }
+          },
+          { passive: true },
+        );
+      });
+
+      await page.mouse.move(
+        box!.x + box!.width / 2,
+        box!.y + box!.height / 2,
+      );
+      await page.mouse.wheel(0, 240);
+
+      expect(
+        await page.evaluate(
+          () =>
+            (window as Window & { preventedWheels?: number }).preventedWheels,
+        ),
+      ).toBe(0);
+    });
+
+    test("preview chrome sits above Page 1 without covering it", async ({
+      page,
+    }) => {
+      await createPresetResume(page);
+      await showPreview(page);
+
+      const geometry = await page.evaluate(() => {
+        const modeHeader = document.querySelector<HTMLElement>(
+          "[data-preview-mode-header]",
+        );
+        const chrome = document.querySelector<HTMLElement>(
+          "[data-preview-header]",
+        );
+        const name = document.querySelector<HTMLElement>(
+          "#panel-preview .resume-page .resume-name",
+        );
+
+        if (!modeHeader || !chrome || !name) {
+          return null;
+        }
+
+        const mode = modeHeader.getBoundingClientRect();
+        const sticky = chrome.getBoundingClientRect();
+
+        return {
+          modeBottom: mode.bottom,
+          chromeTop: sticky.top,
+          chromeBottom: sticky.bottom,
+          nameTop: name.getBoundingClientRect().top,
+          modePosition: getComputedStyle(modeHeader).position,
+          chromePosition: getComputedStyle(chrome).position,
+        };
+      });
+
+      expect(geometry).not.toBeNull();
+      const result = geometry as NonNullable<typeof geometry>;
+
+      expect(result.modePosition).toBe("sticky");
+      expect(result.chromePosition).toBe("sticky");
+      // The chrome occupies normal flow above the paper, so Page 1 starts
+      // below it instead of being covered at rest.
+      expect(result.nameTop).toBeGreaterThanOrEqual(result.chromeBottom);
+      expect(result.chromeTop).toBeGreaterThanOrEqual(result.modeBottom - 1);
+    });
+
     test("scrolling Content keeps the preview panel inside the viewport", async ({
       page,
     }) => {

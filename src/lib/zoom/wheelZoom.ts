@@ -9,6 +9,21 @@
  */
 export const WHEEL_ZOOM_INTENSITY = 0.00088;
 
+/**
+ * True only for the modifier-driven wheel gesture that means "zoom".
+ *
+ * A plain wheel notch or a two-finger trackpad swipe must reach the page
+ * scroller so a multi-page resume scrolls naturally. Browsers synthesize
+ * `ctrlKey` (and sometimes `metaKey`) on the wheel events of a trackpad pinch,
+ * so that is the one wheel gesture the preview turns into a zoom.
+ */
+export function isZoomWheel(event: {
+  ctrlKey: boolean;
+  metaKey: boolean;
+}): boolean {
+  return event.ctrlKey || event.metaKey;
+}
+
 /** Rough pixel length of one text line, used for DOM_DELTA_LINE events. */
 const PIXELS_PER_LINE = 16;
 

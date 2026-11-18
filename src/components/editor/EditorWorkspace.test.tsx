@@ -214,6 +214,18 @@ describe("EditorWorkspace", () => {
     expect(canvas).toHaveAttribute("data-mode", "ats");
   });
 
+  it("keeps the preview mode toggle in a sticky header above the canvas", async () => {
+    await renderReadyWorkspace();
+
+    const visual = screen.getByRole("button", { name: "Visual" });
+    const header = visual.closest("[data-preview-mode-header]");
+
+    expect(header).not.toBeNull();
+    expect(header).toHaveClass("sticky", "top-0", "z-20", "min-h-14");
+    expect(header).toContainElement(visual);
+    expect(header).toContainElement(screen.getByRole("button", { name: "ATS text" }));
+  });
+
   it("shows the save state from the store", async () => {
     await renderReadyWorkspace();
 

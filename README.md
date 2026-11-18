@@ -98,14 +98,15 @@ in control of every line, and your data stays on your device.
   preview and the Design controls stay pinned below the header while you scroll
   a long Content list, and each of those two columns scrolls on its own. Phones
   keep the one-tab-at-a-time layout, so nothing is squeezed.
-- **Pinch to zoom** the preview on a touch screen: two fingers zoom the resume,
-  then a one-finger drag moves freely in any direction across the zoomed page.
-  At normal size a one-finger swipe still scrolls the editor, so no toolbar
-  pushes the resume down. A small **Reset** button appears in the preview
-  toolbar only while you are zoomed in and returns the page to its fitted
-  width. When a drag reaches the top or bottom of the zoomed page, the editor
-  keeps scrolling, so you can always get back up to Reset and Save PDF even on
-  a multi-page resume. On desktop, the mouse wheel and dragging work as before.
+- **Scroll or zoom the preview naturally**: on a phone, two fingers zoom the
+  resume and a one-finger drag moves freely in any direction across the zoomed
+  page. At normal size a one-finger swipe still scrolls the editor. When a drag
+  reaches the top or bottom of the zoomed page, scrolling the editor eases in
+  smoothly, so you can always get back to Reset and Save PDF even on a
+  multi-page resume. A small **Reset** button appears only while zoomed and
+  returns the page to its fitted width. On a computer, the mouse wheel and
+  two-finger scrolling move the editor; hold **Ctrl** (or **⌘**) while
+  scrolling to zoom the resume.
 - **Fit to 1 Page** when a resume spills just past one page.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
@@ -114,8 +115,9 @@ in control of every line, and your data stays on your device.
   Content to open the matcher on any device, then paste a posting to see which
   of its keywords already appear in your resume and which are missing. Matching
   runs locally with simple word heuristics, not AI.
-- A page-count pill in the preview toolbar above the page, so it never covers
-  your name or header, plus an overflow warning before you print.
+- The **Visual / ATS text** switch, page-count pill, and overflow warning stay
+  pinned at the top of the Preview pane while you scroll, above the paper rather
+  than covering your name or header.
 - Print/PDF filenames are generated from your name, headline, and date.
 
 ### Keep your work

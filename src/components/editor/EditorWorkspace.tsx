@@ -345,7 +345,10 @@ export function EditorWorkspace() {
           className={panelClass("preview", "lg:order-2", { sticky: true })}
         >
           <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div
+              data-preview-mode-header=""
+              className="editor-chrome sticky top-0 z-20 flex min-h-14 flex-wrap items-center justify-between gap-2 border-b border-line/70 bg-background/95 px-1 backdrop-blur"
+            >
               <h2 className="font-serif text-xl font-semibold tracking-tight">
                 Preview
               </h2>

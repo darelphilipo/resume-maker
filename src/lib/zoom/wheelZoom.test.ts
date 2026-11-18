@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   WHEEL_ZOOM_INTENSITY,
+  isZoomWheel,
   normalizeWheelDelta,
   wheelZoomTarget,
 } from "./wheelZoom";
@@ -38,6 +39,18 @@ describe("normalizeWheelDelta", () => {
     expect(normalizeWheelDelta(Number.NEGATIVE_INFINITY, DOM_DELTA_PAGE)).toBe(
       0,
     );
+  });
+});
+
+describe("isZoomWheel", () => {
+  it("zooms only for a modifier-driven wheel gesture", () => {
+    expect(isZoomWheel({ ctrlKey: true, metaKey: false })).toBe(true);
+    expect(isZoomWheel({ ctrlKey: false, metaKey: true })).toBe(true);
+    expect(isZoomWheel({ ctrlKey: true, metaKey: true })).toBe(true);
+  });
+
+  it("leaves plain wheel and two-finger scrolling to the page", () => {
+    expect(isZoomWheel({ ctrlKey: false, metaKey: false })).toBe(false);
   });
 });
 
