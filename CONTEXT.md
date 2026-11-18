@@ -437,6 +437,20 @@ rediscover.
     cannot create a sideways scroll strip inside the sheet; keep those classes
     when adding section forms.
 
+39. **Fit-to-width is applied once per fit target, never per render.**
+    `react-zoom-pan-pinch`'s `useControls()` rebuilds every control closure on
+    each render, so an effect that lists `setTransform` in its dependencies
+    re-fits the canvas whenever it runs. `CanvasSurface` re-renders the moment
+    the "zoomed" bit flips, so the first pinch frame called
+    `setTransform(0, 0, fitScale, 0)` and snapped the canvas back to fit: pinch
+    appeared to reset, the transform/render ping-pong jittered or froze the
+    preview, and the aborted gesture left `touch-action: none` behind so the
+    page would not scroll until a new touch. `useFitTransform`
+    (`src/components/preview/useFitTransform.ts`) guards with a ref and only
+    re-fits when `fitScale` genuinely changes (container resize, paper size, a
+    new fit-to-one-page scale). Treat every `useControls()` method identity as
+    unstable — never use one as an unguarded effect dependency.
+
 ## Verification and tooling
 
 ```powershell
@@ -497,6 +511,35 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-18 — Pinch zoom stays put (fit no longer re-applies per render)
+- Task: top P0 Queue item — preview "resets" on pinch, jitters/freezes when
+  zooming, cannot pan a zoomed page, and page scrolling works only sometimes.
+- Root cause: `FitTransform` in `LiveCanvasViewport` ran
+  `setTransform(0, 0, fitScale, 0)` from an effect keyed on
+  `[fitScale, setTransform]`, but `react-zoom-pan-pinch`'s `useControls()`
+  rebuilds every control closure on each render. `CanvasSurface` re-renders when
+  the zoomed bit flips, so the first pinch frame immediately re-fitted the
+  canvas: zoom snapped back, the render/transform ping-pong produced jitter and
+  freezes, and the aborted gesture left `touch-action: none` so the next swipe
+  could not scroll the page. One bug, all four symptoms. Recorded as Decision
+  #39.
+- New `useFitTransform` applies the fit transform only when `fitScale` actually
+  changes (ref guard, ignores non-finite values); `CanvasSurface` now uses it.
+  No other preview behaviour changed.
+- `useFitTransform.test.tsx` mocks `useControls()` with a fresh `setTransform`
+  identity per render and proves an unrelated re-render does not re-fit, while a
+  real `fitScale` change does. Verified the test fails (2 calls) when the guard
+  is removed. 532 pass.
+- Files: `src/components/preview/useFitTransform.ts` (new) + test,
+  `src/components/preview/LiveCanvasViewport.tsx`, `CONTEXT.md`, `TASKS.md`.
+  README unchanged: its existing "Scroll or zoom the preview naturally" bullet
+  already describes the intended pinch/pan behaviour, which now holds.
+- Verified: `npm run typecheck`, `npm test` (532 pass). Playwright cannot run in
+  this sandbox, so the `390x844` pinch/pan/scroll feel is browser-unverified; a
+  browser-enabled run should execute
+  `npm run e2e -- e2e/layout-consistency.spec.ts` and repeat a pinch, a
+  one-finger pan, and a multi-page scroll.
 
 ### 2026-11-18 — Drawer sheet shrinks above the mobile keyboard
 - Task: top P1 Queue item — stop `EntryDrawer`'s header/close button from being
@@ -750,30 +793,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `EntryDrawer.tsx` (+ test), `JdMatchDrawer.tsx` (+ test), `README.md`,
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (467 pass), `npm run lint`.
-
-### 2026-11-17 — Ordered section actions, a drawer X, and compact verb chips
-- Task: tidy the haphazard Hide / Move up / Move down / Open section editor
-  controls, add an explicit close affordance to the section editor sheet, and
-  make the achievement verb chips compact.
-- `SectionList` now renders every section-level action in one
-  `grid grid-cols-2 gap-2 lg:grid-cols-3` with a shared `SECTION_ACTION_CLASS`
-  (`flex min-h-11 w-full items-center justify-center`), ordered Hide → Move up →
-  Move down → Open editor (`lg:hidden`) → Delete for custom rows (`col-span-2
-  lg:col-span-3`). The old loose flex-wrap row plus `mt-1 w-fit` buttons are
-  gone, so cells line up evenly at phone and desktop widths.
-- `EntryDrawer` now has a non-scrolling header: drag handle, `Drawer.Title`, and
-  a 44px `min-h-11 min-w-11` **Close drawer** button calling
-  `onOpenChange(false)`. Moving the title out of the scroll area keeps it (and
-  the X) visible while the body scrolls; vaul's swipe-down and Escape paths are
-  untouched. All drawers (section editor, entries, JD matcher) gain the X.
-- `RichTextField` action-verb chips shrank from `min-h-11 px-3 py-2` to
-  `min-h-9 px-2.5 py-1` with a `gap-1` group, keeping the pill look.
-- Tests: ordered-grid child-order assertions in `SectionList.test.tsx`
-  (including custom Delete spanning the grid), a close-button case in
-  `EntryDrawer.test.tsx`, and a compact-chip case in `RichTextField.test.tsx`.
-- Files: `src/components/editor/SectionList.tsx` (+ test), `EntryDrawer.tsx`
-  (+ test), `RichTextField.tsx` (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (461 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary

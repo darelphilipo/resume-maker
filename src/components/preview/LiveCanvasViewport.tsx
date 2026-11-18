@@ -34,6 +34,7 @@ import { CanvasResetButton, RESET_ANIMATION_MS } from "./CanvasResetButton";
 import { PageOverflowBanner } from "./PageOverflowBanner";
 import { PageStack } from "./PageStack";
 import { TouchPanCanvas } from "./TouchPanCanvas";
+import { useFitTransform } from "./useFitTransform";
 
 export type PreviewMode = "canvas" | "ats";
 
@@ -51,11 +52,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function FitTransform({ fitScale }: { fitScale: number }) {
-  const { setTransform } = useControls();
-
-  useEffect(() => {
-    void setTransform(0, 0, fitScale, 0);
-  }, [fitScale, setTransform]);
+  useFitTransform(fitScale);
 
   return null;
 }

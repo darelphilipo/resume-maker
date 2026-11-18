@@ -23,11 +23,6 @@ _None._
 ## Queue (Ready for Next Run)
 _none._
 
-### P0 — Multi-Page & Scroll Fixes
-
-- [ ] P0: the preview is broken and does not allow me to move around in the zoomed in version ,jitters on zooming in,if I pinch to zoom it resets ,sometimes I'm able to scroll to next page sometimes I can't , freezes at times. It was working perfectly a few versions back 
-
-
 ### P1 — Visual Consistency, Mobile Drawer & Editor UX
 
 - [ ] P1: Fix Launcher capsule tap-blink, uneven heights, missing Recent Resumes / Blank start, and Paste parser bugs in `src/components/launcher/Launcher.tsx` and `src/lib/import/` (paste parser).
@@ -56,6 +51,20 @@ _none._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-18 — Fixed pinch-to-zoom resetting and the preview jitter/freeze:
+  `FitTransform` re-applied `setTransform(0, 0, fitScale, 0)` from an effect
+  keyed on `[fitScale, setTransform]`, but `react-zoom-pan-pinch`'s
+  `useControls()` rebuilds every control closure on each render, so the first
+  pinch frame snapped the canvas back to fit (and the aborted gesture left
+  `touch-action: none`, so page scrolling worked only sometimes). Fit is now
+  applied once per fit-scale change through the new `useFitTransform` ref guard,
+  with a unit test proving an unrelated re-render does not re-fit. Verified
+  `npm run typecheck`, `npm test` (532 pass). Playwright is blocked in this
+  sandbox; a browser-enabled run should pinch, pan, and scroll a multi-page
+  preview at `390x844` (`npm run e2e -- e2e/layout-consistency.spec.ts`). Files:
+  `src/components/preview/useFitTransform.ts` (new) + test,
+  `src/components/preview/LiveCanvasViewport.tsx`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-18 — Fixed the mobile `EntryDrawer` keyboard overlap and sideways
   scroll: `Drawer.Content` now sets `maxHeight: calc(95dvh -
