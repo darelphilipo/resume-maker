@@ -70,7 +70,19 @@ const SECTION_ALIASES: Record<string, SectionKey> = {
   "areas of expertise": "skills",
   "skills & tools": "skills",
   "skills and tools": "skills",
+  "skills & expertise": "skills",
+  "skills and expertise": "skills",
+  "key skills": "skills",
+  "top skills": "skills",
+  "skill set": "skills",
+  skillset: "skills",
+  "technical expertise": "skills",
   "technical proficiencies": "skills",
+  "tools & technologies": "skills",
+  "tools and technologies": "skills",
+  "software & tools": "skills",
+  "software and tools": "skills",
+  "programming languages": "skills",
   technologies: "skills",
   profiles: "profiles",
   links: "profiles",
@@ -106,6 +118,7 @@ const SECTION_ALIASES: Record<string, SectionKey> = {
 };
 
 const BULLET_PREFIX = /^[-*•▪◦●○■□‣⁃]\s+/;
+const INLINE_HEADING = /^([^:]{1,48}):\s+(\S.*)$/;
 const EDGE_SEPARATORS = /^[\s|•·,;:–—-]+|[\s|•·,;:–—-]+$/g;
 const EMAIL_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
 const PHONE_PATTERN =
@@ -221,11 +234,32 @@ function splitSections(lines: string[]): {
   let current: SectionKey = "header";
 
   for (const line of lines) {
-    const key = headingKey(line);
+    let key = headingKey(line);
+    let inlineContent: string | null = null;
+
+    if (!key) {
+      const inline = INLINE_HEADING.exec(line);
+      // Only all-caps headings carry inline content: "SKILLS: Python, SQL".
+      // Title-case lines such as "Languages: TypeScript, Python" are skill
+      // categories inside the current section, not new headings.
+      if (inline && inline[1] === inline[1].toUpperCase()) {
+        const inlineKey = headingKey(inline[1]);
+
+        if (inlineKey) {
+          key = inlineKey;
+          inlineContent = inline[2];
+        }
+      }
+    }
 
     if (key) {
       current = key;
       sections[key] = sections[key] ?? [];
+
+      if (inlineContent !== null) {
+        sections[key]?.push(inlineContent);
+      }
+
       continue;
     }
 
@@ -809,91 +843,129 @@ function buildExperience(block: string[]): ExperienceItem | null {
   };
 }
 
-function parseEducationHeader(headers: string[]): {
+type EducationHeader = {
   school: string;
   degree: string;
   area: string;
   location: string;
   grade: string;
-} {
-  let school = "";
-  let degree = "";
-  let area = "";
-  let location = "";
-  let grade = "";
+};
+
+function parseEducationHeader(headers: string[]): EducationHeader {
+  const result: EducationHeader = {
+    school: "",
+    degree: "",
+    area: "",
+    location: "",
+    grade: "",
+  };
   const extras: string[] = [];
 
-  for (const header of headers) {
-    const split = splitTrailingLocation(header);
+  /**
+   * Comma-separated institution names are common ("University of California,
+   * Berkeley"), so a school-looking value is kept whole instead of being split
+   * into a school plus a fake location. Commas are only split when the value is
+   * a plain list such as "Economics, Mathematics".
+   */
+  const addText = (value: string) => {
+    const cleaned = trimSeparators(value);
 
-    if (split.location !== "" && location === "") {
-      location = split.location;
+    if (cleaned === "") {
+      return;
     }
 
-    if (split.rest === "") {
-      continue;
+    if (looksLikeSchool(cleaned)) {
+      result.school = result.school || cleaned;
+      return;
     }
 
-    const gpa = GPA_PATTERN.exec(split.rest);
-
-    if (gpa) {
-      grade = grade || `${gpa[1] ?? gpa[2]} GPA`;
+    if (looksLikeLocation(cleaned)) {
+      result.location = result.location || cleaned;
+      return;
     }
 
-    const parts = split.rest
-      .replace(GPA_PATTERN, " ")
-      .split(/\s*[|•·,]\s*|\s+[–—]\s+|\s+-\s+/)
+    for (const part of cleaned
+      .split(/\s*,\s*/)
       .map(trimSeparators)
-      .filter((part) => part !== "");
-
-    for (const part of parts) {
-      const degreeMatch = DEGREE_PATTERN.exec(part);
-
-      if (degreeMatch) {
-        degree = degree || trimSeparators(degreeMatch[1]);
-        area = area || trimSeparators(degreeMatch[2] ?? "");
-
-        const before = trimSeparators(
-          part.slice(0, degreeMatch.index),
-        );
-
-        if (before !== "") {
-          if (looksLikeSchool(before)) {
-            school = school || before;
-          } else {
-            extras.push(before);
-          }
-        }
-
-        const after = trimSeparators(
-          part.slice(degreeMatch.index + degreeMatch[0].length),
-        );
-
-        if (after !== "" && area === "") {
-          area = trimSeparators(after.replace(/^(?:in|,)\s*/i, ""));
-        }
-
-        continue;
-      }
-
+      .filter((item) => item !== "")) {
       if (looksLikeSchool(part)) {
-        school = school || part;
+        result.school = result.school || part;
+      } else if (looksLikeLocation(part)) {
+        result.location = result.location || part;
+      } else {
+        extras.push(part);
+      }
+    }
+  };
+
+  for (const header of headers) {
+    const segments = header
+      .split(/\s*[|•·]\s*|\s+[–—]\s+|\s+-\s+/)
+      .map(trimSeparators)
+      .filter((segment) => segment !== "");
+
+    for (const rawSegment of segments.length > 0 ? segments : [header]) {
+      const gpa = GPA_PATTERN.exec(rawSegment);
+
+      if (gpa && result.grade === "") {
+        result.grade = `${gpa[1] ?? gpa[2]} GPA`;
+      }
+
+      const segment = trimSeparators(rawSegment.replace(GPA_PATTERN, " "));
+
+      if (segment === "") {
         continue;
       }
 
-      extras.push(part);
+      const degreeMatch = DEGREE_PATTERN.exec(segment);
+
+      if (!degreeMatch) {
+        addText(segment);
+        continue;
+      }
+
+      result.degree = result.degree || trimSeparators(degreeMatch[1]);
+
+      const inlineArea = trimSeparators(degreeMatch[2] ?? "");
+
+      if (inlineArea !== "" && result.area === "") {
+        result.area = inlineArea;
+      }
+
+      const before = trimSeparators(segment.slice(0, degreeMatch.index));
+      const after = trimSeparators(
+        segment.slice(degreeMatch.index + degreeMatch[0].length),
+      );
+
+      if (before !== "") {
+        addText(before);
+      }
+
+      if (after !== "") {
+        const cleanedAfter = trimSeparators(
+          after.replace(/^(?:in|,)\s*/i, ""),
+        );
+
+        if (looksLikeSchool(cleanedAfter)) {
+          result.school = result.school || cleanedAfter;
+        } else if (result.area === "") {
+          result.area = cleanedAfter;
+        } else {
+          addText(cleanedAfter);
+        }
+      }
     }
   }
 
-  if (school === "" && extras.length > 0) {
-    school = extras.shift() ?? "";
+  if (result.school === "" && extras.length > 0) {
+    result.school = extras.shift() ?? "";
   }
 
-  if (area === "" && extras.length > 0) {
-    area = extras.shift() ?? "";
+  if (result.area === "" && extras.length > 0) {
+    result.area = extras.shift() ?? "";
   }
 
-  return { school, degree, area, location, grade };
+  return result;
 }
 
 function looksLikeSchool(value: string): boolean {

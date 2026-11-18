@@ -10,12 +10,22 @@ import {
   FilePdf,
   FileText,
   ListChecks,
+  PencilSimple,
+  Plus,
   ShieldCheck,
+  Trash,
   WifiSlash,
   type Icon,
 } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
-import { useState, type ChangeEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 
 import { PDF_IMPORT_ENABLED } from "@/lib/features";
 import { parsePastedResume } from "@/lib/import/pasteResume";
@@ -23,6 +33,16 @@ import { ARCHETYPES, type Archetype } from "@/lib/presets/archetypes";
 import { sanitizeResumeDocument } from "@/lib/richtext/sanitize";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { parseResumeJson } from "@/lib/schema/serialize";
+import {
+  deleteResume,
+  listRecentResumes,
+  renameResume,
+  type ResumeRow,
+} from "@/lib/store/db";
+import {
+  recentResumeEditedLabel,
+  recentResumeName,
+} from "@/lib/store/recentResumes";
 import { useResumeStore } from "@/lib/store/useResumeStore";
 
 const INVALID_FILE_MESSAGE =
@@ -35,6 +55,11 @@ const PDF_NO_TEXT_MESSAGE =
   "That PDF has no selectable text. If it is a scan or an image, paste the text instead.";
 const CREATE_RESUME_MESSAGE =
   "Could not create the resume. Your browser may be blocking local storage.";
+const RECENT_ERROR_MESSAGE =
+  "Could not read the resumes saved on this device.";
+const RECENT_MISSING_MESSAGE =
+  "That resume is no longer saved on this device. Pick another one or start a new resume.";
+const BLANK_ACTION_ID = "blank";
 const TRUST_POINTS = [
   { label: "100% Free", icon: CurrencyDollar },
   { label: "No Sign-Up", icon: ShieldCheck },
@@ -108,6 +133,49 @@ export function Launcher() {
   const [backupError, setBackupError] = useState<string | null>(null);
   const [creatingId, setCreatingId] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [recent, setRecent] = useState<ResumeRow[] | null>(null);
+  const [recentError, setRecentError] = useState<string | null>(null);
+  const [openingRecentId, setOpeningRecentId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const refreshRecent = useCallback(async () => {
+    try {
+      const rows = await listRecentResumes();
+      setRecent(rows);
+      setRecentError(null);
+    } catch {
+      setRecent([]);
+      setRecentError(RECENT_ERROR_MESSAGE);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    listRecentResumes()
+      .then((rows) => {
+        if (cancelled) {
+          return;
+        }
+
+        setRecent(rows);
+        setRecentError(null);
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+
+        setRecent([]);
+        setRecentError(RECENT_ERROR_MESSAGE);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handlePdfChange(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
@@ -216,6 +284,24 @@ export function Launcher() {
     }
   }
 
+  async function handleBlank() {
+    if (creatingId) {
+      return;
+    }
+
+    setCreatingId(BLANK_ACTION_ID);
+    setCreateError(null);
+
+    try {
+      const id = await useResumeStore.getState().createResume("onyx");
+      router.push(`/editor?id=${id}`);
+    } catch {
+      setCreateError(CREATE_RESUME_MESSAGE);
+    } finally {
+      setCreatingId(null);
+    }
+  }
+
   async function handleArchetype(archetype: Archetype) {
     if (creatingId) {
       return;
@@ -233,6 +319,82 @@ export function Launcher() {
       setCreateError(CREATE_RESUME_MESSAGE);
     } finally {
       setCreatingId(null);
+    }
+  }
+
+  async function handleOpenRecent(row: ResumeRow) {
+    if (openingRecentId) {
+      return;
+    }
+
+    setOpeningRecentId(row.id);
+    setRecentError(null);
+
+    try {
+      const loaded = await useResumeStore.getState().loadResume(row.id);
+
+      if (!loaded) {
+        setRecentError(RECENT_MISSING_MESSAGE);
+        await refreshRecent();
+        return;
+      }
+
+      router.push(`/editor?id=${row.id}`);
+    } catch {
+      setRecentError(RECENT_ERROR_MESSAGE);
+    } finally {
+      setOpeningRecentId(null);
+    }
+  }
+
+  function startRename(row: ResumeRow) {
+    setDeletingId(null);
+    setRenamingId(row.id);
+    setRenameDraft(recentResumeName(row));
+    setRecentError(null);
+  }
+
+  function cancelRename() {
+    setRenamingId(null);
+    setRenameDraft("");
+  }
+
+  async function handleRenameSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const id = renamingId;
+    const name = renameDraft.trim();
+
+    if (!id || name === "") {
+      return;
+    }
+
+    try {
+      const updated = await renameResume(id, name);
+
+      if (!updated) {
+        setRecentError(RECENT_MISSING_MESSAGE);
+      }
+
+      cancelRename();
+      await refreshRecent();
+    } catch {
+      setRecentError(RECENT_ERROR_MESSAGE);
+    }
+  }
+
+  async function handleDeleteRecent(row: ResumeRow) {
+    try {
+      await deleteResume(row.id);
+      setDeletingId(null);
+
+      if (renamingId === row.id) {
+        cancelRename();
+      }
+
+      await refreshRecent();
+    } catch {
+      setRecentError(RECENT_ERROR_MESSAGE);
     }
   }
 
@@ -376,10 +538,34 @@ export function Launcher() {
           headingId="launcher-scratch-heading"
           icon={ListChecks}
           title="Start from scratch"
-          description="Pick a role to load a complete, editable sample. Keep what fits and replace the rest with your own experience."
+          description="Start blank, or pick a role to load a complete, editable sample. Keep what fits and replace the rest with your own experience."
           className="lg:col-span-2"
         >
-          <ul className="grid gap-2.5 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => void handleBlank()}
+            disabled={creatingId === BLANK_ACTION_ID}
+            aria-busy={creatingId === BLANK_ACTION_ID}
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#1b3a57] bg-white px-4 py-3 text-sm font-semibold text-[#1b3a57] transition-colors enabled:hover:bg-[#eef2f6] enabled:active:bg-[#e3ebf2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-wait disabled:border-[#c9c2b6] disabled:text-[#5b6a7a]"
+          >
+            {creatingId === BLANK_ACTION_ID ? (
+              <CircleNotch size={18} aria-hidden className="animate-spin" />
+            ) : (
+              <Plus size={18} aria-hidden />
+            )}
+            {creatingId === BLANK_ACTION_ID
+              ? "Creating..."
+              : "Start with a blank resume"}
+          </button>
+          <p className="mt-2 text-xs text-[#6a7683]">
+            No sample text — just the standard empty sections, ready for your own
+            details.
+          </p>
+
+          <p className="mt-5 text-xs font-semibold uppercase tracking-[0.12em] text-[#6a7683]">
+            Or start from a role
+          </p>
+          <ul data-preset-list className="mt-2 grid gap-2.5 sm:grid-cols-2">
             {ARCHETYPES.map((archetype, index) => {
               const isPending = creatingId === archetype.id;
               const isSiblingPending = creatingId !== null && !isPending;
@@ -437,6 +623,154 @@ export function Launcher() {
               {createError}
             </p>
           ) : null}
+
+          <div className="mt-6 flex flex-col gap-2 border-t border-[#e6e0d6] pt-4">
+            <h4 className="text-sm font-semibold text-[#172839]">
+              Recent resumes
+            </h4>
+
+            {recent === null ? (
+              <p role="status" className="text-sm text-[#5b6a7a]">
+                Looking for resumes saved on this device...
+              </p>
+            ) : recent.length === 0 ? (
+              <p className="text-sm text-[#5b6a7a]">
+                Nothing saved yet. Resumes you create in this browser appear
+                here, so you can reopen them later without an account.
+              </p>
+            ) : (
+              <ul
+                aria-label="Recent resumes"
+                className="flex flex-col gap-2"
+              >
+                {recent.map((row) => {
+                  const name = recentResumeName(row);
+                  const isOpening = openingRecentId === row.id;
+                  const isRenaming = renamingId === row.id;
+                  const isDeleting = deletingId === row.id;
+
+                  return (
+                    <li
+                      key={row.id}
+                      className="rounded-xl border border-[#e3ddd2] bg-[#fbfaf7] px-3 py-2.5"
+                    >
+                      {isRenaming ? (
+                        <form
+                          onSubmit={(event) => void handleRenameSubmit(event)}
+                          className="flex flex-col gap-2"
+                        >
+                          <label
+                            htmlFor={`recent-name-${row.id}`}
+                            className="sr-only"
+                          >
+                            Resume name
+                          </label>
+                          <input
+                            id={`recent-name-${row.id}`}
+                            value={renameDraft}
+                            onChange={(event) =>
+                              setRenameDraft(event.currentTarget.value)
+                            }
+                            autoFocus
+                            className="min-h-11 w-full rounded-lg border border-[#d8d2c6] bg-white px-3 py-2 text-sm text-[#172839] focus-visible:border-[#1b3a57] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/15"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="submit"
+                              disabled={renameDraft.trim() === ""}
+                              className="min-h-11 flex-1 rounded-lg bg-[#172839] px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#e8e4dc] disabled:text-[#5b6a7a]"
+                            >
+                              Save name
+                            </button>
+                            <button
+                              type="button"
+                              onClick={cancelRename}
+                              className="min-h-11 flex-1 rounded-lg border border-[#e3ddd2] bg-white px-3 text-sm font-medium text-[#33465a]"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void handleOpenRecent(row)}
+                            disabled={isOpening}
+                            aria-busy={isOpening}
+                            aria-label={`Open ${name}`}
+                            className="flex min-h-11 min-w-0 flex-1 flex-col justify-center rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-wait"
+                          >
+                            <span className="truncate text-sm font-medium text-[#172839]">
+                              {name}
+                            </span>
+                            <span className="truncate text-xs text-[#6a7683]">
+                              {isOpening
+                                ? "Opening..."
+                                : recentResumeEditedLabel(row.updatedAt)}
+                            </span>
+                          </button>
+
+                          {isDeleting ? (
+                            <div className="flex shrink-0 gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => void handleDeleteRecent(row)}
+                                className="min-h-11 rounded-lg border border-[#b42318] bg-white px-2.5 text-xs font-semibold text-[#b42318]"
+                              >
+                                Delete
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeletingId(null)}
+                                className="min-h-11 rounded-lg border border-[#e3ddd2] bg-white px-2.5 text-xs font-medium text-[#33465a]"
+                              >
+                                Keep
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex shrink-0 gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => startRename(row)}
+                                aria-label={`Rename ${name}`}
+                                className="flex size-11 items-center justify-center rounded-lg border border-[#e3ddd2] bg-white text-[#33465a]"
+                              >
+                                <PencilSimple size={16} aria-hidden />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRenamingId(null);
+                                  setDeletingId(row.id);
+                                }}
+                                aria-label={`Delete ${name}`}
+                                className="flex size-11 items-center justify-center rounded-lg border border-[#e3ddd2] bg-white text-[#33465a]"
+                              >
+                                <Trash size={16} aria-hidden />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {isDeleting ? (
+                        <p role="status" className="mt-2 text-xs text-[#6a7683]">
+                          Delete this resume? This cannot be undone.
+                        </p>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {recentError ? (
+              <p role="alert" className="text-sm text-[#b42318]">
+                {recentError}
+              </p>
+            ) : null}
+          </div>
         </EntryCard>
       </div>
 

@@ -11,7 +11,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import { parsePdfResume } from "@/lib/import/pdfResume";
 import { serializeResume } from "@/lib/schema/serialize";
-import { resumeDb } from "@/lib/store/db";
+import { putResume, resumeDb } from "@/lib/store/db";
 import {
   resetResumeStore,
   useResumeStore,
@@ -28,6 +28,16 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/import/pdfResume", () => ({
   parsePdfResume: vi.fn(),
 }));
+
+async function seedRecent(
+  id: string,
+  name: string,
+  updatedAt = Date.UTC(2026, 10, 18),
+): Promise<void> {
+  const doc = createEmptyResume();
+  doc.basics.name = name;
+  await putResume({ id, updatedAt, doc });
+}
 
 function jsonFile(content: string, name = "resume.json"): File {
   const file = new File([content], name, { type: "application/json" });
@@ -237,6 +247,106 @@ describe("Launcher", () => {
       );
     });
     expect(useResumeStore.getState().resumeId).not.toBeNull();
+  });
+
+  it("starts a blank resume without sample content", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    await user.click(
+      screen.getByRole("button", { name: "Start with a blank resume" }),
+    );
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/editor\?id=/),
+      );
+    });
+
+    const state = useResumeStore.getState();
+    expect(state.resumeId).not.toBeNull();
+    expect(state.doc.basics.name).toBe("");
+    expect(state.doc.sections.experience.items).toEqual([]);
+  });
+
+  it("lists saved resumes under Recent resumes", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    render(<Launcher />);
+
+    expect(
+      screen.getByRole("heading", { name: "Recent resumes" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Open Grace Hopper" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Edited Nov 18, 2026")).toBeInTheDocument();
+  });
+
+  it("explains when no resume has been saved yet", async () => {
+    render(<Launcher />);
+
+    expect(
+      await screen.findByText(/Nothing saved yet/),
+    ).toBeInTheDocument();
+  });
+
+  it("opens a recent resume from the list", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Open Grace Hopper" }),
+    );
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith("/editor?id=recent-1");
+    });
+    expect(useResumeStore.getState().doc.basics.name).toBe("Grace Hopper");
+  });
+
+  it("renames a recent resume inline", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Rename Grace Hopper" }),
+    );
+    fireEvent.change(screen.getByLabelText("Resume name"), {
+      target: { value: "Admiral Grace" },
+    });
+    await user.click(screen.getByRole("button", { name: "Save name" }));
+
+    expect(
+      await screen.findByRole("button", { name: "Open Admiral Grace" }),
+    ).toBeInTheDocument();
+    expect((await resumeDb.resumes.get("recent-1"))?.doc.basics.name).toBe(
+      "Admiral Grace",
+    );
+  });
+
+  it("deletes a recent resume after a confirmation step", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Delete Grace Hopper" }),
+    );
+
+    expect(
+      screen.getByText("Delete this resume? This cannot be undone."),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: "Open Grace Hopper" }),
+      ).not.toBeInTheDocument();
+    });
+    expect(await resumeDb.resumes.get("recent-1")).toBeUndefined();
   });
 
   it("shows an error and does not navigate when createResume fails", async () => {

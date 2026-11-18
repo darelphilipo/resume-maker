@@ -28,17 +28,26 @@ in control of every line, and your data stays on your device.
 ### Start quickly
 
 - **Three clear ways to begin**: the home page asks you to choose between
-  pasting text, uploading a PDF, or starting from a role sample, with each
-  option explained in plain language. The free, no-sign-up, offline promises sit
+  pasting text, uploading a PDF, or starting from scratch, with each option
+  explained in plain language. The free, no-sign-up, offline promises sit
   together on one compact line above the choices, so starting stays one tap and
   the options stay near the top of a phone screen.
+- **Start blank or from a role sample**: choose **Start with a blank resume**
+  when you would rather type from an empty page, or pick a role preset for a
+  complete editable example. Either way you land in the same editor with every
+  field yours to change.
+- **Recent resumes** on the home page list what you already saved in this
+  browser, newest first, so you can reopen a resume, rename it, or delete it
+  without an account. Nothing leaves the device.
 - **PDF import**: choose a PDF and its text is read locally in your browser,
   then split into editable contact details, summary, experience, education, and
   skills. Scanned or image-only PDFs need to be pasted as text instead.
 - **Paste-to-parse import**: paste the text of an existing resume from a PDF,
   LinkedIn profile, or another tool, and your contact details, summary,
   experience, education, and skills are split into editable fields. Parsing
-  runs in your browser, and you can correct anything afterwards.
+  runs in your browser, and you can correct anything afterwards. School names
+  with a comma, such as `University of California, Berkeley`, stay whole, and
+  skills keep their categories under headings such as **Skills & Expertise**.
 - **Role presets** for Software Engineer, Product Manager, UX/UI Designer,
   Finance & Operations, and Fresh Graduate, each with a complete editable sample
   including categorized skills you can adapt.

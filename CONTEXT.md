@@ -451,6 +451,24 @@ rediscover.
     new fit-to-one-page scale). Treat every `useControls()` method identity as
     unstable — never use one as an unguarded effect dependency.
 
+40. **Blank start and Recent resumes belong to the scratch card.** `/` must keep
+    exactly three named `<section>` regions (the page and e2e a11y tests count
+    them), so **Start with a blank resume** and the Dexie-backed **Recent
+    resumes** list render *inside* the "Start from scratch" card rather than as
+    a fourth entry point. `listRecentResumes` returns `updatedAt`-descending
+    rows; `renameResume` writes `basics.name` and bumps `updatedAt`;
+    `deleteResume` removes the row. Labels and timestamps come from the pure
+    `src/lib/store/recentResumes.ts` (name → headline → "Untitled resume").
+    The preset `<ul>` carries `data-preset-list` and the e2e preset selector
+    targets it, because the recent rows are also a `<ul>` of buttons. In the
+    paste parser, education headers split on `| • · – —` but never on commas,
+    and a school-looking value is kept whole, so
+    `University of California, Berkeley` stays one school instead of becoming a
+    school plus an invented location. Inline headings
+    (`SKILLS: Python, SQL`) are only recognised when the heading is all caps;
+    title-case `Languages: TypeScript, Python` stays a skills category inside
+    the current section (it must not switch to the spoken-languages section).
+
 ## Verification and tooling
 
 ```powershell
@@ -511,6 +529,38 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-18 — Launcher blank start, recent resumes, and paste-parser fixes
+- Task: finish the top Queue item (launcher, sub-points 3–4; 1–2 landed
+  2026-11-17).
+- `db.ts` gained `listRecentResumes` (newest first, default limit 10),
+  `deleteResume`, and `renameResume` (writes `basics.name`, bumps
+  `updatedAt`, returns `null` for a deleted row). `recentResumes.ts` owns the
+  list labels (`name` → `headline` → "Untitled resume") and the `Edited Nov 18,
+  2026` timestamp so the component stays dumb and the helpers stay testable.
+- `Launcher` now renders **Start with a blank resume** plus **Recent resumes**
+  inside the "Start from scratch" card: open, inline rename, and a two-step
+  delete. The effect only loads once and writes state from promise callbacks —
+  `react-hooks/set-state-in-effect` rejects calling a setState-bearing helper
+  directly in an effect body. Presets keep their tapped-card-only busy state.
+- Paste parser: `parseEducationHeader` splits headers on `| • · – —` (not
+  commas) and keeps school-looking values whole; `splitSections` recognises
+  all-caps inline headings (`SKILLS: Python, SQL`) and the alias table gained
+  `Skills & Expertise`-style variants. Title-case `Languages: ...` deliberately
+  stays a skill category. Recorded as Decision #40.
+- E2E: the preset list got `data-preset-list`; `layout-consistency.spec.ts`
+  targets it so recent-resume buttons can never be measured as preset cards.
+- Tests: new `db.test.ts` and `recentResumes.test.ts`, six launcher cases
+  (blank start, list/empty state, open, rename, delete), and six parser cases
+  (comma institution, school + location, heading variants, inline caps heading,
+  title-case category guard). 553 pass.
+- Files: `src/components/launcher/Launcher.tsx` (+ test),
+  `src/lib/store/db.ts` (+ test), `src/lib/store/recentResumes.ts` (+ test),
+  `src/lib/import/pasteResume.ts` (+ test), `e2e/layout-consistency.spec.ts`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (553 pass), `npm run lint`.
+  Playwright cannot run in this sandbox; a browser-enabled run should execute
+  `npm run e2e -- e2e/layout-consistency.spec.ts` at `390x844` / `1280x800`.
 
 ### 2026-11-18 — Pinch zoom stays put (fit no longer re-applies per render)
 - Task: top P0 Queue item — preview "resets" on pinch, jitters/freezes when
@@ -768,31 +818,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   commands — so the spec is typechecked but browser-unverified. Next run with a
   dev server on :3000 should execute
   `npm run e2e -- e2e/layout-consistency.spec.ts`.
-
-### 2026-11-17 — One-row toolbars, full-card paper sizes, reliable JD drawer
-- Task: fix the three P1 visual/UX rough edges — toolbar wrapping in the narrow
-  desktop sidebar, partial paper-size card hit targets, and a JD Match trigger
-  that did not reliably open its portalled drawer.
-- `RichTextField`'s toolbar is now `flex-nowrap overflow-x-auto`; buttons are
-  `min-h-9 min-w-9 shrink-0` on fine pointers and `pointer-coarse:min-h-11
-  pointer-coarse:min-w-11` on touch, so eight controls fit the 22rem Content
-  column without wrapping. `EntryActions` uses the same sizing in a
-  `flex-nowrap gap-1` row. Recorded as Decision #31.
-- `DesignPanel` now pairs each radio with an explicit `id` / label `htmlFor`
-  (`page-format-a4`, `page-format-letter`) and gives the label `w-full`, so
-  clicking the A4/Letter detail text switches the format.
-- `EntryDrawer` gained an optional `trigger` rendered as `<Drawer.Trigger
-  asChild>`; `JdMatchDrawer` passes its button there instead of calling
-  `setOpen(true)`, so vaul owns the open state and the dialog ARIA wiring
-  (`aria-haspopup`, `aria-expanded`, `aria-controls`). Recorded as Decision #30.
-- Tests: compact toolbar/action classes, label pairing + detail-text click for
-  both paper sizes, trigger ARIA/portal id and open call, and the existing
-  workspace JD-open case still passes. New `DesignPanel.test.tsx`.
-- Files: `src/components/editor/RichTextField.tsx` (+ test),
-  `SectionFormControls.tsx` (+ test), `DesignPanel.tsx` (+ test),
-  `EntryDrawer.tsx` (+ test), `JdMatchDrawer.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (467 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary

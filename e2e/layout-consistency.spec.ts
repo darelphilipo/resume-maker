@@ -13,7 +13,7 @@ const VIEWPORTS = [
 ] as const;
 
 const PRESET_SELECTOR =
-  'section[aria-labelledby="launcher-scratch-heading"] ul button';
+  'section[aria-labelledby="launcher-scratch-heading"] ul[data-preset-list] button';
 
 function presetButtons(page: Page): Locator {
   return page.locator(PRESET_SELECTOR);

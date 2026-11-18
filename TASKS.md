@@ -25,11 +25,7 @@ _none._
 
 ### P1 — Visual Consistency, Mobile Drawer & Editor UX
 
-- [ ] P1: Fix Launcher capsule tap-blink, uneven heights, missing Recent Resumes / Blank start, and Paste parser bugs in `src/components/launcher/Launcher.tsx` and `src/lib/import/` (paste parser).
-  1. Add `h-full` to preset `<li>` / `<button>` cards so row heights match, span/center the 5th card cleanly, and only show a loading state on the tapped card (`creatingId === archetype.id`) without dimming siblings (`opacity-60`).
-  2. Fix disabled `"Create resume from text"` button inner-box styling and immediate `onChange` enablement (no blur delay).
-  3. Surface `"Start blank"` and the Dexie-backed `"Recent resumes"` list (open, rename, delete) on `/`.
-  4. Fix the paste-to-parse logic so commas inside institution names (e.g., `University of California, Berkeley`) are not split into separate fields and `Skills` sections are preserved.
+- [x] P1: Fix Launcher capsule tap-blink, uneven heights, missing Recent Resumes / Blank start, and Paste parser bugs in `src/components/launcher/Launcher.tsx` and `src/lib/import/` (paste parser). _(started 2026-11-17, finished 2026-11-18 — see Done)_
 
 - [ ] P1: Standardize white input backgrounds, unified Month/Year date pickers, and sidebar layout in `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`, and `src/components/editor/EditorWorkspace.tsx`.
   1. Add `bg-surface` (`#ffffff`) to `RichTextField` containers (removing the beige `#f5f3ee` bleed-through) and improve placeholder contrast on optional inputs.
@@ -51,6 +47,24 @@ _none._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-18 — Finished the launcher item: **Start with a blank resume** and a
+  Dexie-backed **Recent resumes** list (open, inline rename to `basics.name`,
+  two-step delete) now live inside the existing "Start from scratch" card, so
+  `/` still has exactly three entry regions. Added `listRecentResumes`,
+  `deleteResume`, and `renameResume` to `src/lib/store/db.ts` plus a pure
+  `recentResumes.ts` label/timestamp helper. Paste-to-parse now keeps
+  `University of California, Berkeley` as one school (no invented location),
+  recognises `Skills & Expertise`-style headings, and reads all-caps inline
+  `SKILLS: Python, SQL` headings without mistaking title-case categories such as
+  `Languages: ...` for a new section. Added a `data-preset-list` hook and
+  narrowed the e2e preset selector so recent-resume buttons are not treated as
+  preset cards. Verified `npm run typecheck`, `npm test` (553 pass),
+  `npm run lint`. Playwright still cannot run in this sandbox. Files:
+  `src/components/launcher/Launcher.tsx` (+ test),
+  `src/lib/store/db.ts` (+ test, new), `src/lib/store/recentResumes.ts`
+  (+ test, new), `src/lib/import/pasteResume.ts` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-18 — Fixed pinch-to-zoom resetting and the preview jitter/freeze:
   `FitTransform` re-applied `setTransform(0, 0, fitScale, 0)` from an effect

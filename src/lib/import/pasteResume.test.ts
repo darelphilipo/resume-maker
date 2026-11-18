@@ -196,6 +196,103 @@ Tableau`);
     expect(items[0]?.keywords).toEqual(["SQL", "Excel", "Python", "Tableau"]);
   });
 
+  it("keeps a comma inside an institution name instead of inventing a location", () => {
+    const doc = parsePastedResume(`Dana Wu
+Economist
+dana@example.com
+
+EDUCATION
+University of California, Berkeley
+B.A. in Economics
+2010 - 2014`);
+
+    const items = doc?.sections.education.items ?? [];
+
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      school: "University of California, Berkeley",
+      degree: "B.A.",
+      area: "Economics",
+      location: "",
+      startDate: "2010-01",
+      endDate: "2014-12",
+    });
+  });
+
+  it("keeps a school and a comma-separated location on one line", () => {
+    const doc = parsePastedResume(`Priya Shah
+Engineer
+priya@example.com
+
+EDUCATION
+University of Washington | Seattle, WA
+B.S. in Computer Science
+2012 - 2016`);
+
+    const items = doc?.sections.education.items ?? [];
+
+    expect(items[0]).toMatchObject({
+      school: "University of Washington",
+      degree: "B.S.",
+      area: "Computer Science",
+      location: "Seattle, WA",
+    });
+  });
+
+  it("keeps skills under heading variants such as Skills & Expertise", () => {
+    const doc = parsePastedResume(`Morgan Bell
+Designer
+morgan@example.com
+
+SKILLS & EXPERTISE
+Design: Figma, Prototyping
+Research: Interviews, Usability testing`);
+
+    const items = doc?.sections.skills.items ?? [];
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        name: "Design",
+        keywords: ["Figma", "Prototyping"],
+      }),
+      expect.objectContaining({
+        name: "Research",
+        keywords: ["Interviews", "Usability testing"],
+      }),
+    ]);
+  });
+
+  it("reads an all-caps inline skills heading", () => {
+    const doc = parsePastedResume(`Taylor Reed
+Analyst
+taylor@example.com
+
+SKILLS: SQL, Python, Tableau`);
+
+    const items = doc?.sections.skills.items ?? [];
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.keywords).toEqual(["SQL", "Python", "Tableau"]);
+  });
+
+  it("does not treat a title-case skill category as a new section", () => {
+    const doc = parsePastedResume(`Avery Cole
+Engineer
+avery@example.com
+
+SKILLS
+Languages: TypeScript, Python
+Cloud: AWS`);
+
+    expect(doc?.sections.skills.items).toEqual([
+      expect.objectContaining({
+        name: "Languages",
+        keywords: ["TypeScript", "Python"],
+      }),
+      expect.objectContaining({ name: "Cloud", keywords: ["AWS"] }),
+    ]);
+  });
+
   it("escapes HTML in pasted body text", () => {
     const doc = parsePastedResume(`Casey Ng
 Engineer
