@@ -1,0 +1,96 @@
+/* Single-column variants. Global, prefixed rules only: see css-modules.test.ts
+   and CONTEXT.md (Turbopack reclassifies *.module.css as plain CSS). */
+
+/* Ivy / Executive (Harvard) ------------------------------------------------ */
+.onyx--ivy .resume-header {
+  text-align: center;
+  border-bottom: 2px solid
+    color-mix(in srgb, var(--brand-primary, #1f2937) 70%, transparent);
+  padding-bottom: 6pt;
+}
+
+.onyx--ivy .resume-contact {
+  justify-content: center;
+}
+
+.onyx--ivy .resume-name {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: calc(var(--resume-heading-size, 14pt) * 1.7);
+  letter-spacing: 0;
+}
+
+.onyx--ivy .resume-section-heading {
+  font-family: Georgia, "Times New Roman", serif;
+  text-transform: none;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--brand-primary, #1f2937) 35%, transparent);
+}
+
+/* Modern Accent ----------------------------------------------------------- */
+.onyx--accent .resume-name,
+.onyx--accent .resume-entry-title {
+  color: var(--brand-primary, #1f2937);
+}
+
+.onyx--accent .resume-section-heading {
+  border-bottom: none;
+  border-left: 3pt solid var(--brand-primary, #1f2937);
+  padding: 1pt 0 1pt 6pt;
+}
+
+.onyx--accent .resume-contact-separator {
+  color: var(--brand-primary, #1f2937);
+}
+
+/* Compact 1-Pager --------------------------------------------------------- */
+.onyx--compact {
+  gap: calc(var(--page-gap-y, 12pt) * 0.55);
+}
+
+.onyx--compact .page-stack {
+  gap: calc(var(--page-gap-y, 12pt) * 0.55);
+}
+
+.onyx--compact .resume-section {
+  gap: calc(var(--item-gap, 6pt) * 0.25);
+}
+
+.onyx--compact .resume-section-items {
+  gap: calc(var(--item-gap, 6pt) * 0.6);
+}
+
+.onyx--compact .resume-name {
+  font-size: calc(var(--resume-heading-size, 14pt) * 1.25);
+}
+
+.onyx--compact .resume-section-heading {
+  padding-bottom: 1pt;
+  font-size: 0.95em;
+}
+
+.onyx--compact .resume-entry {
+  gap: 1pt;
+}
+
+/* Hybrid Skills-First ----------------------------------------------------- */
+.onyx--skills-first .resume-section[data-section-id="skills"] {
+  gap: calc(var(--item-gap, 6pt) * 0.75);
+  padding: 6pt 8pt;
+  border: 1px solid
+    color-mix(in srgb, var(--brand-primary, #1f2937) 25%, transparent);
+  border-radius: 4pt;
+  background: color-mix(
+    in srgb,
+    var(--brand-primary, #1f2937) 5%,
+    transparent
+  );
+}
+
+.onyx--skills-first .resume-section[data-section-id="skills"] .resume-section-heading {
+  border-bottom-color: color-mix(
+    in srgb,
+    var(--brand-primary, #1f2937) 40%,
+    transparent
+  );
+}

@@ -37,4 +37,41 @@ describe("DesignPanel", () => {
     expect(useResumeStore.getState().doc.metadata.page.format).toBe("letter");
     expect(screen.getByRole("radio", { name: /Letter/ })).toBeChecked();
   });
+
+  it("lists all six templates with an ATS-Safe badge on the single-column ones", () => {
+    render(<DesignPanel />);
+
+    const templateRadios = screen
+      .getAllByRole("radio")
+      .filter(
+        (radio) => (radio as HTMLInputElement).name === "resume-template",
+      );
+    expect(templateRadios).toHaveLength(6);
+    expect(screen.getAllByText("ATS-Safe")).toHaveLength(5);
+    expect(
+      screen.getByText("Best for direct/human review"),
+    ).toBeInTheDocument();
+
+    const input = screen.getByRole("radio", {
+      name: /Engineering Classic/,
+    }) as HTMLInputElement;
+    expect(input).toHaveAttribute("id", "template-onyx");
+    expect(input.closest("label")).toHaveAttribute("for", "template-onyx");
+    expect(input.closest("label")).toHaveClass("w-full", "min-h-11");
+  });
+
+  it("changes the active template when another option is chosen", () => {
+    render(<DesignPanel />);
+
+    const studio = screen.getByRole("radio", {
+      name: /Studio Sidebar/,
+    }) as HTMLInputElement;
+    fireEvent.click(studio);
+
+    expect(useResumeStore.getState().doc.metadata.template).toBe("gengar");
+    expect(studio).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: /Engineering Classic/ }),
+    ).not.toBeChecked();
+  });
 });

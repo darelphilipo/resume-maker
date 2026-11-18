@@ -96,6 +96,28 @@ describe("OnyxTemplate", () => {
     ).toBeInTheDocument();
   });
 
+  it("adds a variant class without changing the shared DOM", () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Ada Lovelace";
+    doc.summary.content = "<p>Summary body</p>";
+
+    const { container } = render(
+      <OnyxTemplate
+        doc={doc}
+        pages={[["__header", "summary"]]}
+        pageIndex={0}
+        variant="accent"
+      />,
+    );
+
+    const root = container.firstElementChild as HTMLElement;
+    expect(root).toHaveClass("onyx", "onyx--accent");
+    expect(root.querySelector("header")).not.toBeNull();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Summary" }),
+    ).toBeInTheDocument();
+  });
+
   it("derives root CSS custom properties from the document", () => {
     const doc = createEmptyResume();
     doc.metadata.typography.body.fontSize = 12;
@@ -144,8 +166,10 @@ describe("OnyxTemplate", () => {
 });
 
 describe("getTemplate", () => {
-  it("falls back to the onyx definition for unimplemented templates", () => {
-    const definition = getTemplate("persian");
+  it("falls back to the engineering-classic definition for unknown ids", () => {
+    const definition = getTemplate("not-a-template" as Parameters<
+      typeof getTemplate
+    >[0]);
     const doc = createEmptyResume();
     doc.summary.content = "<p>Fallback summary</p>";
 

@@ -86,7 +86,12 @@ in control of every line, and your data stays on your device.
 
 ### Design and preview
 
-- Clean single-column **Onyx** template designed for readable PDFs.
+- **Six resume templates** in Design: Engineering Classic (Jake), Ivy/Executive
+  (Harvard), Modern Accent, Compact 1-Pager, and Hybrid Skills-First are
+  single-column layouts badged **ATS-Safe**, so a parser reads them in one clean
+  top-to-bottom flow. **Studio Sidebar** is a two-column option badged **Best
+  for direct/human review**. Pick one by tapping its card — your content, page
+  size, and saves are unchanged, and the preview and PDF use the same layout.
 - A4 and US Letter page sizes — click anywhere on a page-size card to switch.
 - Live paginated preview that measures real content, not an estimate.
 - **Preview and Design stay in view on desktop**: on a wide window the resume

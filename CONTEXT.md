@@ -47,7 +47,7 @@ rediscover.
 | Rich text | `src/components/editor/RichTextField.tsx` (TipTap) |
 | Live preview | `src/components/preview/LiveCanvasViewport.tsx`, `PageStack.tsx`, `MeasureLayer.tsx`, `PageOverflowBanner.tsx` |
 | Pagination | `src/lib/pagination/*` (`computePages`, `packPages`, `canvasFrame`) |
-| Templates | `src/templates/registry.ts`, `src/templates/onyx/OnyxTemplate.tsx`, `src/templates/shared/*` |
+| Templates | `src/templates/registry.ts`, `src/templates/onyx/OnyxTemplate.tsx`, `src/templates/variants/*`, `src/templates/studio/*`, `src/templates/shared/*` |
 | Schema/validation | `src/lib/schema/*` (Zod) |
 | Store | `src/lib/store/db.ts` (Dexie), `useResumeStore.ts` (Zustand + zundo undo) |
 | Print | `src/lib/print/printDocument.ts`, `detectInAppBrowser.ts` |
@@ -314,6 +314,23 @@ rediscover.
     `htmlFor`/`id` pair plus `w-full` — a bare `<label><input/></label>` does
     not reliably forward a click on the detail `<span>` to the radio in every
     browser.
+32. **Six templates, one rendering contract.** `src/templates/registry.ts`
+    registers all six `TEMPLATE_IDS` with `TemplateDefinition` metadata
+    (`label`, `description`, `columns`, `atsSafe`, optional `badge`) and exports
+    an ordered `TEMPLATE_LIST` for the picker. Five single-column layouts reuse
+    `OnyxTemplate`'s DOM, adding only a root class (`onyx--ivy`, `--accent`,
+    `--compact`, `--skills-first`, `--studio`) styled by prefixed global CSS in
+    `variants/` and `studio/`; `buildTemplateThemeStyle` in
+    `shared/templateTheme.ts` is the one source of the resume CSS variables, so
+    preview, measurement and print stay aligned. `atsSafe === (columns === 1)`
+    by design, and `TemplateBadge` renders **ATS-Safe** or the two-column
+    layout's **Best for direct/human review** label. Two traps: `HeaderSlot`
+    sets inline styles and the theme variables are inline on the root, so a
+    variant class cannot override them without `!important` — style descendants
+    and derived properties instead. The Studio Sidebar splits sections by
+    `STUDIO_SIDEBAR_SECTION_IDS`, so its visual order differs from the canonical
+    order used by `atsText.ts` and `MeasureLayer`; treat that as a known
+    limitation until the measure layer is template-aware.
 
 ## Verification and tooling
 
@@ -375,6 +392,36 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-18 — Six-template registry and ATS-Safe badges
+- Task: register all six templates and show an ATS-Safe badge on every
+  single-column option (top P2 item).
+- `registry.ts` now maps the six existing `TEMPLATE_IDS` to full definitions
+  (label/description/columns/`atsSafe`/badge) plus an ordered `TEMPLATE_LIST`.
+  Five single-column layouts reuse `OnyxTemplate` with a `onyx--*` root class;
+  the two-column Studio Sidebar splits sections into a main column and an
+  `aria-label="At a glance"` sidebar. `buildTemplateThemeStyle` was extracted
+  from `OnyxTemplate` so all renderers share one set of CSS variables, and
+  `SectionRenderer` gained `data-section-id` for CSS variant targeting.
+  Recorded as Decision #32, including the inline-style and ATS-order traps.
+- `DesignPanel` gained a mobile-first template radio list with explicit
+  `htmlFor`/`id`, `min-h-11` cards, five **ATS-Safe** badges and the Studio
+  **Best for direct/human review** badge. The other three design controls
+  (accent, font pairing, density) remain the next Queue item.
+- Tests: new `registry.test.tsx`, `Variants.test.tsx`,
+  `TemplateBadge.test.tsx`; Onyx variant/fallback cases; DesignPanel
+  selection/badge cases. The old "persian falls back to onyx" test was replaced
+  with an unknown-id fallback because every valid id is now implemented.
+- Files: `src/templates/registry.ts`, `src/templates/shared/templateTheme.ts`,
+  `src/templates/shared/TemplateBadge.tsx`, `src/templates/shared/SectionRenderer.tsx`,
+  `src/templates/variants/Variants.tsx` + `variants.css`,
+  `src/templates/studio/StudioSidebarTemplate.tsx` + `studio.css`,
+  `src/templates/onyx/OnyxTemplate.tsx` (+ test),
+  `src/components/editor/DesignPanel.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (485 pass), `npm run lint`,
+  `npm run build` (static export; the usual Next.js security-advisory nudge
+  needed a second run).
 
 ### 2026-11-17 — Playwright visual/layout regression spec
 - Task: add the P1 e2e spec guarding six previously-fixed visual/layout behaviours
@@ -619,30 +666,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (424 pass), `npm run lint`,
   `npm run build` (static export; the security-advisory nudge needed the usual
   second run).
-
-### 2026-11-17 — Launcher preset alignment and a single-capsule tap state
-- Task: even out the role-preset cards in the "Start from scratch" launcher
-  card, stop the odd fifth card from leaving a ragged half-row, and replace the
-  tap-blink where every preset dimmed while one was creating.
-- Preset `<li>`s are `h-full items-start`, each `<button>` is `h-full`, and the
-  odd-count last card (`Fresh Graduate`) gets `sm:col-span-2`, so paired cards
-  share a row height and the fifth spans cleanly.
-- Only `creatingId === archetype.id` gets the pending treatment now: the button
-  is disabled, `aria-busy` is set, the arrow swaps for an animated
-  `CircleNotch`, and the border/bg change. Siblings get
-  `pointer-events-none` + `aria-disabled` but no opacity, so there is no
-  full-block flash; `handleArchetype` still guards against double creation.
-- The disabled "Create resume from text" CTA no longer fades with
-  `disabled:opacity-60`; it uses explicit disabled background/border/text tokens
-  (`enabled:hover`/`enabled:active` for the live state) so the icon and label
-  sit on one seamless surface.
-- Tests: preset list has five `h-full`/`items-start` rows with `h-full` buttons,
-  only the last row gets `sm:col-span-2`, the pending state is scoped to the
-  clicked preset with undimmed siblings, and the disabled CTA keeps its explicit
-  disabled tokens.
-- Files: `src/components/launcher/Launcher.tsx` (+ test), `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (418 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary

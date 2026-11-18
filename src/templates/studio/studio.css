@@ -1,0 +1,39 @@
+/* Two-column "Studio Sidebar" template. Global, prefixed rules only. */
+
+.onyx--studio .studio-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: var(--page-gap-x, 8pt);
+  align-items: start;
+}
+
+.onyx--studio .studio-main,
+.onyx--studio .studio-sidebar {
+  min-width: 0;
+}
+
+.onyx--studio .studio-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-gap-y, 12pt);
+}
+
+.onyx--studio .studio-sidebar .resume-section-heading {
+  border-bottom: none;
+  border-left: 2pt solid var(--brand-primary, #1f2937);
+  padding: 1pt 0 1pt 5pt;
+}
+
+.onyx--studio .studio-sidebar .resume-section-items {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.onyx--studio .studio-sidebar .resume-skill-pill {
+  white-space: normal;
+}
+
+.onyx--studio .resume-header {
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--brand-primary, #1f2937) 35%, transparent);
+  padding-bottom: 6pt;
+}

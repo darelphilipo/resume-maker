@@ -23,12 +23,29 @@ _None._
 ## Queue (Ready for Next Run)
 
 ### P2 — Larger work
-- [ ] P2: Add a template system in `src/templates/registry.ts` with 6 single-column-first templates — Engineering Classic (Jake), Ivy/Executive (Harvard), Modern Accent, Compact 1-Pager, Hybrid Skills-First, and a two-column Studio Sidebar labelled "Best for direct/human review". Show an ATS-Safe badge on single-column options.
 - [ ] P2: Add 4 design controls to `DesignPanel.tsx`: template selector, accent color (5–6 curated swatches + monochrome), font pairing (Sans/Serif/Classic), density (Compact/Normal/Relaxed).
 - [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-18 — Registered all six templates with user-facing metadata and an
+  ordered picker list. Engineering Classic (Jake), Ivy/Executive (Harvard),
+  Modern Accent, Compact 1-Pager, and Hybrid Skills-First are single-column CSS
+  variants of the shared Onyx DOM and carry an **ATS-Safe** badge; the two-column
+  Studio Sidebar splits sections into a main column plus sidebar and is badged
+  **Best for direct/human review**. `DesignPanel` now lists all six as
+  mobile-first radio cards. Verified `npm run typecheck`, `npm test` (485 pass),
+  `npm run lint`, `npm run build` (static export). Files: `src/templates/registry.ts`,
+  `src/templates/shared/templateTheme.ts` (new),
+  `src/templates/shared/TemplateBadge.tsx` (new),
+  `src/templates/shared/SectionRenderer.tsx`,
+  `src/templates/variants/Variants.tsx` + `variants.css` (new),
+  `src/templates/studio/StudioSidebarTemplate.tsx` + `studio.css` (new),
+  `src/templates/onyx/OnyxTemplate.tsx` (+ test), `registry.test.tsx` (new),
+  `Variants.test.tsx` (new), `TemplateBadge.test.tsx` (new),
+  `src/components/editor/DesignPanel.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-17 — Added `e2e/layout-consistency.spec.ts`, a Playwright regression spec
   over six previously-fixed visual/layout behaviours. It follows the `a11y.spec.ts`

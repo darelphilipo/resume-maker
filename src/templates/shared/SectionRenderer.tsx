@@ -439,6 +439,7 @@ export function SectionRenderer({
           <section
             key={`${sectionId}-${sectionIndex}`}
             className="resume-section"
+            data-section-id={sectionId}
             data-keep-together={config.keepTogether ? "true" : undefined}
             data-start-new-page={config.startOnNewPage ? "true" : undefined}
             aria-label={hasHeading ? undefined : config.title || undefined}
