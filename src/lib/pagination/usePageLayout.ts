@@ -28,6 +28,13 @@ export type MeasureResult = {
 
 export type MeasureFn = (order: readonly string[]) => MeasureResult | null;
 
+/**
+ * Why "Fit to 1 Page" cannot offer a target:
+ * - `page-break`: a section is forced to start on a new page.
+ * - `too-tall`: reaching one page would shrink below the readable floor.
+ */
+export type FitBlockedReason = "page-break" | "too-tall";
+
 export type PageLayout = {
   pages: string[][];
   overflowPx: number;
@@ -36,6 +43,7 @@ export type PageLayout = {
   contentHeightPx: number;
   gapPx: number;
   fitScale: number | null;
+  fitBlockedReason?: FitBlockedReason | null;
   measureLayer: ReactNode;
 };
 
@@ -216,6 +224,7 @@ export function usePageLayout(
       contentHeightPx,
       gapPx,
       fitScale: null,
+      fitBlockedReason: null,
       measureLayer,
     };
   }
@@ -248,6 +257,16 @@ export function usePageLayout(
           currentFitScale,
         });
 
+  // Only explain a blocked fit when the resume genuinely needs more than one
+  // page; a single-page resume with no target simply hides the fit action.
+  const needsExtraPage = packed.pages.length > 1 || packed.overflowPx > 0;
+  const fitBlockedReason: FitBlockedReason | null =
+    fitScale !== null || !needsExtraPage
+      ? null
+      : startOnNewPage.size > 0
+        ? "page-break"
+        : "too-tall";
+
   return {
     pages: packed.pages,
     overflowPx: packed.overflowPx,
@@ -256,6 +275,7 @@ export function usePageLayout(
     contentHeightPx,
     gapPx,
     fitScale,
+    fitBlockedReason,
     measureLayer,
   };
 }

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -7,6 +7,7 @@ import {
 } from "@/lib/pagination/canvasFrame";
 import type { PageLayout } from "@/lib/pagination/usePageLayout";
 import { createEmptyResume } from "@/lib/schema/defaults";
+import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { pageGeometry } from "@/lib/units/pageGeometry";
 
 import { LiveCanvasViewport } from "./LiveCanvasViewport";
@@ -93,10 +94,20 @@ afterEach(() => {
   window.matchMedia = originalMatchMedia;
 });
 
-async function renderCanvas(pageCount = 1) {
-  const doc = createEmptyResume();
+async function renderCanvas(
+  pageCount = 1,
+  options: {
+    doc?: ResumeDocument;
+    onFit?: (scale: number) => void;
+  } = {},
+) {
+  const doc = options.doc ?? createEmptyResume();
   const view = render(
-    <LiveCanvasViewport doc={doc} layout={createLayout(pageCount)} />,
+    <LiveCanvasViewport
+      doc={doc}
+      layout={createLayout(pageCount)}
+      onFit={options.onFit}
+    />,
   );
 
   const wrapper = await waitFor(() => {
@@ -221,6 +232,43 @@ describe("LiveCanvasViewport", () => {
       toolbar!.compareDocumentPosition(wrapper) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("keeps the page-count bar outside the transform wrapper", async () => {
+    const { wrapper } = await renderCanvas(2);
+
+    const toolbar = screen.getByText("2 pages").closest("[data-canvas-toolbar]");
+    const header = toolbar?.closest("[data-preview-header]");
+
+    expect(toolbar).not.toBeNull();
+    // The bar sits above `<TransformWrapper>`, so no scale or pan offset can
+    // move it over the candidate's name.
+    expect(header).not.toBeNull();
+    expect(header).not.toContainElement(wrapper);
+    expect(toolbar!.compareDocumentPosition(wrapper) &
+      Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("offers an inline Reset fit pill whenever a reduced fit scale is applied", async () => {
+    const doc = createEmptyResume();
+    doc.metadata.page.fitScale = 0.85;
+    const onFit = vi.fn();
+
+    await renderCanvas(2, { doc, onFit });
+
+    const button = screen.getByRole("button", { name: "Reset fit to 100%" });
+
+    expect(button).toHaveTextContent("Reset fit");
+    fireEvent.click(button);
+    expect(onFit).toHaveBeenCalledWith(1);
+  });
+
+  it("hides the Reset fit pill at full size", async () => {
+    await renderCanvas(1, { onFit: vi.fn() });
+
+    expect(
+      screen.queryByRole("button", { name: "Reset fit to 100%" }),
+    ).not.toBeInTheDocument();
   });
 
   it("lets plain wheel and two-finger scrolling pass through to the page", async () => {

@@ -63,6 +63,45 @@ describe("PageOverflowBanner", () => {
     expect(screen.getByRole("button", { name: "Fit to 1 Page" })).toBeDisabled();
   });
 
+  it("explains when one page would need an unreadable scale", () => {
+    render(
+      <PageOverflowBanner
+        overflowPx={420}
+        pageCount={2}
+        lineHeightPx={14}
+        fitScale={null}
+        fitBlockedReason="too-tall"
+        onFit={() => undefined}
+      />,
+    );
+
+    const status = screen.getByRole("status");
+
+    expect(status).toHaveTextContent("Too tall to fit on one page above 78%");
+    expect(
+      screen.queryByRole("button", { name: "Fit to 1 Page" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("explains a forced page break instead of offering a fit", () => {
+    render(
+      <PageOverflowBanner
+        overflowPx={0}
+        pageCount={2}
+        lineHeightPx={14}
+        fitBlockedReason="page-break"
+        onFit={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "A section is set to start on a new page",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Fit to 1 Page" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("never divides by a zero line height", () => {
     render(<PageOverflowBanner overflowPx={1} pageCount={1} lineHeightPx={0} />);
 

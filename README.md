@@ -112,7 +112,10 @@ in control of every line, and your data stays on your device.
   returns the page to its fitted width. On a computer, the mouse wheel and
   two-finger scrolling move the editor; hold **Ctrl** (or **⌘**) while
   scrolling to zoom the resume.
-- **Fit to 1 Page** when a resume spills just past one page.
+- **Fit to 1 Page** when a resume spills just past one page. Fitting never
+  shrinks the page below a readable size — if one page would need microscopic
+  type, the preview says so instead. Whenever a reduced fit is active, a
+  **Reset fit** pill in the preview header returns the page to 100%.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
   apply.
@@ -120,9 +123,9 @@ in control of every line, and your data stays on your device.
   Content to open the matcher on any device, then paste a posting to see which
   of its keywords already appear in your resume and which are missing. Matching
   runs locally with simple word heuristics, not AI.
-- The **Visual / ATS text** switch, page-count pill, and overflow warning stay
-  pinned at the top of the Preview pane while you scroll, above the paper rather
-  than covering your name or header.
+- The **Visual / ATS text** switch, page-count pill, fit/zoom reset pills, and
+  overflow warning stay pinned at the top of the Preview pane while you scroll,
+  above the paper rather than covering your name or header.
 - Print/PDF filenames are generated from your name, headline, and date.
 
 ### Keep your work

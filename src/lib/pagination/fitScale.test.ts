@@ -34,4 +34,21 @@ describe("computeFitScale", () => {
       computeFitScale({ totalHeightPx: 5000, contentHeightPx: 1090 }),
     ).toBeNull();
   });
+
+  it("enforces a readable floor instead of microscopic text", () => {
+    expect(MIN_FIT_SCALE).toBe(0.78);
+
+    const readable = computeFitScale({
+      totalHeightPx: 1300,
+      contentHeightPx: 1090,
+    });
+
+    expect(readable).not.toBeNull();
+    expect(readable!).toBeGreaterThanOrEqual(MIN_FIT_SCALE);
+
+    // ~74% would fit one page but is too small to read.
+    expect(
+      computeFitScale({ totalHeightPx: 1450, contentHeightPx: 1090 }),
+    ).toBeNull();
+  });
 });

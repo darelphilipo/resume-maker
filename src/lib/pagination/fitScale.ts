@@ -1,4 +1,11 @@
-export const MIN_FIT_SCALE = 0.5;
+/**
+ * Smallest scale "Fit to 1 Page" is allowed to apply.
+ *
+ * Below roughly 78% the printed body text stops being readable on a phone, so
+ * the preview explains that the resume is too tall instead of silently
+ * shrinking it into microscopic type.
+ */
+export const MIN_FIT_SCALE = 0.78;
 
 // Leave a little headroom so sub-pixel rounding does not leave one stray line
 // on the next page after a fit.

@@ -94,6 +94,8 @@ describe("usePageLayout", () => {
     expect(result.current.overflowPx).toBeCloseTo(
       2000 - result.current.contentHeightPx,
     );
+    expect(result.current.fitScale).toBeNull();
+    expect(result.current.fitBlockedReason).toBe("too-tall");
   });
 
   it("suggests a fit scale when content spills onto a second page", () => {
@@ -108,6 +110,7 @@ describe("usePageLayout", () => {
     expect(result.current.pages).toHaveLength(2);
     expect(result.current.fitScale).toBeGreaterThan(0.5);
     expect(result.current.fitScale).toBeLessThan(1);
+    expect(result.current.fitBlockedReason).toBeNull();
   });
 
   it("does not suggest a fit scale for a one-page document", () => {
@@ -121,6 +124,7 @@ describe("usePageLayout", () => {
 
     expect(result.current.pages).toHaveLength(1);
     expect(result.current.fitScale).toBeNull();
+    expect(result.current.fitBlockedReason).toBeNull();
   });
 
   it("does not suggest a fit scale when a forced page break keeps content apart", () => {
@@ -135,6 +139,7 @@ describe("usePageLayout", () => {
 
     expect(result.current.pages).toHaveLength(2);
     expect(result.current.fitScale).toBeNull();
+    expect(result.current.fitBlockedReason).toBe("page-break");
   });
 
   it("splits a multi-entry section so Page 1 fills before breaking", () => {

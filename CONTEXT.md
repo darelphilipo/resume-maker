@@ -256,14 +256,14 @@ rediscover.
     scrolling ancestor (`<main>` on mobile). Dragging down at the canvas top
     therefore scrolls the editor back up to the preview toolbar and Reset
     instead of stranding them off-screen on a multi-page resume. There is
-    **no zoom/pan toolbar**: page count and the `CanvasResetButton` sit in a
-    normal-flow `[data-canvas-toolbar]` row *above* the `TransformComponent`
-    (never floating over the paper), and Reset appears only when
-    `state.scale` differs from the fit scale. `useControls().state` is mutated
-    in place and does not trigger renders, so both the zoom check and the
-    dynamic `touch-action` subscribe through `useTransformComponent`; reading
-    `state.scale` in render shows a stale value (reading it inside a touch
-    handler is fine). Wheel zoom and drag panning on fine pointers are
+    **no zoom/pan toolbar**: page count plus the `Reset fit` / `CanvasResetButton`
+    pills sit in a normal-flow `[data-canvas-toolbar]` row *above*
+    `<TransformWrapper>` (see #36), never floating over the paper. Because the
+    toolbar is outside the wrapper, `LiveCanvasViewport` mirrors the zoomed bit
+    through `onTransform` and resets with a `ReactZoomPanPinchContentRef`;
+    `CanvasResetButton` is now a props-driven pill. `useControls().state` is
+    mutated in place and does not trigger renders, so do not read `state.scale`
+    in render for visibility. Wheel zoom and drag panning on fine pointers are
     unchanged. `HorizontalTouchPan.tsx` is now a deprecated re-export shim, and
     the old `CanvasControls` toolbar is superseded; delete both in a run with
     file-delete access.
@@ -385,6 +385,22 @@ rediscover.
     onyx/onyx-css.test.ts` guards the contract by reading the raw stylesheet.
     `variants.css`/`studio.css` have no root wrap override.
 
+36. **Fit-to-1-page has a readable floor and a visible reset.** `MIN_FIT_SCALE`
+    in `src/lib/pagination/fitScale.ts` is **0.78**; `computeFitScale` returns
+    `null` instead of shrinking below it, so the preview never applies
+    microscopic type. `usePageLayout` reports `fitBlockedReason` (`too-tall` or
+    `page-break`) and `PageOverflowBanner` renders explanatory copy in place of
+    the fit button rather than a disabled control. The current applied scale
+    lives in `metadata.page.fitScale`; whenever it is `< 1`, the sticky
+    `[data-canvas-toolbar]` shows a **Reset fit** pill that calls `onFit(1)`.
+    The whole bar (page count, Reset fit, Reset zoom) is rendered **above**
+    `<TransformWrapper>`, so it can never overlap the candidate's name. Because
+    it is outside the library context, zoom visibility comes from the wrapper's
+    `onTransform` into React state and the reset uses the
+    `ReactZoomPanPinchContentRef`; `CanvasResetButton` takes `onReset` as a prop.
+    The schema still allows `fitScale` down to `0.5` so older saved documents
+    load, but no new fit target is suggested below 0.78.
+
 ## Verification and tooling
 
 ```powershell
@@ -445,6 +461,36 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-18 — Readable fit floor, Reset fit, and a toolbar above the canvas
+- Task: P1 — stop the page-count badge from covering the candidate's name and
+  fix the "Fit to 1 Page" UX.
+- The whole `[data-canvas-toolbar]` bar (page count, **Reset fit**, Reset zoom)
+  now renders in the sticky `PreviewChrome` *above* `<TransformWrapper>`.
+  Because it lost the library context, `LiveCanvasViewport` mirrors the zoomed
+  bit via `onTransform` and resets through a `ReactZoomPanPinchContentRef`;
+  `CanvasResetButton` is now a props-driven `onReset` pill. The toolbar stays
+  in normal flow, so it can never overlap `.resume-name`.
+- `MIN_FIT_SCALE` rose from `0.5` to `0.78`. `computeFitScale` still returns
+  `null` below the floor, and `usePageLayout` now reports `fitBlockedReason`
+  (`too-tall` or `page-break`). `PageOverflowBanner` renders explanatory copy
+  instead of a fit button in those cases. Whenever the applied
+  `metadata.page.fitScale` is `< 1`, the toolbar shows **Reset fit**, which
+  calls `onFit(1)` so users do not need Undo. Recorded as Decision #36.
+- Tests: floor behaviour in `fitScale.test.ts`; blocked reasons in
+  `usePageLayout.test.tsx`; banner copy/no-button cases; the props-driven reset
+  pill; and a `LiveCanvasViewport` case that renders a reduced fit, clicks
+  **Reset fit**, and asserts `onFit(1)`. 522 pass.
+- Files: `src/components/preview/LiveCanvasViewport.tsx`,
+  `PageOverflowBanner.tsx`, `CanvasResetButton.tsx` (+ all three tests),
+  `src/lib/pagination/fitScale.ts` (+ test), `usePageLayout.ts` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (522 pass), `npm run build`
+  (static export; the usual Next.js security-advisory nudge needed a second
+  run). Playwright is still blocked in this sandbox (`npm run e2e` is
+  rejected), so the `390x844`/`1280x800` visual check remains browser-unverified;
+  a browser-enabled run should execute
+  `npm run e2e -- e2e/layout-consistency.spec.ts`.
 
 ### 2026-11-18 — Prose wraps at word boundaries, not mid-word
 - Task: top P0 Queue item — stop normal resume prose and bullets breaking
@@ -680,33 +726,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (452 pass), `npm run lint`,
   `npm run build` (static export; confirmed the new `top`/`max-height` utilities
   in the emitted CSS).
-
-### 2026-11-17 — Scroll the editor back up from a zoomed multi-page preview
-- Task: with page 2 of a multi-page resume in view, pinching in left no way to
-  scroll the editor back up to Reset (preview toolbar) and Save PDF (header);
-  the only escape was zooming out completely.
-- `canvasTouchAction` still locks native scrolling (`touch-action: none`) while
-  zoomed, so scrolling had to be restored from inside the pan gesture. Added
-  `resolveVerticalPanHandoff` to `src/lib/zoom/canvasGestures.ts`: it clamps a
-  vertical drag to the library's `instance.bounds` and returns the leftover as
-  a `scrollTop` delta (dragging down at the canvas top yields a negative delta,
-  i.e. the page scrolls up).
-- New `src/lib/zoom/touchScroll.ts` owns the DOM side: `isScrollableElement`,
-  `findScrollableAncestor` (walks out to `<main>`, the mobile shell's only
-  scroll container) and `scrollPageBy` (window fallback for desktop).
-- `TouchPanCanvas` now reads `instance`/`state` from `useControls()`, pans with
-  the clamped delta, and calls `scrollPageBy(host, handoff.scroll)` at the
-  canvas edges. Horizontal panning, the slop, pinch, and the fit-scale
-  scroll-through are unchanged. Mid-canvas drags never move the page.
-- Tests: handoff math (full pan, top/bottom edge, crossing the edge, missing
-  bounds), scroll-ancestor resolution and `scrollPageBy` clamping/fallbacks, and
-  three component cases (top-bound drag scrolls the editor, edge-crossing drag
-  splits pan/scroll, mid-canvas drag leaves `scrollTop` alone).
-- Files: `src/lib/zoom/canvasGestures.ts` (+ test),
-  `src/lib/zoom/touchScroll.ts` (+ test, new),
-  `src/components/preview/TouchPanCanvas.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (451 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary

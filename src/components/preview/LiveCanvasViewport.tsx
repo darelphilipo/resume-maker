@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { HTMLAttributes, ReactNode, RefObject } from "react";
 import {
   TransformComponent,
   TransformWrapper,
   useControls,
   useTransformComponent,
+} from "react-zoom-pan-pinch";
+import type {
+  ReactZoomPanPinchContentRef,
+  ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
 
 import type { CanvasFrame } from "@/lib/pagination/canvasFrame";
@@ -26,7 +30,7 @@ import {
 } from "@/lib/zoom/wheelZoom";
 
 import { AtsTextView } from "./AtsTextView";
-import { CanvasResetButton } from "./CanvasResetButton";
+import { CanvasResetButton, RESET_ANIMATION_MS } from "./CanvasResetButton";
 import { PageOverflowBanner } from "./PageOverflowBanner";
 import { PageStack } from "./PageStack";
 import { TouchPanCanvas } from "./TouchPanCanvas";
@@ -37,6 +41,7 @@ const MIN_SCALE = 0.2;
 const MAX_SCALE = 2;
 const FIT_MAX_SCALE = 1;
 const VIEWPORT_PADDING_PX = 32;
+const SCALE_EPSILON = 0.001;
 
 const useIsomorphicLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -174,14 +179,28 @@ function PreviewChrome({
   );
 }
 
-/** Page-count pill and Reset, rendered inside `TransformWrapper` for context. */
+/**
+ * Page-count pill plus the two fit/zoom resets.
+ *
+ * This bar is rendered *above* `<TransformWrapper>`, in the sticky preview
+ * header, so it can never overlap the candidate's name in the top-left corner
+ * of Page 1 at any zoom level or paper size.
+ */
 function CanvasToolbar({
   pageCount,
-  fitScale,
+  appliedFitScale,
+  isZoomed,
+  onResetZoom,
+  onResetFit,
 }: {
   pageCount: number;
-  fitScale: number;
+  appliedFitScale: number;
+  isZoomed: boolean;
+  onResetZoom: () => void;
+  onResetFit?: () => void;
 }) {
+  const canResetFit = onResetFit !== undefined && appliedFitScale < 1;
+
   return (
     <div
       data-canvas-toolbar=""
@@ -193,7 +212,19 @@ function CanvasToolbar({
       >
         {pageCount} {pageCount === 1 ? "page" : "pages"}
       </span>
-      <CanvasResetButton fitScale={fitScale} />
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+        {canResetFit ? (
+          <button
+            type="button"
+            onClick={onResetFit}
+            aria-label="Reset fit to 100%"
+            className="pointer-events-auto flex h-11 items-center gap-1.5 rounded-full border border-line bg-surface/95 px-3 text-xs font-semibold text-primary shadow-sm backdrop-blur-sm transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:h-8 sm:px-2.5"
+          >
+            Reset fit
+          </button>
+        ) : null}
+        {isZoomed ? <CanvasResetButton onReset={onResetZoom} /> : null}
+      </div>
     </div>
   );
 }
@@ -264,8 +295,19 @@ export function LiveCanvasViewport({
   mode?: PreviewMode;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<ReactZoomPanPinchContentRef | null>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
+  /**
+   * Zoom state is stamped with the fit scale it was observed at, so a resize
+   * (which changes the fit target and re-fits the canvas) cannot leave a stale
+   * "zoomed" toolbar behind without an extra effect.
+   */
+  const [zoomState, setZoomState] = useState<{
+    fitScale: number;
+    zoomed: boolean;
+  } | null>(null);
+  const appliedFitScale = doc.metadata.page.fitScale;
 
   useIsomorphicLayoutEffect(() => {
     if (
@@ -348,6 +390,45 @@ export function LiveCanvasViewport({
     PT_TO_PX *
     doc.metadata.typography.body.lineHeight;
 
+  /**
+   * The toolbar lives outside `<TransformWrapper>`, so it cannot read the zoom
+   * level from the library context. `onTransform` mirrors that one bit of state
+   * into React, and the wrapper ref performs the reset.
+   */
+  const handleTransform = useCallback(
+    (
+      _ref: ReactZoomPanPinchRef,
+      state: { scale: number; positionX: number; positionY: number },
+    ): void => {
+      if (fitScale === null) {
+        return;
+      }
+
+      const zoomed = Math.abs(state.scale - fitScale) > SCALE_EPSILON;
+
+      setZoomState((previous) =>
+        previous?.fitScale === fitScale && previous.zoomed === zoomed
+          ? previous
+          : { fitScale, zoomed },
+      );
+    },
+    [fitScale],
+  );
+
+  const isZoomed =
+    zoomState !== null &&
+    fitScale !== null &&
+    zoomState.fitScale === fitScale &&
+    zoomState.zoomed;
+
+  const resetZoom = useCallback((): void => {
+    if (fitScale === null) {
+      return;
+    }
+
+    void wrapperRef.current?.setTransform(0, 0, fitScale, RESET_ANIMATION_MS);
+  }, [fitScale]);
+
   const gestures = canvasGestureConfig(isCoarsePointer);
 
   const banner = (
@@ -356,10 +437,12 @@ export function LiveCanvasViewport({
       pageCount={layout.pages.length}
       lineHeightPx={lineHeightPx}
       fitScale={layout.fitScale}
+      fitBlockedReason={layout.fitBlockedReason ?? null}
       onFit={onFit}
     />
   );
   const showOverflowBanner = layout.overflowPx > 0 || layout.pages.length > 1;
+  const showCanvas = mode === "canvas" && frame !== null && !layout.isMeasuring;
 
   return (
     <div
@@ -368,38 +451,43 @@ export function LiveCanvasViewport({
     >
       {layout.measureLayer}
       {(mode === "canvas" || showOverflowBanner) ? (
-        mode === "canvas" && frame !== null && !layout.isMeasuring ? (
-          <TransformWrapper
-            initialScale={fitScale!}
-            initialPositionX={0}
-            initialPositionY={0}
-            minScale={Math.min(MIN_SCALE, fitScale!)}
-            maxScale={MAX_SCALE}
-            centerOnInit={false}
-            limitToBounds
-            doubleClick={{ disabled: true }}
-            wheel={{ disabled: true }}
-            pinch={gestures.pinch}
-            panning={gestures.panning}
+        <PreviewChrome banner={banner}>
+          {showCanvas ? (
+            <CanvasToolbar
+              pageCount={layout.pages.length}
+              appliedFitScale={appliedFitScale}
+              isZoomed={isZoomed}
+              onResetZoom={resetZoom}
+              onResetFit={onFit ? () => onFit(1) : undefined}
+            />
+          ) : null}
+        </PreviewChrome>
+      ) : null}
+      {showCanvas ? (
+        <TransformWrapper
+          ref={wrapperRef}
+          onTransform={handleTransform}
+          initialScale={fitScale!}
+          initialPositionX={0}
+          initialPositionY={0}
+          minScale={Math.min(MIN_SCALE, fitScale!)}
+          maxScale={MAX_SCALE}
+          centerOnInit={false}
+          limitToBounds
+          doubleClick={{ disabled: true }}
+          wheel={{ disabled: true }}
+          pinch={gestures.pinch}
+          panning={gestures.panning}
+        >
+          <CanvasSurface
+            frame={frame!}
+            fitScale={fitScale!}
+            isCoarsePointer={isCoarsePointer}
+            hostRef={containerRef}
           >
-            <PreviewChrome banner={banner}>
-              <CanvasToolbar
-                pageCount={layout.pages.length}
-                fitScale={fitScale!}
-              />
-            </PreviewChrome>
-            <CanvasSurface
-              frame={frame}
-              fitScale={fitScale!}
-              isCoarsePointer={isCoarsePointer}
-              hostRef={containerRef}
-            >
-              <PageStack doc={doc} pages={layout.pages} />
-            </CanvasSurface>
-          </TransformWrapper>
-        ) : (
-          <PreviewChrome banner={banner} />
-        )
+            <PageStack doc={doc} pages={layout.pages} />
+          </CanvasSurface>
+        </TransformWrapper>
       ) : null}
       {mode === "ats" ? (
         <AtsTextView doc={doc} />

@@ -29,10 +29,6 @@ _(Both P0 items — the wheel-scroll / sticky-header fix and the mid-word line-b
 
 ### P1 — Visual Consistency, Mobile Drawer & Editor UX
 
-- [ ] P1: Fix `"1 page"` / `"2 pages"` badge overlap and `"Fit to 1 Page"` UX in `src/components/preview/LiveCanvasViewport.tsx` and `src/components/preview/PageOverflowBanner.tsx`.
-  1. Move the page-count badge and zoom/reset controls into a dedicated non-overlapping top bar above `<TransformWrapper>` so it never covers the candidate's name in the top-left corner.
-  2. Enforce a readable minimum scale floor (e.g. `0.78`) on `"Fit to 1 Page"`—if 1 page isn't achievable above the floor, show a clear message instead of microscopic text—and show an inline `"Reset fit"` pill whenever `fitScale < 1` so users don't have to rely on Undo.
-
 - [ ] P1: Fix mobile `EntryDrawer` keyboard overlap and horizontal overflow in `src/components/editor/EntryDrawer.tsx` and `src/components/editor/useVisualViewportOffset.ts`. Subtract `viewportOffset` from `Drawer.Content` max-height (`maxHeight: calc(95dvh - ${viewportOffset}px)`) so opening the mobile keyboard never pushes the drawer header off-screen, and add `overflow-x-hidden min-w-0` to the scrollable body and inner wrapper.
 
 - [ ] P1: Fix Launcher capsule tap-blink, uneven heights, missing Recent Resumes / Blank start, and Paste parser bugs in `src/components/launcher/Launcher.tsx` and `src/lib/import/` (paste parser).
@@ -61,6 +57,24 @@ _(Both P0 items — the wheel-scroll / sticky-header fix and the mid-word line-b
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-18 — Moved the preview toolbar above the canvas and made
+  "Fit to 1 Page" readable: the page-count pill plus **Reset fit** / Reset zoom
+  now render in the sticky `[data-canvas-toolbar]` above `<TransformWrapper>`,
+  so they can never cover the candidate's name; zoom visibility is mirrored
+  through `onTransform` and resets use a `ReactZoomPanPinchContentRef`.
+  `MIN_FIT_SCALE` is now `0.78`, `usePageLayout` reports `fitBlockedReason`
+  (`too-tall` / `page-break`), and `PageOverflowBanner` shows explanatory copy
+  instead of shrinking to microscopic type. A **Reset fit** pill calls
+  `onFit(1)` whenever the applied `metadata.page.fitScale` is below 1.
+  Verified `npm run typecheck`, `npm test` (522 pass), `npm run build` (static
+  export; the security-advisory nudge needed the usual second run). Playwright
+  is blocked in this sandbox; `npm run e2e -- e2e/layout-consistency.spec.ts`
+  still needs a browser-enabled run at `390x844` / `1280x800`. Files:
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `PageOverflowBanner.tsx` (+ test), `CanvasResetButton.tsx` (+ test),
+  `src/lib/pagination/fitScale.ts` (+ test), `usePageLayout.ts` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-18 — Stopped mid-word line breaking in resume prose: the `.onyx`
   root now uses `overflow-wrap: break-word; word-break: normal;` instead of
