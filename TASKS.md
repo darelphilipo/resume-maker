@@ -21,11 +21,13 @@ _empty
 _None._
 
 ## Queue (Ready for Next Run)
-- Verification rule: For any UI/layout task, run `npm run build` and Playwright checks across both mobile (`390x844`) and desktop (`1280x800`) viewports before moving the task to *Done*.
+_none._
 
 ### P0 — Multi-Page & Scroll Fixes
 
-_(Both P0 items — the wheel-scroll / sticky-header fix and the mid-word line-breaking fix — were completed 2026-11-18 and are in Done.)_
+- [ ] P0: Fix mobile multi-page preview scroll jitter and prevent resume pages from scrolling behind/above the Preview header (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/TouchPanCanvas.tsx`).
+  1. **Separate the Preview header from the scroll container:** On mobile (`< lg`), make `#panel-preview` a `flex h-full min-h-0 flex-col` container where the Preview header (`Preview` title, `Visual`/`ATS text` toggle, `PageOverflowBanner`, and `N pages` pill) sits in a `shrink-0 bg-background z-10` top block **outside** the scrollable canvas, and only the canvas viewport below it has `min-h-0 flex-1 overflow-y-auto overscroll-contain`. This guarantees scrolled pages are cleanly clipped at the bottom edge of the Preview header and can never bleed behind or above it.
+  2. **Eliminate mobile scroll jitter:** When the preview is at default fit-to-width scale (not pinched/zoomed in), let native browser vertical scrolling (`touch-action: pan-y`) handle multi-page scrolling directly without `TouchPanCanvas` intercepting `touchmove` or running `scrollPageBy` handoffs, and ensure `TransformWrapper` does not apply competing transforms during normal vertical page scrolls.
 
 ### P1 — Visual Consistency, Mobile Drawer & Editor UX
 
