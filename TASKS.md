@@ -25,9 +25,7 @@ _None._
 
 ### P0 — Multi-Page & Scroll Fixes
 
-_(The wheel-scroll / sticky-header item was completed 2026-11-18 and is in Done.)_
-
-- [ ] P0: Fix mid-word line breaking in `src/templates/onyx/onyx.css` (and any shared template CSS). Replace `overflow-wrap: anywhere` on `.onyx` with `overflow-wrap: break-word; word-break: normal;` (reserving `overflow-wrap: anywhere` strictly for URLs/links) so normal prose and bullets never break mid-word.
+_(Both P0 items — the wheel-scroll / sticky-header fix and the mid-word line-breaking fix — were completed 2026-11-18 and are in Done.)_
 
 ### P1 — Visual Consistency, Mobile Drawer & Editor UX
 
@@ -63,6 +61,20 @@ _(The wheel-scroll / sticky-header item was completed 2026-11-18 and is in Done.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-18 — Stopped mid-word line breaking in resume prose: the `.onyx`
+  root now uses `overflow-wrap: break-word; word-break: normal;` instead of
+  `overflow-wrap: anywhere`, so normal paragraphs and bullets wrap only at word
+  boundaries; `overflow-wrap: anywhere` is kept on a dedicated `.onyx a` rule so
+  long URLs/links still break anywhere. `variants.css` and `studio.css` had no
+  root wrap override to change. Added a raw-CSS unit test guarding both rules,
+  plus a short README preview bullet. Verified `npm run typecheck`, `npm test`
+  (517 pass), `npm run build` (static export; the Next.js security-advisory nudge
+  needed the usual second run). Playwright is blocked in this sandbox (`npm run
+  e2e` is rejected), so `npm run e2e -- e2e/layout-consistency.spec.ts` at
+  `390x844` / `1280x800` still needs a browser-enabled run. Files:
+  `src/templates/onyx/onyx.css`, `src/templates/onyx/onyx-css.test.ts` (new),
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-18 — Fixed the 80%-blank Page 1 bug: multi-entry sections are now
   measured and packed entry by entry instead of as one indivisible block, with

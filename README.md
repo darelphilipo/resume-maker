@@ -96,7 +96,9 @@ in control of every line, and your data stays on your device.
 - Live paginated preview that measures real content, not an estimate. Long
   sections fill the current page entry by entry — with each heading kept next
   to its first entry — instead of jumping wholesale to the next page and leaving
-  most of Page 1 blank.
+  most of Page 1 blank. Prose and bullets wrap at natural word boundaries in
+  both the preview and the PDF, so words never split mid-word; only long links
+  break anywhere they need to.
 - **Preview and Design stay in view on desktop**: on a wide window the resume
   preview and the Design controls stay pinned below the header while you scroll
   a long Content list, and each of those two columns scrolls on its own. Phones

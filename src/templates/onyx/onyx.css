@@ -10,7 +10,10 @@
   line-height: var(--resume-line-height, 1.4);
   color: var(--resume-text, #111827);
   background: var(--resume-background, #ffffff);
-  overflow-wrap: anywhere;
+  /* Prose and bullets wrap at natural word boundaries. `anywhere` here would
+     let any word break mid-character to satisfy min-content sizing. */
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .onyx h1,
@@ -187,6 +190,11 @@
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 1px;
+}
+
+/* Only long URLs/links may break at arbitrary characters. */
+.onyx a {
+  overflow-wrap: anywhere;
 }
 
 .onyx .resume-skill-heading {

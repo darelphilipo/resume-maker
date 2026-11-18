@@ -375,6 +375,16 @@ rediscover.
     to a whole-section height when no entry heights were reported, which is why
     injected-measurement tests and empty sections still work.
 
+35. **Resume prose wraps at word boundaries, not mid-word.** The `.onyx` root
+    uses `overflow-wrap: break-word; word-break: normal;` — never
+    `overflow-wrap: anywhere`. The latter changes min-content sizing and lets
+    any word break mid-character, which shattered normal prose and bullets.
+    `overflow-wrap: anywhere` is confined to the dedicated `.onyx a` rule so
+    long URLs/links can still break. This is global CSS (all six templates share
+    the Onyx DOM), so do not reintroduce `anywhere` on the root; `src/templates/
+    onyx/onyx-css.test.ts` guards the contract by reading the raw stylesheet.
+    `variants.css`/`studio.css` have no root wrap override.
+
 ## Verification and tooling
 
 ```powershell
@@ -435,6 +445,24 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-18 — Prose wraps at word boundaries, not mid-word
+- Task: top P0 Queue item — stop normal resume prose and bullets breaking
+  mid-word by removing `overflow-wrap: anywhere` from the `.onyx` root.
+- Root rule now `overflow-wrap: break-word; word-break: normal;`. `anywhere`
+  moved to a dedicated `.onyx a` rule so long URLs/links still break at any
+  character. `variants.css`/`studio.css` had no root override. Recorded as
+  Decision #35.
+- New `src/templates/onyx/onyx-css.test.ts` reads the raw stylesheet (same
+  convention as `css-modules.test.ts`): asserts the root uses `break-word` +
+  `word-break: normal` and never `anywhere`, and that every `anywhere` lives on
+  a link selector. README preview bullet updated.
+- Verified: `npm run typecheck`, `npm test` (517 pass), `npm run build` (static
+  export; the Next.js security-advisory nudge needed the usual second run).
+  Playwright is blocked in this sandbox (shell rejects `npm run e2e`), so the
+  `390x844`/`1280x800` visual check remains browser-unverified; a
+  browser-enabled run should execute
+  `npm run e2e -- e2e/layout-consistency.spec.ts`.
 
 ### 2026-11-18 — Entry-level pagination fills Page 1
 - Task: top P0 — fix the 80%-blank Page 1 caused by packing a whole multi-entry
@@ -679,37 +707,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/preview/TouchPanCanvas.tsx` (+ test), `README.md`,
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (451 pass), `npm run lint`.
-
-### 2026-11-17 — Page count out of the page, free two-axis preview panning
-- Task: stop the `1 page` / `2 pages` badge from covering the resume header and
-  let a pinch-zoomed touch preview be panned to any area instead of sideways
-  only.
-- `LiveCanvasViewport` now renders a `[data-canvas-toolbar]` row in normal flow
-  between `PageOverflowBanner` and the `TransformComponent`: the page-count pill
-  on the left, the Reset button on the right. Nothing floats over the paper, so
-  the badge cannot overlap the name/header at any zoom or paper size. The old
-  `absolute inset-x-1 top-1` overlay is gone.
-- `HorizontalTouchPan` was generalized into `TouchPanCanvas`: after the 8px
-  slop it pans `panBy(deltaX, deltaY, 0)` on both axes. `canvasGestures` gained
-  `canvasTouchAction(isCoarsePointer, isZoomed)` (`pan-y` at fit, `none` while
-  zoomed) and `hasClearedTouchSlop` replaced `resolveTouchPanAxis`. The canvas
-  subscribes to the zoom level with `useTransformComponent`, so `touch-action`
-  flips exactly when `isPreviewZoomed` does. At fit, one-finger swipes still
-  scroll the editor; while zoomed, Reset is the way back to fit.
-- `HorizontalTouchPan.tsx` is now a deprecated re-export shim and
-  `HorizontalTouchPan.test.tsx` only checks the alias. The sandbox can edit but
-  not delete files, so delete the shim (and the already-dead `CanvasControls*`)
-  in a run with shell access.
-- Tests: free horizontal+vertical pan deltas, per-move deltas, slop commit,
-  page-scroll handoff at fit, fine-pointer no-op, pinch→drag re-anchoring,
-  toolbar placement outside `.react-transform-wrapper`, and the new gesture
-  helpers.
-- Files: `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/preview/TouchPanCanvas.tsx` (+ test),
-  `src/components/preview/HorizontalTouchPan.tsx` (+ test),
-  `src/lib/zoom/canvasGestures.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (435 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary
