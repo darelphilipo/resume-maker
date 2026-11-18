@@ -25,7 +25,8 @@ _none._
 
 ### P0 — Multi-Page & Scroll Fixes
 
-_None — the mobile multi-page preview scroll fix is Done below._
+- [ ] P0: the preview is broken and does not allow me to move around in the zoomed in version ,jitters on zooming in,if I pinch to zoom it resets ,sometimes I'm able to scroll to next page sometimes I can't , freezes at times. It was working perfectly a few versions back 
+
 
 ### P1 — Visual Consistency, Mobile Drawer & Editor UX
 
