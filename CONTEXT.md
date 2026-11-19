@@ -520,11 +520,25 @@ rediscover.
     `mono`). The `normal` preset must keep matching the Zod defaults
     (8/12/1.4) or existing documents jump spacing on load.
 
+45. **A skills row is visible when either its category or its keywords exist.**
+    Every other section still keys visibility off its primary field, but the
+    skills `name` is an optional category: the paste parser emits one
+    `name: ""` row for unlabeled lists (`SKILLS` → `SQL, Excel`), so filtering
+    on `name` alone silently erased it from Visual Preview, measurement, and
+    ATS text. The rule lives in `isVisibleItem`/`visibleItems`
+    (`src/templates/shared/sectionData.ts`) and is mirrored in `atsText.ts`
+    (`keywordsCountAsContent` for skills) and `isDraft`
+    (`src/lib/store/selectors.ts`). Keep those three in sync (see #11/#34).
+    `SkillEntry` also omits its `<h3>` when the category is blank, so a
+    keyword-only row renders as pills or the comma list with no empty heading
+    line. Hidden items still win: `hidden === true` hides the row regardless
+    of keywords.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~557 tests
+npm test               # vitest, ~578 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -580,6 +594,36 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-19 — Keyword-only skills rows stay visible
+- Task: top P1 Queue item — `Skills` entries with an empty `Category` never
+  reached Visual Preview, so pasted unlabeled skill lists disappeared.
+- Root cause: all renderers/visibility helpers keyed every section off its
+  primary field, and `skills`'s primary field is `name` (the category). The
+  paste parser was already producing a valid `name: ""` row with keywords, but
+  `visibleItems` filtered it out before `SkillEntry` could render it.
+- New shared `isVisibleItem`/`visibleItems(sectionId, ...)` in
+  `sectionData.ts` treats a non-hidden skills row as content when either its
+  category or at least one keyword is non-empty; every other section keeps its
+  primary-field rule. Mirrored that rule in `atsText.ts`
+  (`keywordsCountAsContent` for skills) and `isDraft`/`selectVisibleSectionIds`
+  in the editor selectors, so preview, measurement, ATS text, and editor state
+  agree. Recorded as Decision #45.
+- `SkillEntry` now trims the category and skips the `<h3>` entirely when it is
+  blank; keywords still render as pills (`inline`) or a comma list (`list`).
+- Tests: `SectionRenderer` gains a keyword-only case (asserts pills plus no
+  `.resume-entry-title`) and a parser → renderer integration case proving
+  `SKILLS` / `SQL, Excel` / `Python` appears immediately as
+  `SQL, Excel, Python`; `atsText` asserts the exact `Skills\nSQL, Excel,
+  Tableau` output with no blank category line; `selectors` covers keyword-only
+  `isDraft` and visible-section inclusion. 578 pass.
+- Files: `src/templates/shared/sectionData.ts`,
+  `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `src/lib/ats/atsText.ts` (+ test), `src/lib/store/selectors.ts` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (578 pass), `npm run lint`. No new
+  layout chrome, so no e2e case was added; Playwright remains blocked in this
+  sandbox.
 
 ### 2026-11-19 — Design panel gains accent, fonts, and density controls
 - Task: top P2 Queue item — the four Design controls. The **template selector**
@@ -847,24 +891,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   run). Playwright is still blocked in this sandbox (`npm run e2e` is
   rejected), so the `390x844`/`1280x800` visual check remains browser-unverified;
   a browser-enabled run should execute
-  `npm run e2e -- e2e/layout-consistency.spec.ts`.
-
-### 2026-11-18 — Prose wraps at word boundaries, not mid-word
-- Task: top P0 Queue item — stop normal resume prose and bullets breaking
-  mid-word by removing `overflow-wrap: anywhere` from the `.onyx` root.
-- Root rule now `overflow-wrap: break-word; word-break: normal;`. `anywhere`
-  moved to a dedicated `.onyx a` rule so long URLs/links still break at any
-  character. `variants.css`/`studio.css` had no root override. Recorded as
-  Decision #35.
-- New `src/templates/onyx/onyx-css.test.ts` reads the raw stylesheet (same
-  convention as `css-modules.test.ts`): asserts the root uses `break-word` +
-  `word-break: normal` and never `anywhere`, and that every `anywhere` lives on
-  a link selector. README preview bullet updated.
-- Verified: `npm run typecheck`, `npm test` (517 pass), `npm run build` (static
-  export; the Next.js security-advisory nudge needed the usual second run).
-  Playwright is blocked in this sandbox (shell rejects `npm run e2e`), so the
-  `390x844`/`1280x800` visual check remains browser-unverified; a
-  browser-enabled run should execute
   `npm run e2e -- e2e/layout-consistency.spec.ts`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The Playwright

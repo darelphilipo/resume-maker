@@ -44,6 +44,8 @@ describe("isDraft", () => {
 
     expect(isDraft("skills", { name: "" })).toBe(true);
     expect(isDraft("skills", { name: "TypeScript" })).toBe(false);
+    expect(isDraft("skills", { name: "", keywords: ["SQL"] })).toBe(false);
+    expect(isDraft("skills", { name: "", keywords: ["  ", ""] })).toBe(true);
 
     expect(isDraft("education", { school: "" })).toBe(true);
     expect(isDraft("education", { school: "MIT" })).toBe(false);
@@ -92,6 +94,18 @@ describe("selectVisibleSectionIds", () => {
       "experience",
       "profiles",
     ]);
+  });
+
+  it("keeps a keyword-only skills section visible", () => {
+    const doc = createEmptyResume();
+    doc.metadata.layout.pages = [
+      { fullWidth: false, main: ["skills"], sidebar: [] },
+    ];
+    doc.sections.skills.items = [
+      SkillItemSchema.parse({ id: "s1", name: "", keywords: ["SQL", "Excel"] }),
+    ];
+
+    expect(selectVisibleSectionIds({ doc })).toEqual(["skills"]);
   });
 
   it("drops every item when all are hidden", () => {

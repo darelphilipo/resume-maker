@@ -29,14 +29,31 @@ function isSectionId(id: string): id is SectionId {
   return (SECTION_IDS as readonly string[]).includes(id);
 }
 
+function hasKeywords(item: SectionItem): boolean {
+  const value = item.keywords;
+
+  return (
+    Array.isArray(value) &&
+    value.some(
+      (keyword) => typeof keyword === "string" && keyword.trim() !== "",
+    )
+  );
+}
+
 export function isDraft(sectionId: SectionId, item: SectionItem): boolean {
   const value = item[PRIMARY_FIELD[sectionId]];
 
-  if (typeof value !== "string") {
-    return true;
+  if (typeof value === "string" && value.trim() !== "") {
+    return false;
   }
 
-  return value.trim() === "";
+  // The skills category is optional: a keyword-only row (as produced by the
+  // paste parser for unlabeled skill lists) is real content, not a draft.
+  if (sectionId === "skills") {
+    return !hasKeywords(item);
+  }
+
+  return true;
 }
 
 export function selectSection(

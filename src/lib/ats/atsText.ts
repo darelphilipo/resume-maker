@@ -50,12 +50,18 @@ function keywordList(item: ItemRecord): string[] {
   );
 }
 
-function visibleItems(items: readonly unknown[], primaryField: string): ItemRecord[] {
+function visibleItems(
+  items: readonly unknown[],
+  primaryField: string,
+  keywordsCountAsContent = false,
+): ItemRecord[] {
   return items
     .map((item) => item as ItemRecord)
     .filter(
       (item) =>
-        item.hidden !== true && text(item, primaryField).trim() !== "",
+        item.hidden !== true &&
+        (text(item, primaryField).trim() !== "" ||
+          (keywordsCountAsContent && keywordList(item).length > 0)),
     );
 }
 
@@ -353,7 +359,11 @@ function knownSectionBlock(
     return null;
   }
 
-  const items = visibleItems(section.items, PRIMARY_FIELDS[sectionId]);
+  const items = visibleItems(
+    section.items,
+    PRIMARY_FIELDS[sectionId],
+    sectionId === "skills",
+  );
 
   if (items.length === 0) {
     return null;

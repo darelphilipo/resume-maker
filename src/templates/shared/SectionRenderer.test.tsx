@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { parsePastedResume } from "@/lib/import/pasteResume";
 import { encodeEntryBlock } from "@/lib/pagination/blockIds";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
@@ -199,6 +200,49 @@ describe("SectionRenderer", () => {
     ).toBeNull();
     expect(screen.getByText("Initech")).toBeInTheDocument();
     expect(screen.queryByText("Acme")).toBeNull();
+  });
+
+  it("renders keyword-only skills without a blank category heading", () => {
+    const doc = createEmptyResume();
+    doc.sections.skills.items = [
+      SkillItemSchema.parse({
+        id: "s1",
+        name: "",
+        level: 0,
+        keywords: ["SQL", "Excel"],
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer doc={doc} pageSectionIds={["skills"]} />,
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Skills" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("SQL")).toBeInTheDocument();
+    expect(screen.getByText("Excel")).toBeInTheDocument();
+    expect(container.querySelector(".resume-entry-title")).toBeNull();
+  });
+
+  it("shows an unlabeled pasted skills list in the preview", () => {
+    const doc = parsePastedResume(`Robin Park
+Analyst
+robin@example.com
+
+SKILLS
+SQL, Excel
+Python`);
+
+    expect(doc).not.toBeNull();
+    doc!.sections.skills.keywordLayout = "list";
+
+    render(<SectionRenderer doc={doc!} pageSectionIds={["skills"]} />);
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Skills" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("SQL, Excel, Python")).toBeInTheDocument();
   });
 
   it("renders skill keywords as pills or as an inline comma list", () => {

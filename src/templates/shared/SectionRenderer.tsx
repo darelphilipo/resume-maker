@@ -6,6 +6,7 @@ import type { ResumeDocument, SectionId } from "@/lib/schema/resume.schema";
 import { DateRange } from "./DateRange";
 import {
   itemId,
+  keywordList,
   resolveSection,
   text,
   type ItemRecord,
@@ -18,19 +19,6 @@ type GenericKind = Exclude<
   SectionId,
   "experience" | "education" | "projects" | "skills"
 > | "custom";
-
-function keywordList(item: ItemRecord): string[] {
-  const value = item.keywords;
-
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter(
-    (keyword): keyword is string =>
-      typeof keyword === "string" && keyword.trim() !== "",
-  );
-}
 
 function EntryShell({
   title,
@@ -162,12 +150,15 @@ function SkillEntry({
 }) {
   const keywords = keywordList(item);
   const keywordLayout = doc.sections.skills.keywordLayout;
+  const category = text(item, "name").trim();
 
   return (
     <article className="resume-entry resume-entry-compact">
-      <div className="resume-entry-header resume-skill-heading">
-        <h3 className="resume-entry-title">{text(item, "name")}</h3>
-      </div>
+      {category !== "" ? (
+        <div className="resume-entry-header resume-skill-heading">
+          <h3 className="resume-entry-title">{category}</h3>
+        </div>
+      ) : null}
       {keywords.length > 0 ? (
         keywordLayout === "list" ? (
           <p className="resume-skill-keywords-list">{keywords.join(", ")}</p>

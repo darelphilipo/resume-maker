@@ -107,6 +107,21 @@ describe("buildAtsText", () => {
     expect(text).not.toContain("Education");
   });
 
+  it("prints keyword-only skills without a category line", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.skills.items = [
+      SkillItemSchema.parse({
+        id: "skill-1",
+        name: "",
+        level: 0,
+        keywords: ["SQL", "Excel", "Tableau"],
+      }),
+    ];
+
+    expect(buildAtsText(doc)).toBe("Skills\nSQL, Excel, Tableau");
+  });
+
   it("omits headings when the section heading is turned off", () => {
     const doc = createEmptyResume();
 

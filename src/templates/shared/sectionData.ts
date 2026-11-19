@@ -50,16 +50,52 @@ export function itemId(item: ItemRecord, index = 0): string {
   return typeof item.id === "string" ? item.id : `item-${index}`;
 }
 
+export function keywordList(item: ItemRecord): string[] {
+  const value = item.keywords;
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(
+    (keyword): keyword is string =>
+      typeof keyword === "string" && keyword.trim() !== "",
+  );
+}
+
+/**
+ * Skills are category + keywords, and the category is optional: a row with
+ * keywords but no category is a real row (the paste parser emits one for
+ * unlabeled skill lists), so it must stay visible. Every other section still
+ * keys off its primary field.
+ */
+export function isVisibleItem(
+  sectionId: ListKind,
+  item: ItemRecord,
+): boolean {
+  if (item.hidden === true) {
+    return false;
+  }
+
+  if (sectionId === "skills") {
+    return (
+      text(item, "name").trim() !== "" || keywordList(item).length > 0
+    );
+  }
+
+  const primaryField =
+    sectionId === "custom" ? "name" : PRIMARY_FIELDS[sectionId];
+
+  return text(item, primaryField).trim() !== "";
+}
+
 export function visibleItems(
   items: readonly unknown[],
-  primaryField: string,
+  sectionId: ListKind,
 ): ItemRecord[] {
   return items
     .map((item) => item as ItemRecord)
-    .filter(
-      (item) =>
-        item.hidden !== true && text(item, primaryField).trim() !== "",
-    );
+    .filter((item) => isVisibleItem(sectionId, item));
 }
 
 export function resolveSection(
@@ -83,7 +119,7 @@ export function resolveSection(
       return null;
     }
 
-    const items = visibleItems(customSection.items, "name");
+    const items = visibleItems(customSection.items, "custom");
 
     if (items.length === 0) {
       return null;
@@ -106,7 +142,7 @@ export function resolveSection(
     return null;
   }
 
-  const items = visibleItems(section.items, PRIMARY_FIELDS[knownSectionId]);
+  const items = visibleItems(section.items, knownSectionId);
 
   if (items.length === 0) {
     return null;

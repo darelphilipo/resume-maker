@@ -79,9 +79,11 @@ in control of every line, and your data stays on your device.
   plus an `[Action] + [What] + [Result by X%]` prompt, so achievements start
   with impact and end with a number. The verb lands cleanly after the existing
   sentence and gets a leading space when needed, so words never run together.
-- Skills grouped by category with comma-separated keywords (for example
-  `Languages: Python, SQL`), with no self-ratings to maintain; projects and
-  interests use the same comma-separated tags.
+- Skills grouped by an optional category with comma-separated keywords (for
+  example `Languages: Python, SQL`), with no self-ratings to maintain. A
+  keyword-only row stays visible without a blank category line, so pasted lists
+  such as `SQL, Excel, Tableau` show up as soon as they are imported; projects
+  and interests use the same comma-separated tags.
 - One Month + Year picker for every date field (month list plus a four-digit
   year), so `2023-10` stays consistent and no browser opens a slow year
   scroller. End dates for current roles have a **Present** toggle.

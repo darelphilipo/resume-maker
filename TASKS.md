@@ -24,8 +24,6 @@ _None._
 
 ### P1 — Remaining & Newly Uncovered UI/UX Fixes
 
-- [ ] P1: Fix `Skills` entries with an empty `Category` not rendering in Visual Preview (`src/templates/` shared skills renderer & `src/lib/import/` paste parser). Ensure `Skills` items with `keywords` populated and an empty `category` render their comma-separated keywords cleanly across all templates (omitting the bold category prefix/colon when `category` is blank), and verify the paste parser renders pasted `Skills` sections immediately in Visual Preview.
-
 - [ ] P1: Fix `Studio Sidebar` two-column pagination on multi-page resumes (`src/templates/` Studio Sidebar template & `src/lib/pagination/packPages.ts`). Keep the narrow sidebar column anchored on Page 1 alongside Page 1's main column instead of pushing sidebar sections (`Skills`, `Certifications`) onto an empty-left Page 2; if Page 2 only has main-column overflow, render Page 2 cleanly without an orphaned blank left column.
 
 - [ ] P1: Fix clipped 1-character labels in the Design panel's **Accent color** swatches (`src/components/editor/DesignPanel.tsx`). Switch the swatch grid from 3 cramped columns to `grid-cols-2` (or compact swatch dots with `whitespace-nowrap` / tooltips and proper padding) so every accent color name (`Ink`, `Slate`, `Forest`, `Plum`, etc.) displays completely without truncation on both desktop (`20rem` sidebar) and mobile (`390px`).
@@ -41,6 +39,21 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-19 — Fixed keyword-only `Skills` rows disappearing from Visual
+  Preview. Visibility now treats a skills row as real content when either its
+  category (`name`) or at least one non-empty keyword is present, through the
+  shared `sectionData` resolver, the ATS text renderer, and the editor's
+  `selectVisibleSectionIds`, so preview, measurement, ATS text, and editor state
+  agree. `SkillEntry` omits the bold category `<h3>` when the category is blank
+  and still renders keywords as pills or the comma list per `keywordLayout`.
+  Added a parser + renderer integration test proving pasted unlabeled skill
+  lists (`SKILLS` → `SQL, Excel` → `Python`) appear immediately. Verified
+  `npm run typecheck`, `npm test` (578 pass), `npm run lint`. Files:
+  `src/templates/shared/sectionData.ts`,
+  `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `src/lib/ats/atsText.ts` (+ test), `src/lib/store/selectors.ts` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-19 — Finished the P2 Design-panel controls item: the template
   selector already existed, so this run added **accent color** (six curated
