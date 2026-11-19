@@ -22,72 +22,60 @@ _None._
 
 ## Queue (Ready for Next Run)
 
-### P1 — Final UI/UX Polish & Bug Fixes
+### P1 — Live Bug Fixes & Surface UI Polish
 
-- [ ] P1: Fix the `"Match JD"` button not opening `JdMatchDrawer` (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/JdMatchDrawer.tsx`). Debug why clicking or pressing `Enter` on the `"Match JD"` button in the Content sidebar header produces no state/portal change (check drawer `open`/`onOpenChange` state wiring, Vaul/Radix trigger nesting, and z-index/portal mounting), and add a Playwright test confirming clicking `"Match JD"` opens the drawer and scores pasted job description keywords.
-
-- [ ] P1: Make `Name` edits update the center Preview canvas and top editor header live on `onChange` (`src/components/editor/BasicsForm.tsx`, `src/components/editor/useDebouncedCommit.ts`, `src/components/editor/EditorWorkspace.tsx`). Ensure `basics.name` commits via a short debounce (e.g. `150ms`) while focused instead of only on `onBlur`. Also show a subtle muted placeholder (e.g. `"Your name"`) instead of `"Untitled resume"` in `NAME PREVIEW` when a blank resume's Name field is empty.
-
-- [ ] P1: Eliminate the left Content sidebar scroll-to-top jump when clicking `Move up` / `Move down` on entries (`src/components/editor/ExperienceForm.tsx`, `src/components/editor/SectionFormControls.tsx`). Capture the Content scroll container's `scrollTop` before reordering and restore it in `useLayoutEffect` / `requestAnimationFrame` (and ensure React keys use stable `entry.id` and `focus({ preventScroll: true })`) so the viewport stays anchored on the moved entry.
-
-- [ ] P1: Enable the Launcher `"Create resume from text"` button immediately on `onChange` / `onPaste` (`src/components/launcher/Launcher.tsx`). Ensure the button's `disabled` state reads controlled React state updated on every `onChange` event (not `onBlur` or ref-only state), so pasting or typing text enables the button on the first keystroke/paste and submits on a single click.
-
-### P1 — Surface UI & Visual Polish
-
-- [ ] P1: Polish Launcher (`/`) layout balance, cards, and Recent Resumes UX (`src/components/launcher/Launcher.tsx`).
-  1. **Hero & trust badge alignment:** Align the hero eyebrow/headline/subtitle and the `100% Free • No Sign-Up • Works Offline` badge row consistently (both left-aligned or both centered) and tighten the vertical gap between them.
-  2. **Preset grid & Blank CTA:** Keep `Fresh Graduate` the same width as the other preset cards (or add a 6th preset so the 2-column grid has no stretched orphan row), give `+ Start with a blank resume` clean secondary CTA styling instead of a thin full-width banner, and add `resize-none` to the Paste `<textarea>`.
-  3. **Recent resumes & Backup accordion:** Make the entire Recent Resume row clickable to open the resume (keeping Rename/Delete/Duplicate buttons stopped from bubbling), cap the default list to the 5 most recent items with a `"Show all (N)"` toggle, and change the outer `Backup & Restore` container from dashed to a subtle solid border so it no longer nests a dashed dropzone inside a dashed box.
+- [ ] P1: Fix the `"Match JD"` button not opening `JdMatchDrawer` in the live browser (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/JdMatchDrawer.tsx`). *Note: Reproduces in the live deployed app despite the 2026-11-19 unit tests.* Inspect why clicking or pressing `Enter` on the compact `"Match JD"` button in the Content header does not mount/open the Vaul drawer in a real browser (check `Drawer.Trigger asChild` ref forwarding, controlled vs uncontrolled state, and portal z-index), align `"Match JD"` on the same header row as `Content`, and verify the existing Playwright case in `e2e/layout-consistency.spec.ts`.
 
 - [ ] P1: Polish Editor header hierarchy, desktop scrollbars, and Content panel ergonomics (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/BasicsForm.tsx`, `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`).
-  1. **Header & desktop shell:** Style `Save PDF` as the primary solid CTA (`bg-primary text-white`) so it stands out from `Download JSON backup`, add a subtle vertical divider between `← Back` and the resume title, slightly raise disabled Undo/Redo icon contrast, and lock the desktop shell height (`lg:h-dvh lg:overflow-hidden` with independently scrollable columns) to eliminate the double vertical scrollbar on the right edge.
-  2. **Content panel cleanup:** Remove the redundant `NAME PREVIEW` box above the `Name` input (or show it only on mobile), align `Match JD` in the same header row as `Content`, fix expanded section headers to show a matching upward chevron (`^`) instead of a corner-up-left arrow, and prevent `Move up` / `Move down` labels from wrapping onto 2 lines (`whitespace-nowrap`).
-  3. **Compact `RichTextField` & destructive cue:** Tighten toolbar icon buttons so all 8 controls fit on a single row in the `22rem` sidebar, make the formula hint + Action Verb chips compact/collapsible so bullets stay immediately visible, and give entry `Delete` buttons a subtle muted-red hover/text state (`text-red-700/80 hover:bg-red-50`).
+  1. Style `Save PDF` as the primary solid CTA (`bg-primary text-white`), add a subtle vertical divider between `← Back` and the resume title, raise disabled Undo/Redo icon contrast, and lock the desktop shell height (`lg:h-dvh lg:overflow-hidden` with independently scrollable columns) to remove the double right-edge scrollbar.
+  2. Remove the redundant `NAME PREVIEW` box above the `Name` input, fix expanded section headers to show an upward chevron (`^`) instead of a corner-up-left arrow, and add `whitespace-nowrap` to `Move up` / `Move down` so labels don't wrap onto 2 lines.
+  3. Tighten `RichTextField` toolbar buttons to fit all 8 controls on a single row in the `22rem` sidebar, make the writing-helper strip collapsible so bullets stay visible, and add a subtle destructive hover/text cue (`text-red-700/80 hover:bg-red-50`) on entry `Delete` buttons.
 
-- [ ] P1: Polish Design panel controls and fix missing `Density` active state (`src/components/editor/DesignPanel.tsx`).
-  1. **Fix `Density` selection bug:** Ensure the active `Compact` / `Normal` / `Relaxed` option clearly displays its checked/selected border and fill state matching the other Design panel cards.
-  2. **Consistent `ATS-Safe` badge & Font previews:** Place the `ATS-Safe` badge in a fixed slot (either right-aligned on the header row or consistently on its own sub-row) so it never jumps between inline and wrapped across template cards, and style the `Sans`, `Serif`, and `Classic` option labels in their actual font families so users can preview the typeface at a glance.
-  3. **Balanced Accent color grid:** Remove the redundant radio circle next to the color dot (use an active border + checkmark on the selected swatch instead) and balance the 2-column grid to 6 or 8 swatches so `Indigo` does not sit as an orphan 7th card.
+- [ ] P1: Fix live `Name` edits (`onChange`) and Content sidebar `Move up` / `Move down` scroll jump in the live browser (`src/components/editor/BasicsForm.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/ExperienceForm.tsx`). *Note: Both still reproduced in the live deployed app despite 2026-11-19 unit tests.*
+  1. Debug why typing in `BasicsForm`'s `Name` input only updates the center Preview canvas and top header after `onBlur` in the live app, and ensure both update smoothly while typing.
+  2. Verify after the desktop column scroll change whether clicking `↓ Down` on Experience Entry 1 still jumps scroll upward; preserve the active Content scroller's `scrollTop` and re-focus with `focus({ preventScroll: true })`.
 
+- [ ] P1: Polish Design panel controls and fix the missing `Density` active state bug (`src/components/editor/DesignPanel.tsx`).
+  1. Fix `Density` (`Compact` / `Normal` / `Relaxed`) so the active option clearly displays its checked/selected border and fill state.
+  2. Place the `ATS-Safe` badge in a consistent fixed slot so it never jumps between inline and wrapped across template cards, and render `Sans`, `Serif`, and `Classic` labels in their actual font families.
+  3. Remove the redundant radio circle beside the color dot in Accent color swatches (use an active border + checkmark instead) and balance the 2-column grid to 6 or 8 swatches so `Indigo` is not an orphan 7th card.
+
+- [ ] P1: Polish Launcher (`/`) layout, Recent Resumes UX, and `"Create resume from text"` enablement (`src/components/launcher/Launcher.tsx`).
+  1. Fix `"Create resume from text"` so `disabled` updates immediately on `onChange` / `onPaste` (single click submits, no blur needed) and add `resize-none` to the textarea.
+  2. Align the hero headline/subtitle and `100% Free • No Sign-Up • Works Offline` badge row consistently and tighten the vertical gap; keep `Fresh Graduate` the same width as other preset cards (or add a 6th preset) and give `+ Start with a blank resume` clean secondary CTA styling.
+  3. Make the entire Recent Resume row clickable to open the resume (stopping click propagation on Rename / Delete / Duplicate buttons), cap the initial list at 5 items with a `"Show all (N)"` toggle, and change the outer `Backup & Restore` box from dashed to a subtle solid border so it doesn't nest two dashed borders.
 
 ### P1 — Quick-Win User Features
 
-- [ ] P1: Add **Duplicate resume** on `/` and **per-entry Hide/Show** in the editor (`src/components/launcher/Launcher.tsx`, `src/lib/` Dexie store, `src/types/`, `src/components/editor/SectionFormControls.tsx`, `src/templates/`).
-  1. On each **Recent resumes** card in `Launcher.tsx`, add a **Duplicate** icon button (`min-h-11 min-w-11`) that clones the Dexie record with a new `id`, appends ` (Copy)` to the resume title/name metadata, updates `updatedAt`, and opens (or immediately lists) the clone so users can tailor a copy without touching their master resume.
-  2. Add an optional `hidden?: boolean` field on individual entries (`Experience`, `Projects`, `Education`, `Certifications`, `Awards`, `Publications`, `Custom`), wire an eye-icon **Hide / Show** button in `EntryActions` (`SectionFormControls.tsx`) with a subtle dimmed/badge state when hidden, and filter out hidden entries in all 6 templates, `MeasureLayer`, and `AtsTextView`. Add unit + Playwright tests verifying duplication and per-entry hiding.
+- [ ] P1: Add **Duplicate resume** on `/` and **per-entry Hide/Show** in the editor (`src/components/launcher/Launcher.tsx`, `src/lib/store/db.ts`, `src/types/`, `src/components/editor/SectionFormControls.tsx`, `src/templates/`).
+  1. Add a **Duplicate** icon button (`min-h-11 min-w-11`, stopping click propagation) on each **Recent resumes** card that clones the Dexie record with a new `id`, appends ` (Copy)`, and updates `updatedAt`.
+  2. Add an optional `hidden?: boolean` field on individual entries (`Experience`, `Projects`, `Education`, `Certifications`, `Awards`, `Publications`, `Custom`), wire an eye-icon **Hide / Show** button in `EntryActions` with a dimmed state when hidden, and filter hidden entries out of all 6 templates, `MeasureLayer`, and `AtsTextView`.
 
-- [ ] P1: Add a one-click **"Anonymize for review"** toggle in Preview (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PrintPortal.tsx`, `src/components/preview/AtsTextView.tsx`, new `src/lib/privacy/anonymizeDoc.ts`).
-  1. Create a pure helper `anonymizeResumeDoc(doc)` that returns a shallow-cloned display doc replacing `basics.name` (`"Alex Taylor"`), `email` (`"alex.taylor@example.com"`), `phone` (`"+1 (555) 010-2345"`), `location` (`"Metro Area"`), `website`/`url` (`"portfolio.example.com"`), `picture` (hidden), and company/institution names (`"Company A"`, `"Company B"`, `"University A"`) without mutating the Zustand/Dexie store.
-  2. Add a compact **Anonymize** toggle pill in the Preview header (non-persisted session state) with a clear active banner (*"Preview anonymized — your saved data is unchanged"*). Apply it to `PageStack`, `AtsTextView`, and `PrintPortal` so users can export or screenshot a redacted PDF/image for `r/resumes` in one click. Add unit + Playwright tests.
+- [ ] P1: Add a one-click **"Anonymize for review"** toggle in Preview (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PrintPortal.tsx`, `src/components/preview/AtsTextView.tsx`, `src/lib/print/printDocument.ts`, new `src/lib/privacy/anonymizeDoc.ts`).
+  1. Create `anonymizeResumeDoc(doc)` returning a display-only clone replacing name (`"Alex Taylor"`), email, phone, location, website, `Profiles` URLs/usernames, picture (hidden), and company/school names (`"Company A"`, `"University A"`) without mutating saved Dexie data.
+  2. Add a session-only **Anonymize** toggle pill in the Preview header with a subtle active banner, and pass the anonymized doc into `PageStack`, `AtsTextView`, `PrintPortal`, and `printDocument.ts` (so the exported PDF filename is also anonymized).
 
 - [ ] P1: Add **"Copy for Workday"** one-click copy buttons in the `ATS text` tab (`src/components/preview/AtsTextView.tsx`).
-  1. Add a top **"Copy all plain text"** button plus compact per-section and per-entry (e.g., each Experience / Project / Summary block) **Copy** buttons inside `AtsTextView.tsx` using `navigator.clipboard.writeText(...)` (with a safe fallback and 1.5s `"Copied"` confirmation state).
-  2. Format copied entries as clean plain text (no stray HTML tags or extra blank lines) so users can paste straight into Workday/Greenhouse/Lever forms. Add unit + Playwright tests.
+  1. Add a top **"Copy all plain text"** button plus compact per-section and per-entry **Copy** buttons using `navigator.clipboard.writeText(...)` (with a 1.5s `"Copied"` state) outputting clean plain text ready for Workday/Greenhouse/Lever forms.
 
-- [ ] P1: Set an auto-formatted PDF filename on **Save PDF** (`src/components/preview/PrintTriggerButton.tsx`).
-  1. Right before calling `window.print()`, store the current `document.title` and temporarily set `document.title` to a clean filename slug derived from `doc.basics.name` (e.g. `Priya_Raman_Resume`, falling back to `Resume` if blank, or `Alex_Taylor_Resume_Anonymized` when Anonymize mode is active), stripping invalid filename characters.
-  2. Restore the original `document.title` in both the `window` `afterprint` event listener and a fallback timeout so the browser tab title never stays stuck. Add unit tests covering normal names, special characters, blank names, and anonymized mode.
-     
 ### P2 — High-Value Reddit-Inspired Features
 
 - [ ] P2: Add **Grouped Promotions (multiple roles at the same company)** in Experience (`src/types/`, `src/components/editor/ExperienceForm.tsx`, `src/templates/`, `src/components/preview/AtsTextView.tsx`).
-  1. Add a section-level toggle `groupSameCompany?: boolean` (default `true` or opt-in toggle in `ExperienceForm.tsx`) that groups consecutive visible Experience entries sharing the same normalized `company` name (case-insensitive, trimmed).
-  2. When grouped, render the company name, location, and combined date span once as the group header across all 6 templates, with each promoted `position`, individual date range, and bullet list stacked cleanly underneath (keeping `break-inside: avoid` per role so multi-page pagination still splits naturally). Keep `AtsTextView` linear with company + title clearly readable per role. Add unit + Playwright tests.
+  1. Add a section-level `groupSameCompany?: boolean` toggle in `ExperienceForm.tsx` that groups consecutive visible entries sharing the same normalized `company` name.
+  2. Render the company, location, and combined date span once as the group header across all 6 templates with each promoted `position`, dates, and bullets stacked cleanly underneath (keeping per-role `break-inside: avoid`), while keeping `AtsTextView` linear.
 
-- [ ] P2: Support **multiple labeled profile links** in Basics (`LinkedIn`, `GitHub`, `Portfolio`, custom) (`src/types/`, `src/components/editor/BasicsForm.tsx`, `src/templates/`, `src/lib/privacy/anonymizeDoc.ts`).
-  1. Extend `basics` with an optional `links?: Array<{ id: string; label: string; url: string }>` array (preserving backwards compatibility with existing `basics.url` records by migrating or falling back seamlessly).
-  2. In `BasicsForm.tsx`, provide a compact "+ Add link" list (up to 4 links) with quick presets (`LinkedIn`, `GitHub`, `Portfolio`, `Website`) and URL input. Render them as clean clickable `<a href>` links in the resume header across all 6 templates, stripping `https://` / `www.` from display text when no custom label is set. Update `anonymizeResumeDoc` to redact all profile links. Add unit + Playwright tests.
+- [ ] P2: Promote existing **`Profiles` links** (`LinkedIn`, `GitHub`, `Portfolio`) cleanly into the resume header (`src/components/editor/BasicsForm.tsx`, `src/lib/links/contactLinks.ts`, `src/templates/shared/HeaderSlot.tsx`).
+  1. Reuse the existing `Profiles` data (`contactLinks.ts`)—do not create a duplicate `basics.links` array—and render visible profile links inline in the top contact header across all 6 templates as clean clickable `<a href>` links (stripping `https://` / `www.`), with a quick shortcut in `BasicsForm` to manage them.
 
-- [ ] P2: Add lightweight **Application Status & Target Company tags** to Recent Resumes on `/` (`src/types/`, `src/lib/` Dexie schema, `src/components/launcher/Launcher.tsx`).
-  1. Add optional metadata fields (`targetCompany?: string`, `status?: "master" | "draft" | "applied" | "interview" | "offer"`) on saved resume records with safe defaults for existing Dexie rows.
-  2. On each **Recent resumes** card in `Launcher.tsx`, display an inline status badge and optional target company tag with a quick click-to-edit popover/selector (and add a compact status filter pill bar above the list when 2+ resumes exist) so users can track tailored copies offline with zero clutter. Add unit + Playwright tests.
+- [ ] P2: Add lightweight **Application Status & Target Company tags** to Recent Resumes on `/` (`src/types/`, `src/lib/store/db.ts`, `src/components/launcher/Launcher.tsx`).
+  1. Add optional `targetCompany?: string` and `status?: "master" | "draft" | "applied" | "interview" | "offer"` fields to saved resume records with safe defaults for existing Dexie rows.
+  2. Display an inline status badge and target company tag on each **Recent resumes** card with a quick edit selector (stopping row click propagation), plus a compact status filter bar when 2+ resumes exist.
 
-- [ ] P2: Add **Zero-AI XYZ / STAR Impact Bullet Formula chips** to `RichTextField` (`src/components/editor/RichTextField.tsx`).
-  1. Next to the existing Action Verb helper chips in Experience and Projects editors, add a compact collapsible **"Impact formulas"** toggle revealing 4 tappable fill-in scaffolds (e.g. `Reduced [metric] by [X%] by [action]`, `Built [feature/system] for [N] users, improving [outcome]`, `Led [team/project] to deliver [result] ahead of [timeline]`, `Automated [workflow], saving [N] hours/week`).
-  2. Clicking a formula inserts it cleanly at the cursor (with a leading space or new bullet item if appropriate) without overwriting existing text, and keeps the helper bar single-row/non-wrapping on both desktop (`22rem`) and mobile (`390px`). Add unit + Playwright tests.
-
+- [ ] P2: Upgrade the existing `RichTextField` writing hint into **tappable Zero-AI XYZ / STAR Impact Bullet Formulas** (`src/components/editor/RichTextField.tsx`).
+  1. Replace the static `[Action] + [What] + [Result by X%]` text hint inside the collapsible helper strip with 4 tappable fill-in formula chips (`Reduced [metric] by [X%] by [action]`, `Built [feature/system] for [N] users, improving [outcome]`, `Led [team/project] to deliver [result]`, `Automated [workflow], saving [N] hrs/wk`) that insert cleanly at the cursor without adding a second stacked helper row.
 
 ### P2 — Larger work
+
 - [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
 
 ## Done
