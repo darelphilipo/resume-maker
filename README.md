@@ -61,8 +61,9 @@ in control of every line, and your data stays on your device.
 - Basics: name, headline, email, phone, location, website, optional photo, and
   an optional one-line work authorization or notice period tag (for example
   `Authorized to work in US` or `Immediate Joiner`). A name preview above the
-  fields follows every keystroke, so you see the printed name before you leave
-  the field. Paste a photo URL and a live thumbnail appears; if the image cannot
+  fields follows every keystroke, and the top header title and center resume
+  preview update with it as you type — no need to leave the field. Paste a photo
+  URL and a live thumbnail appears; if the image cannot
   load, the editor says so instead of showing a broken picture, and the resume
   header widens cleanly without an empty photo slot. Paste your website and it
   is shown without `https://` or `www.` — there is no separate label to

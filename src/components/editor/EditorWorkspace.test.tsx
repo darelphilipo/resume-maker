@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
+import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { putResume } from "@/lib/store/db";
 import {
   resetResumeStore,
@@ -42,9 +43,15 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/components/preview/LiveCanvasViewport", () => ({
-  LiveCanvasViewport: ({ mode }: { mode?: string }) => (
+  LiveCanvasViewport: ({
+    mode,
+    doc,
+  }: {
+    mode?: string;
+    doc: ResumeDocument;
+  }) => (
     <div data-testid="preview-canvas" data-mode={mode}>
-      Preview canvas
+      <span data-testid="canvas-name">{doc.basics.name}</span>
     </div>
   ),
 }));
@@ -93,6 +100,24 @@ describe("EditorWorkspace", () => {
       expect(
         screen.getByRole("heading", { level: 1, name: "Ada Lovelace" }),
       ).toBeInTheDocument();
+    });
+  });
+
+  it("syncs live Name edits to the preview canvas and header without a blur", async () => {
+    const user = userEvent.setup();
+    await renderReadyWorkspace();
+
+    // Both surfaces render from the same committed doc, not a local draft, so
+    // a keystroke reaches the center resume header and the top bar title.
+    await user.type(screen.getByLabelText("Name"), "Grace Hopper");
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Grace Hopper" }),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId("canvas-name")).toHaveTextContent(
+        "Grace Hopper",
+      );
     });
   });
 

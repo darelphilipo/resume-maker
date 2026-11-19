@@ -17,6 +17,7 @@ import { InAppBrowserNotice } from "@/components/preview/InAppBrowserNotice";
 import { PrintTriggerButton } from "@/components/preview/PrintTriggerButton";
 import { ExportJsonButton } from "@/components/shared/ExportJsonButton";
 import { usePageLayout } from "@/lib/pagination/usePageLayout";
+import { resumeDisplayName } from "@/lib/schema/resumeName";
 import {
   canRedo,
   canUndo,
@@ -212,7 +213,7 @@ export function EditorWorkspace() {
     return <EditorLoading />;
   }
 
-  const resumeName = doc.basics.name.trim() || "Untitled resume";
+  const resumeName = resumeDisplayName(doc.basics.name);
   const undoAvailable = canUndo();
   const redoAvailable = canRedo();
   const statusLabel = saveStatusLabel(saveState, lastSavedAt);

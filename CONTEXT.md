@@ -495,7 +495,10 @@ rediscover.
     glyph. `HeaderSlot` is a client component that remembers the failed URL and
     stops rendering `AvatarSlot`, letting the header text span both grid columns;
     never render a resume-header `<img>` without that error path or a broken URL
-    prints a broken-image icon.
+    prints a broken-image icon. The Name preview and the editor header h1 both
+    call `resumeDisplayName` (`src/lib/schema/resumeName.ts`) for the one
+    `"Untitled resume"` fallback; the header and preview canvas read the
+    debounce-committed `doc`, so they follow typing without waiting for blur.
 43. **Action-verb insertions respect the preceding character.** The pure
     `actionVerbInsertion` helper in `src/lib/richtext/actionVerbs.ts` prepends a
     space only when the cursor follows non-whitespace; `RichTextField` reads
@@ -633,6 +636,27 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-19 — Live Name edits reach the header and preview canvas
+- Task: top P1 Queue item — sync live `Name` edits to the main Preview canvas
+  and top editor header. The store commit was already on `onChange` (one
+  50 ms `useDebouncedCommit` in `BasicsForm`), so the header and canvas already
+  tracked typing without a blur; the missing pieces were a shared display-name
+  contract and a regression test for the preview-canvas half.
+- New `resumeDisplayName` (`src/lib/schema/resumeName.ts`) owns the single
+  `"Untitled resume"` fallback. Both `BasicsForm`'s Name preview and
+  `EditorWorkspace`'s header h1 call it, so an empty name always reads the same
+  and live edits stay in sync. Extended Decision #42.
+- Tests: `resumeName.test.ts` covers trim + fallback;
+  `EditorWorkspace.test.tsx` now surfaces `doc.basics.name` through the mocked
+  preview canvas and proves typing a name updates both the h1 and the canvas
+  name without a blur. 587 pass (was 583).
+- Files: `src/lib/schema/resumeName.ts` (+ test, new),
+  `src/components/editor/BasicsForm.tsx`,
+  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (587 pass), `npm run lint`. No new
+  layout chrome, so no e2e case was added; Playwright remains blocked here.
 
 ### 2026-11-19 — Entry reorders keep their place in the Content column
 - Task: top genuine P1 Queue item — clicking Move up / Move down in an entry
@@ -875,36 +899,8 @@ npx playwright test    # e2e; needs a dev server on :3000
   Playwright cannot run in this sandbox; a browser-enabled run should execute
   `npm run e2e -- e2e/layout-consistency.spec.ts` at `390x844` / `1280x800`.
 
-### 2026-11-18 — Pinch zoom stays put (fit no longer re-applies per render)
-- Task: top P0 Queue item — preview "resets" on pinch, jitters/freezes when
-  zooming, cannot pan a zoomed page, and page scrolling works only sometimes.
-- Root cause: `FitTransform` in `LiveCanvasViewport` ran
-  `setTransform(0, 0, fitScale, 0)` from an effect keyed on
-  `[fitScale, setTransform]`, but `react-zoom-pan-pinch`'s `useControls()`
-  rebuilds every control closure on each render. `CanvasSurface` re-renders when
-  the zoomed bit flips, so the first pinch frame immediately re-fitted the
-  canvas: zoom snapped back, the render/transform ping-pong produced jitter and
-  freezes, and the aborted gesture left `touch-action: none` so the next swipe
-  could not scroll the page. One bug, all four symptoms. Recorded as Decision
-  #39.
-- New `useFitTransform` applies the fit transform only when `fitScale` actually
-  changes (ref guard, ignores non-finite values); `CanvasSurface` now uses it.
-  No other preview behaviour changed.
-- `useFitTransform.test.tsx` mocks `useControls()` with a fresh `setTransform`
-  identity per render and proves an unrelated re-render does not re-fit, while a
-  real `fitScale` change does. Verified the test fails (2 calls) when the guard
-  is removed. 532 pass.
-- Files: `src/components/preview/useFitTransform.ts` (new) + test,
-  `src/components/preview/LiveCanvasViewport.tsx`, `CONTEXT.md`, `TASKS.md`.
-  README unchanged: its existing "Scroll or zoom the preview naturally" bullet
-  already describes the intended pinch/pan behaviour, which now holds.
-- Verified: `npm run typecheck`, `npm test` (532 pass). Playwright cannot run in
-  this sandbox, so the `390x844` pinch/pan/scroll feel is browser-unverified; a
-  browser-enabled run should execute
-  `npm run e2e -- e2e/layout-consistency.spec.ts` and repeat a pinch, a
-  one-finger pan, and a multi-page scroll.
-
-<!-- Older entries are trimmed to keep the 10 most recent. The Playwright
+<!-- Older entries are trimmed to keep the 10 most recent. The pinch-zoom fit
+     guard (Decision #39), Playwright
      visual/layout spec (2026-11-17), preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), readable fit floor
      + Reset fit + toolbar above the canvas (Decision #36), backup-vs-primary

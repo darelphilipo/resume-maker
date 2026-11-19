@@ -24,8 +24,6 @@ _None._
 
 ### P1 — Remaining & Newly Uncovered UI/UX Fixes
 
-- [ ] P1: Sync live `Name` edits (`onChange`) to the main Preview canvas and top editor header (`src/components/editor/BasicsForm.tsx`, `src/components/editor/EditorWorkspace.tsx`). Debounce-commit `basics.name` on `onChange` (e.g., 150ms) instead of waiting for `onBlur`, so the center resume header and top bar title update in real time alongside `NAME PREVIEW`.
-
 - [ ] P1: Surface the **"Match to a job description"** trigger in the editor UI (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/JdMatchDrawer.tsx`). Wire a clear button in the Content panel header (or top toolbar) that opens `JdMatchDrawer` on both desktop and mobile, and add a Playwright check verifying clicking it opens the drawer and scores pasted JD keywords.
 - [ ] when clicking reset in the preview pane , scroll to the top of the resume just like when the user lands on the preview pane first time 
 
@@ -34,6 +32,20 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-19 — Synced live `Name` edits to the header and preview canvas.
+  `basics.name` already reached the store on `onChange` via the shared 50 ms
+  `useDebouncedCommit` (no blur needed), so the top header title and center
+  resume canvas already followed typing; the gap was a duplicated `"Untitled
+  resume"` fallback and no test for the preview-canvas half. Extracted
+  `resumeDisplayName` as the single display-name contract used by both the
+  Name preview and the header h1, and added a regression test proving typing a
+  name updates both the header and the mocked preview canvas without a blur.
+  Verified `npm run typecheck`, `npm test` (587 pass), `npm run lint`. Files:
+  `src/lib/schema/resumeName.ts` (+ test, new),
+  `src/components/editor/BasicsForm.tsx`,
+  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-19 — Fixed the Content-column scroll-to-top jump when reordering
   entries. All six entry forms already keyed their `EntryCard`s by `item.id`, so

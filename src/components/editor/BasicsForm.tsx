@@ -6,6 +6,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { websiteLabelFromUrl } from "@/lib/links/contactLinks";
+import { resumeDisplayName } from "@/lib/schema/resumeName";
 import type {
   PictureConfig,
   ResumeBasics,
@@ -164,7 +165,7 @@ export function BasicsForm() {
           Name preview
         </span>
         <span className="truncate font-serif text-base font-semibold">
-          {watched.name.trim() || "Untitled resume"}
+          {resumeDisplayName(watched.name)}
         </span>
       </div>
       <TextInput
