@@ -49,6 +49,25 @@ _None._
 - [ ] P1: Set an auto-formatted PDF filename on **Save PDF** (`src/components/preview/PrintTriggerButton.tsx`).
   1. Right before calling `window.print()`, store the current `document.title` and temporarily set `document.title` to a clean filename slug derived from `doc.basics.name` (e.g. `Priya_Raman_Resume`, falling back to `Resume` if blank, or `Alex_Taylor_Resume_Anonymized` when Anonymize mode is active), stripping invalid filename characters.
   2. Restore the original `document.title` in both the `window` `afterprint` event listener and a fallback timeout so the browser tab title never stays stuck. Add unit tests covering normal names, special characters, blank names, and anonymized mode.
+     
+### P2 — High-Value Reddit-Inspired Features
+
+- [ ] P2: Add **Grouped Promotions (multiple roles at the same company)** in Experience (`src/types/`, `src/components/editor/ExperienceForm.tsx`, `src/templates/`, `src/components/preview/AtsTextView.tsx`).
+  1. Add a section-level toggle `groupSameCompany?: boolean` (default `true` or opt-in toggle in `ExperienceForm.tsx`) that groups consecutive visible Experience entries sharing the same normalized `company` name (case-insensitive, trimmed).
+  2. When grouped, render the company name, location, and combined date span once as the group header across all 6 templates, with each promoted `position`, individual date range, and bullet list stacked cleanly underneath (keeping `break-inside: avoid` per role so multi-page pagination still splits naturally). Keep `AtsTextView` linear with company + title clearly readable per role. Add unit + Playwright tests.
+
+- [ ] P2: Support **multiple labeled profile links** in Basics (`LinkedIn`, `GitHub`, `Portfolio`, custom) (`src/types/`, `src/components/editor/BasicsForm.tsx`, `src/templates/`, `src/lib/privacy/anonymizeDoc.ts`).
+  1. Extend `basics` with an optional `links?: Array<{ id: string; label: string; url: string }>` array (preserving backwards compatibility with existing `basics.url` records by migrating or falling back seamlessly).
+  2. In `BasicsForm.tsx`, provide a compact "+ Add link" list (up to 4 links) with quick presets (`LinkedIn`, `GitHub`, `Portfolio`, `Website`) and URL input. Render them as clean clickable `<a href>` links in the resume header across all 6 templates, stripping `https://` / `www.` from display text when no custom label is set. Update `anonymizeResumeDoc` to redact all profile links. Add unit + Playwright tests.
+
+- [ ] P2: Add lightweight **Application Status & Target Company tags** to Recent Resumes on `/` (`src/types/`, `src/lib/` Dexie schema, `src/components/launcher/Launcher.tsx`).
+  1. Add optional metadata fields (`targetCompany?: string`, `status?: "master" | "draft" | "applied" | "interview" | "offer"`) on saved resume records with safe defaults for existing Dexie rows.
+  2. On each **Recent resumes** card in `Launcher.tsx`, display an inline status badge and optional target company tag with a quick click-to-edit popover/selector (and add a compact status filter pill bar above the list when 2+ resumes exist) so users can track tailored copies offline with zero clutter. Add unit + Playwright tests.
+
+- [ ] P2: Add **Zero-AI XYZ / STAR Impact Bullet Formula chips** to `RichTextField` (`src/components/editor/RichTextField.tsx`).
+  1. Next to the existing Action Verb helper chips in Experience and Projects editors, add a compact collapsible **"Impact formulas"** toggle revealing 4 tappable fill-in scaffolds (e.g. `Reduced [metric] by [X%] by [action]`, `Built [feature/system] for [N] users, improving [outcome]`, `Led [team/project] to deliver [result] ahead of [timeline]`, `Automated [workflow], saving [N] hours/week`).
+  2. Clicking a formula inserts it cleanly at the cursor (with a leading space or new bullet item if appropriate) without overwriting existing text, and keeps the helper bar single-row/non-wrapping on both desktop (`22rem`) and mobile (`390px`). Add unit + Playwright tests.
+
 
 ### P2 — Larger work
 - [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
@@ -478,3 +497,4 @@ _None._
 - [x] 2026-11-15 — Autonomous development bootstrap: OpenCode autopilot workflow (6-hourly, one task, verify-gated commit, checkpoint branch), `opencode.json` permissions, `TASKS.md`, `CONTEXT.md`. Files: `.github/workflows/opencode-autopilot.yml`, `opencode.json`, `TASKS.md`, `CONTEXT.md`.
 - [x] 2026-11-14 — GitHub Pages deployment of the static export. Files: `next.config.ts`, `.github/workflows/deploy.yml`.
 - [x] 2026-11-14 — Cursor-anchored multiplicative wheel zoom on the canvas. Files: `src/lib/zoom/wheelZoom.ts`, `LiveCanvasViewport.tsx`.
+ 
