@@ -1,12 +1,18 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import { createPresetResume, showPreview, showTab } from "./helpers";
+import {
+  createPresetResume,
+  readPersistedDocument,
+  showPreview,
+  showTab,
+} from "./helpers";
 
 test.describe.configure({ timeout: 120_000 });
 
 // Keep these in sync with the regressions they guard: preset alignment, white
-// editor surfaces, the Month + Year selector, preview chrome placement, sticky
-// desktop columns, and full-card hit targets / drawer triggers.
+// editor surfaces, the Month + Year selector, preview chrome placement,
+// multi-page pagination, sticky desktop columns, and full-card hit targets /
+// drawer triggers.
 const VIEWPORTS = [
   { name: "mobile", width: 390, height: 844 },
   { name: "desktop", width: 1280, height: 800 },
@@ -30,6 +36,61 @@ async function expandSection(page: Page, id: string): Promise<void> {
   if ((await row.getAttribute("aria-expanded")) !== "true") {
     await row.click();
   }
+}
+
+type ExperienceDocument = {
+  sections: {
+    experience: {
+      items: Array<Record<string, unknown>>;
+    };
+  };
+};
+
+/**
+ * Re-import the preset with enough long Experience entries to force several
+ * pages. Mirrors the fixture in `mobile.spec.ts` so the pagination behaviour is
+ * exercised at both viewports without a slow, entry-by-entry UI build-up.
+ */
+async function importMultiPageResume(page: Page): Promise<void> {
+  const persisted = (await readPersistedDocument(page)) as
+    | ExperienceDocument
+    | null;
+
+  if (persisted === null) {
+    throw new Error("The preset resume was not persisted.");
+  }
+
+  const template = persisted.sections.experience.items[0];
+
+  function bullets(entry: number): string {
+    return `<ul>${[1, 2, 3, 4]
+      .map(
+        (line) =>
+          `<li>Delivered measurable impact ${entry}.${line} across the platform and API layers while keeping the on-call rotation quiet.</li>`,
+      )
+      .join("")}</ul>`;
+  }
+
+  persisted.sections.experience.items = Array.from(
+    { length: 8 },
+    (_, index) => ({
+      ...template,
+      id: `experience-multipage-${index + 1}`,
+      company: `Company ${index + 1}`,
+      position: `Engineer ${index + 1}`,
+      summary: bullets(index + 1),
+    }),
+  );
+
+  await page.goto("/");
+  await page.locator("#resume-json-input").setInputFiles({
+    name: "multi-page.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(persisted)),
+  });
+
+  await page.waitForURL(/\/editor\/?\?id=/);
+  await expect(page.getByRole("button", { name: "Save PDF" })).toBeVisible();
 }
 
 for (const viewport of VIEWPORTS) {
@@ -227,6 +288,68 @@ for (const viewport of VIEWPORTS) {
       expect(overlaps).toBe(false);
     });
 
+    test("multi-page pagination fills Page 1 before breaking an entry", async ({
+      page,
+    }) => {
+      await createPresetResume(page);
+      await importMultiPageResume(page);
+      await showPreview(page);
+
+      await expect
+        .poll(
+          async () => page.locator("#panel-preview .resume-page").count(),
+          { timeout: 20_000 },
+        )
+        .toBeGreaterThanOrEqual(2);
+
+      const pagination = await page.evaluate(() => {
+        const pages = Array.from(
+          document.querySelectorAll<HTMLElement>("#panel-preview .resume-page"),
+        );
+        const experience = (target: HTMLElement) =>
+          target.querySelector<HTMLElement>(
+            '.resume-section[data-section-id="experience"]',
+          );
+
+        const first = pages[0];
+        const firstSection = first ? experience(first) : null;
+        const contentHeight =
+          first?.querySelector<HTMLElement>(".onyx")?.getBoundingClientRect()
+            .height ?? 0;
+        const pageHeight = first?.getBoundingClientRect().height ?? 0;
+
+        return {
+          pageCount: pages.length,
+          firstEntries:
+            firstSection?.querySelectorAll(".resume-entry").length ?? 0,
+          firstHasHeading: Boolean(
+            firstSection?.querySelector(".resume-section-heading"),
+          ),
+          laterEntries: pages
+            .slice(1)
+            .reduce(
+              (sum, target) =>
+                sum +
+                (experience(target)?.querySelectorAll(".resume-entry")
+                  .length ?? 0),
+              0,
+            ),
+          fillRatio: pageHeight > 0 ? contentHeight / pageHeight : 0,
+        };
+      });
+
+      expect(pagination.pageCount).toBeGreaterThanOrEqual(2);
+      // The heading is fused to its first entry (keep-with-next), so Page 1
+      // always owns it even when later entries spill onto new pages.
+      expect(pagination.firstHasHeading).toBe(true);
+      // The old bug measured a multi-entry section as one atomic block and left
+      // ~80% of Page 1 blank. Entry-by-entry packing fills it instead.
+      expect(pagination.firstEntries).toBeGreaterThanOrEqual(2);
+      expect(pagination.fillRatio).toBeGreaterThan(0.5);
+      // Overflow entries continue onto later pages instead of being dropped.
+      expect(pagination.laterEntries).toBeGreaterThan(0);
+    });
+
     test("plain wheel scrolling is not intercepted by preview zoom", async ({
       page,
     }) => {
@@ -312,7 +435,7 @@ for (const viewport of VIEWPORTS) {
       expect(result.chromeTop).toBeGreaterThanOrEqual(result.modeBottom - 1);
     });
 
-    test("scrolling Content keeps the preview panel inside the viewport", async ({
+    test("scrolling Content keeps the Preview and Design panels in view", async ({
       page,
     }) => {
       test.skip(viewport.name === "mobile", "desktop sticky columns only");
@@ -320,7 +443,7 @@ for (const viewport of VIEWPORTS) {
       await createPresetResume(page);
       await showPreview(page);
 
-      // Give the sticky panel a runway: a long Content column makes <main> tall.
+      // Give the sticky columns a runway: a long Content column makes <main> tall.
       for (const id of [
         "summary",
         "experience",
@@ -340,20 +463,31 @@ for (const viewport of VIEWPORTS) {
         .toBeGreaterThan(0);
 
       const metrics = await page.evaluate(() => {
-        const panel = document.querySelector<HTMLElement>("#panel-preview");
         const header = document.querySelector<HTMLElement>("header");
+        const preview = document.querySelector<HTMLElement>("#panel-preview");
+        const design = document.querySelector<HTMLElement>("#panel-design");
 
-        if (!panel || !header) {
+        if (!header || !preview || !design) {
           return null;
         }
 
-        const rect = panel.getBoundingClientRect();
+        const measure = (panel: HTMLElement) => {
+          const rect = panel.getBoundingClientRect();
+
+          return {
+            id: panel.id,
+            top: rect.top,
+            bottom: rect.bottom,
+            position: getComputedStyle(panel).position,
+          };
+        };
 
         return {
-          top: rect.top,
-          bottom: rect.bottom,
           headerBottom: header.getBoundingClientRect().bottom,
           innerHeight: window.innerHeight,
+          // At lg all three tabpanels are `lg:block`, so both sticky columns
+          // are measurable while the Content column scrolls.
+          panels: [measure(preview), measure(design)],
         };
       });
 
@@ -361,10 +495,14 @@ for (const viewport of VIEWPORTS) {
 
       const result = metrics as NonNullable<typeof metrics>;
 
-      // A non-sticky panel would have scrolled above the viewport here.
-      expect(result.top).toBeGreaterThanOrEqual(0);
-      expect(result.top).toBeLessThan(result.innerHeight);
-      expect(result.bottom).toBeGreaterThan(result.headerBottom);
+      for (const panel of result.panels) {
+        // Both columns opt into `lg:sticky`; a non-sticky one would have
+        // scrolled above the viewport while Content ran past it.
+        expect(panel.position).toBe("sticky");
+        expect(panel.top).toBeGreaterThanOrEqual(0);
+        expect(panel.top).toBeLessThan(result.innerHeight);
+        expect(panel.bottom).toBeGreaterThan(result.headerBottom);
+      }
     });
 
     test("Studio Sidebar lays out both columns on Page 1", async ({ page }) => {

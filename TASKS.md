@@ -22,16 +22,26 @@ _None._
 
 ## Queue (Ready for Next Run)
 
-### P2 — Automated Multi-Viewport Regression Gate
-
-- [ ] P2: Add `e2e/layout-consistency.spec.ts` testing both `390x844` (mobile) and `1280x800` (desktop) viewports for: equal preset card heights & no sibling blink on tap, white `RichTextField` backgrounds, no `<input type="month">`, non-overlapping page-count badge, multi-page pagination filling Page 1 before breaking, normal mouse-wheel scrolling without unintended zoom, and sticky desktop Preview/Design panels.
-
 ### P2 — Larger work
 - [ ] P2: Add 4 design controls to `DesignPanel.tsx`: template selector, accent color (5–6 curated swatches + monochrome), font pairing (Sans/Serif/Classic), density (Compact/Normal/Relaxed).
 - [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-19 — Finished the P2 multi-viewport regression gate:
+  `e2e/layout-consistency.spec.ts` now covers all seven listed behaviours at
+  `390x844` and `1280x800`. Six were already present (preset height + no sibling
+  blink, white TipTap fields, no `input[type=month]`, non-overlapping page-count
+  badge, plain-wheel not hijacked by zoom, desktop Preview sticky); this run
+  added the two gaps — a **multi-page pagination** case that imports 8 long
+  Experience entries and asserts Page 1 keeps the heading, packs ≥2 entries,
+  fills most of the page, and spills the rest onto later pages (guarding the
+  80%-blank Page 1 bug), and an extension of the sticky case to assert **both**
+  `#panel-preview` and `#panel-design` stay in viewport while Content scrolls.
+  Verified `npm run typecheck`, `npm test` (567 pass). Playwright remains
+  blocked in this sandbox, so the new cases are typechecked but browser-unverified.
+  Files: `e2e/layout-consistency.spec.ts`, `TASKS.md`, `CONTEXT.md`.
 
 - [x] 2026-11-19 — Finished the P1 editor micro-interactions item: Basics now
   shows a live **Name preview** that follows every keystroke and a picture

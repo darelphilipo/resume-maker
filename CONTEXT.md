@@ -564,6 +564,27 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-19 — Multi-viewport regression gate completed
+- Task: top P2 Queue item — finish `e2e/layout-consistency.spec.ts` so both
+  `390x844` (mobile) and `1280x800` (desktop) cover all seven listed behaviours.
+- Six cases already existed (preset height + no sibling blink, white TipTap
+  fields, no month inputs, page-count badge, plain-wheel, desktop Preview
+  sticky). Closed the two gaps:
+- Added a **multi-page pagination** case. A local `importMultiPageResume`
+  fixture (mirrors `mobile.spec.ts`) writes a preset with 8 long Experience
+  entries through `#resume-json-input`; the test waits for ≥2 `.resume-page`s
+  and asserts Page 1 keeps the Experience heading, packs ≥2 `.resume-entry`s,
+  fills >50% of the page, and spills entries onto later pages — an e2e guard for
+  the 80%-blank Page 1 bug (Decision #34).
+- The desktop sticky case now measures **both** `#panel-preview` and
+  `#panel-design` (all three tabpanels are `lg:block`, so both are visible while
+  Content scrolls) and asserts `position: sticky` plus in-viewport geometry.
+- No new decision: this is e2e coverage of existing, documented behaviour.
+  Playwright cannot run in this sandbox, so the spec is typechecked only.
+- Files: `e2e/layout-consistency.spec.ts`, `TASKS.md`, `CONTEXT.md`.
+- Verified: `npm run typecheck`, `npm test` (567 pass). A browser-enabled run
+  should execute `npm run e2e -- e2e/layout-consistency.spec.ts`.
+
 ### 2026-11-19 — Live Basics previews, graceful picture fallback, spaced verbs
 - Task: P1 editor micro-interactions item. Sub-point 3's paper-size cards, JD
   drawer trigger, and Studio Sidebar split had already landed on 2026-11-17;
@@ -832,36 +853,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   export; the Next.js security-advisory nudge needed the usual second run).
   Playwright is blocked in this sandbox; a browser-enabled run should execute
   `npm run e2e -- e2e/layout-consistency.spec.ts`.
-
-### 2026-11-18 — Native wheel scroll and sticky preview chrome
-- Task: top P0 — stop the preview from hijacking the mouse wheel, smooth the
-  touch pan-to-scroll hand-off, and make the preview header sticky.
-- `isZoomWheel` gates `WheelZoom`: only Ctrl/⌘ + wheel (trackpad pinch) calls
-  `preventDefault()` and zooms; plain wheel/two-finger scroll now reaches the
-  page scroller. Recorded in Decision #5.
-- `dampHandoffScroll` ramps the page-scroller half of a pan-bound hand-off over
-  four moves (reset whenever panning resumes), replacing the old 1:1
-  `scrollPageBy` jump. `TouchPanCanvas` owns the per-gesture move count. Two new
-  component cases cover the ramp and the reset; the two old exact-scroll cases
-  were updated to the eased values.
-- Sticky chrome: the mode row is `sticky top-0 z-20 min-h-14`; the banner +
-  page-count/Reset toolbar are one `sticky top-14` `PreviewChrome` block. Root
-  switched `overflow-hidden` → `overflow-clip` so sticky still resolves against
-  `<main>` / `#panel-preview`; `TransformWrapper` now wraps the header too so
-  `CanvasResetButton` keeps context. Recorded as Decision #33.
-- E2E: two new cases in `layout-consistency.spec.ts` at both viewports assert a
-  plain wheel event is never prevented, and that the sticky chrome sits in
-  normal flow above Page 1. Playwright could not run here (sandbox shell
-  rejects the `npm run e2e` command); a browser-enabled run should execute
-  `npm run e2e -- e2e/layout-consistency.spec.ts`.
-- Files: `src/lib/zoom/wheelZoom.ts` (+ test), `src/lib/zoom/canvasGestures.ts`
-  (+ test), `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/preview/TouchPanCanvas.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (497 pass), `npm run build`
-  (static export; the Next.js security-advisory nudge needed the usual second
-  run).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The Playwright
      visual/layout spec (2026-11-17), preview-zoom
