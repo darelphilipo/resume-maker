@@ -24,8 +24,6 @@ _None._
 
 ### P2 — Automated Multi-Viewport Regression Gate
 
-### P2 — Automated Multi-Viewport Regression Gate
-
 - [ ] P2: Add `e2e/layout-consistency.spec.ts` testing both `390x844` (mobile) and `1280x800` (desktop) viewports for: equal preset card heights & no sibling blink on tap, white `RichTextField` backgrounds, no `<input type="month">`, non-overlapping page-count badge, multi-page pagination filling Page 1 before breaking, normal mouse-wheel scrolling without unintended zoom, and sticky desktop Preview/Design panels.
 
 ### P2 — Larger work
