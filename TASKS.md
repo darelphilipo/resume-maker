@@ -22,8 +22,21 @@ _None._
 
 ## Queue (Ready for Next Run)
 
+### P1 — Remaining & Newly Uncovered UI/UX Fixes
+
+- [ ] P1: Fix `Skills` entries with an empty `Category` not rendering in Visual Preview (`src/templates/` shared skills renderer & `src/lib/import/` paste parser). Ensure `Skills` items with `keywords` populated and an empty `category` render their comma-separated keywords cleanly across all templates (omitting the bold category prefix/colon when `category` is blank), and verify the paste parser renders pasted `Skills` sections immediately in Visual Preview.
+
+- [ ] P1: Fix `Studio Sidebar` two-column pagination on multi-page resumes (`src/templates/` Studio Sidebar template & `src/lib/pagination/packPages.ts`). Keep the narrow sidebar column anchored on Page 1 alongside Page 1's main column instead of pushing sidebar sections (`Skills`, `Certifications`) onto an empty-left Page 2; if Page 2 only has main-column overflow, render Page 2 cleanly without an orphaned blank left column.
+
+- [ ] P1: Fix clipped 1-character labels in the Design panel's **Accent color** swatches (`src/components/editor/DesignPanel.tsx`). Switch the swatch grid from 3 cramped columns to `grid-cols-2` (or compact swatch dots with `whitespace-nowrap` / tooltips and proper padding) so every accent color name (`Ink`, `Slate`, `Forest`, `Plum`, etc.) displays completely without truncation on both desktop (`20rem` sidebar) and mobile (`390px`).
+
+- [ ] P1: Fix Content sidebar scroll-to-top jump when reordering entries (`src/components/editor/SectionFormControls.tsx`, `src/components/editor/ExperienceForm.tsx`, `src/components/editor/SectionForm.tsx`). Use stable entry `id` keys (never array index) and preserve the scroll container's `scrollTop` (or keep focus on the moved entry's button without triggering browser scroll-into-view to the top) when clicking `Move up` / `Move down`.
+
+- [ ] P1: Sync live `Name` edits (`onChange`) to the main Preview canvas and top editor header (`src/components/editor/BasicsForm.tsx`, `src/components/editor/EditorWorkspace.tsx`). Debounce-commit `basics.name` on `onChange` (e.g., 150ms) instead of waiting for `onBlur`, so the center resume header and top bar title update in real time alongside `NAME PREVIEW`.
+
+- [ ] P1: Surface the **"Match to a job description"** trigger in the editor UI (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/JdMatchDrawer.tsx`). Wire a clear button in the Content panel header (or top toolbar) that opens `JdMatchDrawer` on both desktop and mobile, and add a Playwright check verifying clicking it opens the drawer and scores pasted JD keywords.
+
 ### P2 — Larger work
-- [ ] P2: Add 4 design controls to `DesignPanel.tsx`: template selector, accent color (5–6 curated swatches + monochrome), font pairing (Sans/Serif/Classic), density (Compact/Normal/Relaxed).
 - [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
 
 ## Done
