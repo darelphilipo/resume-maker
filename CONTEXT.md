@@ -576,6 +576,21 @@ rediscover.
     moved button can become `disabled` at a list boundary and then cannot hold
     focus — keep the clicked button enabled when asserting focus in a test.
 
+49. **Preview resets return the paper to Page 1.** Both reset controls —
+    `CanvasResetButton` (`resetZoom`) and the `Reset fit` pill (`onFit(1)`) —
+    share `resetScroll` in `LiveCanvasViewport`, which calls `scrollToResumeTop`
+    (`src/lib/zoom/touchScroll.ts`). The transform is already restored to
+    `(0, 0, fitScale)`, but the element that *scrolls the pages* was left where
+    the user scrolled it: the inner `[data-canvas-scroll]` box on phones (#37, a
+    descendant of the viewport root) and the sticky `#panel-preview` at `lg`
+    (#28, an ancestor of the root). `scrollToResumeTop` zeroes the passed inner
+    box plus the nearest scrollable ancestor of the root, so the resume lands at
+    the top at every width, exactly as on first landing in the Preview tab.
+    `findScrollableAncestor` only walks upward, which is why the inner box is
+    passed explicitly as a ref. jsdom has no real layout, so component tests set
+    `scrollTop` on `[data-canvas-scroll]` directly and helper tests stub
+    `clientHeight` / `scrollHeight` on the ancestor.
+
 ## Verification and tooling
 
 ```powershell
@@ -636,6 +651,26 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-19 — Preview resets scroll the resume back to the top
+- Task: top P1 Queue item — clicking Reset in the preview pane should return
+  the resume to the top, just like on first landing in the Preview tab.
+- The zoom/fit transform was already restored to `(0, 0, fitScale)`, but the
+  scroller holding the pages kept its offset: `[data-canvas-scroll]` on phones
+  (inner box) and the sticky `#panel-preview` at `lg` (ancestor of the root).
+  New pure `scrollToResumeTop` in `src/lib/zoom/touchScroll.ts` zeroes both;
+  `LiveCanvasViewport` refs the inner box and calls it from a shared
+  `resetScroll` used by `resetZoom` and the `Reset fit` handler. Recorded as
+  Decision #49.
+- Tests: three `touchScroll` cases (desktop ancestor + inner box, phone inner
+  box only, null tolerance) and a `LiveCanvasViewport` case that scrolls
+  `[data-canvas-scroll]` down, clicks `Reset fit`, and asserts `scrollTop === 0`
+  plus `onFit(1)`. 592 pass (was 588).
+- Files: `src/lib/zoom/touchScroll.ts` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (592 pass), `npm run lint`. No new
+  layout chrome, so no e2e case was added; Playwright remains blocked here.
 
 ### 2026-11-19 — JD match trigger surfaced in the Content header
 - Task: top P1 Queue item — surface **Match to a job description** in the
@@ -856,42 +891,8 @@ npx playwright test    # e2e; needs a dev server on :3000
   Playwright is blocked in this sandbox, so the new `390x844` / `1280x800`
   Studio Sidebar geometry case still needs a browser-enabled run.
 
-### 2026-11-18 — Formatting toolbar wraps; reorder keeps the preview's place
-- Task: finish the P1 "white inputs / unified Month+Year pickers / sidebar
-  layout" item. Sub-points 1–2 and the `lg:sticky` Preview/Design columns landed
-  2026-11-17; this run closed the remaining sub-point 3.
-- `RichTextField`'s toolbar is now `flex flex-wrap` (no `overflow-x-auto`). Eight
-  36px targets plus gaps cannot fit the ~250px usable width of the 22rem Content
-  column, and the old nowrap row hid Undo/Redo behind an invisible horizontal
-  scroll strip. The TipTap surface gained `min-w-0 break-words`, and
-  `INPUT_CLASS` plus the `TextInput` wrapper gained `min-w-0`, so neither typed
-  URLs nor an input's intrinsic width can push the column sideways. Recorded in
-  Decision #31.
-- New `usePreservedScroll` (+ wiring in `LiveCanvasViewport`) fixes the desktop
-  Preview jumping to Page 1 after `Move up` / `Move down`: a section reorder
-  blanks `layout.pages` while re-measuring, the panel stops overflowing, and the
-  browser clamps `scrollTop` to 0. The hook records ancestor-scroller offsets
-  from capture-phase scroll events and restores the last one when
-  `isMeasuring` clears, ignoring the placeholder clamp. Recorded as Decision
-  #41; do not reintroduce a ref written during render (`react-hooks/refs`) or a
-  cross-effect mutable scroller ref (`react-hooks/immutability`) — both fail
-  `npm run lint`.
-- Tests: the RichTextField toolbar case now asserts wrapping and that Redo stays
-  inside the toolbar; SectionFormControls covers `min-w-0` on the input and its
-  wrapper; new `usePreservedScroll.test.tsx` (restore + no-ancestor cases) and a
-  `LiveCanvasViewport` case proving the hook is told when measuring. 557 pass.
-- E2E: `layout-consistency.spec.ts` gained a both-viewport case asserting the
-  toolbar has no horizontal overflow and its last button (Redo) stays within the
-  box. Playwright still cannot run in this sandbox, so the `390x844`/`1280x800`
-  visual check remains browser-unverified.
-- Files: `src/components/editor/RichTextField.tsx` (+ test),
-  `src/components/editor/SectionFormControls.tsx` (+ test),
-  `src/components/preview/usePreservedScroll.ts` (new) + test,
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (557 pass), `npm run lint`.
-
-<!-- Older entries are trimmed to keep the 10 most recent. The pinch-zoom fit
+<!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
+     wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit
      guard (Decision #39), Playwright
      visual/layout spec (2026-11-17), preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), readable fit floor

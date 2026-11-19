@@ -276,6 +276,29 @@ describe("LiveCanvasViewport", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("scrolls the paper back to the top when a reset is clicked", async () => {
+    const doc = createEmptyResume();
+    doc.metadata.page.fitScale = 0.85;
+    const onFit = vi.fn();
+
+    const { view } = await renderCanvas(2, { doc, onFit });
+
+    const scroll = view.container.querySelector<HTMLDivElement>(
+      "[data-canvas-scroll]",
+    );
+
+    expect(scroll).not.toBeNull();
+    scroll!.scrollTop = 240;
+    expect(scroll!.scrollTop).toBe(240);
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset fit to 100%" }));
+
+    // Same position as on first landing in the Preview tab, not where the
+    // user had scrolled the multi-page stack.
+    expect(scroll!.scrollTop).toBe(0);
+    expect(onFit).toHaveBeenCalledWith(1);
+  });
+
   it("lets plain wheel and two-finger scrolling pass through to the page", async () => {
     const { wrapper } = await renderCanvas(2);
 

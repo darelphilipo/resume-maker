@@ -144,9 +144,10 @@ in control of every line, and your data stays on your device.
   its edge instead of slipping behind the page-count pill. When a drag reaches
   the top or bottom of the zoomed page, scrolling eases in smoothly, so you can
   always reach every page. A small **Reset** button appears only while zoomed
-  and returns the page to its fitted width. On a computer, the mouse wheel and
-  two-finger scrolling move the editor; hold **Ctrl** (or **⌘**) while
-  scrolling to zoom the resume.
+  and returns the page to its fitted width; **Reset** and **Reset fit** both
+  bring you back to the top of the resume, just like when you first open the
+  Preview tab. On a computer, the mouse wheel and two-finger scrolling move the
+  editor; hold **Ctrl** (or **⌘**) while scrolling to zoom the resume.
 - **Fit to 1 Page** when a resume spills just past one page. Fitting never
   shrinks the page below a readable size — if one page would need microscopic
   type, the preview says so instead. Whenever a reduced fit is active, a

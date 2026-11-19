@@ -23,6 +23,7 @@ import {
   canvasTouchAction,
   isPreviewZoomed,
 } from "@/lib/zoom/canvasGestures";
+import { scrollToResumeTop } from "@/lib/zoom/touchScroll";
 import {
   isZoomWheel,
   normalizeWheelDelta,
@@ -296,6 +297,7 @@ export function LiveCanvasViewport({
   mode?: PreviewMode;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<ReactZoomPanPinchContentRef | null>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
@@ -428,13 +430,29 @@ export function LiveCanvasViewport({
     zoomState.fitScale === fitScale &&
     zoomState.zoomed;
 
+  /**
+   * A reset returns the paper to Page 1 exactly as on first landing in the
+   * Preview tab: the transform is restored separately, and this sends the
+   * scroll container holding the pages back to the top (the inner box on
+   * phones, the sticky panel at `lg` — see CONTEXT #28/#37).
+   */
+  const resetScroll = useCallback((): void => {
+    scrollToResumeTop(scrollRef.current, containerRef.current);
+  }, []);
+
   const resetZoom = useCallback((): void => {
     if (fitScale === null) {
       return;
     }
 
+    resetScroll();
     void wrapperRef.current?.setTransform(0, 0, fitScale, RESET_ANIMATION_MS);
-  }, [fitScale]);
+  }, [fitScale, resetScroll]);
+
+  const resetFit = useCallback((): void => {
+    resetScroll();
+    onFit?.(1);
+  }, [onFit, resetScroll]);
 
   const gestures = canvasGestureConfig(isCoarsePointer);
 
@@ -465,7 +483,7 @@ export function LiveCanvasViewport({
               appliedFitScale={appliedFitScale}
               isZoomed={isZoomed}
               onResetZoom={resetZoom}
-              onResetFit={onFit ? () => onFit(1) : undefined}
+              onResetFit={onFit ? resetFit : undefined}
             />
           ) : null}
         </PreviewChrome>
@@ -476,6 +494,7 @@ export function LiveCanvasViewport({
        * under it. Desktop keeps the panel as the scroller.
        */}
       <div
+        ref={scrollRef}
         data-canvas-scroll=""
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain lg:flex-none lg:overflow-visible"
       >

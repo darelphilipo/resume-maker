@@ -4,6 +4,7 @@ import {
   findScrollableAncestor,
   isScrollableElement,
   scrollPageBy,
+  scrollToResumeTop,
 } from "./touchScroll";
 
 function makeScrollable(
@@ -119,5 +120,46 @@ describe("scrollPageBy", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe("scrollToResumeTop", () => {
+  it("zeroes both the paper scroller and the scrolling ancestor", () => {
+    // Desktop shape: the sticky panel is the scroller (ancestor of the root),
+    // while [data-canvas-scroll] is a descendant that does not scroll at lg.
+    const ancestor = makeScrollable("auto");
+    const root = document.createElement("div");
+    const scrollBox = makeScrollable("auto");
+
+    root.append(scrollBox);
+    ancestor.append(root);
+    document.body.append(ancestor);
+    scrollBox.scrollTop = 240;
+    ancestor.scrollTop = 120;
+
+    scrollToResumeTop(scrollBox, root);
+
+    expect(scrollBox.scrollTop).toBe(0);
+    expect(ancestor.scrollTop).toBe(0);
+  });
+
+  it("only zeroes the inner box when no ancestor scrolls", () => {
+    // Phone shape: the inner [data-canvas-scroll] is the sole paper scroller.
+    const wrapper = document.createElement("div");
+    const root = document.createElement("div");
+    const scrollBox = makeScrollable("auto");
+
+    root.append(scrollBox);
+    wrapper.append(root);
+    document.body.append(wrapper);
+    scrollBox.scrollTop = 240;
+
+    scrollToResumeTop(scrollBox, root);
+
+    expect(scrollBox.scrollTop).toBe(0);
+  });
+
+  it("tolerates missing elements", () => {
+    expect(() => scrollToResumeTop(null, null)).not.toThrow();
   });
 });

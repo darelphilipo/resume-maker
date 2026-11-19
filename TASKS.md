@@ -24,13 +24,23 @@ _None._
 
 ### P1 — Remaining & Newly Uncovered UI/UX Fixes
 
-- [ ] when clicking reset in the preview pane , scroll to the top of the resume just like when the user lands on the preview pane first time 
-
 ### P2 — Larger work
 - [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-19 — Both preview reset controls now return the resume to the top,
+  as on first landing in the Preview tab. The zoom/fit transform was already
+  restored to `(0, 0, fitScale)`, but the element that scrolls the pages kept its
+  offset (the inner `[data-canvas-scroll]` on phones, the sticky `#panel-preview`
+  at `lg`). New pure `scrollToResumeTop` zeroes the passed inner box plus the
+  nearest scrollable ancestor; `LiveCanvasViewport` refs the inner box and calls
+  it from a shared `resetScroll` used by both `resetZoom` and `Reset fit`.
+  Verified `npm run typecheck`, `npm test` (592 pass), `npm run lint`. Files:
+  `src/lib/zoom/touchScroll.ts` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-19 — Surfaced the **Match JD** trigger in the Content panel header
   and extended the browser check to verify keyword scoring, not just that the

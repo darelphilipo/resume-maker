@@ -68,3 +68,29 @@ export function scrollPageBy(origin: Element | null, deltaY: number): boolean {
   window.scrollBy(0, deltaY);
   return true;
 }
+
+/**
+ * Returns the paper scroller to the top so a preview reset lands the candidate
+ * back on Page 1, exactly as on first opening the Preview tab.
+ *
+ * The element that scrolls the pages differs by viewport: on phones it is the
+ * inner `[data-canvas-scroll]` box (a descendant of the viewport root, see
+ * CONTEXT #37), while at `lg` the sticky Preview panel is the scroller (an
+ * ancestor of the root, see CONTEXT #28). Reset both so the reset controls
+ * behave identically at every width. The inner box is passed explicitly
+ * because `findScrollableAncestor` only walks upward.
+ */
+export function scrollToResumeTop(
+  scrollBox: Element | null,
+  origin: Element | null,
+): void {
+  if (scrollBox instanceof HTMLElement && scrollBox.scrollTop !== 0) {
+    scrollBox.scrollTop = 0;
+  }
+
+  const ancestor = findScrollableAncestor(origin);
+
+  if (ancestor && ancestor !== scrollBox && ancestor.scrollTop !== 0) {
+    ancestor.scrollTop = 0;
+  }
+}
