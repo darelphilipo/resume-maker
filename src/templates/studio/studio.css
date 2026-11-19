@@ -7,6 +7,13 @@
   align-items: start;
 }
 
+/* Pages that only carry main-column overflow have no sidebar to sit beside.
+   Collapse to one column so the main content uses the full page width instead
+   of leaving an orphaned, empty sidebar column. */
+.onyx--studio .studio-layout--full {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .onyx--studio .studio-main,
 .onyx--studio .studio-sidebar {
   min-width: 0;

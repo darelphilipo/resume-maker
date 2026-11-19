@@ -111,6 +111,9 @@ in control of every line, and your data stays on your device.
   top-to-bottom flow. **Studio Sidebar** is a two-column option badged **Best
   for direct/human review**. Pick one by tapping its card — your content, page
   size, and saves are unchanged, and the preview and PDF use the same layout.
+  On multi-page resumes its narrow side column (Skills, Certifications,
+  Languages, Interests) stays anchored on Page 1; later pages give the main
+  column the full page width instead of leaving an empty sidebar beside it.
 - **Accent, fonts, and density** in Design: pick an accent from six curated
   colors (or plain monochrome), choose a **Sans**, **Serif**, or **Classic**
   body/heading pairing, and set spacing to **Compact**, **Normal**, or

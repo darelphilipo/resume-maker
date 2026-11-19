@@ -534,6 +534,20 @@ rediscover.
     line. Hidden items still win: `hidden === true` hides the row regardless
     of keywords.
 
+46. **The Studio Sidebar anchors its side column on Page 1.** Packing is a
+    shared single-column sequence (`order = [...main, ...sidebar]`, see #34), so
+    a tall main column pushes the short sidebar sections (`skills`, `languages`,
+    `certifications`, `interests`) onto a later page whose main side is empty.
+    `StudioSidebarTemplate` gathers every sidebar block id across all pages
+    (decoding split entry blocks through `sectionIdOf`) and renders them in
+    Page 1's `<aside>`; `pages` itself stays canonical for `atsText`, print, and
+    canvas-frame math. Pages `> 0` receive only main blocks and add
+    `studio-layout--full`, whose CSS collapses the grid to one column so no
+    orphaned blank sidebar remains; a resume with no sidebar sections also
+    renders full-width on Page 1. The measure layer is still template-agnostic
+    (#32) — sidebar height is measured at full content width, not side-column
+    width — so a genuinely tall sidebar can still overflow Page 1.
+
 ## Verification and tooling
 
 ```powershell
@@ -594,6 +608,30 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-19 — Studio Sidebar keeps its side column on Page 1
+- Task: top P1 Queue item — on multi-page resumes the Studio Sidebar pushed
+  `Skills`/`Certifications` onto a Page 2 with an empty main side, and pages that
+  only had main overflow showed an orphaned blank column.
+- Root cause: packing is one shared single-column sequence in canonical order
+  (`main` then `sidebar`, see #34). A tall main column overflowed before packing
+  ever reached the sidebar blocks, so they landed on a later page.
+- Fix kept local to the template so `packPages.ts`, `computePages`, and the five
+  single-column templates were untouched: `StudioSidebarTemplate` gathers every
+  sidebar block id from all pages (decoding split entry blocks), anchors them to
+  Page 1's `<aside>`, and gives later pages only main blocks. New
+  `studio-layout--full` class collapses the grid to one column for pages with no
+  sidebar (and for resumes with no sidebar sections). `pages` stays canonical,
+  so print, ATS text, and canvas math are unaffected. Recorded as Decision #46.
+- Tests: `StudioSidebarTemplate` gains a multi-page case (sidebar — including a
+  split `skills` entry block — on Page 1, Page 2 full-width with no aside), a
+  no-sidebar full-width case, and a stylesheet guard for the modifier rule.
+  580 pass.
+- Files: `src/templates/studio/StudioSidebarTemplate.tsx` (+ test),
+  `src/templates/studio/studio.css`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (580 pass), `npm run lint`. No new
+  layout chrome beyond a one-column fallback, so no e2e case was added;
+  Playwright remains blocked in this sandbox.
 
 ### 2026-11-19 — Keyword-only skills rows stay visible
 - Task: top P1 Queue item — `Skills` entries with an empty `Category` never
@@ -863,39 +901,10 @@ npx playwright test    # e2e; needs a dev server on :3000
   a browser-enabled run should execute
   `npm run e2e -- e2e/layout-consistency.spec.ts`.
 
-### 2026-11-18 — Readable fit floor, Reset fit, and a toolbar above the canvas
-- Task: P1 — stop the page-count badge from covering the candidate's name and
-  fix the "Fit to 1 Page" UX.
-- The whole `[data-canvas-toolbar]` bar (page count, **Reset fit**, Reset zoom)
-  now renders in the sticky `PreviewChrome` *above* `<TransformWrapper>`.
-  Because it lost the library context, `LiveCanvasViewport` mirrors the zoomed
-  bit via `onTransform` and resets through a `ReactZoomPanPinchContentRef`;
-  `CanvasResetButton` is now a props-driven `onReset` pill. The toolbar stays
-  in normal flow, so it can never overlap `.resume-name`.
-- `MIN_FIT_SCALE` rose from `0.5` to `0.78`. `computeFitScale` still returns
-  `null` below the floor, and `usePageLayout` now reports `fitBlockedReason`
-  (`too-tall` or `page-break`). `PageOverflowBanner` renders explanatory copy
-  instead of a fit button in those cases. Whenever the applied
-  `metadata.page.fitScale` is `< 1`, the toolbar shows **Reset fit**, which
-  calls `onFit(1)` so users do not need Undo. Recorded as Decision #36.
-- Tests: floor behaviour in `fitScale.test.ts`; blocked reasons in
-  `usePageLayout.test.tsx`; banner copy/no-button cases; the props-driven reset
-  pill; and a `LiveCanvasViewport` case that renders a reduced fit, clicks
-  **Reset fit**, and asserts `onFit(1)`. 522 pass.
-- Files: `src/components/preview/LiveCanvasViewport.tsx`,
-  `PageOverflowBanner.tsx`, `CanvasResetButton.tsx` (+ all three tests),
-  `src/lib/pagination/fitScale.ts` (+ test), `usePageLayout.ts` (+ test),
-  `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (522 pass), `npm run build`
-  (static export; the usual Next.js security-advisory nudge needed a second
-  run). Playwright is still blocked in this sandbox (`npm run e2e` is
-  rejected), so the `390x844`/`1280x800` visual check remains browser-unverified;
-  a browser-enabled run should execute
-  `npm run e2e -- e2e/layout-consistency.spec.ts`.
-
 <!-- Older entries are trimmed to keep the 10 most recent. The Playwright
      visual/layout spec (2026-11-17), preview-zoom
-     toolbar (superseded by pinch + Reset, see Decisions #26), backup-vs-primary
+     toolbar (superseded by pinch + Reset, see Decisions #26), readable fit floor
+     + Reset fit + toolbar above the canvas (Decision #36), backup-vs-primary
      entry points, paste-to-parse, fit-to-1-page, standardized month/date, first
      autopilot diagnosis, categorized-skills, custom-section, contact-network
      detection, and work-auth tag details are captured in Decisions & Gotchas

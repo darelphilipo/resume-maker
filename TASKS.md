@@ -24,8 +24,6 @@ _None._
 
 ### P1 — Remaining & Newly Uncovered UI/UX Fixes
 
-- [ ] P1: Fix `Studio Sidebar` two-column pagination on multi-page resumes (`src/templates/` Studio Sidebar template & `src/lib/pagination/packPages.ts`). Keep the narrow sidebar column anchored on Page 1 alongside Page 1's main column instead of pushing sidebar sections (`Skills`, `Certifications`) onto an empty-left Page 2; if Page 2 only has main-column overflow, render Page 2 cleanly without an orphaned blank left column.
-
 - [ ] P1: Fix clipped 1-character labels in the Design panel's **Accent color** swatches (`src/components/editor/DesignPanel.tsx`). Switch the swatch grid from 3 cramped columns to `grid-cols-2` (or compact swatch dots with `whitespace-nowrap` / tooltips and proper padding) so every accent color name (`Ink`, `Slate`, `Forest`, `Plum`, etc.) displays completely without truncation on both desktop (`20rem` sidebar) and mobile (`390px`).
 
 - [ ] P1: Fix Content sidebar scroll-to-top jump when reordering entries (`src/components/editor/SectionFormControls.tsx`, `src/components/editor/ExperienceForm.tsx`, `src/components/editor/SectionForm.tsx`). Use stable entry `id` keys (never array index) and preserve the scroll container's `scrollTop` (or keep focus on the moved entry's button without triggering browser scroll-into-view to the top) when clicking `Move up` / `Move down`.
@@ -39,6 +37,19 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-19 — Fixed `Studio Sidebar` two-column pagination on multi-page
+  resumes. Packing is one shared single-column sequence (`main` then `sidebar`),
+  so a tall main column pushed `Skills`/`Certifications` onto a Page 2 whose main
+  side was empty. `StudioSidebarTemplate` now gathers every sidebar block id
+  across all pages and anchors them to Page 1's sidebar column (including split
+  entry blocks); later pages carry only main-column overflow and render
+  full-width through a new `studio-layout--full` CSS modifier, so no orphaned
+  blank column remains. Added multi-page / full-width / no-sidebar unit tests and
+  a CSS-rule guard. Verified `npm run typecheck`, `npm test` (580 pass),
+  `npm run lint`. Files: `src/templates/studio/StudioSidebarTemplate.tsx`
+  (+ test), `src/templates/studio/studio.css`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-19 — Fixed keyword-only `Skills` rows disappearing from Visual
   Preview. Visibility now treats a skills row as real content when either its
