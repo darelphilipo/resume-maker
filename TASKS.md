@@ -22,7 +22,16 @@ _None._
 
 ## Queue (Ready for Next Run)
 
-### P1 — Remaining & Newly Uncovered UI/UX Fixes
+### P1 — Final UI/UX Polish & Bug Fixes
+
+- [ ] P1: Fix the `"Match JD"` button not opening `JdMatchDrawer` (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/JdMatchDrawer.tsx`). Debug why clicking or pressing `Enter` on the `"Match JD"` button in the Content sidebar header produces no state/portal change (check drawer `open`/`onOpenChange` state wiring, Vaul/Radix trigger nesting, and z-index/portal mounting), and add a Playwright test confirming clicking `"Match JD"` opens the drawer and scores pasted job description keywords.
+
+- [ ] P1: Make `Name` edits update the center Preview canvas and top editor header live on `onChange` (`src/components/editor/BasicsForm.tsx`, `src/components/editor/useDebouncedCommit.ts`, `src/components/editor/EditorWorkspace.tsx`). Ensure `basics.name` commits via a short debounce (e.g. `150ms`) while focused instead of only on `onBlur`. Also show a subtle muted placeholder (e.g. `"Your name"`) instead of `"Untitled resume"` in `NAME PREVIEW` when a blank resume's Name field is empty.
+
+- [ ] P1: Eliminate the left Content sidebar scroll-to-top jump when clicking `Move up` / `Move down` on entries (`src/components/editor/ExperienceForm.tsx`, `src/components/editor/SectionFormControls.tsx`). Capture the Content scroll container's `scrollTop` before reordering and restore it in `useLayoutEffect` / `requestAnimationFrame` (and ensure React keys use stable `entry.id` and `focus({ preventScroll: true })`) so the viewport stays anchored on the moved entry.
+
+- [ ] P1: Enable the Launcher `"Create resume from text"` button immediately on `onChange` / `onPaste` (`src/components/launcher/Launcher.tsx`). Ensure the button's `disabled` state reads controlled React state updated on every `onChange` event (not `onBlur` or ref-only state), so pasting or typing text enables the button on the first keystroke/paste and submits on a single click.
+
 
 ### P2 — Larger work
 - [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
