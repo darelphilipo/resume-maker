@@ -557,6 +557,22 @@ rediscover.
     row (never `truncate`). Keep that two-row shape if the swatches change — a
     one-row card with a nowrap name cannot fit the desktop sidebar.
 
+48. **Entry reorders must not throw the Content column to the top.** All six
+    entry forms already key their `EntryCard` by `item.id` (never the array
+    index), so React moves the *existing* DOM nodes when `Move up` / `Move down`
+    swaps two entries. Reinserting the focused button drops `activeElement` to
+    `body` and can clamp the nearest scroller (`<main>` on mobile, the drawer
+    body, the desktop document) to the top. `EntryActions` therefore captures the
+    nearest scrollable ancestor's `scrollTop` and the clicked button **before**
+    the move, then restores both in a `useLayoutEffect` keyed on a local
+    `moveTick` (so it runs even if the parent does not change `index`), using
+    `focus({ preventScroll: true })` to avoid a scroll-into-view jump. Fix it in
+    the shared control, not in each form. `findScrollableAncestor` needs real
+    layout (`scrollHeight > clientHeight` and computed `overflow-y`), so tests
+    must stub both geometry properties on a scrollable wrapper in jsdom. Note a
+    moved button can become `disabled` at a list boundary and then cannot hold
+    focus — keep the clicked button enabled when asserting focus in a test.
+
 ## Verification and tooling
 
 ```powershell
@@ -617,6 +633,27 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-19 — Entry reorders keep their place in the Content column
+- Task: top genuine P1 Queue item — clicking Move up / Move down in an entry
+  form threw the Content column back to the top. The Queue's first item
+  (accent-swatch clipping) was already recorded in Done, so it was removed as a
+  stale duplicate before taking this one.
+- All six entry forms already keyed their cards by `item.id`, so the remaining
+  cause was focus/scroll churn when React reinserted the focused move button.
+  `EntryActions` now records the nearest scrollable ancestor's `scrollTop` and
+  the clicked button before the move and restores both in a layout effect
+  (`moveTick` ref guard, `focus({ preventScroll: true })`). Recorded as
+  Decision #48. No per-form change was needed.
+- Tests: a new `SectionFormControls` case stubs a scrollable wrapper, blurs the
+  button and zeroes `scrollTop` inside the move callback, then asserts both are
+  restored; a new `ExperienceForm` case proves the reordered card keeps the same
+  input DOM node (stable key) and the moved button holds focus. 583 pass.
+- Files: `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/ExperienceForm.test.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (583 pass), `npm run lint`. No new
+  layout chrome, so no e2e case was added; Playwright remains blocked here.
 
 ### 2026-11-19 — Accent swatch names stay fully readable
 - Task: top P1 Queue item — Design panel accent labels were clipped to ~1
@@ -866,32 +903,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   browser-enabled run should execute
   `npm run e2e -- e2e/layout-consistency.spec.ts` and repeat a pinch, a
   one-finger pan, and a multi-page scroll.
-
-### 2026-11-18 — Drawer sheet shrinks above the mobile keyboard
-- Task: top P1 Queue item — stop `EntryDrawer`'s header/close button from being
-  pushed off-screen when the mobile keyboard opens, and stop sheet fields from
-  creating sideways scroll.
-- `Drawer.Content` now sets `maxHeight: calc(95dvh - ${viewportOffset}px)` in
-  addition to the existing `bottom: viewportOffset` lift; both are required, as
-  the lift by itself can push a 95dvh sheet past the top of the screen. The
-  scrollable body gained `min-w-0 overflow-x-hidden`, and its children wrapper
-  `min-w-0 overflow-x-hidden`. Recorded as Decision #38.
-- Added two `EntryDrawer.test.tsx` cases (fake `visualViewport`, asserts the
-  inline `maxHeight`/`bottom` and the body/wrapper overflow classes) and a hook
-  case proving the offset clamps to 0 when the visual viewport is taller than
-  the layout viewport.
-- Also fixed a stale pre-existing red test: `EditorWorkspace.test.tsx` asserted
-  a `flex` class on the mobile Preview tabpanel while Content was still the
-  active tab, so the panel legitimately had `hidden`. The case now taps the
-  Preview tab first (matching real use) before asserting the fixed-height
-  column. That test was failing at HEAD, independent of this change.
-- Files: `src/components/editor/EntryDrawer.tsx` (+ test),
-  `useVisualViewportOffset.test.ts`, `src/components/editor/EditorWorkspace.test.tsx`,
-  `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (528 pass). Playwright remains
-  blocked in this sandbox; a browser-enabled run should still execute
-  `npm run e2e -- e2e/layout-consistency.spec.ts` at `390x844`/`1280x800` and
-  confirm the drawer above a real keyboard.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The Playwright
      visual/layout spec (2026-11-17), preview-zoom

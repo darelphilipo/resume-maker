@@ -136,6 +136,57 @@ describe("SectionFormControls", () => {
     expect(card).toHaveClass("bg-surface-muted", "border-line");
     expect(input).toHaveClass("bg-surface");
   });
+
+  it("keeps focus and the scroll offset when a move reorders the DOM", () => {
+    // A real Content column (or drawer body) is a scrollable ancestor. jsdom
+    // has no layout, so stub the geometry the scroll helper reads.
+    const scroller = document.createElement("div");
+    scroller.style.overflowY = "auto";
+    Object.defineProperty(scroller, "scrollHeight", {
+      configurable: true,
+      value: 1000,
+    });
+    Object.defineProperty(scroller, "clientHeight", {
+      configurable: true,
+      value: 300,
+    });
+    document.body.appendChild(scroller);
+
+    let moveButton: HTMLButtonElement | null = null;
+
+    // Simulate the browser falling back to `body` and clamping scrollTop when
+    // the focused node is reinserted by the reorder.
+    const onMoveUp = vi.fn(() => {
+      scroller.scrollTop = 0;
+      moveButton?.blur();
+    });
+
+    render(
+      <EntryActions
+        index={1}
+        total={2}
+        onMoveUp={onMoveUp}
+        onMoveDown={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+      { container: scroller },
+    );
+
+    const up = screen.getByRole("button", {
+      name: "Move up entry 2",
+    }) as HTMLButtonElement;
+    moveButton = up;
+    scroller.scrollTop = 240;
+    up.focus();
+
+    fireEvent.click(up);
+
+    expect(onMoveUp).toHaveBeenCalledTimes(1);
+    expect(scroller.scrollTop).toBe(240);
+    expect(document.activeElement).toBe(up);
+
+    scroller.remove();
+  });
 });
 
 describe("MonthSelect", () => {

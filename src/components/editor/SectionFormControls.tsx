@@ -6,13 +6,19 @@ import {
   Plus,
   Trash,
 } from "@phosphor-icons/react";
-import { useState, type ReactNode } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import {
   formatMonth,
   parseMonthInput,
   toMonthValue,
 } from "@/lib/date/month";
+import { findScrollableAncestor } from "@/lib/zoom/touchScroll";
 
 const INPUT_CLASS =
   "min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-text caret-primary transition-colors placeholder:text-muted placeholder:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:bg-surface-muted disabled:text-muted";
@@ -383,6 +389,12 @@ export type EntryActionsProps = {
   onDelete: () => void;
 };
 
+type PendingMove = {
+  scroller: HTMLElement | null;
+  scrollTop: number;
+  button: HTMLButtonElement | null;
+};
+
 export function EntryActions({
   index,
   total,
@@ -391,7 +403,57 @@ export function EntryActions({
   onDelete,
 }: EntryActionsProps) {
   const [confirming, setConfirming] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const upRef = useRef<HTMLButtonElement>(null);
+  const downRef = useRef<HTMLButtonElement>(null);
+  const pendingMoveRef = useRef<PendingMove | null>(null);
+  const [moveTick, setMoveTick] = useState(0);
   const entryNumber = index + 1;
+
+  /**
+   * A reorder moves the clicked button's DOM node. Browsers drop focus back to
+   * `body` when a focused node is reinserted, which can scroll the Content
+   * column (or the drawer body) back to the top. Remember the offset and the
+   * physical button before the move, then restore both after the reordered DOM
+   * is committed but before paint.
+   */
+  function handleMove(direction: -1 | 1): void {
+    const scroller = findScrollableAncestor(rootRef.current);
+
+    pendingMoveRef.current = {
+      scroller,
+      scrollTop: scroller?.scrollTop ?? 0,
+      button: direction === -1 ? upRef.current : downRef.current,
+    };
+
+    if (direction === -1) {
+      onMoveUp();
+    } else {
+      onMoveDown();
+    }
+
+    // The parent should change `index`, but always schedule the restore so a
+    // rejected boundary move cannot leave a stale pending entry behind.
+    setMoveTick((tick) => tick + 1);
+  }
+
+  useLayoutEffect(() => {
+    const pending = pendingMoveRef.current;
+
+    if (!pending) {
+      return;
+    }
+
+    pendingMoveRef.current = null;
+
+    if (pending.scroller && pending.scroller.scrollTop !== pending.scrollTop) {
+      pending.scroller.scrollTop = pending.scrollTop;
+    }
+
+    // `preventScroll` stops the browser from scrolling the container when the
+    // moved node is re-inserted and focus lands back on it.
+    pending.button?.focus({ preventScroll: true });
+  }, [moveTick]);
 
   if (confirming) {
     return (
@@ -419,22 +481,24 @@ export function EntryActions({
   }
 
   return (
-    <div className="flex flex-nowrap items-center gap-1">
+    <div ref={rootRef} className="flex flex-nowrap items-center gap-1">
       <button
+        ref={upRef}
         type="button"
         aria-label={`Move up entry ${entryNumber}`}
         disabled={index === 0}
-        onClick={onMoveUp}
+        onClick={() => handleMove(-1)}
         className={ACTION_BUTTON_CLASS}
       >
         <ArrowUp size={16} aria-hidden />
         <span>Up</span>
       </button>
       <button
+        ref={downRef}
         type="button"
         aria-label={`Move down entry ${entryNumber}`}
         disabled={index === total - 1}
-        onClick={onMoveDown}
+        onClick={() => handleMove(1)}
         className={ACTION_BUTTON_CLASS}
       >
         <ArrowDown size={16} aria-hidden />

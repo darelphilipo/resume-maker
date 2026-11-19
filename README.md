@@ -87,7 +87,9 @@ in control of every line, and your data stays on your device.
 - One Month + Year picker for every date field (month list plus a four-digit
   year), so `2023-10` stays consistent and no browser opens a slow year
   scroller. End dates for current roles have a **Present** toggle.
-- Add, delete, hide, and reorder entries inside each section.
+- Add, delete, hide, and reorder entries inside each section. Moving an entry up
+  or down keeps your place in the list: the Content column does not jump back to
+  the top, and the Move button you just tapped stays focused for the next move.
 - Rename any section heading, and create your own sections for anything the
   standard list does not cover, such as speaking, patents, or coursework.
   Custom sections can be deleted when you no longer need them.

@@ -24,10 +24,6 @@ _None._
 
 ### P1 — Remaining & Newly Uncovered UI/UX Fixes
 
-- [ ] P1: Fix clipped 1-character labels in the Design panel's **Accent color** swatches (`src/components/editor/DesignPanel.tsx`). Switch the swatch grid from 3 cramped columns to `grid-cols-2` (or compact swatch dots with `whitespace-nowrap` / tooltips and proper padding) so every accent color name (`Ink`, `Slate`, `Forest`, `Plum`, etc.) displays completely without truncation on both desktop (`20rem` sidebar) and mobile (`390px`).
-
-- [ ] P1: Fix Content sidebar scroll-to-top jump when reordering entries (`src/components/editor/SectionFormControls.tsx`, `src/components/editor/ExperienceForm.tsx`, `src/components/editor/SectionForm.tsx`). Use stable entry `id` keys (never array index) and preserve the scroll container's `scrollTop` (or keep focus on the moved entry's button without triggering browser scroll-into-view to the top) when clicking `Move up` / `Move down`.
-
 - [ ] P1: Sync live `Name` edits (`onChange`) to the main Preview canvas and top editor header (`src/components/editor/BasicsForm.tsx`, `src/components/editor/EditorWorkspace.tsx`). Debounce-commit `basics.name` on `onChange` (e.g., 150ms) instead of waiting for `onBlur`, so the center resume header and top bar title update in real time alongside `NAME PREVIEW`.
 
 - [ ] P1: Surface the **"Match to a job description"** trigger in the editor UI (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/JdMatchDrawer.tsx`). Wire a clear button in the Content panel header (or top toolbar) that opens `JdMatchDrawer` on both desktop and mobile, and add a Playwright check verifying clicking it opens the drawer and scores pasted JD keywords.
@@ -37,6 +33,23 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-19 — Fixed the Content-column scroll-to-top jump when reordering
+  entries. All six entry forms already keyed their `EntryCard`s by `item.id`, so
+  React moves the existing DOM nodes rather than remounting them; the remaining
+  cause was the focus/scroll churn when the clicked Move button is reinserted
+  (`activeElement` falls back to `body` and the nearest scroller can clamp to 0).
+  The shared `EntryActions` now records the nearest scrollable ancestor's
+  `scrollTop` and the clicked button before the move and restores both in a
+  layout effect keyed on a local `moveTick`, re-focusing with `preventScroll` so
+  the browser cannot jump the column. Added a `SectionFormControls` regression
+  test (simulated scroll reset + blur) and an `ExperienceForm` case proving the
+  reordered card keeps the same input node and the moved button stays focused.
+  Verified `npm run typecheck`, `npm test` (583 pass), `npm run lint`. Files:
+  `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/ExperienceForm.test.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`. (The Queue's accent-swatch item was a stale duplicate of the
+  2026-11-19 Done entry and was removed.)
 
 - [x] 2026-11-19 — Fixed clipped accent-color names in the Design panel. The
   swatch grid now stays `grid-cols-2` at every width (dropped `sm:grid-cols-3`,
