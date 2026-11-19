@@ -32,6 +32,23 @@ _None._
 
 - [ ] P1: Enable the Launcher `"Create resume from text"` button immediately on `onChange` / `onPaste` (`src/components/launcher/Launcher.tsx`). Ensure the button's `disabled` state reads controlled React state updated on every `onChange` event (not `onBlur` or ref-only state), so pasting or typing text enables the button on the first keystroke/paste and submits on a single click.
 
+### P1 — Quick-Win User Features
+
+- [ ] P1: Add **Duplicate resume** on `/` and **per-entry Hide/Show** in the editor (`src/components/launcher/Launcher.tsx`, `src/lib/` Dexie store, `src/types/`, `src/components/editor/SectionFormControls.tsx`, `src/templates/`).
+  1. On each **Recent resumes** card in `Launcher.tsx`, add a **Duplicate** icon button (`min-h-11 min-w-11`) that clones the Dexie record with a new `id`, appends ` (Copy)` to the resume title/name metadata, updates `updatedAt`, and opens (or immediately lists) the clone so users can tailor a copy without touching their master resume.
+  2. Add an optional `hidden?: boolean` field on individual entries (`Experience`, `Projects`, `Education`, `Certifications`, `Awards`, `Publications`, `Custom`), wire an eye-icon **Hide / Show** button in `EntryActions` (`SectionFormControls.tsx`) with a subtle dimmed/badge state when hidden, and filter out hidden entries in all 6 templates, `MeasureLayer`, and `AtsTextView`. Add unit + Playwright tests verifying duplication and per-entry hiding.
+
+- [ ] P1: Add a one-click **"Anonymize for review"** toggle in Preview (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PrintPortal.tsx`, `src/components/preview/AtsTextView.tsx`, new `src/lib/privacy/anonymizeDoc.ts`).
+  1. Create a pure helper `anonymizeResumeDoc(doc)` that returns a shallow-cloned display doc replacing `basics.name` (`"Alex Taylor"`), `email` (`"alex.taylor@example.com"`), `phone` (`"+1 (555) 010-2345"`), `location` (`"Metro Area"`), `website`/`url` (`"portfolio.example.com"`), `picture` (hidden), and company/institution names (`"Company A"`, `"Company B"`, `"University A"`) without mutating the Zustand/Dexie store.
+  2. Add a compact **Anonymize** toggle pill in the Preview header (non-persisted session state) with a clear active banner (*"Preview anonymized — your saved data is unchanged"*). Apply it to `PageStack`, `AtsTextView`, and `PrintPortal` so users can export or screenshot a redacted PDF/image for `r/resumes` in one click. Add unit + Playwright tests.
+
+- [ ] P1: Add **"Copy for Workday"** one-click copy buttons in the `ATS text` tab (`src/components/preview/AtsTextView.tsx`).
+  1. Add a top **"Copy all plain text"** button plus compact per-section and per-entry (e.g., each Experience / Project / Summary block) **Copy** buttons inside `AtsTextView.tsx` using `navigator.clipboard.writeText(...)` (with a safe fallback and 1.5s `"Copied"` confirmation state).
+  2. Format copied entries as clean plain text (no stray HTML tags or extra blank lines) so users can paste straight into Workday/Greenhouse/Lever forms. Add unit + Playwright tests.
+
+- [ ] P1: Set an auto-formatted PDF filename on **Save PDF** (`src/components/preview/PrintTriggerButton.tsx`).
+  1. Right before calling `window.print()`, store the current `document.title` and temporarily set `document.title` to a clean filename slug derived from `doc.basics.name` (e.g. `Priya_Raman_Resume`, falling back to `Resume` if blank, or `Alex_Taylor_Resume_Anonymized` when Anonymize mode is active), stripping invalid filename characters.
+  2. Restore the original `document.title` in both the `window` `afterprint` event listener and a fallback timeout so the browser tab title never stays stuck. Add unit tests covering normal names, special characters, blank names, and anonymized mode.
 
 ### P2 — Larger work
 - [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
