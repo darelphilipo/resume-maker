@@ -32,6 +32,24 @@ _None._
 
 - [ ] P1: Enable the Launcher `"Create resume from text"` button immediately on `onChange` / `onPaste` (`src/components/launcher/Launcher.tsx`). Ensure the button's `disabled` state reads controlled React state updated on every `onChange` event (not `onBlur` or ref-only state), so pasting or typing text enables the button on the first keystroke/paste and submits on a single click.
 
+### P1 — Surface UI & Visual Polish
+
+- [ ] P1: Polish Launcher (`/`) layout balance, cards, and Recent Resumes UX (`src/components/launcher/Launcher.tsx`).
+  1. **Hero & trust badge alignment:** Align the hero eyebrow/headline/subtitle and the `100% Free • No Sign-Up • Works Offline` badge row consistently (both left-aligned or both centered) and tighten the vertical gap between them.
+  2. **Preset grid & Blank CTA:** Keep `Fresh Graduate` the same width as the other preset cards (or add a 6th preset so the 2-column grid has no stretched orphan row), give `+ Start with a blank resume` clean secondary CTA styling instead of a thin full-width banner, and add `resize-none` to the Paste `<textarea>`.
+  3. **Recent resumes & Backup accordion:** Make the entire Recent Resume row clickable to open the resume (keeping Rename/Delete/Duplicate buttons stopped from bubbling), cap the default list to the 5 most recent items with a `"Show all (N)"` toggle, and change the outer `Backup & Restore` container from dashed to a subtle solid border so it no longer nests a dashed dropzone inside a dashed box.
+
+- [ ] P1: Polish Editor header hierarchy, desktop scrollbars, and Content panel ergonomics (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/BasicsForm.tsx`, `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`).
+  1. **Header & desktop shell:** Style `Save PDF` as the primary solid CTA (`bg-primary text-white`) so it stands out from `Download JSON backup`, add a subtle vertical divider between `← Back` and the resume title, slightly raise disabled Undo/Redo icon contrast, and lock the desktop shell height (`lg:h-dvh lg:overflow-hidden` with independently scrollable columns) to eliminate the double vertical scrollbar on the right edge.
+  2. **Content panel cleanup:** Remove the redundant `NAME PREVIEW` box above the `Name` input (or show it only on mobile), align `Match JD` in the same header row as `Content`, fix expanded section headers to show a matching upward chevron (`^`) instead of a corner-up-left arrow, and prevent `Move up` / `Move down` labels from wrapping onto 2 lines (`whitespace-nowrap`).
+  3. **Compact `RichTextField` & destructive cue:** Tighten toolbar icon buttons so all 8 controls fit on a single row in the `22rem` sidebar, make the formula hint + Action Verb chips compact/collapsible so bullets stay immediately visible, and give entry `Delete` buttons a subtle muted-red hover/text state (`text-red-700/80 hover:bg-red-50`).
+
+- [ ] P1: Polish Design panel controls and fix missing `Density` active state (`src/components/editor/DesignPanel.tsx`).
+  1. **Fix `Density` selection bug:** Ensure the active `Compact` / `Normal` / `Relaxed` option clearly displays its checked/selected border and fill state matching the other Design panel cards.
+  2. **Consistent `ATS-Safe` badge & Font previews:** Place the `ATS-Safe` badge in a fixed slot (either right-aligned on the header row or consistently on its own sub-row) so it never jumps between inline and wrapped across template cards, and style the `Sans`, `Serif`, and `Classic` option labels in their actual font families so users can preview the typeface at a glance.
+  3. **Balanced Accent color grid:** Remove the redundant radio circle next to the color dot (use an active border + checkmark on the selected swatch instead) and balance the 2-column grid to 6 or 8 swatches so `Indigo` does not sit as an orphan 7th card.
+
+
 ### P1 — Quick-Win User Features
 
 - [ ] P1: Add **Duplicate resume** on `/` and **per-entry Hide/Show** in the editor (`src/components/launcher/Launcher.tsx`, `src/lib/` Dexie store, `src/types/`, `src/components/editor/SectionFormControls.tsx`, `src/templates/`).
@@ -497,4 +515,5 @@ _None._
 - [x] 2026-11-15 — Autonomous development bootstrap: OpenCode autopilot workflow (6-hourly, one task, verify-gated commit, checkpoint branch), `opencode.json` permissions, `TASKS.md`, `CONTEXT.md`. Files: `.github/workflows/opencode-autopilot.yml`, `opencode.json`, `TASKS.md`, `CONTEXT.md`.
 - [x] 2026-11-14 — GitHub Pages deployment of the static export. Files: `next.config.ts`, `.github/workflows/deploy.yml`.
 - [x] 2026-11-14 — Cursor-anchored multiplicative wheel zoom on the canvas. Files: `src/lib/zoom/wheelZoom.ts`, `LiveCanvasViewport.tsx`.
+ 
  
