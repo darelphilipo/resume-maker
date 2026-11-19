@@ -27,6 +27,7 @@ _None._
 - [ ] P1: Sync live `Name` edits (`onChange`) to the main Preview canvas and top editor header (`src/components/editor/BasicsForm.tsx`, `src/components/editor/EditorWorkspace.tsx`). Debounce-commit `basics.name` on `onChange` (e.g., 150ms) instead of waiting for `onBlur`, so the center resume header and top bar title update in real time alongside `NAME PREVIEW`.
 
 - [ ] P1: Surface the **"Match to a job description"** trigger in the editor UI (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/JdMatchDrawer.tsx`). Wire a clear button in the Content panel header (or top toolbar) that opens `JdMatchDrawer` on both desktop and mobile, and add a Playwright check verifying clicking it opens the drawer and scores pasted JD keywords.
+- [ ] when clicking reset in the preview pane , scroll to the top of the resume just like when the user lands on the preview pane first time 
 
 ### P2 — Larger work
 - [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
