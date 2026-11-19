@@ -545,7 +545,7 @@ for (const viewport of VIEWPORTS) {
       expect(result.oppositeSides).toBe(true);
     });
 
-    test("the Letter card body switches paper size and the JD trigger opens its drawer", async ({
+    test("the Letter card body switches paper size and the JD trigger scores keywords", async ({
       page,
     }) => {
       await createPresetResume(page);
@@ -573,7 +573,21 @@ for (const viewport of VIEWPORTS) {
       const dialog = page.getByRole("dialog");
 
       await expect(dialog).toBeVisible();
-      await expect(dialog.getByLabel("Job description")).toBeVisible();
+      const description = dialog.getByLabel("Job description");
+      await expect(description).toBeVisible();
+
+      // The Software Engineer preset already lists TypeScript and Kubernetes,
+      // but not Cobol. Assert the drawer actually scores the pasted posting into
+      // Matched / Missing chips, not just that it opened.
+      await description.fill("TypeScript, Kubernetes, and Cobol");
+
+      await expect(dialog.getByText(/keywords matched/)).toBeVisible();
+      const matched = dialog.getByRole("list", { name: "Matched" });
+      const missing = dialog.getByRole("list", { name: "Missing" });
+
+      await expect(matched.getByText("typescript")).toBeVisible();
+      await expect(matched.getByText("kubernetes")).toBeVisible();
+      await expect(missing.getByText("cobol")).toBeVisible();
     });
   });
 }

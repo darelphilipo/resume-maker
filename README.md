@@ -154,8 +154,8 @@ in control of every line, and your data stays on your device.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
   apply.
-- **Job description keyword matcher**: tap **Match to a job description** in
-  Content to open the matcher on any device, then paste a posting to see which
+- **Job description keyword matcher**: tap **Match JD** in the Content panel
+  header to open the matcher on any device, then paste a posting to see which
   of its keywords already appear in your resume and which are missing. Matching
   runs locally with simple word heuristics, not AI.
 - The **Visual / ATS text** switch, page-count pill, fit/zoom reset pills, and

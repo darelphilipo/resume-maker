@@ -61,6 +61,24 @@ describe("JdMatchDrawer", () => {
     expect(trigger.getAttribute("aria-controls")).toBe(dialog.id);
   });
 
+  it("keeps the same trigger contract in its compact header variant", async () => {
+    const user = userEvent.setup();
+
+    render(<JdMatchDrawer doc={buildDoc()} compact />);
+
+    const trigger = screen.getByRole("button", {
+      name: "Match to a job description",
+    });
+
+    expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+    expect(trigger).toHaveClass("shrink-0");
+    expect(trigger).not.toHaveClass("w-full");
+
+    await user.click(trigger);
+
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
   it("splits pasted job keywords into matched and missing chips", async () => {
     const user = userEvent.setup();
 

@@ -24,7 +24,6 @@ _None._
 
 ### P1 — Remaining & Newly Uncovered UI/UX Fixes
 
-- [ ] P1: Surface the **"Match to a job description"** trigger in the editor UI (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/JdMatchDrawer.tsx`). Wire a clear button in the Content panel header (or top toolbar) that opens `JdMatchDrawer` on both desktop and mobile, and add a Playwright check verifying clicking it opens the drawer and scores pasted JD keywords.
 - [ ] when clicking reset in the preview pane , scroll to the top of the resume just like when the user lands on the preview pane first time 
 
 ### P2 — Larger work
@@ -32,6 +31,21 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-19 — Surfaced the **Match JD** trigger in the Content panel header
+  and extended the browser check to verify keyword scoring, not just that the
+  drawer opens. The full-width trigger already existed in the Content body;
+  `JdMatchDrawer` now accepts a `compact` variant that keeps the same
+  "Match to a job description" accessible name and vaul `Drawer.Trigger asChild`
+  wiring, and `EditorWorkspace` renders it in a wrapping `data-content-header`
+  row (the global header is too tight for another 44px control). The Playwright
+  case now pastes "TypeScript, Kubernetes, and Cobol" and asserts the Matched
+  / Missing chips. Verified `npm run typecheck`, `npm test` (588 pass),
+  `npm run lint`. Files: `src/components/editor/JdMatchDrawer.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  Playwright remains blocked here, so the extended e2e case is typechecked but
+  browser-unverified.
 
 - [x] 2026-11-19 — Synced live `Name` edits to the header and preview canvas.
   `basics.name` already reached the store on `onChange` via the shared 50 ms

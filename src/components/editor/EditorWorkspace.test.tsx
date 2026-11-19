@@ -187,13 +187,19 @@ describe("EditorWorkspace", () => {
     expect(content).not.toHaveClass("lg:overflow-y-auto");
   });
 
-  it("opens the job description keyword matcher from the content panel", async () => {
+  it("opens the job description keyword matcher from the content panel header", async () => {
     const user = userEvent.setup();
 
     await renderReadyWorkspace();
-    await user.click(
-      screen.getByRole("button", { name: "Match to a job description" }),
-    );
+
+    const trigger = screen.getByRole("button", {
+      name: "Match to a job description",
+    });
+    // The trigger is surfaced in the Content panel header (not buried in the
+    // form body) so it is equally reachable on desktop and in the mobile tab.
+    expect(trigger.closest("[data-content-header]")).not.toBeNull();
+
+    await user.click(trigger);
 
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
     expect(screen.getByLabelText("Job description")).toBeInTheDocument();

@@ -637,6 +637,30 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-19 — JD match trigger surfaced in the Content header
+- Task: top P1 Queue item — surface **Match to a job description** in the
+  Content panel header and add a Playwright check that it scores pasted JD
+  keywords. A full-width trigger already lived in the Content panel body, so
+  the real gaps were its placement and the missing browser-level score check.
+- `JdMatchDrawer` gained a `compact` trigger variant used by `EditorWorkspace`;
+  it keeps the accessible name "Match to a job description" and vaul's
+  `Drawer.Trigger asChild` ARIA wiring, so every existing unit/e2e selector
+  still finds it. The Content header is now a wrapping flex row
+  (`data-content-header`) with the title/description and the compact trigger,
+  which also avoids the global header (CONTEXT #25: no room for another 44px
+  control there).
+- Tests: `JdMatchDrawer` covers the compact contract; `EditorWorkspace` asserts
+  the trigger is inside the Content header; `layout-consistency.spec.ts` now
+  pastes "TypeScript, Kubernetes, and Cobol" and asserts the matched list
+  (`typescript`, `kubernetes`) and missing list (`cobol`) — it no longer only
+  checks dialog visibility.
+- Files: `src/components/editor/JdMatchDrawer.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (588 pass). Playwright remains
+  blocked in this sandbox, so the extended e2e case is typechecked but
+  browser-unverified.
+
 ### 2026-11-19 — Live Name edits reach the header and preview canvas
 - Task: top P1 Queue item — sync live `Name` edits to the main Preview canvas
   and top editor header. The store commit was already on `onChange` (one
@@ -866,38 +890,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/preview/LiveCanvasViewport.tsx` (+ test),
   `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (557 pass), `npm run lint`.
-
-### 2026-11-18 — Launcher blank start, recent resumes, and paste-parser fixes
-- Task: finish the top Queue item (launcher, sub-points 3–4; 1–2 landed
-  2026-11-17).
-- `db.ts` gained `listRecentResumes` (newest first, default limit 10),
-  `deleteResume`, and `renameResume` (writes `basics.name`, bumps
-  `updatedAt`, returns `null` for a deleted row). `recentResumes.ts` owns the
-  list labels (`name` → `headline` → "Untitled resume") and the `Edited Nov 18,
-  2026` timestamp so the component stays dumb and the helpers stay testable.
-- `Launcher` now renders **Start with a blank resume** plus **Recent resumes**
-  inside the "Start from scratch" card: open, inline rename, and a two-step
-  delete. The effect only loads once and writes state from promise callbacks —
-  `react-hooks/set-state-in-effect` rejects calling a setState-bearing helper
-  directly in an effect body. Presets keep their tapped-card-only busy state.
-- Paste parser: `parseEducationHeader` splits headers on `| • · – —` (not
-  commas) and keeps school-looking values whole; `splitSections` recognises
-  all-caps inline headings (`SKILLS: Python, SQL`) and the alias table gained
-  `Skills & Expertise`-style variants. Title-case `Languages: ...` deliberately
-  stays a skill category. Recorded as Decision #40.
-- E2E: the preset list got `data-preset-list`; `layout-consistency.spec.ts`
-  targets it so recent-resume buttons can never be measured as preset cards.
-- Tests: new `db.test.ts` and `recentResumes.test.ts`, six launcher cases
-  (blank start, list/empty state, open, rename, delete), and six parser cases
-  (comma institution, school + location, heading variants, inline caps heading,
-  title-case category guard). 553 pass.
-- Files: `src/components/launcher/Launcher.tsx` (+ test),
-  `src/lib/store/db.ts` (+ test), `src/lib/store/recentResumes.ts` (+ test),
-  `src/lib/import/pasteResume.ts` (+ test), `e2e/layout-consistency.spec.ts`,
-  `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (553 pass), `npm run lint`.
-  Playwright cannot run in this sandbox; a browser-enabled run should execute
-  `npm run e2e -- e2e/layout-consistency.spec.ts` at `390x844` / `1280x800`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The pinch-zoom fit
      guard (Decision #39), Playwright
