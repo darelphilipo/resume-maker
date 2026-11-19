@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { ACCENT_SWATCHES } from "@/lib/design/designOptions";
 import { resetResumeStore, useResumeStore } from "@/lib/store/useResumeStore";
 
 import { DesignPanel } from "./DesignPanel";
@@ -95,6 +96,26 @@ describe("DesignPanel", () => {
     );
     expect(navy).toBeChecked();
     expect(screen.getByRole("radio", { name: /^Monochrome/ })).not.toBeChecked();
+  });
+
+  it("keeps every accent name readable in a two-column swatch grid", () => {
+    render(<DesignPanel />);
+
+    const mono = document.getElementById("accent-mono");
+    const grid = mono?.closest("label")?.parentElement;
+    expect(grid).toHaveClass("grid-cols-2");
+    expect(grid).not.toHaveClass("sm:grid-cols-3");
+
+    for (const swatch of ACCENT_SWATCHES) {
+      const input = document.getElementById(`accent-${swatch.id}`);
+      const card = input?.closest("label");
+      const name = screen.getByText(swatch.label);
+
+      expect(card).toHaveClass("w-full", "min-h-11", "flex-wrap");
+      expect(card).toContainElement(name);
+      expect(name).toHaveClass("w-full", "whitespace-nowrap");
+      expect(name).not.toHaveClass("truncate");
+    }
   });
 
   it("writes both font families when a pairing is chosen", () => {

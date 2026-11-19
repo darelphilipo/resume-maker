@@ -548,6 +548,15 @@ rediscover.
     (#32) — sidebar height is measured at full content width, not side-column
     width — so a genuinely tall sidebar can still overflow Page 1.
 
+47. **Accent swatches stay two columns so names cannot be clipped.** The Design
+    panel lives in the 20rem (`lg`) sidebar, leaving ~286px for its card;
+    `sm:grid-cols-3` made each swatch cell ~100px, and `truncate` on the label in
+    a `flex` row then collapsed names such as `Monochrome` to one character.
+    `DesignPanel` now keeps `grid-cols-2` at every width and lets each card wrap:
+    radio + color dot on one row, the full name on a `w-full whitespace-nowrap`
+    row (never `truncate`). Keep that two-row shape if the swatches change — a
+    one-row card with a nowrap name cannot fit the desktop sidebar.
+
 ## Verification and tooling
 
 ```powershell
@@ -608,6 +617,22 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-19 — Accent swatch names stay fully readable
+- Task: top P1 Queue item — Design panel accent labels were clipped to ~1
+  character (`truncate` inside a cramped 3-column grid in the 20rem desktop
+  sidebar).
+- `DesignPanel` swatch grid is now `grid-cols-2` at every width (no
+  `sm:grid-cols-3`), and each card is `flex-wrap`: radio + color dot on one row,
+  the full name on a `w-full whitespace-nowrap text-xs leading-tight` row with
+  no `truncate`. Full names survive at 390px and in the narrow desktop column.
+  Recorded as Decision #47.
+- Tests: new `DesignPanel` case asserts the two-column grid and, for all seven
+  swatches, a full-width card containing a nowrap, non-truncated name. 581 pass.
+- Files: `src/components/editor/DesignPanel.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (581 pass). No new layout chrome, so
+  no e2e case was added; Playwright remains blocked in this sandbox.
 
 ### 2026-11-19 — Studio Sidebar keeps its side column on Page 1
 - Task: top P1 Queue item — on multi-page resumes the Studio Sidebar pushed
@@ -867,39 +892,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   blocked in this sandbox; a browser-enabled run should still execute
   `npm run e2e -- e2e/layout-consistency.spec.ts` at `390x844`/`1280x800` and
   confirm the drawer above a real keyboard.
-
-### 2026-11-18 — Fixed-height mobile preview with its own scroller
-- Task: top P0 Queue item — stop multi-page preview jitter on phones and keep
-  pages from scrolling behind/above the Preview header.
-- The mobile preview column now fills the space between the header and the
-  bottom tab bar: `<main>` is `flex flex-col`, `#panel-preview` is
-  `flex min-h-0 flex-1 flex-col`, and the mode header + `PreviewChrome` are
-  `shrink-0` rows above `[data-canvas-scroll]`
-  (`min-h-0 flex-1 overflow-y-auto overscroll-contain`). Only the paper scrolls,
-  so it is clipped at the chrome's bottom edge and the page-count/Reset pills
-  never leave the screen. All of it is `lg:`-reverted so the sticky desktop
-  columns from #28/#33 are untouched. Recorded as Decision #37.
-- `TouchPanCanvas` gained an `isZoomed` prop (mirrored from
-  `useTransformComponent` in `CanvasSurface`) and only attaches its non-passive
-  `touchmove` listener while zoomed. At fit there is no JS touch handler and no
-  `scrollPageBy` hand-off, so native `touch-action: pan-y` handles multi-page
-  scrolling without the former non-passive-listener jitter.
-- Tests updated: `LiveCanvasViewport.test.tsx` asserts the scroll region owns
-  the transform wrapper and excludes the chrome, and that the chrome is
-  `shrink-0` + `lg:sticky` rather than base-sticky; `EditorWorkspace.test.tsx`
-  asserts the mobile flex column and that the mode header is its first row;
-  `TouchPanCanvas.test.tsx` gains a fitted-scale case proving no interception,
-  no `panBy`, and no page scroll. 525 pass.
-- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/preview/TouchPanCanvas.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (525 pass), `npm run lint`,
-  `npm run build` (static export; the usual Next.js security-advisory nudge
-  needed the second run). Playwright is still blocked in this sandbox, so the
-  `390x844` scroll/jitter check at real touch speed remains browser-unverified;
-  a browser-enabled run should execute
-  `npm run e2e -- e2e/layout-consistency.spec.ts`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The Playwright
      visual/layout spec (2026-11-17), preview-zoom

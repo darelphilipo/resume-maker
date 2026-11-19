@@ -138,7 +138,7 @@ export function DesignPanel() {
           Used for section rules, highlights, and tags. Your text stays dark and
           readable.
         </p>
-        <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="mt-1 grid grid-cols-2 gap-2">
           {ACCENT_SWATCHES.map((swatch) => {
             const isCurrent = accentId === swatch.id;
             const inputId = `accent-${swatch.id}`;
@@ -147,7 +147,7 @@ export function DesignPanel() {
               <label
                 key={swatch.id}
                 htmlFor={inputId}
-                className={cardClass(isCurrent)}
+                className={`${cardClass(isCurrent)} flex-wrap`}
               >
                 <input
                   id={inputId}
@@ -167,7 +167,9 @@ export function DesignPanel() {
                   className="h-4 w-4 shrink-0 rounded-full border border-black/10"
                   style={{ backgroundColor: swatch.hex }}
                 />
-                <span className="min-w-0 truncate text-xs">{swatch.label}</span>
+                <span className="w-full whitespace-nowrap text-xs leading-tight">
+                  {swatch.label}
+                </span>
               </label>
             );
           })}

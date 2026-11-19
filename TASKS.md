@@ -38,6 +38,17 @@ _None._
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-19 — Fixed clipped accent-color names in the Design panel. The
+  swatch grid now stays `grid-cols-2` at every width (dropped `sm:grid-cols-3`,
+  which gave ~100px cells inside the 20rem desktop sidebar), and each card wraps
+  so the radio and color dot share one row while the full name renders on its
+  own `w-full whitespace-nowrap` row with no `truncate` — so `Monochrome` and
+  `Terracotta` are never cut off at 390px or on desktop. Added a `DesignPanel`
+  unit test guarding the two-column grid and untruncated labels. Verified
+  `npm run typecheck`, `npm test` (581 pass). Files:
+  `src/components/editor/DesignPanel.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+
 - [x] 2026-11-19 — Fixed `Studio Sidebar` two-column pagination on multi-page
   resumes. Packing is one shared single-column sequence (`main` then `sidebar`),
   so a tall main column pushed `Skills`/`Certifications` onto a Page 2 whose main
