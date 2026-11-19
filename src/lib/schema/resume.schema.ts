@@ -416,8 +416,12 @@ const ColorsSchema = z.object({
   background: z.string().default("#ffffff"),
 });
 
+export const DENSITY_IDS = ["compact", "normal", "relaxed"] as const;
+export type DensityId = (typeof DENSITY_IDS)[number];
+
 export const DesignSchema = z.object({
   colors: ColorsSchema.default(() => ColorsSchema.parse({})),
+  density: z.enum(DENSITY_IDS).default("normal"),
   levelType: z.enum(["hidden", "circle", "progress-bar", "rectangle"]).default(
     "progress-bar",
   ),

@@ -74,4 +74,69 @@ describe("DesignPanel", () => {
       screen.getByRole("radio", { name: /Engineering Classic/ }),
     ).not.toBeChecked();
   });
+
+  it("shows the accent swatches and writes the chosen color", () => {
+    render(<DesignPanel />);
+
+    const accents = screen
+      .getAllByRole("radio")
+      .filter((radio) => (radio as HTMLInputElement).name === "accent-color");
+    expect(accents).toHaveLength(7);
+    expect(screen.getByRole("radio", { name: /^Monochrome/ })).toBeChecked();
+
+    const navy = screen.getByRole("radio", {
+      name: /^Navy/,
+    }) as HTMLInputElement;
+    expect(navy.closest("label")).toHaveAttribute("for", "accent-navy");
+    fireEvent.click(navy);
+
+    expect(useResumeStore.getState().doc.metadata.design.colors.primary).toBe(
+      "#1b3a57",
+    );
+    expect(navy).toBeChecked();
+    expect(screen.getByRole("radio", { name: /^Monochrome/ })).not.toBeChecked();
+  });
+
+  it("writes both font families when a pairing is chosen", () => {
+    render(<DesignPanel />);
+
+    fireEvent.click(screen.getByRole("radio", { name: /^Serif/ }));
+
+    let typography = useResumeStore.getState().doc.metadata.typography;
+    expect(typography.body.fontFamily).toBe("var(--font-serif)");
+    expect(typography.heading.fontFamily).toBe("var(--font-serif)");
+
+    fireEvent.click(screen.getByRole("radio", { name: /^Classic/ }));
+
+    typography = useResumeStore.getState().doc.metadata.typography;
+    expect(typography.body.fontFamily).toBe("var(--font-sans)");
+    expect(typography.heading.fontFamily).toBe("var(--font-serif)");
+    expect(screen.getByRole("radio", { name: /^Classic/ })).toBeChecked();
+  });
+
+  it("records the density choice and applies its spacing", () => {
+    render(<DesignPanel />);
+
+    // "Compact 1-Pager" is also a template, so target the density radio by id.
+    const compact = document.getElementById("density-compact") as HTMLInputElement;
+    expect(compact.closest("label")).toHaveAttribute("for", "density-compact");
+    fireEvent.click(compact);
+
+    let doc = useResumeStore.getState().doc;
+    expect(doc.metadata.design.density).toBe("compact");
+    expect(doc.metadata.page.gapX).toBe(5);
+    expect(doc.metadata.page.gapY).toBe(8);
+    expect(doc.metadata.typography.body.lineHeight).toBe(1.25);
+    expect(compact).toBeChecked();
+
+    fireEvent.click(
+      document.getElementById("density-relaxed") as HTMLInputElement,
+    );
+
+    doc = useResumeStore.getState().doc;
+    expect(doc.metadata.design.density).toBe("relaxed");
+    expect(doc.metadata.page.gapX).toBe(11);
+    expect(doc.metadata.page.gapY).toBe(16);
+    expect(doc.metadata.typography.body.lineHeight).toBe(1.55);
+  });
 });

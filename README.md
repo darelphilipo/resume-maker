@@ -109,6 +109,11 @@ in control of every line, and your data stays on your device.
   top-to-bottom flow. **Studio Sidebar** is a two-column option badged **Best
   for direct/human review**. Pick one by tapping its card — your content, page
   size, and saves are unchanged, and the preview and PDF use the same layout.
+- **Accent, fonts, and density** in Design: pick an accent from six curated
+  colors (or plain monochrome), choose a **Sans**, **Serif**, or **Classic**
+  body/heading pairing, and set spacing to **Compact**, **Normal**, or
+  **Relaxed**. The preview, page count, and printed PDF all use the same
+  choices, so the look you pick is the one you save.
 - A4 and US Letter page sizes — click anywhere on a page-size card to switch.
 - Live paginated preview that measures real content, not an estimate. Long
   sections fill the current page entry by entry — with each heading kept next

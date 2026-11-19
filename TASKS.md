@@ -29,6 +29,19 @@ _None._
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-19 — Finished the P2 Design-panel controls item: the template
+  selector already existed, so this run added **accent color** (six curated
+  swatches + monochrome), **font pairing** (Sans/Serif/Classic) and **density**
+  (Compact/Normal/Relaxed) as mobile-first radio cards. New pure
+  `designOptions.ts` owns the presets; the panel writes into existing fields
+  (`design.colors.primary`, both `typography.*.fontFamily`, `page.gapX/gapY` +
+  `body.lineHeight`, and a new `design.density` enum) so preview, measurement
+  and print stay aligned with no new renderer. Verified `npm run typecheck`,
+  `npm test` (574 pass), `npm run lint`. Files: `src/lib/design/designOptions.ts`
+  (+ test, new), `src/lib/schema/resume.schema.ts` (+ test),
+  `src/components/editor/DesignPanel.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+
 - [x] 2026-11-19 — Finished the P2 multi-viewport regression gate:
   `e2e/layout-consistency.spec.ts` now covers all seven listed behaviours at
   `390x844` and `1280x800`. Six were already present (preset height + no sibling

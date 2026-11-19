@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  ACCENT_SWATCHES,
+  DENSITY_PRESETS,
+  FONT_PAIRINGS,
+  resolveAccentId,
+  resolveFontPairingId,
+} from "@/lib/design/designOptions";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { useResumeStore } from "@/lib/store/useResumeStore";
 import { TemplateBadge } from "@/templates/shared/TemplateBadge";
@@ -13,11 +20,31 @@ const PAGE_FORMATS: readonly { id: PageFormat; label: string; detail: string }[]
     { id: "letter", label: "Letter", detail: "8.5 × 11 in" },
   ];
 
+function cardClass(isCurrent: boolean): string {
+  return `flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
+    isCurrent
+      ? "border-primary/40 bg-primary/5"
+      : "border-line hover:border-black/30"
+  }`;
+}
+
 export function DesignPanel() {
   const format = useResumeStore((state) => state.doc.metadata.page.format);
   const templateId = useResumeStore((state) => state.doc.metadata.template);
+  const primary = useResumeStore(
+    (state) => state.doc.metadata.design.colors.primary,
+  );
+  const bodyFont = useResumeStore(
+    (state) => state.doc.metadata.typography.body.fontFamily,
+  );
+  const headingFont = useResumeStore(
+    (state) => state.doc.metadata.typography.heading.fontFamily,
+  );
+  const density = useResumeStore((state) => state.doc.metadata.design.density);
   const patchDoc = useResumeStore((state) => state.patchDoc);
   const currentTemplate = getTemplate(templateId);
+  const accentId = resolveAccentId(primary);
+  const pairingId = resolveFontPairingId(bodyFont, headingFont);
 
   return (
     <div className="flex flex-col gap-5">
@@ -35,11 +62,7 @@ export function DesignPanel() {
               <label
                 key={pageFormat.id}
                 htmlFor={inputId}
-                className={`flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
-                  isCurrent
-                    ? "border-primary/40 bg-primary/5"
-                    : "border-line hover:border-black/30"
-                }`}
+                className={cardClass(isCurrent)}
               >
                 <input
                   id={inputId}
@@ -81,11 +104,7 @@ export function DesignPanel() {
               <label
                 key={template.id}
                 htmlFor={inputId}
-                className={`flex min-h-11 w-full cursor-pointer items-start gap-3 rounded-xl border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
-                  isCurrent
-                    ? "border-primary/40 bg-primary/5"
-                    : "border-line hover:border-black/30"
-                }`}
+                className={`${cardClass(isCurrent)} items-start`}
               >
                 <input
                   id={inputId}
@@ -105,6 +124,140 @@ export function DesignPanel() {
                   </span>
                   <span className="text-xs text-muted">
                     {template.description}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-medium">Accent color</legend>
+        <p className="text-xs text-muted">
+          Used for section rules, highlights, and tags. Your text stays dark and
+          readable.
+        </p>
+        <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {ACCENT_SWATCHES.map((swatch) => {
+            const isCurrent = accentId === swatch.id;
+            const inputId = `accent-${swatch.id}`;
+
+            return (
+              <label
+                key={swatch.id}
+                htmlFor={inputId}
+                className={cardClass(isCurrent)}
+              >
+                <input
+                  id={inputId}
+                  type="radio"
+                  name="accent-color"
+                  value={swatch.id}
+                  checked={isCurrent}
+                  onChange={() =>
+                    patchDoc({
+                      metadata: { design: { colors: { primary: swatch.hex } } },
+                    })
+                  }
+                  className="h-4 w-4 shrink-0 accent-primary"
+                />
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-4 shrink-0 rounded-full border border-black/10"
+                  style={{ backgroundColor: swatch.hex }}
+                />
+                <span className="min-w-0 truncate text-xs">{swatch.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-medium">Font pairing</legend>
+        <p className="text-xs text-muted">
+          Sans is cleanest for ATS; Serif and Classic add a more editorial feel.
+        </p>
+        <div className="mt-1 grid gap-2">
+          {FONT_PAIRINGS.map((pairing) => {
+            const isCurrent = pairingId === pairing.id;
+            const inputId = `font-pairing-${pairing.id}`;
+
+            return (
+              <label
+                key={pairing.id}
+                htmlFor={inputId}
+                className={cardClass(isCurrent)}
+              >
+                <input
+                  id={inputId}
+                  type="radio"
+                  name="font-pairing"
+                  value={pairing.id}
+                  checked={isCurrent}
+                  onChange={() =>
+                    patchDoc({
+                      metadata: {
+                        typography: {
+                          body: { fontFamily: pairing.body },
+                          heading: { fontFamily: pairing.heading },
+                        },
+                      },
+                    })
+                  }
+                  className="h-4 w-4 shrink-0 accent-primary"
+                />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="font-medium">{pairing.label}</span>
+                  <span className="text-xs text-muted">
+                    {pairing.description}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-medium">Density</legend>
+        <p className="text-xs text-muted">
+          Controls line height and the space between sections. Changing it
+          re-measures the preview and the PDF.
+        </p>
+        <div className="mt-1 grid gap-2">
+          {DENSITY_PRESETS.map((preset) => {
+            const isCurrent = density === preset.id;
+            const inputId = `density-${preset.id}`;
+
+            return (
+              <label
+                key={preset.id}
+                htmlFor={inputId}
+                className={cardClass(isCurrent)}
+              >
+                <input
+                  id={inputId}
+                  type="radio"
+                  name="density"
+                  value={preset.id}
+                  checked={isCurrent}
+                  onChange={() =>
+                    patchDoc({
+                      metadata: {
+                        design: { density: preset.id },
+                        page: { gapX: preset.gapX, gapY: preset.gapY },
+                        typography: { body: { lineHeight: preset.lineHeight } },
+                      },
+                    })
+                  }
+                  className="h-4 w-4 shrink-0 accent-primary"
+                />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="font-medium">{preset.label}</span>
+                  <span className="text-xs text-muted">
+                    {preset.description}
                   </span>
                 </span>
               </label>

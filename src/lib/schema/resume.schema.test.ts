@@ -11,6 +11,7 @@ describe("ResumeDocumentSchema", () => {
     expect(doc.basics.workAuth).toBe("");
     expect(doc.basics.website).toEqual({ url: "", label: "" });
     expect(doc.metadata.page.marginX).toBe(14);
+    expect(doc.metadata.design.density).toBe("normal");
     expect(doc.sections.experience.items).toEqual([]);
     expect(doc.customSections).toEqual([]);
   });

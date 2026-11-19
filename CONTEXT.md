@@ -503,6 +503,23 @@ rediscover.
     delegates the formatting. Keep the spacing rule unit-tested there rather than
     reimplementing it inline.
 
+44. **Design controls reuse existing document fields.** `src/lib/design/
+    designOptions.ts` owns the curated choices: six accent swatches plus the
+    monochrome default, three font pairings, and three density presets. The
+    Design panel writes values into fields that already drive rendering —
+    accent → `metadata.design.colors.primary` (flows through `--brand-primary`),
+    font pairing → `typography.body/heading.fontFamily` (the `var(--font-sans)`
+    / `var(--font-serif)` locals from `layout.tsx` + `globals.css`, so offline
+    and static-export safe), density → the new `design.density` enum **plus**
+    `page.gapX/gapY` and `body.lineHeight`. Because `buildTemplateThemeStyle`
+    and `MeasureLayer` already read those numbers, preview, measurement and
+    print stay aligned without new CSS variables or a parallel renderer; a
+    density change simply triggers a re-measure. Do not add a second accent
+    field — `design.colors.primary` is the single source of truth, and the
+    checked swatch is derived from it (case-insensitively, defaulting to
+    `mono`). The `normal` preset must keep matching the Zod defaults
+    (8/12/1.4) or existing documents jump spacing on load.
+
 ## Verification and tooling
 
 ```powershell
@@ -563,6 +580,32 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-19 — Design panel gains accent, fonts, and density controls
+- Task: top P2 Queue item — the four Design controls. The **template selector**
+  was already delivered (2026-11-18), so this run closed the other three.
+- New pure `src/lib/design/designOptions.ts` owns six curated accent swatches
+  plus monochrome, three font pairings (Sans/Serif/Classic) and three density
+  presets (Compact/Normal/Relaxed). `DesignPanel` writes into existing document
+  fields — `design.colors.primary`, both `typography.*.fontFamily`, and
+  `page.gapX/gapY` + `body.lineHeight` plus a new `design.density` enum — so no
+  new CSS variables or renderer changes were needed; preview, measure and print
+  already read those values. Recorded as Decision #44.
+- Mobile-first full-width radio cards: accents use a `grid-cols-2 sm:grid-cols-3`
+  of labelled swatches; the paper/template cards reuse one `cardClass()` helper
+  so every control keeps the 44px target and focus ring.
+- Tests: new `designOptions.test.ts` (swatch/pairing/preset shape + resolvers),
+  three `DesignPanel` cases (accent writes the hex, Serif/Classic write both
+  fonts, Compact/Relaxed write spacing), and the schema default for density.
+  Note the **Compact** density radio shares its accessible-name prefix with the
+  **Compact 1-Pager** template — target it by `#density-compact` in tests.
+- Files: `src/lib/design/designOptions.ts` (+ test, new),
+  `src/lib/schema/resume.schema.ts` (+ test),
+  `src/components/editor/DesignPanel.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (574 pass), `npm run lint`. This is
+  a settings-only change (no new layout chrome), so no new e2e case was added;
+  Playwright remains blocked in this sandbox.
 
 ### 2026-11-19 — Multi-viewport regression gate completed
 - Task: top P2 Queue item — finish `e2e/layout-consistency.spec.ts` so both
@@ -822,36 +865,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   Playwright is blocked in this sandbox (shell rejects `npm run e2e`), so the
   `390x844`/`1280x800` visual check remains browser-unverified; a
   browser-enabled run should execute
-  `npm run e2e -- e2e/layout-consistency.spec.ts`.
-
-### 2026-11-18 — Entry-level pagination fills Page 1
-- Task: top P0 — fix the 80%-blank Page 1 caused by packing a whole multi-entry
-  section as one indivisible block. The wheel-scroll Queue item was already in
-  Done from the previous run, so it was removed from Queue and this was the
-  next genuine item.
-- `blockIds.ts` encodes per-entry blocks as strings, so `pages: string[][]` and
-  all templates, `PageStack`, `PrintPortal` and canvas-frame math are unchanged.
-  `sectionData.ts` extracts shared section-resolution/visibility rules from
-  `SectionRenderer`; `sectionPlans.ts` decides what splits. Recorded as Decision
-  #34. The heading is fused with the first entry's block (keep-with-next without
-  gap arithmetic); only single-column, non-`keepTogether` sections with >1
-  visible entry split.
-- `MeasureLayer` reports one height per block; `computePages`/`usePageLayout`
-  pack and size fit-scale from those blocks; `SectionRenderer` re-groups
-  consecutive entry blocks into one `<section>`; Studio Sidebar routes by the
-  decoded section id. ATS text and forced page breaks are untouched.
-- Tests: new `blockIds.test.ts` and `sectionPlans.test.ts`, plus cases in
-  `computePages.test.ts`, `MeasureLayer.test.tsx`, `SectionRenderer.test.tsx`
-  and `usePageLayout.test.tsx` (the hook case asserts Page 1 takes 3 of 4
-  entries before breaking). 515 pass.
-- Files: `src/lib/pagination/blockIds.ts` (+ test, new), `sectionPlans.ts`
-  (+ test, new), `computePages.ts` (+ test), `index.ts`,
-  `src/templates/shared/sectionData.ts` (new), `SectionRenderer.tsx` (+ test),
-  `MeasureLayer.tsx` (+ test), `StudioSidebarTemplate.tsx`, `usePageLayout.ts`
-  (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (515 pass), `npm run build` (static
-  export; the Next.js security-advisory nudge needed the usual second run).
-  Playwright is blocked in this sandbox; a browser-enabled run should execute
   `npm run e2e -- e2e/layout-consistency.spec.ts`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The Playwright
