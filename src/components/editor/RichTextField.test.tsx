@@ -23,6 +23,7 @@ type Chain = {
 const tiptapMock = vi.hoisted(() => {
   const chain = {} as Chain;
   const insertedContent: string[] = [];
+  const cursor = { before: "" };
 
   Object.assign(chain, {
     focus: () => chain,
@@ -50,6 +51,16 @@ const tiptapMock = vi.hoisted(() => {
     getAttributes: vi.fn(() => ({})),
     chain: vi.fn(() => chain),
     can: vi.fn(() => ({ undo: () => true, redo: () => true })),
+    state: {
+      selection: {
+        $from: {
+          parentOffset: 1,
+          parent: {
+            textBetween: () => cursor.before,
+          },
+        },
+      },
+    },
     commands: {
       setContent: vi.fn(),
     },
@@ -57,6 +68,7 @@ const tiptapMock = vi.hoisted(() => {
 
   return {
     editor,
+    cursor,
     insertedContent,
     options: {
       current: null as null | {
@@ -80,6 +92,7 @@ vi.mock("@tiptap/react", () => ({
 describe("RichTextField", () => {
   beforeEach(() => {
     tiptapMock.insertedContent.length = 0;
+    tiptapMock.cursor.before = "";
     tiptapMock.editor.chain.mockClear();
   });
 
@@ -303,5 +316,24 @@ describe("RichTextField", () => {
 
     expect(tiptapMock.editor.chain).toHaveBeenCalledTimes(1);
     expect(tiptapMock.insertedContent).toEqual(["Reduced "]);
+  });
+
+  it("leads with a space when the cursor follows non-whitespace text", () => {
+    tiptapMock.cursor.before = ".";
+
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description for entry 1"
+        actionHelpers
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Insert action verb Built" }),
+    );
+
+    expect(tiptapMock.insertedContent).toEqual([" Built "]);
   });
 });

@@ -1,4 +1,6 @@
-import { Fragment } from "react";
+"use client";
+
+import { Fragment, useState } from "react";
 import {
   EnvelopeSimple,
   Globe,
@@ -101,7 +103,10 @@ function buildContactEntries(doc: ResumeDocument): ContactEntry[] {
 
 export function HeaderSlot({ doc }: { doc: ResumeDocument }) {
   const { basics } = doc;
-  const hasAvatar = shouldShowAvatar(doc.picture);
+  const pictureUrl = doc.picture.url.trim();
+  const [failedPictureUrl, setFailedPictureUrl] = useState<string | null>(null);
+  const avatarFailed = pictureUrl !== "" && failedPictureUrl === pictureUrl;
+  const hasAvatar = shouldShowAvatar(doc.picture) && !avatarFailed;
   const contactEntries = buildContactEntries(doc);
   const hideIcons = doc.metadata.page.hideIcons;
 
@@ -115,7 +120,14 @@ export function HeaderSlot({ doc }: { doc: ResumeDocument }) {
         alignItems: "center",
       }}
     >
-      <AvatarSlot picture={doc.picture} />
+      {hasAvatar ? (
+        <AvatarSlot
+          picture={doc.picture}
+          onError={() => {
+            setFailedPictureUrl(pictureUrl);
+          }}
+        />
+      ) : null}
       <div
         style={{
           display: "flex",

@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
@@ -33,6 +33,55 @@ const WORK_AUTH_PRESETS = [
   "Authorized to work in US",
   "Immediate Joiner",
 ] as const;
+
+/**
+ * Shows the picture URL the moment it changes, and replaces a broken image
+ * with a readable message instead of the browser's broken-image icon. The
+ * parent keys this by URL, so a new link starts from a fresh loading state.
+ */
+function PicturePreview({
+  url,
+  hidden,
+}: {
+  url: string;
+  hidden: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+  const trimmed = url.trim();
+
+  if (trimmed === "" || hidden) {
+    return null;
+  }
+
+  if (failed) {
+    return (
+      <p
+        role="status"
+        className="rounded-lg border border-amber-700/20 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+      >
+        That picture could not load. Check the URL — it must point directly to a
+        public image file.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={trimmed}
+        alt="Picture preview"
+        onError={() => {
+          setFailed(true);
+        }}
+        className="h-12 w-12 shrink-0 rounded-md border border-line object-cover"
+      />
+      <p className="text-xs text-muted">
+        Live preview. Hidden pictures never appear in the resume.
+      </p>
+    </div>
+  );
+}
 
 function toFormValues(
   basics: ResumeBasics,
@@ -107,6 +156,17 @@ export function BasicsForm() {
       onSubmit={(event) => event.preventDefault()}
       className="flex flex-col gap-3"
     >
+      <div
+        aria-live="polite"
+        className="flex flex-col gap-0.5 rounded-lg border border-line bg-surface-muted px-3 py-2"
+      >
+        <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
+          Name preview
+        </span>
+        <span className="truncate font-serif text-base font-semibold">
+          {watched.name.trim() || "Untitled resume"}
+        </span>
+      </div>
       <TextInput
         id="basics-name"
         label="Name"
@@ -213,6 +273,11 @@ export function BasicsForm() {
           form.setValue("pictureUrl", value, { shouldDirty: true })
         }
         placeholder="https://example.com/photo.jpg"
+      />
+      <PicturePreview
+        key={watched.pictureUrl.trim()}
+        url={watched.pictureUrl}
+        hidden={watched.pictureHidden}
       />
       <BooleanInput
         id="basics-picture-hidden"

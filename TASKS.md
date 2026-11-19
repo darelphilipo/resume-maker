@@ -21,16 +21,8 @@ _empty
 _None._
 
 ## Queue (Ready for Next Run)
-_none._
 
-### P1 — Visual Consistency, Mobile Drawer & Editor UX
-
-- [x] P1: Fix Launcher capsule tap-blink, uneven heights, missing Recent Resumes / Blank start, and Paste parser bugs in `src/components/launcher/Launcher.tsx` and `src/lib/import/` (paste parser). _(started 2026-11-17, finished 2026-11-18 — see Done)_
-
-- [ ] P1: Fix editor micro-interactions and Design panel controls in `src/components/editor/BasicsForm.tsx`, `src/components/editor/RichTextField.tsx`, `src/components/editor/DesignPanel.tsx`, and `src/components/editor/JdMatchDrawer.tsx`.
-  1. Update `Name` preview live on `onChange` (not only on blur) and show a clean fallback/validation state when `Picture URL` fails to load.
-  2. Prepend a leading space when inserting an action-verb chip after non-whitespace text (e.g., `...merges. Built `).
-  3. Add explicit `htmlFor`/`id` and full-card clickability to `DesignPanel` paper-size cards (`A4` / `Letter`), verify `Studio Sidebar` renders its two-column layout on Page 1, and ensure `"Match to a job description"` is wired and opens `JdMatchDrawer` on desktop and mobile.
+### P2 — Automated Multi-Viewport Regression Gate
 
 ### P2 — Automated Multi-Viewport Regression Gate
 
@@ -42,6 +34,27 @@ _none._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-19 — Finished the P1 editor micro-interactions item: Basics now
+  shows a live **Name preview** that follows every keystroke and a picture
+  thumbnail that swaps to a readable message when the URL cannot load; the
+  resume header drops a broken avatar and lets the name use the full width.
+  Action-verb chips prepend a space after non-whitespace (`...merges. Built `)
+  instead of gluing words together. Sub-point 3 was already delivered on
+  2026-11-17, so this run locked it in with a Studio Sidebar Page 1 test
+  (main/sidebar markup plus the two-column stylesheet) and a both-viewport e2e
+  geometry case; the existing DesignPanel and JdMatchDrawer tests already cover
+  the full-card paper radios and drawer trigger. Verified `npm run typecheck`,
+  `npm test` (567 pass), `npm run lint`. Playwright is still blocked in this
+  sandbox, so the new `390x844` / `1280x800` case needs a browser-enabled run.
+  Files: `src/components/editor/BasicsForm.tsx` (+ test),
+  `src/components/editor/RichTextField.tsx` (+ test),
+  `src/lib/richtext/actionVerbs.ts` (new) + test,
+  `src/components/editor/EditorWorkspace.test.tsx`,
+  `src/templates/shared/AvatarSlot.tsx` (+ test),
+  `src/templates/shared/HeaderSlot.tsx`,
+  `src/templates/studio/StudioSidebarTemplate.test.tsx` (new),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-18 — Finished the P1 visual-consistency item: **Month + Year**
   pickers, white fields, and the sticky desktop Preview/Design columns had

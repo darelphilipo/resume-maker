@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
@@ -73,6 +73,27 @@ describe("HeaderSlot", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Ada Lovelace" }),
     ).toBeInTheDocument();
+  });
+
+  it("drops a picture that fails to load and lets the name use both columns", () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Ada Lovelace";
+    doc.picture = {
+      ...doc.picture,
+      hidden: false,
+      url: "https://example.com/missing.jpg",
+    };
+
+    const { container } = render(<HeaderSlot doc={doc} />);
+    const avatar = container.querySelector("img");
+
+    expect(avatar).not.toBeNull();
+
+    fireEvent.error(avatar as HTMLImageElement);
+
+    expect(container.querySelector("img")).toBeNull();
+    const name = screen.getByRole("heading", { level: 1, name: "Ada Lovelace" });
+    expect(name.parentElement?.style.gridColumn).toBe("1 / -1");
   });
 
   it("shows contact metadata and suppresses icons when hideIcons is true", () => {

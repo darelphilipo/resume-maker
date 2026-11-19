@@ -16,6 +16,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
 import { useEffect, useId, useMemo, useRef, type ReactNode } from "react";
 
+import { actionVerbInsertion } from "@/lib/richtext/actionVerbs";
 import { sanitizeRichText } from "@/lib/richtext/sanitize";
 
 export const ACTION_VERBS = ["Built", "Reduced", "Led", "Automated"] as const;
@@ -148,7 +149,26 @@ export function RichTextField({
   }, [editor, value]);
 
   function insertActionVerb(verb: string): void {
-    editor?.chain().focus().insertContent(`${verb} `).run();
+    if (!editor) {
+      return;
+    }
+
+    const { $from } = editor.state.selection;
+    const beforeCursor =
+      $from.parentOffset > 0
+        ? $from.parent.textBetween(
+            $from.parentOffset - 1,
+            $from.parentOffset,
+            undefined,
+            "\uFFFC",
+          )
+        : "";
+
+    editor
+      .chain()
+      .focus()
+      .insertContent(actionVerbInsertion(verb, beforeCursor))
+      .run();
   }
 
   function toggleLink(): void {

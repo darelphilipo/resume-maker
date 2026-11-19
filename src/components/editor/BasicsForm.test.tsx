@@ -24,6 +24,45 @@ describe("BasicsForm", () => {
     vi.useRealTimers();
   });
 
+  it("previews the name on every keystroke, before any commit or blur", () => {
+    render(<BasicsForm />);
+
+    expect(screen.getByText("Untitled resume")).toBeInTheDocument();
+
+    const nameInput = screen.getByLabelText("Name");
+
+    fireEvent.change(nameInput, { target: { value: "Ada Lovelace" } });
+
+    // The live preview follows onChange; blur is never dispatched here.
+    expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+  });
+
+  it("replaces a picture that cannot load with a readable fallback", () => {
+    render(<BasicsForm />);
+
+    fireEvent.click(screen.getByLabelText("Hide picture"));
+    fireEvent.change(screen.getByLabelText("Picture URL"), {
+      target: { value: "https://example.com/missing.jpg" },
+    });
+
+    const preview = screen.getByRole("img", { name: "Picture preview" });
+
+    fireEvent.error(preview);
+
+    expect(screen.queryByRole("img", { name: "Picture preview" })).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /That picture could not load/,
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+  });
+
   it("commits typed values after 50ms with one patchDoc call", () => {
     const patchSpy = vi.spyOn(useResumeStore.getState(), "patchDoc");
 

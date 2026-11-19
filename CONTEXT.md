@@ -488,6 +488,21 @@ rediscover.
     cross-effect mutable scroller ref. Section reordering is the trigger; entry
     reordering keeps the same block keys and does not blank the canvas.
 
+42. **Basics previews are local and degrade cleanly.** `BasicsForm` shows a
+    `Name preview` fed by `useWatch`, so it follows every keystroke before the
+    50 ms debounced `patchDoc`, and a `PicturePreview` keyed by the trimmed URL.
+    A failed image flips to a `role="status"` message instead of a broken-image
+    glyph. `HeaderSlot` is a client component that remembers the failed URL and
+    stops rendering `AvatarSlot`, letting the header text span both grid columns;
+    never render a resume-header `<img>` without that error path or a broken URL
+    prints a broken-image icon.
+43. **Action-verb insertions respect the preceding character.** The pure
+    `actionVerbInsertion` helper in `src/lib/richtext/actionVerbs.ts` prepends a
+    space only when the cursor follows non-whitespace; `RichTextField` reads
+    `editor.state.selection.$from.parent.textBetween(offset - 1, offset)` and
+    delegates the formatting. Keep the spacing rule unit-tested there rather than
+    reimplementing it inline.
+
 ## Verification and tooling
 
 ```powershell
@@ -548,6 +563,42 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-19 — Live Basics previews, graceful picture fallback, spaced verbs
+- Task: P1 editor micro-interactions item. Sub-point 3's paper-size cards, JD
+  drawer trigger, and Studio Sidebar split had already landed on 2026-11-17;
+  this run added coverage for them plus the two open sub-points.
+- `BasicsForm` now renders a live **Name preview** from `useWatch` (updates on
+  every keystroke, never waits for blur) and a `PicturePreview` thumbnail keyed
+  by the trimmed URL. A failed image becomes a `role="status"` message, and
+  `HeaderSlot` now remembers the failed URL, stops rendering `AvatarSlot`, and
+  lets the candidate name span both header columns instead of printing a
+  broken-image icon. Recorded as Decision #42.
+- Action-verb chips no longer glue a verb to the previous word: the new pure
+  `actionVerbInsertion` helper prepends a space only after non-whitespace, and
+  `RichTextField` reads the character before the cursor from TipTap's selection.
+  Recorded as Decision #43. (A plain cursor-at-start insertion still produces
+  `Built ` with no leading space.)
+- Sub-point 3 coverage: `StudioSidebarTemplate.test.tsx` proves Page 1 renders
+  `.studio-main` / `.studio-sidebar` with the sidebar `aria-label` and that
+  `studio.css` defines a two-column grid; the existing DesignPanel and
+  JdMatchDrawer tests already cover the full-card paper radios and drawer
+  trigger. `layout-consistency.spec.ts` gained a both-viewport Studio Sidebar
+  Page 1 geometry case (browser-unverified here).
+- Tests: BasicsForm name-preview and picture-fallback cases, an
+  `EditorWorkspace` typing-without-blur case, a `RichTextField` leading-space
+  case, a HeaderSlot broken-avatar case, and `actionVerbs.test.ts`. 567 pass.
+- Files: `src/components/editor/BasicsForm.tsx` (+ test),
+  `src/components/editor/RichTextField.tsx` (+ test),
+  `src/lib/richtext/actionVerbs.ts` (new) + test,
+  `src/components/editor/EditorWorkspace.test.tsx`,
+  `src/templates/shared/AvatarSlot.tsx` (+ test),
+  `src/templates/shared/HeaderSlot.tsx`,
+  `src/templates/studio/StudioSidebarTemplate.test.tsx` (new),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (567 pass), `npm run lint`.
+  Playwright is blocked in this sandbox, so the new `390x844` / `1280x800`
+  Studio Sidebar geometry case still needs a browser-enabled run.
 
 ### 2026-11-18 — Formatting toolbar wraps; reorder keeps the preview's place
 - Task: finish the P1 "white inputs / unified Month+Year pickers / sidebar
@@ -811,36 +862,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (497 pass), `npm run build`
   (static export; the Next.js security-advisory nudge needed the usual second
   run).
-
-### 2026-11-18 — Six-template registry and ATS-Safe badges
-- Task: register all six templates and show an ATS-Safe badge on every
-  single-column option (top P2 item).
-- `registry.ts` now maps the six existing `TEMPLATE_IDS` to full definitions
-  (label/description/columns/`atsSafe`/badge) plus an ordered `TEMPLATE_LIST`.
-  Five single-column layouts reuse `OnyxTemplate` with a `onyx--*` root class;
-  the two-column Studio Sidebar splits sections into a main column and an
-  `aria-label="At a glance"` sidebar. `buildTemplateThemeStyle` was extracted
-  from `OnyxTemplate` so all renderers share one set of CSS variables, and
-  `SectionRenderer` gained `data-section-id` for CSS variant targeting.
-  Recorded as Decision #32, including the inline-style and ATS-order traps.
-- `DesignPanel` gained a mobile-first template radio list with explicit
-  `htmlFor`/`id`, `min-h-11` cards, five **ATS-Safe** badges and the Studio
-  **Best for direct/human review** badge. The other three design controls
-  (accent, font pairing, density) remain the next Queue item.
-- Tests: new `registry.test.tsx`, `Variants.test.tsx`,
-  `TemplateBadge.test.tsx`; Onyx variant/fallback cases; DesignPanel
-  selection/badge cases. The old "persian falls back to onyx" test was replaced
-  with an unknown-id fallback because every valid id is now implemented.
-- Files: `src/templates/registry.ts`, `src/templates/shared/templateTheme.ts`,
-  `src/templates/shared/TemplateBadge.tsx`, `src/templates/shared/SectionRenderer.tsx`,
-  `src/templates/variants/Variants.tsx` + `variants.css`,
-  `src/templates/studio/StudioSidebarTemplate.tsx` + `studio.css`,
-  `src/templates/onyx/OnyxTemplate.tsx` (+ test),
-  `src/components/editor/DesignPanel.tsx` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (485 pass), `npm run lint`,
-  `npm run build` (static export; the usual Next.js security-advisory nudge
-  needed a second run).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The Playwright
      visual/layout spec (2026-11-17), preview-zoom

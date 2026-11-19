@@ -60,7 +60,11 @@ in control of every line, and your data stays on your device.
 
 - Basics: name, headline, email, phone, location, website, optional photo, and
   an optional one-line work authorization or notice period tag (for example
-  `Authorized to work in US` or `Immediate Joiner`). Paste your website and it
+  `Authorized to work in US` or `Immediate Joiner`). A name preview above the
+  fields follows every keystroke, so you see the printed name before you leave
+  the field. Paste a photo URL and a live thumbnail appears; if the image cannot
+  load, the editor says so instead of showing a broken picture, and the resume
+  header widens cleanly without an empty photo slot. Paste your website and it
   is shown without `https://` or `www.` — there is no separate label to
   maintain.
 - Profiles: paste a profile URL such as `github.com/you` and the network,
@@ -73,7 +77,8 @@ in control of every line, and your data stays on your device.
   desktop Content column. Experience and project bullets offer a compact, tidy
   row of one-tap action verbs (**Built**, **Reduced**, **Led**, **Automated**)
   plus an `[Action] + [What] + [Result by X%]` prompt, so achievements start
-  with impact and end with a number.
+  with impact and end with a number. The verb lands cleanly after the existing
+  sentence and gets a leading space when needed, so words never run together.
 - Skills grouped by category with comma-separated keywords (for example
   `Languages: Python, SQL`), with no self-ratings to maintain; projects and
   interests use the same comma-separated tags.

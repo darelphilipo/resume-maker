@@ -6,7 +6,14 @@ export function shouldShowAvatar(picture: PictureConfig): boolean {
   return picture.hidden !== true && picture.url.trim() !== "";
 }
 
-export function AvatarSlot({ picture }: { picture: PictureConfig }) {
+export function AvatarSlot({
+  picture,
+  onError,
+}: {
+  picture: PictureConfig;
+  /** Lets the header collapse the empty column when the image cannot load. */
+  onError?: () => void;
+}) {
   if (!shouldShowAvatar(picture)) {
     return null;
   }
@@ -17,6 +24,7 @@ export function AvatarSlot({ picture }: { picture: PictureConfig }) {
       alt=""
       loading="eager"
       decoding="sync"
+      onError={onError}
       style={{
         display: "block",
         flexShrink: 0,

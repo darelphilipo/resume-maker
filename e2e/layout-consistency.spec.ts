@@ -367,6 +367,46 @@ for (const viewport of VIEWPORTS) {
       expect(result.bottom).toBeGreaterThan(result.headerBottom);
     });
 
+    test("Studio Sidebar lays out both columns on Page 1", async ({ page }) => {
+      await createPresetResume(page);
+
+      await showTab(page, "Design");
+      await page.getByRole("radio", { name: /Studio Sidebar/ }).click();
+      await showPreview(page);
+
+      const columns = await page.evaluate(() => {
+        const firstPage = document.querySelector<HTMLElement>(
+          "#panel-preview .resume-page",
+        );
+        const main = firstPage?.querySelector<HTMLElement>(".studio-main");
+        const sidebar = firstPage?.querySelector<HTMLElement>(".studio-sidebar");
+
+        if (!firstPage || !main || !sidebar) {
+          return null;
+        }
+
+        const mainBox = main.getBoundingClientRect();
+        const sidebarBox = sidebar.getBoundingClientRect();
+
+        return {
+          display: getComputedStyle(main.parentElement as HTMLElement).display,
+          mainWidth: mainBox.width,
+          sidebarWidth: sidebarBox.width,
+          sidebarStartsRight: sidebarBox.left >= mainBox.left,
+          oppositeSides: sidebarBox.left >= mainBox.right - 1,
+        };
+      });
+
+      expect(columns).not.toBeNull();
+      const result = columns as NonNullable<typeof columns>;
+
+      expect(result.display).toBe("grid");
+      expect(result.mainWidth).toBeGreaterThan(0);
+      expect(result.sidebarWidth).toBeGreaterThan(0);
+      expect(result.sidebarStartsRight).toBe(true);
+      expect(result.oppositeSides).toBe(true);
+    });
+
     test("the Letter card body switches paper size and the JD trigger opens its drawer", async ({
       page,
     }) => {

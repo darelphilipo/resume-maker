@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -83,6 +83,19 @@ async function renderReadyWorkspace() {
 }
 
 describe("EditorWorkspace", () => {
+  it("updates the header name while typing, without waiting for a blur", async () => {
+    const user = userEvent.setup();
+    await renderReadyWorkspace();
+
+    await user.type(screen.getByLabelText("Name"), "Ada Lovelace");
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Ada Lovelace" }),
+      ).toBeInTheDocument();
+    });
+  });
+
   it("defaults to the content tab and reveals one panel at a time", async () => {
     const user = userEvent.setup();
 
