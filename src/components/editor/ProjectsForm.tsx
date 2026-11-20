@@ -13,7 +13,6 @@ import { RichTextField } from "./RichTextField";
 import { formatKeywords, parseKeywords } from "./keywords";
 import {
   AddEntryButton,
-  BooleanInput,
   ClearSectionButton,
   EntryActions,
   EntryCard,
@@ -156,7 +155,7 @@ export function ProjectsForm() {
       className="flex flex-col gap-3"
     >
       {watched.items.map((item, index) => (
-        <EntryCard key={item.id} index={index}>
+        <EntryCard key={item.id} index={index} hidden={item.hidden}>
           <TextInput
             id={`projects-${item.id}-name`}
             label="Name"
@@ -202,15 +201,11 @@ export function ProjectsForm() {
               onChange={(value) => updateItem(index, "endDate", value)}
             />
           </div>
-          <BooleanInput
-            id={`projects-${item.id}-hidden`}
-            label="Hide entry"
-            checked={item.hidden}
-            onChange={(checked) => updateItem(index, "hidden", checked)}
-          />
           <EntryActions
             index={index}
             total={watched.items.length}
+            hidden={item.hidden}
+            onToggleHidden={() => updateItem(index, "hidden", !item.hidden)}
             onMoveUp={() => moveItem(index, -1)}
             onMoveDown={() => moveItem(index, 1)}
             onDelete={() => deleteItem(index)}

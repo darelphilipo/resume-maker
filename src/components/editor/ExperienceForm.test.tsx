@@ -210,6 +210,49 @@ describe("ExperienceForm", () => {
     ).toBeDisabled();
   });
 
+  it("hides an entry with the eye toggle instead of deleting it", () => {
+    setup([makeItem("exp-1", { company: "Acme" })]);
+    render(<ExperienceForm />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Hide entry 1" }),
+    );
+
+    const card = screen.getByText("Entry 1").closest("fieldset");
+    expect(card).toHaveClass("opacity-60");
+    expect(
+      screen.getByRole("button", { name: "Show entry 1" }),
+    ).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    const items = useResumeStore.getState().doc.sections.experience.items;
+    expect(items).toHaveLength(1);
+    expect(items[0].hidden).toBe(true);
+    // The entry stays in the form and in the saved document, but the preview
+    // and ATS text drop it.
+    expect(
+      selectVisibleSectionIds({ doc: useResumeStore.getState().doc }),
+    ).not.toContain("experience");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show entry 1" }),
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    expect(
+      useResumeStore.getState().doc.sections.experience.items[0].hidden,
+    ).toBe(false);
+    expect(
+      selectVisibleSectionIds({ doc: useResumeStore.getState().doc }),
+    ).toContain("experience");
+  });
+
   it("keeps drafts in the form but filters them from visible sections", () => {
     setup([makeItem("exp-1", { company: "", position: "Engineer" })]);
 

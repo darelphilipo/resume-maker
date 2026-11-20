@@ -435,6 +435,32 @@ describe("Launcher", () => {
     );
   });
 
+  it("duplicates a recent resume without opening it", async () => {
+    const savedAt = Date.UTC(2026, 10, 18);
+    await seedRecent("recent-1", "Grace Hopper", savedAt);
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Duplicate Grace Hopper" }),
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "Open Grace Hopper (Copy)" }),
+    ).toBeInTheDocument();
+
+    const rows = await resumeDb.resumes.toArray();
+    const copy = rows.find((row) => row.id !== "recent-1");
+
+    expect(rows).toHaveLength(2);
+    expect(copy?.doc.basics.name).toBe("Grace Hopper (Copy)");
+    expect(copy?.updatedAt).toBeGreaterThan(savedAt);
+    expect((await resumeDb.resumes.get("recent-1"))?.doc.basics.name).toBe(
+      "Grace Hopper",
+    );
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
   it("deletes a recent resume after a confirmation step", async () => {
     await seedRecent("recent-1", "Grace Hopper");
     const user = userEvent.setup();

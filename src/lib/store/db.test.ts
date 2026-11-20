@@ -4,6 +4,7 @@ import { createEmptyResume } from "@/lib/schema/defaults";
 
 import {
   deleteResume,
+  duplicateResume,
   getResume,
   listRecentResumes,
   putResume,
@@ -54,6 +55,37 @@ describe("renameResume", () => {
   it("ignores a resume that was already deleted", async () => {
     expect(await renameResume("missing", "New Name")).toBeNull();
     expect(await getResume("missing")).toBeUndefined();
+  });
+});
+
+describe("duplicateResume", () => {
+  it("clones the document under a new id and labels it as a copy", async () => {
+    await putResume(row("source", 1_000, "Grace Hopper"));
+
+    const copy = await duplicateResume("source");
+
+    expect(copy).not.toBeNull();
+    expect(copy?.id).not.toBe("source");
+    expect(copy?.doc.basics.name).toBe("Grace Hopper (Copy)");
+    expect(copy?.updatedAt).toBeGreaterThan(1_000);
+    expect((await getResume(copy!.id))?.doc.basics.name).toBe(
+      "Grace Hopper (Copy)",
+    );
+
+    const original = await getResume("source");
+    expect(original?.doc.basics.name).toBe("Grace Hopper");
+  });
+
+  it("names an untitled copy instead of prefixing an empty string", async () => {
+    await putResume(row("source", 1_000, ""));
+
+    const copy = await duplicateResume("source");
+
+    expect(copy?.doc.basics.name).toBe("Untitled resume (Copy)");
+  });
+
+  it("ignores a resume that was already deleted", async () => {
+    expect(await duplicateResume("missing")).toBeNull();
   });
 });
 

@@ -39,7 +39,9 @@ in control of every line, and your data stays on your device.
 - **Recent resumes** on the home page list what you already saved in this
   browser, newest first. The five most recent show first, with a **Show all**
   toggle for the rest; tap anywhere on a row to reopen it, or use its buttons to
-  rename or delete it. Nothing leaves the device.
+  rename, duplicate, or delete it. A duplicate is saved as a separate copy
+  labelled **(Copy)**, so you can tailor one version for a job without changing
+  the original. Nothing leaves the device.
 - **PDF import**: choose a PDF and its text is read locally in your browser,
   then split into editable contact details, summary, experience, education, and
   skills. Scanned or image-only PDFs need to be pasted as text instead.
@@ -92,10 +94,13 @@ in control of every line, and your data stays on your device.
 - One Month + Year picker for every date field (month list plus a four-digit
   year), so `2023-10` stays consistent and no browser opens a slow year
   scroller. End dates for current roles have a **Present** toggle.
-- Add, delete, hide, and reorder entries inside each section. Delete buttons
-  read as destructive on hover without shouting at you. Moving an entry up or
-  down keeps your place in the list: the Content column does not jump back to
-  the top, and the Move button you just tapped stays focused for the next move.
+- Add, delete, hide, and reorder entries inside each section. The eye button on
+  an entry hides it from the preview, ATS text, and PDF without deleting it: the
+  card stays in the editor with a dimmed look and a **Show** eye button until
+  you bring it back. Delete buttons read as destructive on hover without
+  shouting at you. Moving an entry up or down keeps your place in the list: the
+  Content column does not jump back to the top, and the Move button you just
+  tapped stays focused for the next move.
 - Rename any section heading, and create your own sections for anything the
   standard list does not cover, such as speaking, patents, or coursework.
   Custom sections can be deleted when you no longer need them.

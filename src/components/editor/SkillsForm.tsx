@@ -12,7 +12,6 @@ import { useResumeStore } from "@/lib/store/useResumeStore";
 import { formatKeywords, parseKeywords } from "./keywords";
 import {
   AddEntryButton,
-  BooleanInput,
   ClearSectionButton,
   EntryActions,
   EntryCard,
@@ -142,7 +141,7 @@ export function SkillsForm() {
       className="flex flex-col gap-3"
     >
       {watched.items.map((item, index) => (
-        <EntryCard key={item.id} index={index}>
+        <EntryCard key={item.id} index={index} hidden={item.hidden}>
           <TextInput
             id={`skills-${item.id}-name`}
             label="Category"
@@ -159,15 +158,11 @@ export function SkillsForm() {
             placeholder="Python, SQL, TypeScript"
             hint="Separate keywords with commas."
           />
-          <BooleanInput
-            id={`skills-${item.id}-hidden`}
-            label="Hide entry"
-            checked={item.hidden}
-            onChange={(checked) => updateItem(index, "hidden", checked)}
-          />
           <EntryActions
             index={index}
             total={watched.items.length}
+            hidden={item.hidden}
+            onToggleHidden={() => updateItem(index, "hidden", !item.hidden)}
             onMoveUp={() => moveItem(index, -1)}
             onMoveDown={() => moveItem(index, 1)}
             onDelete={() => deleteItem(index)}

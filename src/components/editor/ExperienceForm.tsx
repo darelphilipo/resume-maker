@@ -12,7 +12,6 @@ import { useResumeStore } from "@/lib/store/useResumeStore";
 import { RichTextField } from "./RichTextField";
 import {
   AddEntryButton,
-  BooleanInput,
   ClearSectionButton,
   EntryActions,
   EntryCard,
@@ -139,7 +138,7 @@ export function ExperienceForm() {
       className="flex flex-col gap-3"
     >
       {watched.items.map((item, index) => (
-        <EntryCard key={item.id} index={index}>
+        <EntryCard key={item.id} index={index} hidden={item.hidden}>
           <TextInput
             id={`experience-${item.id}-company`}
             label="Company"
@@ -189,15 +188,11 @@ export function ExperienceForm() {
             placeholder="What did you build and what changed?"
             actionHelpers
           />
-          <BooleanInput
-            id={`experience-${item.id}-hidden`}
-            label="Hide entry"
-            checked={item.hidden}
-            onChange={(checked) => updateItem(index, "hidden", checked)}
-          />
           <EntryActions
             index={index}
             total={watched.items.length}
+            hidden={item.hidden}
+            onToggleHidden={() => updateItem(index, "hidden", !item.hidden)}
             onMoveUp={() => moveItem(index, -1)}
             onMoveDown={() => moveItem(index, 1)}
             onDelete={() => deleteItem(index)}

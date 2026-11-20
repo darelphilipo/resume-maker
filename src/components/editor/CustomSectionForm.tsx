@@ -12,7 +12,6 @@ import { useResumeStore } from "@/lib/store/useResumeStore";
 import { RichTextField } from "./RichTextField";
 import {
   AddEntryButton,
-  BooleanInput,
   ClearSectionButton,
   EntryActions,
   EntryCard,
@@ -170,7 +169,7 @@ export function CustomSectionForm({ sectionId }: { sectionId: string }) {
       />
 
       {watched.items.map((item, index) => (
-        <EntryCard key={item.id} index={index}>
+        <EntryCard key={item.id} index={index} hidden={item.hidden}>
           <TextInput
             id={`custom-${sectionId}-${item.id}-name`}
             label="Name"
@@ -206,15 +205,11 @@ export function CustomSectionForm({ sectionId }: { sectionId: string }) {
             onChange={(value) => updateItem(index, "url", value)}
             placeholder="https://example.com"
           />
-          <BooleanInput
-            id={`custom-${sectionId}-${item.id}-hidden`}
-            label="Hide entry"
-            checked={item.hidden}
-            onChange={(checked) => updateItem(index, "hidden", checked)}
-          />
           <EntryActions
             index={index}
             total={watched.items.length}
+            hidden={item.hidden}
+            onToggleHidden={() => updateItem(index, "hidden", !item.hidden)}
             onMoveUp={() => moveItem(index, -1)}
             onMoveDown={() => moveItem(index, 1)}
             onDelete={() => deleteItem(index)}

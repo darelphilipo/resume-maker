@@ -12,7 +12,6 @@ import { useResumeStore } from "@/lib/store/useResumeStore";
 import { RichTextField } from "./RichTextField";
 import {
   AddEntryButton,
-  BooleanInput,
   ClearSectionButton,
   EntryActions,
   EntryCard,
@@ -143,7 +142,7 @@ export function EducationForm() {
       className="flex flex-col gap-3"
     >
       {watched.items.map((item, index) => (
-        <EntryCard key={item.id} index={index}>
+        <EntryCard key={item.id} index={index} hidden={item.hidden}>
           <TextInput
             id={`education-${item.id}-school`}
             label="School"
@@ -205,15 +204,11 @@ export function EducationForm() {
             ariaLabel={`Description for entry ${index + 1}`}
             placeholder="Thesis, honours, or relevant coursework"
           />
-          <BooleanInput
-            id={`education-${item.id}-hidden`}
-            label="Hide entry"
-            checked={item.hidden}
-            onChange={(checked) => updateItem(index, "hidden", checked)}
-          />
           <EntryActions
             index={index}
             total={watched.items.length}
+            hidden={item.hidden}
+            onToggleHidden={() => updateItem(index, "hidden", !item.hidden)}
             onMoveUp={() => moveItem(index, -1)}
             onMoveDown={() => moveItem(index, 1)}
             onDelete={() => deleteItem(index)}

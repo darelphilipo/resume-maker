@@ -143,6 +143,80 @@ describe("SectionFormControls", () => {
     expect(input).toHaveClass("bg-surface");
   });
 
+  it("toggles visibility from the action row and dims a hidden card", () => {
+    const onToggleHidden = vi.fn();
+
+    render(
+      <EntryCard index={0} hidden>
+        <EntryActions
+          index={0}
+          total={1}
+          hidden
+          onToggleHidden={onToggleHidden}
+          onMoveUp={vi.fn()}
+          onMoveDown={vi.fn()}
+          onDelete={vi.fn()}
+        />
+      </EntryCard>,
+    );
+
+    const card = screen.getByText("Entry 1").closest("fieldset");
+    const toggle = screen.getByRole("button", { name: "Show entry 1" });
+
+    expect(card).toHaveAttribute("data-hidden", "true");
+    expect(card).toHaveClass("opacity-60");
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(toggle).toHaveClass(
+      "min-h-9",
+      "min-w-9",
+      "pointer-coarse:min-h-11",
+      "pointer-coarse:min-w-11",
+    );
+
+    fireEvent.click(toggle);
+
+    expect(onToggleHidden).toHaveBeenCalledTimes(1);
+  });
+
+  it("labels a visible entry toggle as Hide", () => {
+    render(
+      <EntryCard index={0}>
+        <EntryActions
+          index={0}
+          total={1}
+          onToggleHidden={vi.fn()}
+          onMoveUp={vi.fn()}
+          onMoveDown={vi.fn()}
+          onDelete={vi.fn()}
+        />
+      </EntryCard>,
+    );
+
+    const card = screen.getByText("Entry 1").closest("fieldset");
+    const toggle = screen.getByRole("button", { name: "Hide entry 1" });
+
+    expect(card).not.toHaveAttribute("data-hidden");
+    expect(card).not.toHaveClass("opacity-60");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("keeps the visibility toggle opt-in for sections that cannot hide", () => {
+    render(
+      <EntryActions
+        index={0}
+        total={1}
+        onMoveUp={vi.fn()}
+        onMoveDown={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /^(Hide|Show) entry 1$/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button")).toHaveLength(3);
+  });
+
   it("keeps focus and the scroll offset when a move reorders the DOM", () => {
     // A real Content column (or drawer body) is a scrollable ancestor. jsdom
     // has no layout, so stub the geometry the scroll helper reads.

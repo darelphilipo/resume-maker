@@ -1,6 +1,9 @@
 import Dexie, { type EntityTable } from "dexie";
 
+import { newId } from "@/lib/schema/defaults";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
+
+import { UNTITLED_RESUME } from "./recentResumes";
 
 export type ResumeRow = {
   id: string;
@@ -41,6 +44,35 @@ export async function listRecentResumes(limit = 10): Promise<ResumeRow[]> {
 
 export async function deleteResume(id: string): Promise<void> {
   await resumeDb.resumes.delete(id);
+}
+
+/**
+ * Clones a saved resume under a new id and labels it " (Copy)". The saved
+ * document itself is never mutated, so the original row keeps its own name and
+ * history. Returns `null` when the source row is already gone.
+ */
+export async function duplicateResume(id: string): Promise<ResumeRow | null> {
+  const row = await getResume(id);
+
+  if (!row) {
+    return null;
+  }
+
+  const baseName = row.doc.basics.name.trim();
+  const name = `${baseName === "" ? UNTITLED_RESUME : baseName} (Copy)`;
+
+  const copy: ResumeRow = {
+    id: newId(),
+    updatedAt: Date.now(),
+    doc: {
+      ...row.doc,
+      basics: { ...row.doc.basics, name },
+    },
+  };
+
+  await putResume(copy);
+
+  return copy;
 }
 
 /**

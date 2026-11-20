@@ -6,6 +6,7 @@ import {
   CaretDown,
   CircleNotch,
   ClipboardText,
+  Copy,
   CurrencyDollar,
   FilePdf,
   FileText,
@@ -37,6 +38,7 @@ import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { parseResumeJson } from "@/lib/schema/serialize";
 import {
   deleteResume,
+  duplicateResume,
   listRecentResumes,
   renameResume,
   type ResumeRow,
@@ -142,6 +144,7 @@ export function Launcher() {
   const [openingRecentId, setOpeningRecentId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showAllRecent, setShowAllRecent] = useState(false);
 
@@ -417,6 +420,29 @@ export function Launcher() {
     }
   }
 
+  async function handleDuplicateRecent(row: ResumeRow) {
+    if (duplicatingId) {
+      return;
+    }
+
+    setDuplicatingId(row.id);
+    setRecentError(null);
+
+    try {
+      const copy = await duplicateResume(row.id);
+
+      if (!copy) {
+        setRecentError(RECENT_MISSING_MESSAGE);
+      }
+
+      await refreshRecent();
+    } catch {
+      setRecentError(RECENT_ERROR_MESSAGE);
+    } finally {
+      setDuplicatingId(null);
+    }
+  }
+
   async function handleDeleteRecent(row: ResumeRow) {
     try {
       await deleteResume(row.id);
@@ -682,7 +708,9 @@ export function Launcher() {
                     const isOpening = openingRecentId === row.id;
                     const isRenaming = renamingId === row.id;
                     const isDeleting = deletingId === row.id;
-                    const rowIsInteractive = isRenaming || isDeleting;
+                    const isDuplicating = duplicatingId === row.id;
+                    const rowIsInteractive =
+                      isRenaming || isDeleting || isDuplicating;
 
                     return (
                       <li
@@ -793,6 +821,19 @@ export function Launcher() {
                                   className="flex size-11 items-center justify-center rounded-lg border border-[#e3ddd2] bg-white text-[#33465a]"
                                 >
                                   <PencilSimple size={16} aria-hidden />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    void handleDuplicateRecent(row);
+                                  }}
+                                  disabled={isDuplicating}
+                                  aria-busy={isDuplicating}
+                                  aria-label={`Duplicate ${name}`}
+                                  className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[#e3ddd2] bg-white text-[#33465a] disabled:cursor-wait disabled:text-[#8a8f94]"
+                                >
+                                  <Copy size={16} aria-hidden />
                                 </button>
                                 <button
                                   type="button"

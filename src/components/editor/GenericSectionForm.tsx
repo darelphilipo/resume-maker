@@ -398,17 +398,19 @@ export function GenericSectionForm({
       className="flex flex-col gap-3"
     >
       {watched.items.map((item, index) => (
-        <EntryCard key={stringValue(item.id)} index={index}>
+        <EntryCard
+          key={stringValue(item.id)}
+          index={index}
+          hidden={booleanValue(item.hidden)}
+        >
           {fields.map((field) => renderField(item, index, field))}
-          <BooleanInput
-            id={`${sectionId}-${stringValue(item.id)}-hidden`}
-            label="Hide entry"
-            checked={booleanValue(item.hidden)}
-            onChange={(checked) => updateItem(index, "hidden", checked)}
-          />
           <EntryActions
             index={index}
             total={watched.items.length}
+            hidden={booleanValue(item.hidden)}
+            onToggleHidden={() =>
+              updateItem(index, "hidden", !booleanValue(item.hidden))
+            }
             onMoveUp={() => moveItem(index, -1)}
             onMoveDown={() => moveItem(index, 1)}
             onDelete={() => deleteItem(index)}

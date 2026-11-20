@@ -28,10 +28,6 @@ _empty
 
 ### P1 — Quick-Win User Features
 
-- [ ] P1: Add **Duplicate resume** on `/` and **per-entry Hide/Show** in the editor (`src/components/launcher/Launcher.tsx`, `src/lib/store/db.ts`, `src/types/`, `src/components/editor/SectionFormControls.tsx`, `src/templates/`).
-  1. Add a **Duplicate** icon button (`min-h-11 min-w-11`, stopping click propagation) on each **Recent resumes** card that clones the Dexie record with a new `id`, appends ` (Copy)`, and updates `updatedAt`.
-  2. Add an optional `hidden?: boolean` field on individual entries (`Experience`, `Projects`, `Education`, `Certifications`, `Awards`, `Publications`, `Custom`), wire an eye-icon **Hide / Show** button in `EntryActions` with a dimmed state when hidden, and filter hidden entries out of all 6 templates, `MeasureLayer`, and `AtsTextView`.
-
 - [ ] P1: Add a one-click **"Anonymize for review"** toggle in Preview (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PrintPortal.tsx`, `src/components/preview/AtsTextView.tsx`, `src/lib/print/printDocument.ts`, new `src/lib/privacy/anonymizeDoc.ts`).
   1. Create `anonymizeResumeDoc(doc)` returning a display-only clone replacing name (`"Alex Taylor"`), email, phone, location, website, `Profiles` URLs/usernames, picture (hidden), and company/school names (`"Company A"`, `"University A"`) without mutating saved Dexie data.
   2. Add a session-only **Anonymize** toggle pill in the Preview header with a subtle active banner, and pass the anonymized doc into `PageStack`, `AtsTextView`, `PrintPortal`, and `printDocument.ts` (so the exported PDF filename is also anonymized).
@@ -61,6 +57,28 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-20 — Added **Duplicate resume** on `/` and a per-entry
+  **Hide/Show** eye toggle. `duplicateResume(id)` clones a saved Dexie row under
+  a new id, appends ` (Copy)` to the current name (or `Untitled resume (Copy)`),
+  and bumps `updatedAt` while leaving the original untouched; each **Recent
+  resumes** row has a Duplicate icon button that stops row-click propagation and
+  refreshes the list. Every entry form now exposes visibility through one
+  compact eye button in `EntryActions` (Eye for visible, EyeSlash for hidden,
+  `aria-pressed` plus Hide/Show labels) and dims the `EntryCard` while hidden,
+  replacing the old "Hide entry" checkbox. Hidden-entry filtering was already
+  shared by all six templates, `MeasureLayer`, and `AtsTextView` through
+  `sectionData`/`atsText`, so the new regression tests lock that contract in.
+  Verified `npm run typecheck`, `npm test` (619 pass), `npm run lint`. Files:
+  `src/lib/store/db.ts` (+ test), `src/components/launcher/Launcher.tsx`
+  (+ test), `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/ExperienceForm.tsx` (+ test),
+  `src/components/editor/EducationForm.tsx`,
+  `src/components/editor/ProjectsForm.tsx`,
+  `src/components/editor/SkillsForm.tsx`,
+  `src/components/editor/GenericSectionForm.tsx`,
+  `src/components/editor/CustomSectionForm.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-20 — Polished the Launcher. **Create resume from text** now
   enables from a single `onChange` or `onPaste` (the paste handler derives the

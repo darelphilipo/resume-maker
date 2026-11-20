@@ -3,6 +3,8 @@
 import {
   ArrowDown,
   ArrowUp,
+  Eye,
+  EyeSlash,
   Plus,
   Trash,
 } from "@phosphor-icons/react";
@@ -368,13 +370,21 @@ export function BooleanInput({
 
 export function EntryCard({
   index,
+  hidden = false,
   children,
 }: {
   index: number;
+  /** Dims an entry that is excluded from the preview and print, not deleted. */
+  hidden?: boolean;
   children: ReactNode;
 }) {
   return (
-    <fieldset className="flex flex-col gap-3 rounded-xl border border-line bg-surface-muted p-3">
+    <fieldset
+      data-hidden={hidden ? "true" : undefined}
+      className={`flex flex-col gap-3 rounded-xl border border-line bg-surface-muted p-3 transition-opacity ${
+        hidden ? "opacity-60 focus-within:opacity-100 hover:opacity-100" : ""
+      }`}
+    >
       <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-muted">
         Entry {index + 1}
       </legend>
@@ -389,6 +399,9 @@ export type EntryActionsProps = {
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDelete: () => void;
+  /** Omit to hide the visibility toggle (e.g. a section without hiding). */
+  hidden?: boolean;
+  onToggleHidden?: () => void;
 };
 
 type ScrollerSnapshot = {
@@ -441,6 +454,8 @@ export function EntryActions({
   onMoveUp,
   onMoveDown,
   onDelete,
+  hidden = false,
+  onToggleHidden,
 }: EntryActionsProps) {
   const [confirming, setConfirming] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -534,6 +549,21 @@ export function EntryActions({
 
   return (
     <div ref={rootRef} className="flex flex-nowrap items-center gap-1">
+      {onToggleHidden ? (
+        <button
+          type="button"
+          aria-label={`${hidden ? "Show" : "Hide"} entry ${entryNumber}`}
+          aria-pressed={hidden}
+          onClick={onToggleHidden}
+          className={ACTION_BUTTON_CLASS}
+        >
+          {hidden ? (
+            <EyeSlash size={16} aria-hidden />
+          ) : (
+            <Eye size={16} aria-hidden />
+          )}
+        </button>
+      ) : null}
       <button
         ref={upRef}
         type="button"
