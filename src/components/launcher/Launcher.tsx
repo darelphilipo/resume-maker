@@ -23,7 +23,9 @@ import {
   useEffect,
   useState,
   type ChangeEvent,
+  type ClipboardEvent,
   type FormEvent,
+  type MouseEvent,
   type ReactNode,
 } from "react";
 
@@ -60,6 +62,8 @@ const RECENT_ERROR_MESSAGE =
 const RECENT_MISSING_MESSAGE =
   "That resume is no longer saved on this device. Pick another one or start a new resume.";
 const BLANK_ACTION_ID = "blank";
+const RECENT_INITIAL_COUNT = 5;
+const RECENT_LOAD_LIMIT = 50;
 const TRUST_POINTS = [
   { label: "100% Free", icon: CurrencyDollar },
   { label: "No Sign-Up", icon: ShieldCheck },
@@ -139,10 +143,11 @@ export function Launcher() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showAllRecent, setShowAllRecent] = useState(false);
 
   const refreshRecent = useCallback(async () => {
     try {
-      const rows = await listRecentResumes();
+      const rows = await listRecentResumes(RECENT_LOAD_LIMIT);
       setRecent(rows);
       setRecentError(null);
     } catch {
@@ -154,7 +159,7 @@ export function Launcher() {
   useEffect(() => {
     let cancelled = false;
 
-    listRecentResumes()
+    listRecentResumes(RECENT_LOAD_LIMIT)
       .then((rows) => {
         if (cancelled) {
           return;
@@ -347,6 +352,35 @@ export function Launcher() {
     }
   }
 
+  function handleRecentRowClick(
+    event: MouseEvent<HTMLLIElement>,
+    row: ResumeRow,
+  ) {
+    const target = event.target as HTMLElement | null;
+
+    if (target?.closest("button, a, input, form, textarea, select")) {
+      return;
+    }
+
+    void handleOpenRecent(row);
+  }
+
+  function handlePasteText(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const pasted = event.clipboardData?.getData("text") ?? "";
+
+    if (pasted === "") {
+      return;
+    }
+
+    const textarea = event.currentTarget;
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? textarea.value.length;
+    const next = `${textarea.value.slice(0, start)}${pasted}${textarea.value.slice(end)}`;
+
+    setPastedText(next);
+    setPasteError(null);
+  }
+
   function startRename(row: ResumeRow) {
     setDeletingId(null);
     setRenamingId(row.id);
@@ -399,10 +433,10 @@ export function Launcher() {
   }
 
   return (
-    <div className="mt-10 flex flex-col gap-5 sm:mt-12">
+    <div className="mt-7 flex flex-col gap-5 sm:mt-9">
       <ul
         aria-label="Resume Maker promises"
-        className="flex flex-nowrap items-center justify-center gap-x-2 text-[11px] font-medium leading-tight text-muted sm:gap-x-4 sm:text-sm"
+        className="flex flex-nowrap items-center justify-start gap-x-2 text-[11px] font-medium leading-tight text-muted sm:gap-x-4 sm:text-sm"
       >
         {TRUST_POINTS.map(({ label, icon: PromiseIcon }, index) => (
           <li
@@ -426,7 +460,7 @@ export function Launcher() {
         ))}
       </ul>
 
-      <div className="mt-3 flex flex-col gap-1 border-t border-[#e6e0d6] pt-7 sm:mt-5">
+      <div className="mt-1 flex flex-col gap-1 border-t border-[#e6e0d6] pt-5 sm:mt-2 sm:pt-6">
         <h2 className="font-serif text-2xl font-semibold tracking-tight">
           Choose one way to start
         </h2>
@@ -457,9 +491,10 @@ export function Launcher() {
               setPastedText(event.currentTarget.value);
               setPasteError(null);
             }}
+            onPaste={handlePasteText}
             rows={7}
             placeholder="Paste your resume here. Headings such as Experience, Education, and Skills help the parser split it up."
-            className={`${INPUT_CLASS} min-h-44 resize-y`}
+            className={`${INPUT_CLASS} min-h-44 resize-none`}
           />
 
           <button
@@ -546,7 +581,8 @@ export function Launcher() {
             onClick={() => void handleBlank()}
             disabled={creatingId === BLANK_ACTION_ID}
             aria-busy={creatingId === BLANK_ACTION_ID}
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#1b3a57] bg-white px-4 py-3 text-sm font-semibold text-[#1b3a57] transition-colors enabled:hover:bg-[#eef2f6] enabled:active:bg-[#e3ebf2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-wait disabled:border-[#c9c2b6] disabled:text-[#5b6a7a]"
+            data-cta="secondary"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#d8d2c6] bg-white px-4 py-3 text-sm font-semibold text-[#33465a] transition-colors enabled:hover:border-[#1b3a57] enabled:hover:bg-[#fbfaf7] enabled:active:bg-[#f1ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-wait disabled:border-[#e3ddd2] disabled:text-[#5b6a7a]"
           >
             {creatingId === BLANK_ACTION_ID ? (
               <CircleNotch size={18} aria-hidden className="animate-spin" />
@@ -566,19 +602,12 @@ export function Launcher() {
             Or start from a role
           </p>
           <ul data-preset-list className="mt-2 grid gap-2.5 sm:grid-cols-2">
-            {ARCHETYPES.map((archetype, index) => {
+            {ARCHETYPES.map((archetype) => {
               const isPending = creatingId === archetype.id;
               const isSiblingPending = creatingId !== null && !isPending;
-              const isLastOdd =
-                index === ARCHETYPES.length - 1 && ARCHETYPES.length % 2 === 1;
 
               return (
-                <li
-                  key={archetype.id}
-                  className={`h-full items-start ${
-                    isLastOdd ? "sm:col-span-2" : ""
-                  }`}
-                >
+                <li key={archetype.id} className="h-full items-start">
                   <button
                     type="button"
                     onClick={() => void handleArchetype(archetype)}
@@ -639,130 +668,176 @@ export function Launcher() {
                 here, so you can reopen them later without an account.
               </p>
             ) : (
-              <ul
-                aria-label="Recent resumes"
-                className="flex flex-col gap-2"
-              >
-                {recent.map((row) => {
-                  const name = recentResumeName(row);
-                  const isOpening = openingRecentId === row.id;
-                  const isRenaming = renamingId === row.id;
-                  const isDeleting = deletingId === row.id;
+              <div className="flex flex-col gap-2">
+                <ul
+                  id="recent-resume-list"
+                  aria-label="Recent resumes"
+                  className="flex flex-col gap-2"
+                >
+                  {(showAllRecent
+                    ? recent
+                    : recent.slice(0, RECENT_INITIAL_COUNT)
+                  ).map((row) => {
+                    const name = recentResumeName(row);
+                    const isOpening = openingRecentId === row.id;
+                    const isRenaming = renamingId === row.id;
+                    const isDeleting = deletingId === row.id;
+                    const rowIsInteractive = isRenaming || isDeleting;
 
-                  return (
-                    <li
-                      key={row.id}
-                      className="rounded-xl border border-[#e3ddd2] bg-[#fbfaf7] px-3 py-2.5"
-                    >
-                      {isRenaming ? (
-                        <form
-                          onSubmit={(event) => void handleRenameSubmit(event)}
-                          className="flex flex-col gap-2"
-                        >
-                          <label
-                            htmlFor={`recent-name-${row.id}`}
-                            className="sr-only"
+                    return (
+                      <li
+                        key={row.id}
+                        onClick={
+                          rowIsInteractive
+                            ? undefined
+                            : (event) => handleRecentRowClick(event, row)
+                        }
+                        className={`rounded-xl border border-[#e3ddd2] bg-[#fbfaf7] px-3 py-2.5 ${
+                          rowIsInteractive
+                            ? ""
+                            : "cursor-pointer transition-colors hover:border-[#c9c2b6] hover:bg-white"
+                        }`}
+                      >
+                        {isRenaming ? (
+                          <form
+                            onSubmit={(event) => void handleRenameSubmit(event)}
+                            className="flex flex-col gap-2"
                           >
-                            Resume name
-                          </label>
-                          <input
-                            id={`recent-name-${row.id}`}
-                            value={renameDraft}
-                            onChange={(event) =>
-                              setRenameDraft(event.currentTarget.value)
-                            }
-                            autoFocus
-                            className="min-h-11 w-full rounded-lg border border-[#d8d2c6] bg-white px-3 py-2 text-sm text-[#172839] focus-visible:border-[#1b3a57] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/15"
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              type="submit"
-                              disabled={renameDraft.trim() === ""}
-                              className="min-h-11 flex-1 rounded-lg bg-[#172839] px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#e8e4dc] disabled:text-[#5b6a7a]"
+                            <label
+                              htmlFor={`recent-name-${row.id}`}
+                              className="sr-only"
                             >
-                              Save name
-                            </button>
+                              Resume name
+                            </label>
+                            <input
+                              id={`recent-name-${row.id}`}
+                              value={renameDraft}
+                              onChange={(event) =>
+                                setRenameDraft(event.currentTarget.value)
+                              }
+                              autoFocus
+                              className="min-h-11 w-full rounded-lg border border-[#d8d2c6] bg-white px-3 py-2 text-sm text-[#172839] focus-visible:border-[#1b3a57] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/15"
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                type="submit"
+                                disabled={renameDraft.trim() === ""}
+                                className="min-h-11 flex-1 rounded-lg bg-[#172839] px-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#e8e4dc] disabled:text-[#5b6a7a]"
+                              >
+                                Save name
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  cancelRename();
+                                }}
+                                className="min-h-11 flex-1 rounded-lg border border-[#e3ddd2] bg-white px-3 text-sm font-medium text-[#33465a]"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={cancelRename}
-                              className="min-h-11 flex-1 rounded-lg border border-[#e3ddd2] bg-white px-3 text-sm font-medium text-[#33465a]"
+                              onClick={() => void handleOpenRecent(row)}
+                              disabled={isOpening}
+                              aria-busy={isOpening}
+                              aria-label={`Open ${name}`}
+                              className="flex min-h-11 min-w-0 flex-1 flex-col justify-center rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-wait"
                             >
-                              Cancel
+                              <span className="truncate text-sm font-medium text-[#172839]">
+                                {name}
+                              </span>
+                              <span className="truncate text-xs text-[#6a7683]">
+                                {isOpening
+                                  ? "Opening..."
+                                  : recentResumeEditedLabel(row.updatedAt)}
+                              </span>
                             </button>
+
+                            {isDeleting ? (
+                              <div className="flex shrink-0 gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    void handleDeleteRecent(row);
+                                  }}
+                                  className="min-h-11 rounded-lg border border-[#b42318] bg-white px-2.5 text-xs font-semibold text-[#b42318]"
+                                >
+                                  Delete
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setDeletingId(null);
+                                  }}
+                                  className="min-h-11 rounded-lg border border-[#e3ddd2] bg-white px-2.5 text-xs font-medium text-[#33465a]"
+                                >
+                                  Keep
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex shrink-0 gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    startRename(row);
+                                  }}
+                                  aria-label={`Rename ${name}`}
+                                  className="flex size-11 items-center justify-center rounded-lg border border-[#e3ddd2] bg-white text-[#33465a]"
+                                >
+                                  <PencilSimple size={16} aria-hidden />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setRenamingId(null);
+                                    setDeletingId(row.id);
+                                  }}
+                                  aria-label={`Delete ${name}`}
+                                  className="flex size-11 items-center justify-center rounded-lg border border-[#e3ddd2] bg-white text-[#33465a]"
+                                >
+                                  <Trash size={16} aria-hidden />
+                                </button>
+                              </div>
+                            )}
                           </div>
-                        </form>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => void handleOpenRecent(row)}
-                            disabled={isOpening}
-                            aria-busy={isOpening}
-                            aria-label={`Open ${name}`}
-                            className="flex min-h-11 min-w-0 flex-1 flex-col justify-center rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-wait"
+                        )}
+
+                        {isDeleting ? (
+                          <p
+                            role="status"
+                            className="mt-2 text-xs text-[#6a7683]"
                           >
-                            <span className="truncate text-sm font-medium text-[#172839]">
-                              {name}
-                            </span>
-                            <span className="truncate text-xs text-[#6a7683]">
-                              {isOpening
-                                ? "Opening..."
-                                : recentResumeEditedLabel(row.updatedAt)}
-                            </span>
-                          </button>
+                            Delete this resume? This cannot be undone.
+                          </p>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
 
-                          {isDeleting ? (
-                            <div className="flex shrink-0 gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => void handleDeleteRecent(row)}
-                                className="min-h-11 rounded-lg border border-[#b42318] bg-white px-2.5 text-xs font-semibold text-[#b42318]"
-                              >
-                                Delete
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setDeletingId(null)}
-                                className="min-h-11 rounded-lg border border-[#e3ddd2] bg-white px-2.5 text-xs font-medium text-[#33465a]"
-                              >
-                                Keep
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex shrink-0 gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => startRename(row)}
-                                aria-label={`Rename ${name}`}
-                                className="flex size-11 items-center justify-center rounded-lg border border-[#e3ddd2] bg-white text-[#33465a]"
-                              >
-                                <PencilSimple size={16} aria-hidden />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setRenamingId(null);
-                                  setDeletingId(row.id);
-                                }}
-                                aria-label={`Delete ${name}`}
-                                className="flex size-11 items-center justify-center rounded-lg border border-[#e3ddd2] bg-white text-[#33465a]"
-                              >
-                                <Trash size={16} aria-hidden />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {isDeleting ? (
-                        <p role="status" className="mt-2 text-xs text-[#6a7683]">
-                          Delete this resume? This cannot be undone.
-                        </p>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
+                {recent.length > RECENT_INITIAL_COUNT ? (
+                  <button
+                    type="button"
+                    aria-expanded={showAllRecent}
+                    aria-controls="recent-resume-list"
+                    onClick={() => setShowAllRecent((open) => !open)}
+                    className="min-h-11 rounded-xl border border-[#e3ddd2] bg-white px-3 text-sm font-medium text-[#33465a] transition-colors hover:bg-[#fbfaf7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2"
+                  >
+                    {showAllRecent
+                      ? "Show fewer"
+                      : `Show all (${recent.length})`}
+                  </button>
+                ) : null}
+              </div>
             )}
 
             {recentError ? (
@@ -774,7 +849,7 @@ export function Launcher() {
         </EntryCard>
       </div>
 
-      <div className="rounded-2xl border border-dashed border-[#d5cec2] bg-white/50 p-4">
+      <div className="rounded-2xl border border-[#e3ddd2] bg-white p-4">
         <button
           type="button"
           aria-expanded={backupOpen}

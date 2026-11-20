@@ -107,7 +107,9 @@ describe("Launcher", () => {
     expect(badge.querySelectorAll("a, button")).toHaveLength(0);
 
     expect(badge).toHaveClass("flex-nowrap");
+    expect(badge).toHaveClass("justify-start");
     expect(badge).not.toHaveClass("grid");
+    expect(badge).not.toHaveClass("justify-center");
 
     for (const promise of promises) {
       expect(promise.querySelector(".whitespace-nowrap")).not.toBeNull();
@@ -180,7 +182,7 @@ describe("Launcher", () => {
     expect(text).not.toMatch(/\b(assistant|refine|scorecard|rewrite)\b/i);
   });
 
-  it("matches preset card heights and spans the odd last preset", () => {
+  it("gives every preset card the same width and keeps Fresh Graduate", () => {
     render(<Launcher />);
 
     const presets = within(
@@ -192,11 +194,10 @@ describe("Launcher", () => {
     for (const preset of presets) {
       expect(preset).toHaveClass("h-full");
       expect(preset).toHaveClass("items-start");
+      expect(preset).not.toHaveClass("sm:col-span-2");
       expect(within(preset).getByRole("button")).toHaveClass("h-full");
     }
 
-    expect(presets.at(-1)).toHaveClass("sm:col-span-2");
-    expect(presets[0]).not.toHaveClass("sm:col-span-2");
     expect(presets.at(-1)).toHaveTextContent("Fresh Graduate");
   });
 
@@ -231,6 +232,46 @@ describe("Launcher", () => {
     expect(button).toBeDisabled();
     expect(button).toHaveClass("disabled:bg-[#e8e4dc]");
     expect(button).not.toHaveClass("disabled:opacity-60");
+  });
+
+  it("enables the paste action immediately on change and paste", () => {
+    render(<Launcher />);
+
+    const textarea = screen.getByLabelText("Resume text");
+    const button = screen.getByRole("button", {
+      name: "Create resume from text",
+    });
+
+    expect(button).toBeDisabled();
+    expect(textarea).toHaveClass("resize-none");
+    expect(textarea).not.toHaveClass("resize-y");
+
+    fireEvent.change(textarea, { target: { value: "Grace Hopper" } });
+    expect(button).toBeEnabled();
+
+    fireEvent.change(textarea, { target: { value: "" } });
+    expect(button).toBeDisabled();
+
+    fireEvent.paste(textarea, {
+      clipboardData: {
+        getData: () => "Ada Lovelace\nSoftware Engineer",
+      },
+    });
+
+    expect(button).toBeEnabled();
+    expect(textarea).toHaveValue("Ada Lovelace\nSoftware Engineer");
+  });
+
+  it("styles the blank-resume action as a secondary call to action", () => {
+    render(<Launcher />);
+
+    const blank = screen.getByRole("button", {
+      name: "Start with a blank resume",
+    });
+
+    expect(blank).toHaveAttribute("data-cta", "secondary");
+    expect(blank).toHaveClass("border-[#d8d2c6]");
+    expect(blank).not.toHaveClass("border-[#1b3a57]");
   });
 
   it("opens the editor from the Software Engineer preset", async () => {
@@ -303,6 +344,74 @@ describe("Launcher", () => {
       expect(pushMock).toHaveBeenCalledWith("/editor?id=recent-1");
     });
     expect(useResumeStore.getState().doc.basics.name).toBe("Grace Hopper");
+  });
+
+  it("opens a recent resume when the whole row is clicked", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    render(<Launcher />);
+
+    const open = await screen.findByRole("button", {
+      name: "Open Grace Hopper",
+    });
+    const row = open.closest("li");
+
+    expect(row).not.toBeNull();
+    fireEvent.click(row as HTMLLIElement);
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith("/editor?id=recent-1");
+    });
+    expect(useResumeStore.getState().doc.basics.name).toBe("Grace Hopper");
+  });
+
+  it("does not open the resume when a row action is clicked", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    await user.click(
+      await screen.findByRole("button", { name: "Rename Grace Hopper" }),
+    );
+
+    expect(screen.getByLabelText("Resume name")).toBeInTheDocument();
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("shows five recent resumes first and reveals the rest on demand", async () => {
+    for (let index = 0; index < 7; index += 1) {
+      await seedRecent(
+        `recent-${index}`,
+        `Person ${index}`,
+        Date.UTC(2026, 10, 18, 12, index),
+      );
+    }
+
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    await screen.findByRole("button", { name: "Open Person 6" });
+    expect(
+      screen.getAllByRole("button", { name: /^Open / }),
+    ).toHaveLength(5);
+
+    await user.click(screen.getByRole("button", { name: "Show all (7)" }));
+
+    expect(
+      screen.getAllByRole("button", { name: /^Open / }),
+    ).toHaveLength(7);
+    expect(
+      screen.getByRole("button", { name: "Show fewer" }),
+    ).toBeInTheDocument();
+  });
+
+  it("wraps the Backup & Restore disclosure in a solid border", () => {
+    render(<Launcher />);
+
+    const shell = backupToggle().parentElement;
+
+    expect(shell).not.toBeNull();
+    expect(shell).not.toHaveClass("border-dashed");
+    expect(shell).toHaveClass("border-[#e3ddd2]");
   });
 
   it("renames a recent resume inline", async () => {

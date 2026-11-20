@@ -26,11 +26,6 @@ _empty
 
 <!-- The stale "Match JD drawer" item was removed 2026-11-20: it is already in Done with Decision #50. -->
 
-- [ ] P1: Polish Launcher (`/`) layout, Recent Resumes UX, and `"Create resume from text"` enablement (`src/components/launcher/Launcher.tsx`).
-  1. Fix `"Create resume from text"` so `disabled` updates immediately on `onChange` / `onPaste` (single click submits, no blur needed) and add `resize-none` to the textarea.
-  2. Align the hero headline/subtitle and `100% Free • No Sign-Up • Works Offline` badge row consistently and tighten the vertical gap; keep `Fresh Graduate` the same width as other preset cards (or add a 6th preset) and give `+ Start with a blank resume` clean secondary CTA styling.
-  3. Make the entire Recent Resume row clickable to open the resume (stopping click propagation on Rename / Delete / Duplicate buttons), cap the initial list at 5 items with a `"Show all (N)"` toggle, and change the outer `Backup & Restore` box from dashed to a subtle solid border so it doesn't nest two dashed borders.
-
 ### P1 — Quick-Win User Features
 
 - [ ] P1: Add **Duplicate resume** on `/` and **per-entry Hide/Show** in the editor (`src/components/launcher/Launcher.tsx`, `src/lib/store/db.ts`, `src/types/`, `src/components/editor/SectionFormControls.tsx`, `src/templates/`).
@@ -66,6 +61,20 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-20 — Polished the Launcher. **Create resume from text** now
+  enables from a single `onChange` or `onPaste` (the paste handler derives the
+  next value from the selection before the browser commits it), and the textarea
+  is `resize-none`. The promise row is left-aligned with the hero, the
+  hero-to-choices spacing is tighter, all five presets keep one width (Fresh
+  Graduate no longer spans both columns), and **Start with a blank resume** is a
+  quiet secondary outline CTA. **Recent resumes** rows open on a click anywhere
+  while the Open button stays keyboard-accessible and Rename/Delete stop
+  propagation; the list shows 5 first with **Show all (N)** / **Show fewer**, and
+  the outer Backup & Restore shell is now solid instead of dashed. Verified
+  `npm run typecheck`, `npm test` (611 pass). Files:
+  `src/components/launcher/Launcher.tsx` (+ test), `src/app/page.tsx`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-20 — Polished the Design panel and fixed the missing **Density**
   highlight. Legacy Dexie rows saved before `design.density` existed had no

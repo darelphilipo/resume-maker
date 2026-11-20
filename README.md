@@ -37,8 +37,9 @@ in control of every line, and your data stays on your device.
   complete editable example. Either way you land in the same editor with every
   field yours to change.
 - **Recent resumes** on the home page list what you already saved in this
-  browser, newest first, so you can reopen a resume, rename it, or delete it
-  without an account. Nothing leaves the device.
+  browser, newest first. The five most recent show first, with a **Show all**
+  toggle for the rest; tap anywhere on a row to reopen it, or use its buttons to
+  rename or delete it. Nothing leaves the device.
 - **PDF import**: choose a PDF and its text is read locally in your browser,
   then split into editable contact details, summary, experience, education, and
   skills. Scanned or image-only PDFs need to be pasted as text instead.
@@ -48,6 +49,8 @@ in control of every line, and your data stays on your device.
   runs in your browser, and you can correct anything afterwards. School names
   with a comma, such as `University of California, Berkeley`, stay whole, and
   skills keep their categories under headings such as **Skills & Expertise**.
+  **Create resume from text** turns on the moment you type or paste, so one tap
+  starts the import.
 - **Role presets** for Software Engineer, Product Manager, UX/UI Designer,
   Finance & Operations, and Fresh Graduate, each with a complete editable sample
   including categorized skills you can adapt.

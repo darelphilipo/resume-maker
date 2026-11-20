@@ -46,17 +46,17 @@ export default function Home() {
           </p>
         </header>
 
-        <section aria-labelledby="home-heading" className="mt-10 sm:mt-16">
+        <section aria-labelledby="home-heading" className="mt-8 sm:mt-12">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a6a3b]">
             Your next resume
           </p>
           <h2
             id="home-heading"
-            className="mt-3 max-w-2xl font-serif text-[2rem] font-semibold leading-[1.1] tracking-tight sm:text-5xl"
+            className="mt-2 max-w-2xl font-serif text-[2rem] font-semibold leading-[1.1] tracking-tight sm:text-5xl"
           >
             A professional resume, built in your browser.
           </h2>
-          <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
             Bring the resume you already have or start from a role template.
             Everything is edited locally, saved on this device, and printed
             straight from your browser. No account, no AI, no cost.

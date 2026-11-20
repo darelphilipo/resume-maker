@@ -682,6 +682,18 @@ rediscover.
      Font pairing names carry `style={{ fontFamily }}` so they preview their own
      typeface.
 
+ 56. **Recent resume rows are clickable without nesting controls.** The launcher
+     `<li>` owns the pointer "open" action, but its handler ignores any click
+     whose target sits inside a `button`, `a`, `input`, `form`, `textarea`, or
+     `select`. The real `Open {name}` button stays for keyboard and screen-reader
+     users, and Rename/Delete also call `stopPropagation()`. The list loads up to
+     50 rows but renders only the first 5 until **Show all (N)** is tapped, so
+     the scratch card does not push Backup & Restore far down a phone screen. Do
+     not replace the row with a `role="button"` wrapper: nested interactive
+     controls are invalid. The paste CTA derives the next textarea value from
+     `selectionStart`/`selectionEnd` in `onPaste`, so it enables from a single
+     paste even if the browser delays its `change` event.
+
 ## Verification and tooling
 
 ```powershell
@@ -742,6 +754,33 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-20 — Launcher polish: paste enablement and Recent resumes UX
+- Task: top P1 Queue item. The launcher's paste CTA, promise alignment, preset
+  widths, blank CTA, recent-row interaction, 5-item cap, and backup border were
+  all addressed together because they share one component.
+- Paste: the textarea keeps the controlled `onChange`, and a new `onPaste`
+  handler computes the next value from `selectionStart`/`selectionEnd` before
+  the browser commits it, so **Create resume from text** enables after a single
+  paste without a blur. The textarea is now `resize-none`.
+- Layout: the promise row is left-aligned with the hero instead of centered, the
+  hero-to-choices spacing is tighter, and `Fresh Graduate` no longer spans both
+  preset columns (all five cards keep the same width). The blank-resume button
+  is a secondary outline CTA (`data-cta="secondary"`), leaving the paste action
+  as the only filled primary.
+- Recent resumes: the whole row opens the resume through an `onClick` that
+  ignores clicks inside controls, while the `Open {name}` button stays for
+  keyboard users and the Rename/Delete actions stop propagation. The list loads
+  up to 50 rows but shows 5 until **Show all (N)** / **Show fewer**. The outer
+  Backup & Restore shell is now a solid `#e3ddd2` border; only the file
+  dropzones remain dashed.
+- Tests: paste enablement (change + paste), `resize-none`, secondary CTA,
+  equal-width presets, row-click open, action-click isolation, the 5-to-7 show
+  all toggle, and the solid backup border. 611 pass (was 605).
+- Files: `src/components/launcher/Launcher.tsx` (+ test),
+  `src/app/page.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (611 pass). No new layout shell, so
+  no e2e case was added; Playwright remains blocked here.
 
 ### 2026-11-20 — Design panel polish and the missing Density highlight
 - Task: top P1 Queue item. The In Progress slot only held a stale duplicate of
@@ -966,30 +1005,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (581 pass). No new layout chrome, so
   no e2e case was added; Playwright remains blocked in this sandbox.
-
-### 2026-11-19 — Studio Sidebar keeps its side column on Page 1
-- Task: top P1 Queue item — on multi-page resumes the Studio Sidebar pushed
-  `Skills`/`Certifications` onto a Page 2 with an empty main side, and pages that
-  only had main overflow showed an orphaned blank column.
-- Root cause: packing is one shared single-column sequence in canonical order
-  (`main` then `sidebar`, see #34). A tall main column overflowed before packing
-  ever reached the sidebar blocks, so they landed on a later page.
-- Fix kept local to the template so `packPages.ts`, `computePages`, and the five
-  single-column templates were untouched: `StudioSidebarTemplate` gathers every
-  sidebar block id from all pages (decoding split entry blocks), anchors them to
-  Page 1's `<aside>`, and gives later pages only main blocks. New
-  `studio-layout--full` class collapses the grid to one column for pages with no
-  sidebar (and for resumes with no sidebar sections). `pages` stays canonical,
-  so print, ATS text, and canvas math are unaffected. Recorded as Decision #46.
-- Tests: `StudioSidebarTemplate` gains a multi-page case (sidebar — including a
-  split `skills` entry block — on Page 1, Page 2 full-width with no aside), a
-  no-sidebar full-width case, and a stylesheet guard for the modifier rule.
-  580 pass.
-- Files: `src/templates/studio/StudioSidebarTemplate.tsx` (+ test),
-  `src/templates/studio/studio.css`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (580 pass), `npm run lint`. No new
-  layout chrome beyond a one-column fallback, so no e2e case was added;
-  Playwright remains blocked in this sandbox.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit
