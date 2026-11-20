@@ -7,7 +7,7 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   LiveCanvasViewport,
@@ -109,7 +109,35 @@ export function EditorWorkspace() {
   const [previewMode, setPreviewMode] = useState<PreviewMode>("canvas");
   const [drawerSection, setDrawerSection] =
     useState<SectionListEntry | null>(null);
+  /**
+   * Latest Name keystroke, published before the debounced store commit. It
+   * records the committed value it was based on, so once the debounce lands
+   * (or undo/load replaces the doc) the override invalidates itself without an
+   * effect that would cause a cascading render.
+   */
+  const [liveEdit, setLiveEdit] = useState<{
+    name: string;
+    base: string;
+  } | null>(null);
   const layout = usePageLayout(doc);
+
+  const liveName =
+    liveEdit && liveEdit.base === doc.basics.name ? liveEdit.name : null;
+
+  function publishLiveName(name: string): void {
+    setLiveEdit({ name, base: doc.basics.name });
+  }
+
+  // Only the name is overridden. Pagination keeps measuring the committed doc,
+  // so a keystroke never triggers a re-measure; the header and both preview
+  // renderers simply read the current text.
+  const displayDoc = useMemo(
+    () =>
+      liveName === null
+        ? doc
+        : { ...doc, basics: { ...doc.basics, name: liveName } },
+    [doc, liveName],
+  );
 
   useEffect(() => {
     if (!id) {
@@ -213,7 +241,7 @@ export function EditorWorkspace() {
     return <EditorLoading />;
   }
 
-  const resumeName = resumeDisplayName(doc.basics.name);
+  const resumeName = resumeDisplayName(liveName ?? doc.basics.name);
   const undoAvailable = canUndo();
   const redoAvailable = canRedo();
   const statusLabel = saveStatusLabel(saveState, lastSavedAt);
@@ -296,18 +324,21 @@ export function EditorWorkspace() {
             </button>
             <ExportJsonButton />
             <div data-print-slot className="flex items-center">
-              <PrintTriggerButton doc={doc} pages={layout.pages} />
+              <PrintTriggerButton doc={displayDoc} pages={layout.pages} />
             </div>
           </div>
         </div>
       </header>
 
       <main className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-5 lg:overflow-hidden">
+        {/* Reordering entries moves focused DOM nodes; without disabling scroll
+            anchoring here the browser can shift this column's scrollTop after
+            EntryActions has restored it. */}
         <section
           id="panel-content"
           role="tabpanel"
           aria-labelledby="tab-content"
-          className={panelClass("content", "lg:order-1")}
+          className={`${panelClass("content", "lg:order-1")} [overflow-anchor:none]`}
         >
           <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_8px_rgba(23,40,57,0.04)]">
             <div data-content-header className="flex flex-col gap-2">
@@ -334,7 +365,7 @@ export function EditorWorkspace() {
               >
                 Basics
               </h3>
-              <BasicsForm />
+              <BasicsForm onLiveNameChange={publishLiveName} />
             </section>
             <SectionList
               onOpenSection={setDrawerSection}
@@ -401,7 +432,7 @@ export function EditorWorkspace() {
               </div>
             </div>
             <LiveCanvasViewport
-              doc={doc}
+              doc={displayDoc}
               layout={layout}
               mode={previewMode}
               onFit={(scale) => {

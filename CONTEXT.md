@@ -636,6 +636,32 @@ rediscover.
     long bullet can stay in view; chips stay mounted when open and keep their
     `aria-describedby` link to the prompt.
 
+ 53. **Live name edits need a display override ahead of the debounce.** The
+     2026-11-19 conclusion that `useDebouncedCommit` already pushed the name on
+     `onChange` was only true once typing *paused*: a steady typist resets the
+     50 ms timer on every keystroke, so `doc.basics.name` (and therefore the
+     editor h1, `PrintTriggerButton` filename and both preview renderers) lags
+     until blur. `BasicsForm` now publishes each keystroke through
+     `onLiveNameChange`; `EditorWorkspace` stores `{ name, base }` and only uses
+     the override while `base === doc.basics.name`, so the committed doc (and
+     undo/load) invalidates it without a state-setting effect. `displayDoc`
+     overrides **only** the name and is passed to `LiveCanvasViewport` (and the
+     print button); `usePageLayout` still measures the committed `doc`, so a
+     keystroke cannot trigger a re-measure. Keep the debounced full-form commit
+     as the single owner of undo history and persistence.
+ 54. **Entry reorders must restore every scroller, and beat scroll anchoring.**
+     `EntryActions` used the *nearest* scrollable ancestor only; after #51 the
+     Content scroller is `#panel-content` on desktop, `<main>` on phones and the
+     drawer body inside a sheet. It now snapshots **all** overflowing ancestors
+     and restores each in the `moveTick` layout effect, and re-focuses an
+     *enabled* sibling with `focus({ preventScroll: true })` when the clicked
+     button lands on a boundary and becomes disabled (a disabled button cannot
+     hold focus, so `activeElement` falls to `body`). `#panel-content` also
+     carries `[overflow-anchor:none]` so the browser cannot shift its
+     `scrollTop` after the focused node is reinserted. jsdom has no layout or
+     scroll anchoring, so the multi-scroller/boundary case stubs geometry and
+     must be re-checked in a real browser at `390x844` and `1280x800`.
+
 ## Verification and tooling
 
 ```powershell
@@ -696,6 +722,40 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-20 — Live Name edits and entry-reorder scroll jumps
+- Task: top genuine P1 Queue item — both "fixed" by 2026-11-19 unit tests but
+  still seen in the live app: the header/preview canvas followed the Name field
+  only after blur, and `↓ Down` on Experience Entry 1 jumped the Content column
+  upward after the desktop three-column change.
+- Root cause (Name): a real-timer probe showed the 50 ms `useDebouncedCommit`
+  keeps resetting while typing, so `doc.basics.name` lags until a pause. The
+  previous run had only unified the fallback/added a test, not changed the
+  commit path. `BasicsForm` now publishes each keystroke through
+  `onLiveNameChange`; `EditorWorkspace` keeps a self-invalidating `{name, base}`
+  override and passes a name-only `displayDoc` to the preview and print button.
+  Pagination still measures the committed doc, so no re-measure per keystroke.
+  Decision #53.
+- Root cause (scroll): `EntryActions` restored only the nearest scroller and
+  assumed the clicked button stayed focusable. After #51 the desktop scroller
+  is the Content panel, and a boundary move disables the clicked Down button so
+  focus drops to `body`. It now restores every overflowing ancestor, falls back
+  to an enabled sibling with `preventScroll`, and the panel carries
+  `[overflow-anchor:none]`. Decision #54.
+- Tests: new `BasicsForm` live-publication case, an `EditorWorkspace` case that
+  asserts the h1 and mocked canvas update with no timer advanced, and a
+  `SectionFormControls` case with two scrollers plus a disabled-button fallback.
+  599 pass (was 596). A throwaway timing probe was repurposed as the
+  `BasicsForm` regression file (`__explore.test.tsx`); rename it when file-delete
+  access is available.
+- Files: `src/components/editor/BasicsForm.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/SectionFormControls.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run lint`, `npm run typecheck`, `npm test` (599 pass),
+  `npm run build` (static export; the usual Next.js security-advisory nudge
+  needed a second run). Playwright remains blocked here, so the scroll fix still
+  needs a real browser check at `390x844` and `1280x800`.
 
 ### 2026-11-20 — Editor header and column ergonomics
 - Task: top genuine P1 Queue item after removing the stale **Match JD** entry
@@ -912,32 +972,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (578 pass), `npm run lint`. No new
   layout chrome, so no e2e case was added; Playwright remains blocked in this
   sandbox.
-
-### 2026-11-19 — Design panel gains accent, fonts, and density controls
-- Task: top P2 Queue item — the four Design controls. The **template selector**
-  was already delivered (2026-11-18), so this run closed the other three.
-- New pure `src/lib/design/designOptions.ts` owns six curated accent swatches
-  plus monochrome, three font pairings (Sans/Serif/Classic) and three density
-  presets (Compact/Normal/Relaxed). `DesignPanel` writes into existing document
-  fields — `design.colors.primary`, both `typography.*.fontFamily`, and
-  `page.gapX/gapY` + `body.lineHeight` plus a new `design.density` enum — so no
-  new CSS variables or renderer changes were needed; preview, measure and print
-  already read those values. Recorded as Decision #44.
-- Mobile-first full-width radio cards: accents use a `grid-cols-2 sm:grid-cols-3`
-  of labelled swatches; the paper/template cards reuse one `cardClass()` helper
-  so every control keeps the 44px target and focus ring.
-- Tests: new `designOptions.test.ts` (swatch/pairing/preset shape + resolvers),
-  three `DesignPanel` cases (accent writes the hex, Serif/Classic write both
-  fonts, Compact/Relaxed write spacing), and the schema default for density.
-  Note the **Compact** density radio shares its accessible-name prefix with the
-  **Compact 1-Pager** template — target it by `#density-compact` in tests.
-- Files: `src/lib/design/designOptions.ts` (+ test, new),
-  `src/lib/schema/resume.schema.ts` (+ test),
-  `src/components/editor/DesignPanel.tsx` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (574 pass), `npm run lint`. This is
-  a settings-only change (no new layout chrome), so no new e2e case was added;
-  Playwright remains blocked in this sandbox.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

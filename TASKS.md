@@ -18,17 +18,13 @@ _empty
 
 ## In Progress (OpenCode Updates This)
 
-_None._
+- [ ] P1: Fix live `Name` edits (`onChange`) and Content sidebar `Move up` / `Move down` scroll jump in the live browser. **Plan:** (1) The 50 ms `useDebouncedCommit` gate means the store only receives the typed name once typing pauses, so the header and preview canvas lag until blur; publish the name synchronously from `BasicsForm` through a lifted `liveName` state in `EditorWorkspace` that overrides the display doc for the header and `LiveCanvasViewport`, while the debounced commit still owns undo history and persistence. (2) Harden `EntryActions` to capture/restore every scrollable ancestor and re-focus an enabled button with `preventScroll`, plus `overflow-anchor: none` on the desktop Content column so DOM reordering cannot shift its `scrollTop`. **Target files:** `src/components/editor/BasicsForm.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/components/editor/SectionFormControls.tsx`, their `*.test.tsx` files, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 ## Queue (Ready for Next Run)
 
 ### P1 — Live Bug Fixes & Surface UI Polish
 
 <!-- The stale "Match JD drawer" item was removed 2026-11-20: it is already in Done with Decision #50. -->
-
-- [ ] P1: Fix live `Name` edits (`onChange`) and Content sidebar `Move up` / `Move down` scroll jump in the live browser (`src/components/editor/BasicsForm.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/ExperienceForm.tsx`). *Note: Both still reproduced in the live deployed app despite 2026-11-19 unit tests.*
-  1. Debug why typing in `BasicsForm`'s `Name` input only updates the center Preview canvas and top header after `onBlur` in the live app, and ensure both update smoothly while typing.
-  2. Verify after the desktop column scroll change whether clicking `↓ Down` on Experience Entry 1 still jumps scroll upward; preserve the active Content scroller's `scrollTop` and re-focus with `focus({ preventScroll: true })`.
 
 - [ ] P1: Polish Design panel controls and fix the missing `Density` active state bug (`src/components/editor/DesignPanel.tsx`).
   1. Fix `Density` (`Compact` / `Normal` / `Relaxed`) so the active option clearly displays its checked/selected border and fill state.
@@ -75,6 +71,27 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-20 — Fixed both live P1 bugs. **Name edits** now follow every
+  keystroke: the 50 ms `useDebouncedCommit` timer was being reset by steady
+  typing, so the store (and the header, preview canvas and print filename) only
+  caught up at a pause/blur. `BasicsForm` publishes each keystroke through
+  `onLiveNameChange`, and `EditorWorkspace` keeps a self-invalidating
+  `{name, base}` override that produces a name-only `displayDoc` for the preview
+  and print button without re-measuring or touching undo history (Decisions
+  #53). **Entry Move up/down** no longer throws the Content column upward:
+  `EntryActions` snapshots and restores every scrollable ancestor, re-focuses an
+  enabled sibling with `preventScroll` when the clicked button hits a boundary
+  and disables, and `#panel-content` disables scroll anchoring (Decision #54).
+  Verified `npm run lint`, `npm run typecheck`, `npm test` (599 pass),
+  `npm run build` (static export; the security-advisory nudge needed a second
+  run). Files: `src/components/editor/BasicsForm.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/SectionFormControls.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright is blocked here, so the scroll fix still
+  needs a real-browser check at `390x844` / `1280x800`. The new BasicsForm
+  regression test lives in `src/components/editor/__explore.test.tsx` because
+  file deletion is unavailable here; rename it when possible.
 
 - [x] 2026-11-20 — Polished the editor header and Content ergonomics. **Save PDF**
   is now the single solid primary CTA; a hairline divider sits between Back and

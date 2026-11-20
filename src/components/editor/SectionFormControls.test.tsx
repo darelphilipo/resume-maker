@@ -193,6 +193,74 @@ describe("SectionFormControls", () => {
 
     scroller.remove();
   });
+
+  it("restores every scrollable ancestor and re-focuses an enabled sibling", () => {
+    // The desktop Content panel and a drawer body can both be scrollers; a
+    // move at a boundary also disables the clicked Down button.
+    const outer = document.createElement("div");
+    const inner = document.createElement("div");
+    outer.style.overflowY = "auto";
+    inner.style.overflowY = "auto";
+
+    for (const element of [outer, inner]) {
+      Object.defineProperty(element, "scrollHeight", {
+        configurable: true,
+        value: 1000,
+      });
+      Object.defineProperty(element, "clientHeight", {
+        configurable: true,
+        value: 300,
+      });
+    }
+
+    outer.appendChild(inner);
+    document.body.appendChild(outer);
+
+    const onMoveDown = vi.fn(() => {
+      outer.scrollTop = 0;
+      inner.scrollTop = 0;
+    });
+
+    render(
+      <EntryActions
+        index={0}
+        total={2}
+        onMoveUp={vi.fn()}
+        onMoveDown={onMoveDown}
+        onDelete={vi.fn()}
+      />,
+      { container: inner },
+    );
+
+    const down = screen.getByRole("button", {
+      name: "Move down entry 1",
+    }) as HTMLButtonElement;
+    const up = screen.getByRole("button", {
+      name: "Move up entry 1",
+    }) as HTMLButtonElement;
+
+    outer.scrollTop = 400;
+    inner.scrollTop = 240;
+    down.focus();
+
+    // Simulate the reordered card: its Down is now at the list boundary and
+    // disabled, while its Up has become enabled.
+    onMoveDown.mockImplementationOnce(() => {
+      down.disabled = true;
+      up.disabled = false;
+      outer.scrollTop = 0;
+      inner.scrollTop = 0;
+    });
+
+    fireEvent.click(down);
+
+    expect(onMoveDown).toHaveBeenCalledTimes(1);
+    expect(outer.scrollTop).toBe(400);
+    expect(inner.scrollTop).toBe(240);
+    expect(document.activeElement).toBe(up);
+
+    outer.remove();
+  });
 });
 
 describe("MonthSelect", () => {

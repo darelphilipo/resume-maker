@@ -18,8 +18,6 @@ import {
   parseMonthInput,
   toMonthValue,
 } from "@/lib/date/month";
-import { findScrollableAncestor } from "@/lib/zoom/touchScroll";
-
 const INPUT_CLASS =
   "min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-text caret-primary transition-colors placeholder:text-muted placeholder:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:bg-surface-muted disabled:text-muted";
 
@@ -393,11 +391,49 @@ export type EntryActionsProps = {
   onDelete: () => void;
 };
 
-type PendingMove = {
-  scroller: HTMLElement | null;
+type ScrollerSnapshot = {
+  element: HTMLElement;
   scrollTop: number;
+};
+
+type PendingMove = {
+  scrollers: ScrollerSnapshot[];
   button: HTMLButtonElement | null;
 };
+
+const SCROLLABLE_OVERFLOW_Y = /(auto|scroll|overlay)/;
+
+/**
+ * Every overflowing ancestor of `element`, not just the nearest one. On the
+ * desktop editor that is `#panel-content`; on phones it is `<main>`; inside a
+ * drawer it is the sheet body. Capturing all of them means the restore cannot
+ * miss whichever container the browser actually clamps.
+ */
+function scrollableAncestors(element: Element | null): HTMLElement[] {
+  const found: HTMLElement[] = [];
+
+  if (
+    typeof window === "undefined" ||
+    typeof window.getComputedStyle !== "function"
+  ) {
+    return found;
+  }
+
+  let node = element?.parentElement ?? null;
+
+  while (node) {
+    if (
+      node instanceof HTMLElement &&
+      SCROLLABLE_OVERFLOW_Y.test(window.getComputedStyle(node).overflowY)
+    ) {
+      found.push(node);
+    }
+
+    node = node.parentElement;
+  }
+
+  return found;
+}
 
 export function EntryActions({
   index,
@@ -422,11 +458,11 @@ export function EntryActions({
    * is committed but before paint.
    */
   function handleMove(direction: -1 | 1): void {
-    const scroller = findScrollableAncestor(rootRef.current);
-
     pendingMoveRef.current = {
-      scroller,
-      scrollTop: scroller?.scrollTop ?? 0,
+      scrollers: scrollableAncestors(rootRef.current).map((element) => ({
+        element,
+        scrollTop: element.scrollTop,
+      })),
       button: direction === -1 ? upRef.current : downRef.current,
     };
 
@@ -450,13 +486,25 @@ export function EntryActions({
 
     pendingMoveRef.current = null;
 
-    if (pending.scroller && pending.scroller.scrollTop !== pending.scrollTop) {
-      pending.scroller.scrollTop = pending.scrollTop;
+    for (const { element, scrollTop } of pending.scrollers) {
+      if (element.scrollTop !== scrollTop) {
+        element.scrollTop = scrollTop;
+      }
     }
+
+    // The clicked button can land on a list boundary and become disabled, and
+    // a disabled button cannot hold focus. Fall back to its sibling so focus
+    // never drops to <body> (which lets the browser jump the column to 0).
+    const focusTarget =
+      pending.button && !pending.button.disabled
+        ? pending.button
+        : pending.button === downRef.current
+          ? upRef.current
+          : downRef.current;
 
     // `preventScroll` stops the browser from scrolling the container when the
     // moved node is re-inserted and focus lands back on it.
-    pending.button?.focus({ preventScroll: true });
+    focusTarget?.focus({ preventScroll: true });
   }, [moveTick]);
 
   if (confirming) {

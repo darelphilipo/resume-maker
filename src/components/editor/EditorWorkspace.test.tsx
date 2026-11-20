@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -119,6 +119,23 @@ describe("EditorWorkspace", () => {
         "Grace Hopper",
       );
     });
+  });
+
+  it("follows a Name keystroke in the header and preview before the debounced commit", async () => {
+    await renderReadyWorkspace();
+
+    // A fast typist keeps resetting the 50 ms commit, so the committed doc is
+    // still empty at this point. The live override must already be visible in
+    // both surfaces without waiting for a timer or a blur.
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Grace" },
+    });
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Grace" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("canvas-name")).toHaveTextContent("Grace");
+    expect(useResumeStore.getState().doc.basics.name).toBe("");
   });
 
   it("defaults to the content tab and reveals one panel at a time", async () => {

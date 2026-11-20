@@ -100,7 +100,17 @@ function toFormValues(
   };
 }
 
-export function BasicsForm() {
+export type BasicsFormProps = {
+  /**
+   * Publishes the name on every keystroke. The full form is still committed
+   * through the 50 ms debounce (which owns undo history and persistence), but
+   * that commit is skipped while typing continues — so without this callback
+   * the header and preview canvas only follow the name once typing pauses.
+   */
+  onLiveNameChange?: (name: string) => void;
+};
+
+export function BasicsForm({ onLiveNameChange }: BasicsFormProps) {
   const basics = useResumeStore((state) => state.doc.basics);
   const picture = useResumeStore((state) => state.doc.picture);
   const patchDoc = useResumeStore((state) => state.patchDoc);
@@ -160,7 +170,10 @@ export function BasicsForm() {
         id="basics-name"
         label="Name"
         value={watched.name}
-        onChange={(value) => form.setValue("name", value, { shouldDirty: true })}
+        onChange={(value) => {
+          form.setValue("name", value, { shouldDirty: true });
+          onLiveNameChange?.(value);
+        }}
         autoComplete="name"
         placeholder="Ada Lovelace"
       />

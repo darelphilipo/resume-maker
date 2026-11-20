@@ -137,8 +137,10 @@ in control of every line, and your data stays on your device.
   screen, and Content, Preview, and Design each scroll on their own instead of
   growing the page and leaving a second scrollbar at the right edge. Moving a
   section up or down keeps your place in the preview, so it never snaps back to
-  Page 1 while the pages re-measure. Phones keep the one-tab-at-a-time layout,
-  so nothing is squeezed.
+  Page 1 while the pages re-measure; reordering individual entries keeps your
+  place in Content too. Your name follows every keystroke in both the header and
+  the preview canvas, without waiting for a pause. Phones keep the
+  one-tab-at-a-time layout, so nothing is squeezed.
 - **Scroll or zoom the preview naturally**: on a phone, two fingers zoom the
   resume and a one-finger drag moves freely in any direction across the zoomed
   page. At normal size a one-finger swipe scrolls a multi-page preview smoothly
