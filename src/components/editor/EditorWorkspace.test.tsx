@@ -162,29 +162,36 @@ describe("EditorWorkspace", () => {
     ]);
   });
 
-  it("sticks the desktop preview and design panels while content scrolls", async () => {
+  it("locks the desktop shell and scrolls each column independently", async () => {
     await renderReadyWorkspace();
 
-    const content = screen.getByRole("tabpanel", { name: "Content" });
-    const design = screen.getByRole("tabpanel", { name: "Design" });
-    const preview = screen.getByRole("tabpanel", { name: "Preview" });
-    const stickyClasses = [
-      "lg:sticky",
-      "lg:top-[var(--header-height,3.5rem)]",
-      "lg:max-h-[calc(100dvh-4rem)]",
+    const main = screen.getByRole("main");
+    const shell = main.parentElement;
+    const panels = [
+      screen.getByRole("tabpanel", { name: "Content" }),
+      screen.getByRole("tabpanel", { name: "Design" }),
+      screen.getByRole("tabpanel", { name: "Preview" }),
+    ];
+    const columnClasses = [
+      "lg:h-full",
+      "lg:min-h-0",
       "lg:overflow-y-auto",
+      "lg:overscroll-contain",
     ];
 
-    for (const panel of [design, preview]) {
-      expect(panel).toHaveClass(...stickyClasses);
-      // Sticky behaviour is desktop-only; mobile keeps one tab panel at a time.
-      expect(panel).not.toHaveClass("sticky");
-      expect(panel).not.toHaveClass("overflow-y-auto");
-    }
+    // A viewport-tall shell removes the document scrollbar; <main> clips its
+    // grid and each column owns the only scrollbar along the right edge.
+    expect(shell).toHaveClass("h-dvh", "overflow-hidden");
+    expect(shell).not.toHaveClass("lg:h-auto", "lg:overflow-visible");
+    expect(main).toHaveClass("min-h-0", "flex-1", "lg:overflow-hidden");
+    expect(main).not.toHaveClass("lg:overflow-visible");
 
-    // Content keeps scrolling with the page so the other two can stick.
-    expect(content).not.toHaveClass("lg:sticky");
-    expect(content).not.toHaveClass("lg:overflow-y-auto");
+    for (const panel of panels) {
+      expect(panel).toHaveClass(...columnClasses);
+      expect(panel).not.toHaveClass("lg:sticky");
+      // Scrolling stays desktop-only; mobile keeps one tab panel at a time.
+      expect(panel).not.toHaveClass("sticky", "overflow-y-auto");
+    }
   });
 
   it("opens the job description keyword matcher from the content panel header", async () => {
@@ -239,11 +246,28 @@ describe("EditorWorkspace", () => {
     expect(row).toHaveClass("flex-nowrap");
     expect(row).toContainElement(printButton);
     expect(heading.parentElement).not.toHaveClass("basis-24");
-    expect(printButton).toHaveClass("min-w-10", "shrink-0");
+    expect(printButton).toHaveClass(
+      "min-w-10",
+      "shrink-0",
+      "bg-primary",
+      "text-white",
+    );
     expect(screen.getByRole("button", { name: "Undo" })).toHaveClass(
       "min-w-10",
       "shrink-0",
     );
+    const redo = screen.getByRole("button", { name: "Redo" });
+
+    expect(redo).toBeDisabled();
+    expect(redo).toHaveClass("disabled:text-muted", "disabled:opacity-100");
+    // The divider sits between Back and the title, not in the action group.
+    const divider = row?.querySelector<HTMLElement>("[data-header-divider]");
+
+    expect(divider).not.toBeNull();
+    expect(divider!.compareDocumentPosition(heading) &
+      Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(divider!.compareDocumentPosition(printButton) &
+      Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("switches the preview between the canvas and ATS plain text", async () => {

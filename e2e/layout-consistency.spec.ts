@@ -232,21 +232,21 @@ for (const viewport of VIEWPORTS) {
           clientWidth: element.clientWidth,
           scrollWidth: element.scrollWidth,
           boxRight: box.right,
-          boxBottom: box.bottom,
           lastButtonRight: Math.max(...buttons.map((rect) => rect.right)),
-          lastButtonBottom: Math.max(...buttons.map((rect) => rect.bottom)),
+          topSpread:
+            Math.max(...buttons.map((rect) => rect.top)) -
+            Math.min(...buttons.map((rect) => rect.top)),
+          count: buttons.length,
         };
       });
 
-      // The 22rem Content column cannot fit eight targets on one line, so the
-      // row must wrap. A nowrap row used to hide Undo/Redo behind an
-      // invisible horizontal overflow strip.
+      // Eight compact targets share one row in the 22rem Content column, and
+      // none may hide behind an invisible horizontal overflow strip.
+      expect(metrics.count).toBe(8);
+      expect(metrics.topSpread).toBeLessThan(2);
       expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
       expect(metrics.lastButtonRight).toBeLessThanOrEqual(
         metrics.boxRight + 0.5,
-      );
-      expect(metrics.lastButtonBottom).toBeLessThanOrEqual(
-        metrics.boxBottom + 0.5,
       );
     });
 
@@ -435,15 +435,15 @@ for (const viewport of VIEWPORTS) {
       expect(result.chromeTop).toBeGreaterThanOrEqual(result.modeBottom - 1);
     });
 
-    test("scrolling Content keeps the Preview and Design panels in view", async ({
+    test("desktop columns scroll independently without a second page scrollbar", async ({
       page,
     }) => {
-      test.skip(viewport.name === "mobile", "desktop sticky columns only");
+      test.skip(viewport.name === "mobile", "desktop column layout only");
 
       await createPresetResume(page);
       await showPreview(page);
 
-      // Give the sticky columns a runway: a long Content column makes <main> tall.
+      // Give the Content column something to scroll.
       for (const id of [
         "summary",
         "experience",
@@ -455,39 +455,34 @@ for (const viewport of VIEWPORTS) {
         await expandSection(page, id);
       }
 
-      await page.evaluate(() =>
-        window.scrollTo(0, document.documentElement.scrollHeight),
-      );
-      await expect
-        .poll(() => page.evaluate(() => window.scrollY))
-        .toBeGreaterThan(0);
-
       const metrics = await page.evaluate(() => {
-        const header = document.querySelector<HTMLElement>("header");
-        const preview = document.querySelector<HTMLElement>("#panel-preview");
-        const design = document.querySelector<HTMLElement>("#panel-design");
+        const main = document.querySelector<HTMLElement>("main");
+        const shell = main?.parentElement;
+        const panels = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            "#panel-content, #panel-preview, #panel-design",
+          ),
+        );
+        const content = document.querySelector<HTMLElement>("#panel-content");
 
-        if (!header || !preview || !design) {
+        if (!main || !shell || !content || panels.length !== 3) {
           return null;
         }
 
-        const measure = (panel: HTMLElement) => {
-          const rect = panel.getBoundingClientRect();
-
-          return {
-            id: panel.id,
-            top: rect.top,
-            bottom: rect.bottom,
-            position: getComputedStyle(panel).position,
-          };
-        };
+        content.scrollTop = 400;
 
         return {
-          headerBottom: header.getBoundingClientRect().bottom,
+          documentScrollHeight: document.documentElement.scrollHeight,
           innerHeight: window.innerHeight,
-          // At lg all three tabpanels are `lg:block`, so both sticky columns
-          // are measurable while the Content column scrolls.
-          panels: [measure(preview), measure(design)],
+          shellOverflow: getComputedStyle(shell).overflowY,
+          mainOverflow: getComputedStyle(main).overflowY,
+          contentTop: content.scrollTop,
+          panels: panels.map((panel) => ({
+            id: panel.id,
+            top: panel.getBoundingClientRect().top,
+            bottom: panel.getBoundingClientRect().bottom,
+            overflowY: getComputedStyle(panel).overflowY,
+          })),
         };
       });
 
@@ -495,13 +490,20 @@ for (const viewport of VIEWPORTS) {
 
       const result = metrics as NonNullable<typeof metrics>;
 
+      // The document no longer scrolls: one viewport-tall shell, a clipping
+      // grid, and exactly one scrollbar per column.
+      expect(result.documentScrollHeight).toBeLessThanOrEqual(
+        result.innerHeight + 1,
+      );
+      expect(result.shellOverflow).toBe("hidden");
+      expect(result.mainOverflow).toBe("hidden");
+      expect(result.contentTop).toBeGreaterThan(0);
+
       for (const panel of result.panels) {
-        // Both columns opt into `lg:sticky`; a non-sticky one would have
-        // scrolled above the viewport while Content ran past it.
-        expect(panel.position).toBe("sticky");
+        expect(panel.overflowY).toBe("auto");
         expect(panel.top).toBeGreaterThanOrEqual(0);
         expect(panel.top).toBeLessThan(result.innerHeight);
-        expect(panel.bottom).toBeGreaterThan(result.headerBottom);
+        expect(panel.bottom).toBeLessThanOrEqual(result.innerHeight + 1);
       }
     });
 

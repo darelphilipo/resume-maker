@@ -26,6 +26,10 @@ const INPUT_CLASS =
 const ACTION_BUTTON_CLASS =
   "inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line disabled:hover:bg-transparent pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:px-2.5 pointer-coarse:py-2";
 
+/** Same footprint as the move buttons, with a quiet destructive cue on hover. */
+const DELETE_BUTTON_CLASS =
+  "inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-surface px-2 py-1.5 text-sm font-medium text-red-700/80 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-800 active:bg-red-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:px-2.5 pointer-coarse:py-2";
+
 export type TextInputProps = {
   id: string;
   label: string;
@@ -508,7 +512,7 @@ export function EntryActions({
         type="button"
         aria-label={`Delete entry ${entryNumber}`}
         onClick={() => setConfirming(true)}
-        className={ACTION_BUTTON_CLASS}
+        className={DELETE_BUTTON_CLASS}
       >
         <Trash size={16} aria-hidden />
         <span>Delete</span>

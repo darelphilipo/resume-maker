@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   CaretDown,
+  CaretUp,
   Eye,
   EyeSlash,
   Plus,
@@ -361,13 +362,11 @@ export function SectionList({
                 onClick={() => setExpandedId(isExpanded ? null : row.id)}
                 className="flex min-h-11 w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
-                <CaretDown
-                  size={16}
-                  aria-hidden
-                  className={`mt-0.5 shrink-0 opacity-60 transition-transform ${
-                    isExpanded ? "rotate-180" : ""
-                  }`}
-                />
+                {isExpanded ? (
+                  <CaretUp size={16} aria-hidden data-chevron="up" className="mt-0.5 shrink-0 text-primary" />
+                ) : (
+                  <CaretDown size={16} aria-hidden data-chevron="down" className="mt-0.5 shrink-0 opacity-60" />
+                )}
                 <span className="min-w-0 flex-1 text-sm font-medium leading-snug">
                   {row.title}
                 </span>
@@ -425,7 +424,7 @@ export function SectionList({
                       aria-label={`Move ${row.title} up`}
                       disabled={atStart}
                       onClick={() => moveRow(row, -1)}
-                      className={SECTION_ACTION_CLASS}
+                      className={`${SECTION_ACTION_CLASS} whitespace-nowrap`}
                     >
                       <ArrowUp size={16} aria-hidden />
                       <span>Move up</span>
@@ -435,7 +434,7 @@ export function SectionList({
                       aria-label={`Move ${row.title} down`}
                       disabled={atEnd}
                       onClick={() => moveRow(row, 1)}
-                      className={SECTION_ACTION_CLASS}
+                      className={`${SECTION_ACTION_CLASS} whitespace-nowrap`}
                     >
                       <ArrowDown size={16} aria-hidden />
                       <span>Move down</span>

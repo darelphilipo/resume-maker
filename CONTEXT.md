@@ -276,18 +276,12 @@ rediscover.
     placeholders by default. Never use `opacity-60` for hint copy on white — it
     drops below 4.5:1; use `text-muted`. The empty `.tiptap` placeholder is
     `var(--brand-muted)` for the same reason.
-28. **Only Preview and Design stick at `lg`.** `panelClass()` in
-    `EditorWorkspace` takes `{ sticky: true }` for `#panel-preview` and
-    `#panel-design`, adding `lg:sticky lg:top-[var(--header-height,3.5rem)]
-    lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:overscroll-contain`.
-    Content stays in normal page flow so the other two `top-0`-sticky columns
-    have something to scroll past. Sticky needs the existing `lg:items-start` on
-    `<main>` (otherwise grid stretch kills it) and `lg:h-auto lg:overflow-visible`
-    on the shell (on mobile `<main>` must stay the only scroll container, see
-    #1). `--header-height` is not defined yet, so the `3.5rem` fallback matches
-    the one-row header; update it if the header ever grows. The preview column's
-    scrollbar is the only way to wheel-scroll it over the paper: `WheelZoom`
-    still `preventDefault()`s wheel events to zoom.
+28. **Superseded — sticky desktop columns (replaced by #51).** Preview and
+    Design once stuck while Content scrolled the document. The shell is now
+    viewport-tall and each column scrolls independently, so the document cannot
+    scroll and there is nothing for a panel to stick to. The *chrome inside* the
+    preview panel is still sticky within that panel's own scroller (#33). Mobile
+    still keeps `<main>` as the only scroll container (#1).
 29. **A section has one editor at a time.** `EditorWorkspace` passes
     `openSectionId={drawerSection?.id}` to `SectionList`; the expanded row
     skips its inline `<SectionForm>` for that id while the drawer is open.
@@ -309,12 +303,12 @@ rediscover.
     primitive (no pointer-capture handler), so `userEvent.click` on it is safe
     in jsdom; only children *inside* `Drawer.Content` need `fireEvent.click`.
 31. **The 22rem Content sidebar is the layout budget.** Inside the
-    `lg:grid-cols-[minmax(0,22rem)_...]` panel, eight `RichTextField` toolbar
-    buttons plus gaps are wider than the usable cell (≈250px after the card,
-    entry-card, and toolbar padding), so the formatting row is `flex flex-wrap`
-    with `min-h-9 min-w-9 shrink-0` buttons on fine pointers and
-    `pointer-coarse:min-h-11 pointer-coarse:min-w-11` on touch. Wrapping is
-    deliberate: the old `flex-nowrap overflow-x-auto` row put Undo/Redo behind an
+    `lg:grid-cols-[minmax(0,22rem)_...]` panel the toolbar has ≈270px of usable
+    width after card/entry-card/toolbar padding, so `RichTextField` uses eight
+    `min-h-9 min-w-7 shrink-0` buttons plus `gap-0.5 p-0.5` to keep all controls
+    on one row (≈242px). Coarse pointers keep `pointer-coarse:min-h-11
+    pointer-coarse:min-w-11` targets and wrap. `flex-wrap` stays as a safety net,
+    never `overflow-x-auto`: the old nowrap+overflow row hid Undo/Redo behind an
     invisible horizontal scroll strip, so users could not see that Redo existed.
     `EntryActions` still fits on one line and keeps `flex-nowrap gap-1`. All
     shared inputs carry `min-w-0` (`INPUT_CLASS` plus the `TextInput` /
@@ -356,7 +350,9 @@ rediscover.
     4`): the page-scroller contribution ramps in over the first four at-bound
     touches instead of snapping by the full leftover delta on contact; any
     move with no leftover resets the ramp. On phones the same two rows are
-    static (`shrink-0`) inside the fixed-height preview column — see #37.
+    static (`shrink-0`) inside the fixed-height preview column — see #37. The
+    panel hosting the sticky rows is no longer itself sticky (#51); it is an
+    independently scrolling desktop grid column.
 
 34. **Pagination splits entries, not whole sections.** `MeasureLayer` now
     measures one block per entry of a splittable section, plus a heading+first-
@@ -416,9 +412,10 @@ rediscover.
     therefore clipped at the chrome's bottom edge and can never slide behind or
     above it, and the toolbar can never scroll off-screen. Everything is
     mobile-only: `lg:block` on the panel, `lg:flex-none` on the stage/root, and
-    `lg:sticky lg:top-0` / `lg:sticky lg:top-14` restore the desktop behaviour
-    from #28/#33 — do not drop those variants or desktop loses its sticky
-    columns. `TouchPanCanvas` only attaches its non-passive `touchmove` listener
+    the chrome's `lg:sticky lg:top-0` / `lg:sticky lg:top-14` restore the desktop
+    behaviour from #51 (an independently scrolling column whose chrome rows
+    stick inside it) — do not drop those variants or desktop loses its own
+    scroll region. `TouchPanCanvas` only attaches its non-passive `touchmove` listener
     while `isZoomed` (mirrored from `useTransformComponent` into a prop); at the
     fitted scale there is no JS touch handler and no `scrollPageBy` hand-off, so
     native `touch-action: pan-y` scrolling is smooth instead of jittery. A
@@ -488,17 +485,19 @@ rediscover.
     cross-effect mutable scroller ref. Section reordering is the trigger; entry
     reordering keeps the same block keys and does not blank the canvas.
 
-42. **Basics previews are local and degrade cleanly.** `BasicsForm` shows a
-    `Name preview` fed by `useWatch`, so it follows every keystroke before the
-    50 ms debounced `patchDoc`, and a `PicturePreview` keyed by the trimmed URL.
-    A failed image flips to a `role="status"` message instead of a broken-image
-    glyph. `HeaderSlot` is a client component that remembers the failed URL and
-    stops rendering `AvatarSlot`, letting the header text span both grid columns;
+42. **Basics previews are local and degrade cleanly.** `BasicsForm` no longer
+    renders a `Name preview` box (removed 2026-11-20 as redundant): the header
+    h1 and center canvas already follow typing through the 50 ms debounced
+    `patchDoc`, and a second copy only pushed the real fields down the narrow
+    column. `PicturePreview` is still keyed by the trimmed URL; a failed image
+    flips to a `role="status"` message instead of a broken-image glyph.
+    `HeaderSlot` is a client component that remembers the failed URL and stops
+    rendering `AvatarSlot`, letting the header text span both grid columns;
     never render a resume-header `<img>` without that error path or a broken URL
-    prints a broken-image icon. The Name preview and the editor header h1 both
-    call `resumeDisplayName` (`src/lib/schema/resumeName.ts`) for the one
-    `"Untitled resume"` fallback; the header and preview canvas read the
-    debounce-committed `doc`, so they follow typing without waiting for blur.
+    prints a broken-image icon. `resumeDisplayName`
+    (`src/lib/schema/resumeName.ts`) is the single `"Untitled resume"` fallback
+    used by the header and preview canvas, which read the committed `doc` so
+    they follow typing without waiting for blur.
 43. **Action-verb insertions respect the preceding character.** The pure
     `actionVerbInsertion` helper in `src/lib/richtext/actionVerbs.ts` prepends a
     space only when the cursor follows non-whitespace; `RichTextField` reads
@@ -607,6 +606,36 @@ rediscover.
     its header trigger shares one `flex` row with the `Content` heading via
     `[data-content-title-row]` so it never wraps to a second row at 390px.
 
+51. **The desktop editor is one viewport-tall shell with three scrolling
+    columns.** `EditorWorkspace` no longer reverts to `lg:h-auto
+    lg:overflow-visible`: the shell stays `h-dvh overflow-hidden` at every
+    width, `<main>` is `min-h-0 flex-1 lg:grid lg:overflow-hidden` (the
+    `lg:items-start` stays), and **`panelClass()` gives all three tabpanels
+    `lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain`**. The grid's
+    auto row fills `<main>`'s fixed height, so each column is exactly the
+    viewport height and owns the only scrollbar along that edge — no document
+    scroll, no second right-edge scrollbar. Supersedes #28; the preview chrome's
+    sticky offsets (#33/#37) still work because the *panel*, not the document,
+    is the scroller. `usePreservedScroll`/`scrollToResumeTop` keep finding that
+    panel as the nearest scrollable ancestor. On phones nothing changes: `<main>`
+    is still the only scroller (#1). The header is `shrink-0` so it cannot be
+    squeezed by the locked shell.
+
+52. **Editor chrome keeps one clear primary action and compact helper rows.**
+    `Save PDF` is the only solid CTA (`bg-primary text-white`, border too), with
+    Undo/Redo/JSON outlined; disabled Undo/Redo use `disabled:text-muted
+    disabled:bg-surface-muted disabled:opacity-100` instead of a faint 30%
+    ghost. A hairline `[data-header-divider]` separates Back from the title
+    (1px, `mx-0.5 sm:mx-1`) without stealing name space. In the Content column,
+    entering an entry's `Delete` button now reads `text-red-700/80` with
+    `hover:bg-red-50 hover:text-red-800`, and section `Move up`/`Move down` are
+    `whitespace-nowrap`; expanded section headers swap the rotated caret for an
+    explicit `CaretUp` (`data-chevron="up"`). The `RichTextField` writing-helper
+    strip is collapsible through a `Writing helpers` button
+    (`aria-expanded`/`aria-controls`, `data-helper-chevron` on the caret) so a
+    long bullet can stay in view; chips stay mounted when open and keep their
+    `aria-describedby` link to the prompt.
+
 ## Verification and tooling
 
 ```powershell
@@ -667,6 +696,37 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-20 — Editor header and column ergonomics
+- Task: top genuine P1 Queue item after removing the stale **Match JD** entry
+  (already in Done with Decision #50). Polish header hierarchy, desktop
+  scrollbars, and Content panel ergonomics.
+- Header: `Save PDF` is now the solid primary CTA; a hairline divider separates
+  Back from the title; disabled Undo/Redo use readable muted tokens. The desktop
+  shell no longer reverts to `lg:h-auto` — all three columns scroll inside a
+  viewport-tall grid, removing the second right-edge scrollbar. Recorded as
+  Decisions #51/#52; #28 is superseded and #31/#33/#37/#42 updated.
+- Content: dropped the redundant Name preview box, replaced the rotated expand
+  caret with an explicit `CaretUp`, nowrapped section Move up/down, tightened
+  the eight-button toolbar to one row in the 22rem column, made the writing-
+  helper strip collapsible, and gave entry Delete a quiet destructive cue.
+- Tests: updated `BasicsForm`, `RichTextField` (new collapsible-helpers case),
+  `SectionList` (chevron + nowrap), `SectionFormControls` (Delete cue),
+  `PrintTriggerButton` (primary CTA), `EditorWorkspace` (locked columns + header
+  divider), and `layout-consistency.spec.ts` (single toolbar row, independent
+  columns instead of sticky panels). 596 pass (was 594).
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/PrintTriggerButton.tsx` (+ test),
+  `src/components/editor/BasicsForm.tsx` (+ test),
+  `src/components/editor/SectionList.tsx` (+ test),
+  `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/RichTextField.tsx` (+ test),
+  `src/lib/schema/resumeName.ts`, `e2e/layout-consistency.spec.ts`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (596 pass), `npm run lint`,
+  `npm run build` (static export; the usual Next.js security-advisory nudge
+  needed a second run). Playwright is still blocked here, so the two rewritten
+  e2e cases are typechecked but browser-unverified.
 
 ### 2026-11-20 — Match JD actually opens a visible drawer
 - Task: top P1 Queue item — the compact **Match JD** trigger in the Content
@@ -878,27 +938,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (574 pass), `npm run lint`. This is
   a settings-only change (no new layout chrome), so no new e2e case was added;
   Playwright remains blocked in this sandbox.
-
-### 2026-11-19 — Multi-viewport regression gate completed
-- Task: top P2 Queue item — finish `e2e/layout-consistency.spec.ts` so both
-  `390x844` (mobile) and `1280x800` (desktop) cover all seven listed behaviours.
-- Six cases already existed (preset height + no sibling blink, white TipTap
-  fields, no month inputs, page-count badge, plain-wheel, desktop Preview
-  sticky). Closed the two gaps:
-- Added a **multi-page pagination** case. A local `importMultiPageResume`
-  fixture (mirrors `mobile.spec.ts`) writes a preset with 8 long Experience
-  entries through `#resume-json-input`; the test waits for ≥2 `.resume-page`s
-  and asserts Page 1 keeps the Experience heading, packs ≥2 `.resume-entry`s,
-  fills >50% of the page, and spills entries onto later pages — an e2e guard for
-  the 80%-blank Page 1 bug (Decision #34).
-- The desktop sticky case now measures **both** `#panel-preview` and
-  `#panel-design` (all three tabpanels are `lg:block`, so both are visible while
-  Content scrolls) and asserts `position: sticky` plus in-viewport geometry.
-- No new decision: this is e2e coverage of existing, documented behaviour.
-  Playwright cannot run in this sandbox, so the spec is typechecked only.
-- Files: `e2e/layout-consistency.spec.ts`, `TASKS.md`, `CONTEXT.md`.
-- Verified: `npm run typecheck`, `npm test` (567 pass). A browser-enabled run
-  should execute `npm run e2e -- e2e/layout-consistency.spec.ts`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

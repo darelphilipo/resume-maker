@@ -68,7 +68,7 @@ function saveStatusLabel(
 }
 
 const HEADER_ACTION_CLASS =
-  "flex min-h-11 min-w-10 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-text transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line disabled:hover:bg-transparent sm:min-w-11";
+  "flex min-h-11 min-w-10 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-text transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:border-line disabled:bg-surface-muted disabled:text-muted disabled:opacity-100 disabled:hover:border-line disabled:hover:bg-surface-muted sm:min-w-11";
 
 function EmptyState({
   title,
@@ -221,8 +221,10 @@ export function EditorWorkspace() {
 
   /**
    * Tabs collapse to one visible panel below `lg`; at `lg` all three show.
-   * The preview and design panels opt into a sticky, independently scrolling
-   * column so a long Content section never pushes them out of view.
+   * The desktop shell is locked to the viewport, so every column scrolls on
+   * its own instead of growing the document and producing a second scrollbar
+   * at the right edge. Sticky offsets are no longer needed once the document
+   * itself cannot scroll.
    *
    * `display` picks the mobile display for the active state. The preview passes
    * `flex` because it owns a fixed-height column with its own scroller; using
@@ -232,23 +234,17 @@ export function EditorWorkspace() {
   function panelClass(
     tab: EditorTab,
     orderClass: string,
-    {
-      sticky = false,
-      display = "block",
-    }: { sticky?: boolean; display?: "block" | "flex" } = {},
+    { display = "block" }: { display?: "block" | "flex" } = {},
   ): string {
     const visibility = activeTab === tab ? display : "hidden";
-    const stickyClass = sticky
-      ? " lg:sticky lg:top-[var(--header-height,3.5rem)] lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:overscroll-contain"
-      : "";
 
-    return `${visibility} lg:block ${orderClass} min-w-0${stickyClass}`;
+    return `${visibility} lg:block ${orderClass} min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain`;
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background text-text lg:block lg:h-auto lg:overflow-visible">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background text-text">
       <InAppBrowserNotice />
-      <header className="editor-chrome sticky top-0 z-20 border-b border-line bg-background/95 backdrop-blur">
+      <header className="editor-chrome shrink-0 sticky top-0 z-20 border-b border-line bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1600px] flex-nowrap items-center gap-x-1.5 px-2 py-1.5 sm:gap-x-2 sm:px-6">
           <Link
             href="/"
@@ -258,6 +254,12 @@ export function EditorWorkspace() {
             <ArrowLeft size={18} aria-hidden />
             <span className="hidden sm:inline">Back</span>
           </Link>
+
+          <span
+            aria-hidden
+            data-header-divider
+            className="mx-0.5 h-7 w-px shrink-0 bg-line sm:mx-1"
+          />
 
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-sm font-semibold leading-tight tracking-tight sm:text-base">
@@ -300,7 +302,7 @@ export function EditorWorkspace() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-5 lg:overflow-visible lg:pb-8">
+      <main className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-5 lg:overflow-hidden">
         <section
           id="panel-content"
           role="tabpanel"
@@ -345,7 +347,7 @@ export function EditorWorkspace() {
           id="panel-design"
           role="tabpanel"
           aria-labelledby="tab-design"
-          className={panelClass("design", "lg:order-3", { sticky: true })}
+          className={panelClass("design", "lg:order-3")}
         >
           <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_8px_rgba(23,40,57,0.04)]">
             <h2 className="font-serif text-xl font-semibold tracking-tight">
@@ -360,7 +362,6 @@ export function EditorWorkspace() {
           role="tabpanel"
           aria-labelledby="tab-preview"
           className={`${panelClass("preview", "lg:order-2", {
-            sticky: true,
             display: "flex",
           })} min-h-0 flex-1 flex-col`}
         >

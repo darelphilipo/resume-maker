@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { UserEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -52,6 +52,26 @@ describe("SectionList", () => {
     expect(title).not.toHaveClass("truncate");
     expect(title).toHaveClass("flex-1");
     expect(row).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("points the section caret up when expanded and keeps move labels on one line", () => {
+    render(<SectionList />);
+
+    const toggle = screen.getByRole("button", { name: new RegExp(LONG_TITLE) });
+
+    expect(toggle.querySelector('[data-chevron="down"]')).not.toBeNull();
+    expect(toggle.querySelector('[data-chevron="up"]')).toBeNull();
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle.querySelector('[data-chevron="up"]')).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: `Move ${LONG_TITLE} up` }),
+    ).toHaveClass("whitespace-nowrap");
+    expect(
+      screen.getByRole("button", { name: `Move ${LONG_TITLE} down` }),
+    ).toHaveClass("whitespace-nowrap");
   });
 
   it("relocates hide and move actions into the expanded body", async () => {

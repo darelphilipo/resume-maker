@@ -190,7 +190,7 @@ describe("RichTextField", () => {
     expect(shell).toHaveClass("bg-surface", "border-line", "text-text");
   });
 
-  it("lays out every formatting control without clipping", () => {
+  it("lays out every formatting control on one row in the narrow sidebar", () => {
     render(
       <RichTextField
         value=""
@@ -205,21 +205,22 @@ describe("RichTextField", () => {
     const bold = screen.getByRole("button", { name: "Bold" });
     const redo = screen.getByRole("button", { name: "Redo" });
 
-    // The 22rem Content column cannot fit eight targets on one line, so the
-    // row wraps instead of hiding Undo/Redo behind a horizontal scroll strip.
-    expect(toolbar).toHaveClass("flex-wrap", "gap-0.5");
+    // Eight compact 28px targets plus 2px gaps fit the ~270px usable width of
+    // the 22rem Content column. Coarse pointers keep 44px targets and wrap;
+    // wrapping is a safety net, never a hidden horizontal scroll strip.
+    expect(toolbar).toHaveClass("flex-wrap", "gap-0.5", "p-0.5");
     expect(toolbar).not.toHaveClass("flex-nowrap");
     expect(toolbar).not.toHaveClass("overflow-x-auto");
     expect(toolbar).toContainElement(bold);
     expect(toolbar).toContainElement(redo);
-    expect(bold).toHaveClass(
-      "min-h-9",
-      "min-w-9",
-      "shrink-0",
-      "pointer-coarse:min-h-11",
-      "pointer-coarse:min-w-11",
-    );
-    expect(bold).not.toHaveClass("min-h-11");
+    for (const button of toolbar.querySelectorAll("button")) {
+      expect(button).toHaveClass("min-h-9", "min-w-7", "shrink-0");
+      expect(button).toHaveClass(
+        "pointer-coarse:min-h-11",
+        "pointer-coarse:min-w-11",
+      );
+      expect(button).not.toHaveClass("min-h-11", "min-w-9");
+    }
   });
 
   it("keeps the achievement hint readable on the helper strip", () => {
@@ -298,6 +299,37 @@ describe("RichTextField", () => {
     expect(group).toHaveClass("flex", "flex-wrap", "items-center", "gap-1");
     expect(built).toHaveClass("min-h-9", "px-2.5", "py-1");
     expect(built).not.toHaveClass("min-h-11");
+  });
+
+  it("tucks the writing helpers away so the bullets stay visible", () => {
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description for entry 1"
+        actionHelpers
+      />,
+    );
+
+    const toggle = screen.getByRole("button", { name: "Writing helpers" });
+    const group = screen.getByRole("group", { name: "Action verb helpers" });
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveAttribute("aria-controls", group.parentElement?.id);
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByRole("group", { name: "Action verb helpers" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("group", { name: "Action verb helpers" }),
+    ).toBeInTheDocument();
   });
 
   it("inserts the chosen action verb followed by a space", () => {

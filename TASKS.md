@@ -24,12 +24,7 @@ _None._
 
 ### P1 — Live Bug Fixes & Surface UI Polish
 
-- [ ] P1: Fix the `"Match JD"` button not opening `JdMatchDrawer` in the live browser (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/JdMatchDrawer.tsx`). *Note: Reproduces in the live deployed app despite the 2026-11-19 unit tests.* Inspect why clicking or pressing `Enter` on the compact `"Match JD"` button in the Content header does not mount/open the Vaul drawer in a real browser (check `Drawer.Trigger asChild` ref forwarding, controlled vs uncontrolled state, and portal z-index), align `"Match JD"` on the same header row as `Content`, and verify the existing Playwright case in `e2e/layout-consistency.spec.ts`.
-
-- [ ] P1: Polish Editor header hierarchy, desktop scrollbars, and Content panel ergonomics (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/BasicsForm.tsx`, `src/components/editor/RichTextField.tsx`, `src/components/editor/SectionFormControls.tsx`).
-  1. Style `Save PDF` as the primary solid CTA (`bg-primary text-white`), add a subtle vertical divider between `← Back` and the resume title, raise disabled Undo/Redo icon contrast, and lock the desktop shell height (`lg:h-dvh lg:overflow-hidden` with independently scrollable columns) to remove the double right-edge scrollbar.
-  2. Remove the redundant `NAME PREVIEW` box above the `Name` input, fix expanded section headers to show an upward chevron (`^`) instead of a corner-up-left arrow, and add `whitespace-nowrap` to `Move up` / `Move down` so labels don't wrap onto 2 lines.
-  3. Tighten `RichTextField` toolbar buttons to fit all 8 controls on a single row in the `22rem` sidebar, make the writing-helper strip collapsible so bullets stay visible, and add a subtle destructive hover/text cue (`text-red-700/80 hover:bg-red-50`) on entry `Delete` buttons.
+<!-- The stale "Match JD drawer" item was removed 2026-11-20: it is already in Done with Decision #50. -->
 
 - [ ] P1: Fix live `Name` edits (`onChange`) and Content sidebar `Move up` / `Move down` scroll jump in the live browser (`src/components/editor/BasicsForm.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/ExperienceForm.tsx`). *Note: Both still reproduced in the live deployed app despite 2026-11-19 unit tests.*
   1. Debug why typing in `BasicsForm`'s `Name` input only updates the center Preview canvas and top header after `onBlur` in the live app, and ensure both update smoothly while typing.
@@ -80,6 +75,26 @@ _None._
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-20 — Polished the editor header and Content ergonomics. **Save PDF**
+  is now the single solid primary CTA; a hairline divider sits between Back and
+  the title and disabled Undo/Redo read as muted instead of a faint ghost. The
+  desktop shell is viewport-tall with three independently scrolling columns, so
+  the document no longer produces a second right-edge scrollbar (supersedes
+  Decision #28, recorded as #51/#52). Dropped the redundant **Name preview** box,
+  swapped the rotated expand caret for an explicit upward caret, nowrapped
+  section Move labels, fit all eight formatting controls on one row in the
+  22rem column, made the writing-helper strip collapsible, and gave entry Delete
+  a quiet destructive cue. Verified `npm run typecheck`, `npm test` (596 pass),
+  `npm run lint`, `npm run build` (static export; the Next.js security-advisory
+  nudge needed the usual second run). Files: `src/components/editor/EditorWorkspace.tsx`
+  (+ test), `src/components/preview/PrintTriggerButton.tsx` (+ test),
+  `src/components/editor/BasicsForm.tsx` (+ test), `src/components/editor/SectionList.tsx`
+  (+ test), `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/RichTextField.tsx` (+ test),
+  `src/lib/schema/resumeName.ts`, `e2e/layout-consistency.spec.ts`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains blocked here, so the two
+  rewritten e2e cases are typechecked but browser-unverified.
 
 - [x] 2026-11-20 — Fixed the live **Match JD** drawer so it actually opens and is visible. The compact JD sheet was the only short `EntryDrawer`, but it inherited `snapPoints={[0.6, 0.95]}` from the tall entry/section forms; vaul parks snap-point sheets ~40% of the viewport downward, leaving only a sliver on screen. `EntryDrawer` now accepts `snapPoints?: number[] | false` (default unchanged) and `JdMatchDrawer` opts out, so it opens at its natural height. Its vaul `Trigger asChild` also commits `open` explicitly in `onClick` as a fallback for the controlled `Root` (Enter/Space share that path). The Content heading and trigger now share one `[data-content-title-row]` flex row so Match JD never wraps on phones. Tests: snap-point vs compact drawer, Enter-to-open, shared row, plus Playwright bounding-box visibility (not just `toBeVisible`) and row-alignment geometry. Verified `npm run typecheck`, `npm test` (594 pass), `npm run lint`. Files: `src/components/editor/EntryDrawer.tsx` (+ test), `src/components/editor/JdMatchDrawer.tsx` (+ test), `src/components/editor/EditorWorkspace.tsx` (+ test), `e2e/layout-consistency.spec.ts`, `CONTEXT.md`, `TASKS.md`. Playwright remains blocked here, so the new geometry case is typechecked but browser-unverified.
 

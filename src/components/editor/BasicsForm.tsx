@@ -6,7 +6,6 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { websiteLabelFromUrl } from "@/lib/links/contactLinks";
-import { resumeDisplayName } from "@/lib/schema/resumeName";
 import type {
   PictureConfig,
   ResumeBasics,
@@ -157,17 +156,6 @@ export function BasicsForm() {
       onSubmit={(event) => event.preventDefault()}
       className="flex flex-col gap-3"
     >
-      <div
-        aria-live="polite"
-        className="flex flex-col gap-0.5 rounded-lg border border-line bg-surface-muted px-3 py-2"
-      >
-        <span className="text-[11px] font-medium uppercase tracking-wide text-muted">
-          Name preview
-        </span>
-        <span className="truncate font-serif text-base font-semibold">
-          {resumeDisplayName(watched.name)}
-        </span>
-      </div>
       <TextInput
         id="basics-name"
         label="Name"

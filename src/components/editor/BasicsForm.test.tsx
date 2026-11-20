@@ -24,21 +24,22 @@ describe("BasicsForm", () => {
     vi.useRealTimers();
   });
 
-  it("previews the name on every keystroke, before any commit or blur", () => {
+  it("has no redundant name-preview box and still commits the typed name", () => {
     render(<BasicsForm />);
 
-    expect(screen.getByText("Untitled resume")).toBeInTheDocument();
+    // The header and center canvas are the previews now; a second copy above
+    // the input only pushed the real fields down the narrow Content column.
+    expect(screen.queryByText("Name preview")).toBeNull();
 
-    const nameInput = screen.getByLabelText("Name");
-
-    fireEvent.change(nameInput, { target: { value: "Ada Lovelace" } });
-
-    // The live preview follows onChange; blur is never dispatched here.
-    expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Ada Lovelace" },
+    });
 
     act(() => {
       vi.advanceTimersByTime(50);
     });
+
+    expect(useResumeStore.getState().doc.basics.name).toBe("Ada Lovelace");
   });
 
   it("replaces a picture that cannot load with a readable fallback", () => {

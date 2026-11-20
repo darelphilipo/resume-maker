@@ -28,6 +28,14 @@ describe("PrintTriggerButton", () => {
     expect(tip).toHaveClass("absolute", "invisible", "opacity-0");
     expect(tip).toHaveClass("pointer-fine:group-hover:visible");
     expect(button).toHaveAttribute("aria-describedby", tip.id);
+    // Save PDF is the one solid primary action in the editor header.
+    expect(button).toHaveClass(
+      "bg-primary",
+      "border-primary",
+      "text-white",
+      "min-w-10",
+      "shrink-0",
+    );
   });
 
   it("toggles the tip from the touch info button", () => {

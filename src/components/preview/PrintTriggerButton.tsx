@@ -97,7 +97,7 @@ export function PrintTriggerButton({
           onClick={() => {
             setJob((current) => current ?? { doc, pages });
           }}
-          className="editor-chrome inline-flex min-h-11 min-w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-line bg-surface px-2 py-2 text-sm font-medium transition-colors hover:border-black/30 hover:bg-black/5 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-60 sm:min-w-11 sm:px-3"
+          className="editor-chrome inline-flex min-h-11 min-w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-primary bg-primary px-2 py-2 text-sm font-medium text-white transition-colors hover:border-primary/90 hover:bg-primary/90 active:bg-primary/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-60 sm:min-w-11 sm:px-3"
         >
           <Printer size={18} aria-hidden />
           <span className="hidden sm:inline">Save PDF</span>

@@ -18,8 +18,8 @@ in control of every line, and your data stays on your device.
   has no backend, accounts, or analytics on your resume content.
 - **Fast on a phone.** The editor is mobile-first, with large touch targets and
   a layout that works at phone width instead of a desktop screen squeezed down.
-  The resume name, undo/redo, JSON backup, and Save PDF share one compact header
-  row, so the preview keeps the height.
+  The resume name, undo/redo, JSON backup, and a solid **Save PDF** button share
+  one compact header row, so the preview keeps the height.
 - **Honest PDF output.** Preview the exact pages before printing, then use your
   browser's print dialog to save a sharp PDF.
 
@@ -60,9 +60,9 @@ in control of every line, and your data stays on your device.
 
 - Basics: name, headline, email, phone, location, website, optional photo, and
   an optional one-line work authorization or notice period tag (for example
-  `Authorized to work in US` or `Immediate Joiner`). A name preview above the
-  fields follows every keystroke, and the top header title and center resume
-  preview update with it as you type — no need to leave the field. Paste a photo
+  `Authorized to work in US` or `Immediate Joiner`). The top header title and
+  center resume preview follow every keystroke, so there is no second name
+  preview to scan past — no need to leave the field. Paste a photo
   URL and a live thumbnail appears; if the image cannot
   load, the editor says so instead of showing a broken picture, and the resume
   header widens cleanly without an empty photo slot. Paste your website and it
@@ -74,12 +74,13 @@ in control of every line, and your data stays on your device.
   Certifications, with optional Awards, Languages, Interests, Volunteer,
   Publications, and References.
 - Rich-text descriptions with bold, italic, bullet/numbered lists, links, and
-  editor undo. Every formatting control stays in reach, even in the narrow
-  desktop Content column. Experience and project bullets offer a compact, tidy
+  editor undo. All eight formatting controls share one tidy row, even in the
+  narrow desktop Content column. Experience and project bullets offer a compact
   row of one-tap action verbs (**Built**, **Reduced**, **Led**, **Automated**)
-  plus an `[Action] + [What] + [Result by X%]` prompt, so achievements start
-  with impact and end with a number. The verb lands cleanly after the existing
-  sentence and gets a leading space when needed, so words never run together.
+  and an `[Action] + [What] + [Result by X%]` prompt; tap **Writing helpers** to
+  tuck that row away so your bullets stay in view. Achievements start with impact
+  and end with a number. The verb lands cleanly after the existing sentence and
+  gets a leading space when needed, so words never run together.
 - Skills grouped by an optional category with comma-separated keywords (for
   example `Languages: Python, SQL`), with no self-ratings to maintain. A
   keyword-only row stays visible without a blank category line, so pasted lists
@@ -88,8 +89,9 @@ in control of every line, and your data stays on your device.
 - One Month + Year picker for every date field (month list plus a four-digit
   year), so `2023-10` stays consistent and no browser opens a slow year
   scroller. End dates for current roles have a **Present** toggle.
-- Add, delete, hide, and reorder entries inside each section. Moving an entry up
-  or down keeps your place in the list: the Content column does not jump back to
+- Add, delete, hide, and reorder entries inside each section. Delete buttons
+  read as destructive on hover without shouting at you. Moving an entry up or
+  down keeps your place in the list: the Content column does not jump back to
   the top, and the Move button you just tapped stays focused for the next move.
 - Rename any section heading, and create your own sections for anything the
   standard list does not cover, such as speaking, patents, or coursework.
@@ -131,12 +133,12 @@ in control of every line, and your data stays on your device.
   most of Page 1 blank. Prose and bullets wrap at natural word boundaries in
   both the preview and the PDF, so words never split mid-word; only long links
   break anywhere they need to.
-- **Preview and Design stay in view on desktop**: on a wide window the resume
-  preview and the Design controls stay pinned below the header while you scroll
-  a long Content list, and each of those two columns scrolls on its own. Moving
-  a section up or down keeps your place in the preview, so it never snaps back
-  to Page 1 while the pages re-measure. Phones keep the one-tab-at-a-time
-  layout, so nothing is squeezed.
+- **Three tidy columns on desktop**: on a wide window the editor fills the
+  screen, and Content, Preview, and Design each scroll on their own instead of
+  growing the page and leaving a second scrollbar at the right edge. Moving a
+  section up or down keeps your place in the preview, so it never snaps back to
+  Page 1 while the pages re-measure. Phones keep the one-tab-at-a-time layout,
+  so nothing is squeezed.
 - **Scroll or zoom the preview naturally**: on a phone, two fingers zoom the
   resume and a one-finger drag moves freely in any direction across the zoomed
   page. At normal size a one-finger swipe scrolls a multi-page preview smoothly

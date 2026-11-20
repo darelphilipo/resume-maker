@@ -98,16 +98,14 @@ describe("SectionFormControls", () => {
     );
 
     const up = screen.getByRole("button", { name: "Move up entry 1" });
+    const down = screen.getByRole("button", { name: "Move down entry 1" });
+    const remove = screen.getByRole("button", { name: "Delete entry 1" });
     const row = up.parentElement;
 
     expect(row).toHaveClass("flex-nowrap");
     expect(row).not.toHaveClass("flex-wrap");
 
-    for (const button of [
-      up,
-      screen.getByRole("button", { name: "Move down entry 1" }),
-      screen.getByRole("button", { name: "Delete entry 1" }),
-    ]) {
+    for (const button of [up, down, remove]) {
       expect(button).toHaveClass(
         "min-h-9",
         "min-w-9",
@@ -116,6 +114,14 @@ describe("SectionFormControls", () => {
         "pointer-coarse:min-w-11",
       );
     }
+
+    // Delete keeps the same footprint but reads as destructive before confirm.
+    expect(remove).toHaveClass(
+      "text-red-700/80",
+      "hover:bg-red-50",
+      "hover:text-red-800",
+    );
+    expect(remove).not.toHaveClass("border-line");
   });
 
   it("tints entry cards so nested white inputs stand out", () => {

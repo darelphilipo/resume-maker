@@ -3,6 +3,7 @@
 import {
   ArrowClockwise,
   ArrowCounterClockwise,
+  CaretDown,
   Eraser,
   LinkSimple,
   ListBullets,
@@ -14,7 +15,14 @@ import Link from "@tiptap/extension-link";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extensions";
-import { useEffect, useId, useMemo, useRef, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { actionVerbInsertion } from "@/lib/richtext/actionVerbs";
 import { sanitizeRichText } from "@/lib/richtext/sanitize";
@@ -52,7 +60,7 @@ function ToolbarButton({
       aria-pressed={active ?? false}
       disabled={disabled}
       onClick={onClick}
-      className="flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-30 disabled:hover:bg-transparent aria-pressed:bg-black/10 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+      className="flex min-h-9 min-w-7 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:opacity-30 disabled:hover:bg-transparent aria-pressed:bg-black/10 pointer-coarse:min-h-11 pointer-coarse:min-w-11"
     >
       {children}
     </button>
@@ -68,6 +76,8 @@ export function RichTextField({
 }: RichTextFieldProps) {
   const onChangeRef = useRef(onChange);
   const actionHintId = useId();
+  const helperPanelId = useId();
+  const [helpersOpen, setHelpersOpen] = useState(true);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -198,15 +208,16 @@ export function RichTextField({
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-surface text-text transition-shadow focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
       {/*
-        * The 22rem Content column is narrower than eight 36px targets plus
-        * gaps, so a nowrap row hid Undo/Redo behind an invisible horizontal
-        * scroll strip. Wrapping keeps every control reachable while still
-        * staying a single row on wide panels.
+        * The 22rem Content column has ~270px of usable width after the card,
+        * entry-card and toolbar padding. Eight 28px targets plus 2px gaps fit
+        * on one line there; coarse pointers keep 44px targets and let the row
+        * wrap. `flex-wrap` stays as a safety net instead of a hidden scroll
+        * strip, so no control can ever disappear behind an overflow edge.
         */}
       <div
         role="toolbar"
         aria-label={`Formatting for ${ariaLabel}`}
-        className="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface-muted p-1"
+        className="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface-muted p-0.5"
       >
         <ToolbarButton
           label="Bold"
@@ -273,32 +284,57 @@ export function RichTextField({
         </ToolbarButton>
       </div>
       {actionHelpers ? (
-        <div className="flex flex-col gap-1.5 border-b border-line bg-primary/[0.03] px-2 py-1.5">
-          <p id={actionHintId} className="text-xs text-muted">
-            <span className="font-medium text-text">
-              [Action] + [What] + [Result by X%]
-            </span>{" "}
-            <span>e.g. Built a checkout flow that reduced drop-off by 18%.</span>
-          </p>
-          <div
-            role="group"
-            aria-label="Action verb helpers"
-            aria-describedby={actionHintId}
-            className="flex flex-wrap items-center gap-1"
+        <div className="flex flex-col border-b border-line bg-primary/[0.03]">
+          {/* Keep the bullets in view: the strip can be tucked away with one tap. */}
+          <button
+            type="button"
+            aria-expanded={helpersOpen}
+            aria-controls={helperPanelId}
+            onClick={() => setHelpersOpen((open) => !open)}
+            className="flex min-h-9 items-center justify-between gap-2 px-2 py-1 text-xs font-medium text-muted transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
           >
-            {ACTION_VERBS.map((verb) => (
-              <button
-                key={verb}
-                type="button"
-                aria-label={`Insert action verb ${verb}`}
-                disabled={!editor}
-                onClick={() => insertActionVerb(verb)}
-                className="inline-flex min-h-9 items-center rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line"
+            <span>Writing helpers</span>
+            <CaretDown
+              size={14}
+              aria-hidden
+              data-helper-chevron
+              className={`shrink-0 transition-transform ${helpersOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          {helpersOpen ? (
+            <div
+              id={helperPanelId}
+              className="flex flex-col gap-1.5 px-2 pb-1.5"
+            >
+              <p id={actionHintId} className="text-xs text-muted">
+                <span className="font-medium text-text">
+                  [Action] + [What] + [Result by X%]
+                </span>{" "}
+                <span>
+                  e.g. Built a checkout flow that reduced drop-off by 18%.
+                </span>
+              </p>
+              <div
+                role="group"
+                aria-label="Action verb helpers"
+                aria-describedby={actionHintId}
+                className="flex flex-wrap items-center gap-1"
               >
-                {verb}
-              </button>
-            ))}
-          </div>
+                {ACTION_VERBS.map((verb) => (
+                  <button
+                    key={verb}
+                    type="button"
+                    aria-label={`Insert action verb ${verb}`}
+                    disabled={!editor}
+                    onClick={() => insertActionVerb(verb)}
+                    className="inline-flex min-h-9 items-center rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line"
+                  >
+                    {verb}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
       <EditorContent editor={editor} />
