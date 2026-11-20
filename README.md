@@ -119,13 +119,18 @@ in control of every line, and your data stays on your device.
   On multi-page resumes its narrow side column (Skills, Certifications,
   Languages, Interests) stays anchored on Page 1; later pages give the main
   column the full page width instead of leaving an empty sidebar beside it.
-- **Accent, fonts, and density** in Design: pick an accent from six curated
+- **Accent, fonts, and density** in Design: pick an accent from seven curated
   colors (or plain monochrome), choose a **Sans**, **Serif**, or **Classic**
   body/heading pairing, and set spacing to **Compact**, **Normal**, or
-  **Relaxed**. Every swatch shows its full color name without clipping, whether
-  you are on a phone or using the narrow desktop Design column. The preview,
-  page count, and printed PDF all use the same choices, so the look you pick is
-  the one you save.
+  **Relaxed**. The selected swatch is marked with a checkmark and a filled
+  border (no extra radio dot to decode), the active density card keeps the same
+  clear highlight, and each font name is drawn in the typeface it applies. Every
+  swatch shows its full color name without clipping, and the eight options fill
+  the two-column grid evenly, whether you are on a phone or using the narrow
+  desktop Design column. Each template card shows its **ATS-Safe** (or human
+  review) badge in the same top-right spot, so the labels never jump around as
+  you compare them. The preview, page count, and printed PDF all use the same
+  choices, so the look you pick is the one you save.
 - A4 and US Letter page sizes — click anywhere on a page-size card to switch.
 - Live paginated preview that measures real content, not an estimate. Long
   sections fill the current page entry by entry — with each heading kept next

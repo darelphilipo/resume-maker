@@ -662,11 +662,31 @@ rediscover.
      scroll anchoring, so the multi-scroller/boundary case stubs geometry and
      must be re-checked in a real browser at `390x844` and `1280x800`.
 
+ 55. **Density may be absent on saved rows, and accent selection is drawn on the
+     card.** `design.density` was added after the earliest Dexie rows were
+     written, and `loadResume` stores a row as-is, so an old doc has
+     `density === undefined` at runtime even though the Zod type says otherwise —
+     no Density card was highlighted. `resolveDensityId(density, gapY,
+     lineHeight)` in `designOptions.ts` accepts the raw value (known id → spacing
+     match → `normal`), and `DesignPanel` derives every checked Density card from
+     it. The shared option-card active style is now
+     `border-primary bg-primary/10 ring-1 ring-primary/30` so a selected
+     Density/Font/Template/Paper card is unmistakable. Accent swatches keep their
+     accessible radio but hide it (`sr-only`) and show a checkmark in a fixed
+     top-right slot instead; the card keeps the `flex-wrap` two-row shape from
+     #47 because a one-row nowrap name still does not fit the 20rem column.
+     There are now eight swatches (the new `rose`) so `grid-cols-2` has no
+     orphaned card. Template badges share one `[data-template-title-row]`
+     `justify-between` row: the name may wrap (`min-w-0`), while the badge stays
+     `shrink-0 whitespace-nowrap`, so it cannot jump between inline and wrapped.
+     Font pairing names carry `style={{ fontFamily }}` so they preview their own
+     typeface.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~578 tests
+npm test               # vitest, ~605 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -722,6 +742,34 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-20 — Design panel polish and the missing Density highlight
+- Task: top P1 Queue item. The In Progress slot only held a stale duplicate of
+  the already-Done live Name/entry-scroll fix, so it was cleared first.
+- Root cause (Density): `design.density` shipped after the first Dexie rows were
+  saved, and `loadResume` keeps a stored row as-is. A legacy doc therefore has
+  `density === undefined` at runtime, so `density === preset.id` never matched
+  and no card was highlighted. New pure `resolveDensityId(density, gapY,
+  lineHeight)` (known id → matching spacing → `normal`) now drives the checked
+  state; the shared card active style is a solid primary border + 10% fill +
+  subtle ring, so Density/Font/Template/Paper selections all read clearly.
+- Accent swatches: kept the accessible radio (`sr-only`) but dropped the drawn
+  circle, added a fixed right-side checkmark plus the active card border/fill,
+  and added an eighth `rose` accent so the 2-column grid is four full rows with
+  no orphaned `Indigo`. Two-row `flex-wrap` card shape from #47 is unchanged.
+- Template cards: badge now lives in one `[data-template-title-row]`
+  `justify-between` row (name wraps, badge stays nowrap top-right) instead of
+  `flex-wrap` that moved the badge line by line. Font pairing names render in
+  their own family via inline `fontFamily`.
+- Tests: `designOptions` (8 accents, `resolveDensityId` enum/spacing/fallback),
+  `DesignPanel` (badge slot matrix, hidden accent radio + checkmark, active
+  density classes, legacy doc with no stored density, density spacing, font
+  previews). 605 pass (was 599).
+- Files: `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/lib/design/designOptions.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (605 pass), `npm run lint`. No new
+  layout shell, so no e2e case was added; Playwright remains blocked here.
 
 ### 2026-11-20 — Live Name edits and entry-reorder scroll jumps
 - Task: top genuine P1 Queue item — both "fixed" by 2026-11-19 unit tests but
@@ -942,36 +990,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (580 pass), `npm run lint`. No new
   layout chrome beyond a one-column fallback, so no e2e case was added;
   Playwright remains blocked in this sandbox.
-
-### 2026-11-19 — Keyword-only skills rows stay visible
-- Task: top P1 Queue item — `Skills` entries with an empty `Category` never
-  reached Visual Preview, so pasted unlabeled skill lists disappeared.
-- Root cause: all renderers/visibility helpers keyed every section off its
-  primary field, and `skills`'s primary field is `name` (the category). The
-  paste parser was already producing a valid `name: ""` row with keywords, but
-  `visibleItems` filtered it out before `SkillEntry` could render it.
-- New shared `isVisibleItem`/`visibleItems(sectionId, ...)` in
-  `sectionData.ts` treats a non-hidden skills row as content when either its
-  category or at least one keyword is non-empty; every other section keeps its
-  primary-field rule. Mirrored that rule in `atsText.ts`
-  (`keywordsCountAsContent` for skills) and `isDraft`/`selectVisibleSectionIds`
-  in the editor selectors, so preview, measurement, ATS text, and editor state
-  agree. Recorded as Decision #45.
-- `SkillEntry` now trims the category and skips the `<h3>` entirely when it is
-  blank; keywords still render as pills (`inline`) or a comma list (`list`).
-- Tests: `SectionRenderer` gains a keyword-only case (asserts pills plus no
-  `.resume-entry-title`) and a parser → renderer integration case proving
-  `SKILLS` / `SQL, Excel` / `Python` appears immediately as
-  `SQL, Excel, Python`; `atsText` asserts the exact `Skills\nSQL, Excel,
-  Tableau` output with no blank category line; `selectors` covers keyword-only
-  `isDraft` and visible-section inclusion. 578 pass.
-- Files: `src/templates/shared/sectionData.ts`,
-  `src/templates/shared/SectionRenderer.tsx` (+ test),
-  `src/lib/ats/atsText.ts` (+ test), `src/lib/store/selectors.ts` (+ test),
-  `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (578 pass), `npm run lint`. No new
-  layout chrome, so no e2e case was added; Playwright remains blocked in this
-  sandbox.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

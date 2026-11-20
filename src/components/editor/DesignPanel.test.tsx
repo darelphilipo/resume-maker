@@ -2,6 +2,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { ACCENT_SWATCHES } from "@/lib/design/designOptions";
+import { createEmptyResume } from "@/lib/schema/defaults";
+import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { resetResumeStore, useResumeStore } from "@/lib/store/useResumeStore";
 
 import { DesignPanel } from "./DesignPanel";
@@ -61,6 +63,25 @@ describe("DesignPanel", () => {
     expect(input.closest("label")).toHaveClass("w-full", "min-h-11");
   });
 
+  it("puts every template badge in the same top-right title slot", () => {
+    render(<DesignPanel />);
+
+    const badges = [
+      ...screen.getAllByText("ATS-Safe"),
+      screen.getByText("Best for direct/human review"),
+    ];
+
+    for (const badge of badges) {
+      const row = badge.closest("[data-template-title-row]");
+      expect(row).not.toBeNull();
+      expect(row).toHaveClass("justify-between");
+      expect(badge).toHaveClass("shrink-0", "whitespace-nowrap");
+      // The template name wraps inside its own column instead of pushing the
+      // badge onto a second line.
+      expect(row?.firstElementChild).toHaveClass("min-w-0");
+    }
+  });
+
   it("changes the active template when another option is chosen", () => {
     render(<DesignPanel />);
 
@@ -82,7 +103,7 @@ describe("DesignPanel", () => {
     const accents = screen
       .getAllByRole("radio")
       .filter((radio) => (radio as HTMLInputElement).name === "accent-color");
-    expect(accents).toHaveLength(7);
+    expect(accents).toHaveLength(8);
     expect(screen.getByRole("radio", { name: /^Monochrome/ })).toBeChecked();
 
     const navy = screen.getByRole("radio", {
@@ -96,6 +117,32 @@ describe("DesignPanel", () => {
     );
     expect(navy).toBeChecked();
     expect(screen.getByRole("radio", { name: /^Monochrome/ })).not.toBeChecked();
+  });
+
+  it("marks the active accent with a border, fill, and checkmark instead of a radio dot", () => {
+    render(<DesignPanel />);
+
+    const monoInput = screen.getByRole("radio", {
+      name: /^Monochrome/,
+    }) as HTMLInputElement;
+    const monoCard = monoInput.closest("label") as HTMLElement;
+    const navyInput = screen.getByRole("radio", {
+      name: /^Navy/,
+    }) as HTMLInputElement;
+    const navyCard = navyInput.closest("label") as HTMLElement;
+
+    // The radio stays in the a11y tree but is not drawn beside the color dot.
+    expect(monoInput).toHaveClass("sr-only");
+    expect(monoCard).toHaveClass("border-primary", "bg-primary/10");
+    expect(monoCard.querySelector("[data-accent-check]")).not.toBeNull();
+    expect(navyCard).not.toHaveClass("border-primary");
+    expect(navyCard.querySelector("[data-accent-check]")).toBeNull();
+
+    fireEvent.click(navyInput);
+
+    expect(navyCard).toHaveClass("border-primary", "bg-primary/10");
+    expect(navyCard.querySelector("[data-accent-check]")).not.toBeNull();
+    expect(monoCard.querySelector("[data-accent-check]")).toBeNull();
   });
 
   it("keeps every accent name readable in a two-column swatch grid", () => {
@@ -116,6 +163,9 @@ describe("DesignPanel", () => {
       expect(name).toHaveClass("w-full", "whitespace-nowrap");
       expect(name).not.toHaveClass("truncate");
     }
+
+    // Eight swatches fill four complete rows, so no card is left orphaned.
+    expect(ACCENT_SWATCHES.length % 2).toBe(0);
   });
 
   it("writes both font families when a pairing is chosen", () => {
@@ -133,6 +183,20 @@ describe("DesignPanel", () => {
     expect(typography.body.fontFamily).toBe("var(--font-sans)");
     expect(typography.heading.fontFamily).toBe("var(--font-serif)");
     expect(screen.getByRole("radio", { name: /^Classic/ })).toBeChecked();
+  });
+
+  it("previews each font pairing name in its own family", () => {
+    render(<DesignPanel />);
+
+    expect(screen.getByText("Sans")).toHaveStyle({
+      fontFamily: "var(--font-sans)",
+    });
+    expect(screen.getByText("Serif")).toHaveStyle({
+      fontFamily: "var(--font-serif)",
+    });
+    expect(screen.getByText("Classic")).toHaveStyle({
+      fontFamily: "var(--font-serif)",
+    });
   });
 
   it("records the density choice and applies its spacing", () => {
@@ -159,5 +223,47 @@ describe("DesignPanel", () => {
     expect(doc.metadata.page.gapX).toBe(11);
     expect(doc.metadata.page.gapY).toBe(16);
     expect(doc.metadata.typography.body.lineHeight).toBe(1.55);
+  });
+
+  it("gives the active density card a solid border and fill", () => {
+    render(<DesignPanel />);
+
+    const normalCard = document
+      .getElementById("density-normal")!
+      .closest("label") as HTMLElement;
+    expect(normalCard).toHaveClass("border-primary", "bg-primary/10");
+
+    const compact = document.getElementById(
+      "density-compact",
+    ) as HTMLInputElement;
+    fireEvent.click(compact);
+
+    const compactCard = compact.closest("label") as HTMLElement;
+    expect(compactCard).toHaveClass("border-primary", "bg-primary/10", "ring-1");
+    expect(normalCard).not.toHaveClass("border-primary");
+  });
+
+  it("lights up a density preset for legacy docs without a stored density", () => {
+    const legacy = createEmptyResume();
+    // Saved rows from before `design.density` existed have no enum value.
+    const doc = {
+      ...legacy,
+      metadata: {
+        ...legacy.metadata,
+        design: { ...legacy.metadata.design, density: undefined },
+        page: { ...legacy.metadata.page, gapX: 5, gapY: 8 },
+        typography: {
+          ...legacy.metadata.typography,
+          body: { ...legacy.metadata.typography.body, lineHeight: 1.25 },
+        },
+      },
+    } as unknown as ResumeDocument;
+    useResumeStore.setState({ doc });
+
+    render(<DesignPanel />);
+
+    expect(document.getElementById("density-compact")).toBeChecked();
+    expect(document.getElementById("density-normal")).not.toBeChecked();
+    expect(document.getElementById("density-relaxed")).not.toBeChecked();
   });
 });

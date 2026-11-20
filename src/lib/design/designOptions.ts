@@ -11,9 +11,10 @@ export type AccentId =
   | "mono"
   | "navy"
   | "teal"
-  | "terracotta"
-  | "plum"
   | "forest"
+  | "terracotta"
+  | "rose"
+  | "plum"
   | "indigo";
 
 export type AccentSwatch = {
@@ -22,14 +23,18 @@ export type AccentSwatch = {
   hex: string;
 };
 
-/** Six curated accents plus the neutral default. */
+/**
+ * Seven curated accents plus the neutral default, ordered by hue so the
+ * two-column grid fills evenly instead of leaving a lone card on the last row.
+ */
 export const ACCENT_SWATCHES: readonly AccentSwatch[] = [
   { id: "mono", label: "Monochrome", hex: "#1f2937" },
   { id: "navy", label: "Navy", hex: "#1b3a57" },
   { id: "teal", label: "Teal", hex: "#0f766e" },
-  { id: "terracotta", label: "Terracotta", hex: "#a34a2c" },
-  { id: "plum", label: "Plum", hex: "#7c3f66" },
   { id: "forest", label: "Forest", hex: "#166534" },
+  { id: "terracotta", label: "Terracotta", hex: "#a34a2c" },
+  { id: "rose", label: "Rose", hex: "#be123c" },
+  { id: "plum", label: "Plum", hex: "#7c3f66" },
   { id: "indigo", label: "Indigo", hex: "#4338ca" },
 ];
 
@@ -126,4 +131,26 @@ export function resolveFontPairingId(
   );
 
   return match?.id ?? "sans";
+}
+
+/**
+ * Density is stored as `design.density`, but resumes saved before that field
+ * existed (and docs whose spacing was written directly) have no enum value at
+ * runtime. Fall back to the preset whose spacing matches the document, then to
+ * `normal`, so one Density card is always selected.
+ */
+export function resolveDensityId(
+  density: string | undefined,
+  gapY: number,
+  lineHeight: number,
+): DensityId {
+  if (DENSITY_PRESETS.some((preset) => preset.id === density)) {
+    return density as DensityId;
+  }
+
+  const spacingMatch = DENSITY_PRESETS.find(
+    (preset) => preset.gapY === gapY && preset.lineHeight === lineHeight,
+  );
+
+  return spacingMatch?.id ?? "normal";
 }

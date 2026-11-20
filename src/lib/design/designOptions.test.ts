@@ -7,14 +7,15 @@ import {
   DENSITY_PRESETS,
   FONT_PAIRINGS,
   resolveAccentId,
+  resolveDensityId,
   resolveFontPairingId,
 } from "./designOptions";
 
 describe("design options", () => {
-  it("offers six curated accents plus the monochrome default", () => {
-    expect(ACCENT_SWATCHES).toHaveLength(7);
-    expect(new Set(ACCENT_SWATCHES.map((swatch) => swatch.id)).size).toBe(7);
-    expect(new Set(ACCENT_SWATCHES.map((swatch) => swatch.hex)).size).toBe(7);
+  it("offers seven curated accents plus the monochrome default", () => {
+    expect(ACCENT_SWATCHES).toHaveLength(8);
+    expect(new Set(ACCENT_SWATCHES.map((swatch) => swatch.id)).size).toBe(8);
+    expect(new Set(ACCENT_SWATCHES.map((swatch) => swatch.hex)).size).toBe(8);
 
     const doc = createEmptyResume();
     expect(ACCENT_SWATCHES[0]).toMatchObject({
@@ -72,5 +73,18 @@ describe("design options", () => {
       expect(current.gapY).toBeGreaterThan(previous.gapY);
       expect(current.lineHeight).toBeGreaterThan(previous.lineHeight);
     }
+  });
+
+  it("resolves a density id from the stored enum or the applied spacing", () => {
+    expect(resolveDensityId("compact", 8, 1.25)).toBe("compact");
+    expect(resolveDensityId("relaxed", 8, 1.4)).toBe("relaxed");
+
+    // Legacy rows saved before `design.density` existed have no enum value.
+    expect(resolveDensityId(undefined, 8, 1.4)).toBe("normal");
+    expect(resolveDensityId(undefined, 8, 1.25)).toBe("compact");
+    expect(resolveDensityId(undefined, 16, 1.55)).toBe("relaxed");
+
+    // An unknown value with no matching spacing falls back to Normal.
+    expect(resolveDensityId("spacious", 9, 1.33)).toBe("normal");
   });
 });

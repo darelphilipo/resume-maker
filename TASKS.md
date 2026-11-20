@@ -18,18 +18,13 @@ _empty
 
 ## In Progress (OpenCode Updates This)
 
-- [ ] P1: Fix live `Name` edits (`onChange`) and Content sidebar `Move up` / `Move down` scroll jump in the live browser. **Plan:** (1) The 50 ms `useDebouncedCommit` gate means the store only receives the typed name once typing pauses, so the header and preview canvas lag until blur; publish the name synchronously from `BasicsForm` through a lifted `liveName` state in `EditorWorkspace` that overrides the display doc for the header and `LiveCanvasViewport`, while the debounced commit still owns undo history and persistence. (2) Harden `EntryActions` to capture/restore every scrollable ancestor and re-focus an enabled button with `preventScroll`, plus `overflow-anchor: none` on the desktop Content column so DOM reordering cannot shift its `scrollTop`. **Target files:** `src/components/editor/BasicsForm.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/components/editor/SectionFormControls.tsx`, their `*.test.tsx` files, `README.md`, `CONTEXT.md`, `TASKS.md`.
+_empty
 
 ## Queue (Ready for Next Run)
 
 ### P1 — Live Bug Fixes & Surface UI Polish
 
 <!-- The stale "Match JD drawer" item was removed 2026-11-20: it is already in Done with Decision #50. -->
-
-- [ ] P1: Polish Design panel controls and fix the missing `Density` active state bug (`src/components/editor/DesignPanel.tsx`).
-  1. Fix `Density` (`Compact` / `Normal` / `Relaxed`) so the active option clearly displays its checked/selected border and fill state.
-  2. Place the `ATS-Safe` badge in a consistent fixed slot so it never jumps between inline and wrapped across template cards, and render `Sans`, `Serif`, and `Classic` labels in their actual font families.
-  3. Remove the redundant radio circle beside the color dot in Accent color swatches (use an active border + checkmark instead) and balance the 2-column grid to 6 or 8 swatches so `Indigo` is not an orphan 7th card.
 
 - [ ] P1: Polish Launcher (`/`) layout, Recent Resumes UX, and `"Create resume from text"` enablement (`src/components/launcher/Launcher.tsx`).
   1. Fix `"Create resume from text"` so `disabled` updates immediately on `onChange` / `onPaste` (single click submits, no blur needed) and add `resize-none` to the textarea.
@@ -71,6 +66,20 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-20 — Polished the Design panel and fixed the missing **Density**
+  highlight. Legacy Dexie rows saved before `design.density` existed had no
+  enum value at runtime, so no Density card could be checked; a new pure
+  `resolveDensityId` falls back through the applied spacing to `normal`, and the
+  shared option-card active style is now a solid primary border + fill + ring.
+  Accent swatches hide their radio (kept for a11y) and show an active border plus
+  fixed checkmark, with a new eighth `rose` accent so the two-column grid has no
+  orphaned card. Template badges always sit in one top-right
+  `[data-template-title-row]` slot, and Sans/Serif/Classic names render in their
+  own families. Verified `npm run typecheck`, `npm test` (605 pass),
+  `npm run lint`. Files: `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/lib/design/designOptions.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-20 — Fixed both live P1 bugs. **Name edits** now follow every
   keystroke: the 50 ms `useDebouncedCommit` timer was being reset by steady

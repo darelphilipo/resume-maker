@@ -1,10 +1,13 @@
 "use client";
 
+import { Check } from "@phosphor-icons/react";
+
 import {
   ACCENT_SWATCHES,
   DENSITY_PRESETS,
   FONT_PAIRINGS,
   resolveAccentId,
+  resolveDensityId,
   resolveFontPairingId,
 } from "@/lib/design/designOptions";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
@@ -23,7 +26,7 @@ const PAGE_FORMATS: readonly { id: PageFormat; label: string; detail: string }[]
 function cardClass(isCurrent: boolean): string {
   return `flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
     isCurrent
-      ? "border-primary/40 bg-primary/5"
+      ? "border-primary bg-primary/10 ring-1 ring-primary/30"
       : "border-line hover:border-black/30"
   }`;
 }
@@ -41,10 +44,15 @@ export function DesignPanel() {
     (state) => state.doc.metadata.typography.heading.fontFamily,
   );
   const density = useResumeStore((state) => state.doc.metadata.design.density);
+  const densityGapY = useResumeStore((state) => state.doc.metadata.page.gapY);
+  const densityLineHeight = useResumeStore(
+    (state) => state.doc.metadata.typography.body.lineHeight,
+  );
   const patchDoc = useResumeStore((state) => state.patchDoc);
   const currentTemplate = getTemplate(templateId);
   const accentId = resolveAccentId(primary);
   const pairingId = resolveFontPairingId(bodyFont, headingFont);
+  const densityId = resolveDensityId(density, densityGapY, densityLineHeight);
 
   return (
     <div className="flex flex-col gap-5">
@@ -118,8 +126,13 @@ export function DesignPanel() {
                   className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
                 />
                 <span className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="font-medium">{template.label}</span>
+                  <span
+                    data-template-title-row=""
+                    className="flex items-start justify-between gap-2"
+                  >
+                    <span className="min-w-0 font-medium leading-snug">
+                      {template.label}
+                    </span>
                     <TemplateBadge template={template} />
                   </span>
                   <span className="text-xs text-muted">
@@ -160,13 +173,22 @@ export function DesignPanel() {
                       metadata: { design: { colors: { primary: swatch.hex } } },
                     })
                   }
-                  className="h-4 w-4 shrink-0 accent-primary"
+                  className="sr-only"
                 />
                 <span
                   aria-hidden="true"
                   className="h-4 w-4 shrink-0 rounded-full border border-black/10"
                   style={{ backgroundColor: swatch.hex }}
                 />
+                {isCurrent ? (
+                  <Check
+                    aria-hidden="true"
+                    data-accent-check=""
+                    size={14}
+                    weight="bold"
+                    className="ml-auto shrink-0 text-primary"
+                  />
+                ) : null}
                 <span className="w-full whitespace-nowrap text-xs leading-tight">
                   {swatch.label}
                 </span>
@@ -211,7 +233,12 @@ export function DesignPanel() {
                   className="h-4 w-4 shrink-0 accent-primary"
                 />
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="font-medium">{pairing.label}</span>
+                  <span
+                    className="font-medium"
+                    style={{ fontFamily: pairing.heading }}
+                  >
+                    {pairing.label}
+                  </span>
                   <span className="text-xs text-muted">
                     {pairing.description}
                   </span>
@@ -230,7 +257,7 @@ export function DesignPanel() {
         </p>
         <div className="mt-1 grid gap-2">
           {DENSITY_PRESETS.map((preset) => {
-            const isCurrent = density === preset.id;
+            const isCurrent = densityId === preset.id;
             const inputId = `density-${preset.id}`;
 
             return (
