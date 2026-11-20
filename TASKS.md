@@ -28,10 +28,6 @@ _empty
 
 ### P1 — Quick-Win User Features
 
-- [ ] P1: Add a one-click **"Anonymize for review"** toggle in Preview (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PrintPortal.tsx`, `src/components/preview/AtsTextView.tsx`, `src/lib/print/printDocument.ts`, new `src/lib/privacy/anonymizeDoc.ts`).
-  1. Create `anonymizeResumeDoc(doc)` returning a display-only clone replacing name (`"Alex Taylor"`), email, phone, location, website, `Profiles` URLs/usernames, picture (hidden), and company/school names (`"Company A"`, `"University A"`) without mutating saved Dexie data.
-  2. Add a session-only **Anonymize** toggle pill in the Preview header with a subtle active banner, and pass the anonymized doc into `PageStack`, `AtsTextView`, `PrintPortal`, and `printDocument.ts` (so the exported PDF filename is also anonymized).
-
 - [ ] P1: Add **"Copy for Workday"** one-click copy buttons in the `ATS text` tab (`src/components/preview/AtsTextView.tsx`).
   1. Add a top **"Copy all plain text"** button plus compact per-section and per-entry **Copy** buttons using `navigator.clipboard.writeText(...)` (with a 1.5s `"Copied"` state) outputting clean plain text ready for Workday/Greenhouse/Lever forms.
 
@@ -57,6 +53,21 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-20 — Added **Anonymize for review** to Preview. A new
+  `anonymizeResumeDoc(doc)` returns a display-only clone with `"Alex Taylor"`,
+  placeholder email/phone/location/website, anonymized profile URLs/usernames,
+  a hidden picture, and stable `Company A` / `University A` labels for
+  experience companies and education schools. `EditorWorkspace` keeps a
+  session-only toggle and passes the clone **only** to the preview and print
+  button, so the header, saved Dexie row, undo history, and pagination keep the
+  real document; Visual, ATS text, and the PDF filename all use the alias. The
+  Preview header gained an **Anonymize** pill (`aria-pressed`) plus a compact
+  active banner. Verified `npm run typecheck`, `npm test` (625 pass),
+  `npm run lint`, `npm run build` (static export; the security-advisory nudge
+  needed the usual second run). Files: `src/lib/privacy/anonymizeDoc.ts`
+  (+ test, new), `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-20 — Added **Duplicate resume** on `/` and a per-entry
   **Hide/Show** eye toggle. `duplicateResume(id)` clones a saved Dexie row under

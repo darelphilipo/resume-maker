@@ -172,6 +172,12 @@ in control of every line, and your data stays on your device.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
   apply.
+- **Anonymize for review**: tap the **Anonymize** pill in the preview header to
+  replace your name, contact details, website, profile links, photo, and company
+  or school names with neutral placeholders. The banner makes review mode
+  obvious, the Visual and ATS views and the PDF all use the hidden version, and
+  your saved resume is never changed — tap the pill again to return to the real
+  details.
 - **Job description keyword matcher**: tap **Match JD** in the Content panel
   header to open the matcher on any device, then paste a posting to see which
   of its keywords already appear in your resume and which are missing. Matching
@@ -180,7 +186,9 @@ in control of every line, and your data stays on your device.
   overflow warning stay pinned above the paper while you scroll, so they never
   cover your name or header — and the paper stops cleanly below that header
   instead of sliding underneath it.
-- Print/PDF filenames are generated from your name, headline, and date.
+- Print/PDF filenames are generated from your name, headline, and date. While
+  **Anonymize** is on, the filename uses the placeholder name too, so the file
+  itself does not reveal who the resume belongs to.
 
 ### Keep your work
 

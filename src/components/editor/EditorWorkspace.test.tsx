@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
+import { ANONYMIZED_NAME } from "@/lib/privacy/anonymizeDoc";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { putResume } from "@/lib/store/db";
 import {
@@ -136,6 +137,78 @@ describe("EditorWorkspace", () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId("canvas-name")).toHaveTextContent("Grace");
     expect(useResumeStore.getState().doc.basics.name).toBe("");
+  });
+
+  it("anonymizes only the preview and leaves the saved resume untouched", async () => {
+    await renderReadyWorkspace();
+
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Grace Hopper" },
+    });
+    expect(screen.getByTestId("canvas-name")).toHaveTextContent("Grace Hopper");
+
+    const toggle = screen.getByRole("button", { name: "Anonymize" });
+
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(
+      document.querySelector("[data-anonymize-banner]"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    // The center canvas switches to the alias, but the editor header keeps the
+    // real resume name and the store still holds the unsaved draft.
+    expect(screen.getByTestId("canvas-name")).toHaveTextContent(ANONYMIZED_NAME);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Grace Hopper" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "your saved resume is unchanged",
+    );
+    expect(useResumeStore.getState().doc.basics.name).toBe("");
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByTestId("canvas-name")).toHaveTextContent("Grace Hopper");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("uses the anonymized name in the captured print filename", async () => {
+    const doc = createEmptyResume();
+
+    doc.basics.name = "Grace Hopper";
+    useResumeStore.setState({ doc });
+
+    const titles: string[] = [];
+    const print = vi.spyOn(window, "print").mockImplementation(() => {
+      titles.push(document.title);
+      window.dispatchEvent(new Event("afterprint"));
+    });
+
+    try {
+      render(<EditorWorkspace />);
+
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Grace Hopper",
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Anonymize" }));
+      fireEvent.click(screen.getByRole("button", { name: "Save PDF" }));
+
+      await waitFor(() => expect(print).toHaveBeenCalledTimes(1), {
+        timeout: 3000,
+      });
+
+      expect(titles[0]).toMatch(/^alex-taylor-.*-resume$/);
+      // The real name only lives in the saved doc, never in the print title.
+      expect(titles[0]).not.toContain("grace-hopper");
+      expect(useResumeStore.getState().doc.basics.name).toBe("Grace Hopper");
+    } finally {
+      print.mockRestore();
+    }
   });
 
   it("defaults to the content tab and reveals one panel at a time", async () => {

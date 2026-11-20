@@ -4,6 +4,8 @@ import {
   ArrowClockwise,
   ArrowCounterClockwise,
   ArrowLeft,
+  Eye,
+  EyeSlash,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -17,6 +19,7 @@ import { InAppBrowserNotice } from "@/components/preview/InAppBrowserNotice";
 import { PrintTriggerButton } from "@/components/preview/PrintTriggerButton";
 import { ExportJsonButton } from "@/components/shared/ExportJsonButton";
 import { usePageLayout } from "@/lib/pagination/usePageLayout";
+import { anonymizeResumeDoc } from "@/lib/privacy/anonymizeDoc";
 import { resumeDisplayName } from "@/lib/schema/resumeName";
 import {
   canRedo,
@@ -107,6 +110,7 @@ export function EditorWorkspace() {
   const [loadResult, setLoadResult] = useState<LoadResult | null>(null);
   const [activeTab, setActiveTab] = useState<EditorTab>("content");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("canvas");
+  const [anonymizePreview, setAnonymizePreview] = useState(false);
   const [drawerSection, setDrawerSection] =
     useState<SectionListEntry | null>(null);
   /**
@@ -137,6 +141,14 @@ export function EditorWorkspace() {
         ? doc
         : { ...doc, basics: { ...doc.basics, name: liveName } },
     [doc, liveName],
+  );
+
+  // Review mode is session-only and display-only: the committed doc (and its
+  // page measurements) stay untouched, and the anonymized clone is only handed
+  // to the preview and the captured print snapshot.
+  const previewDoc = useMemo(
+    () => (anonymizePreview ? anonymizeResumeDoc(displayDoc) : displayDoc),
+    [anonymizePreview, displayDoc],
   );
 
   useEffect(() => {
@@ -324,7 +336,7 @@ export function EditorWorkspace() {
             </button>
             <ExportJsonButton />
             <div data-print-slot className="flex items-center">
-              <PrintTriggerButton doc={displayDoc} pages={layout.pages} />
+              <PrintTriggerButton doc={previewDoc} pages={layout.pages} />
             </div>
           </div>
         </div>
@@ -404,35 +416,66 @@ export function EditorWorkspace() {
               <h2 className="font-serif text-xl font-semibold tracking-tight">
                 Preview
               </h2>
-              <div
-                role="group"
-                aria-label="Preview mode"
-                className="flex items-center gap-1 rounded-lg border border-line bg-surface p-0.5"
-              >
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+                <div
+                  role="group"
+                  aria-label="Preview mode"
+                  className="flex items-center gap-1 rounded-lg border border-line bg-surface p-0.5"
+                >
+                  <button
+                    type="button"
+                    aria-pressed={previewMode === "canvas"}
+                    onClick={() => {
+                      setPreviewMode("canvas");
+                    }}
+                    className="min-h-11 rounded-md px-3 text-sm font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  >
+                    Visual
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={previewMode === "ats"}
+                    onClick={() => {
+                      setPreviewMode("ats");
+                    }}
+                    className="min-h-11 rounded-md px-3 text-sm font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  >
+                    ATS text
+                  </button>
+                </div>
                 <button
                   type="button"
-                  aria-pressed={previewMode === "canvas"}
+                  data-anonymize-toggle=""
+                  aria-pressed={anonymizePreview}
                   onClick={() => {
-                    setPreviewMode("canvas");
+                    setAnonymizePreview((enabled) => !enabled);
                   }}
-                  className="min-h-11 rounded-md px-3 text-sm font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-xs font-semibold text-text transition-colors hover:border-primary/40 hover:bg-primary/5 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
-                  Visual
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={previewMode === "ats"}
-                  onClick={() => {
-                    setPreviewMode("ats");
-                  }}
-                  className="min-h-11 rounded-md px-3 text-sm font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  ATS text
+                  {anonymizePreview ? (
+                    <EyeSlash size={15} aria-hidden />
+                  ) : (
+                    <Eye size={15} aria-hidden />
+                  )}
+                  Anonymize
                 </button>
               </div>
             </div>
+            {anonymizePreview ? (
+              <p
+                data-anonymize-banner=""
+                role="status"
+                className="flex shrink-0 items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs leading-snug text-primary"
+              >
+                <EyeSlash size={14} aria-hidden className="mt-0.5 shrink-0" />
+                <span>
+                  Review mode is on. Personal details are replaced in the
+                  preview and PDF; your saved resume is unchanged.
+                </span>
+              </p>
+            ) : null}
             <LiveCanvasViewport
-              doc={displayDoc}
+              doc={previewDoc}
               layout={layout}
               mode={previewMode}
               onFit={(scale) => {

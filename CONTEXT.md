@@ -708,6 +708,22 @@ rediscover.
      bumps `updatedAt`, and returns `null` for a missing source so the launcher
      can show its usual stale-row message.
 
+ 58. **Anonymize for review is a display-only clone.** `anonymizeResumeDoc`
+     (`src/lib/privacy/anonymizeDoc.ts`) copies the document and replaces only
+     rendered identifying fields: basics name/email/phone/location/website, the
+     saved picture (hidden), profile usernames/URLs, and experience companies /
+     education schools (stable first-seen `Company A` / `University A` labels,
+     case-insensitive duplicates share a label, blanks stay blank). It never
+     mutates the saved doc. `EditorWorkspace` derives `previewDoc` from
+     `displayDoc` and passes it **only** to `PrintTriggerButton` and
+     `LiveCanvasViewport`; the editor h1, save state, undo history, Dexie row,
+     and `usePageLayout` measurements keep the committed document, so review mode
+     is session-only and cannot trigger a re-measure. `AtsTextView` lives inside
+     the preview and automatically gets the same clone. The print title uses the
+     clone's name, so the PDF filename is anonymized too. When adding a new
+     rendered personal field, add it here or review mode will leak it in the
+     preview/PDF.
+
 ## Verification and tooling
 
 ```powershell
@@ -768,6 +784,37 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-20 — Anonymize for review
+- Task: top P1 Queue item. Added a session-only review mode that hides
+  identifying details from the preview and PDF without touching saved data.
+- New pure `anonymizeResumeDoc` copies the doc and replaces basics
+  name/email/phone/location/website, hides the picture, rewrites profile
+  usernames/URLs, and gives distinct experience companies / education schools
+  stable `Company A` / `University A` labels. Empty fields stay empty, duplicates
+  share a label, and the input document is never mutated. Recorded as Decision
+  #58.
+- `EditorWorkspace` derives `previewDoc` from the existing live-name
+  `displayDoc`, so review mode also covers a name keystroke that has not hit the
+  store yet. The anonymous clone goes only to `PrintTriggerButton` and
+  `LiveCanvasViewport` (which owns `PageStack` and `AtsTextView`), so the header,
+  Dexie row, undo history, and pagination keep the real document. The print
+  title therefore uses the alias too.
+- UI: an **Anonymize** pill sits in the Preview mode header with
+  `aria-pressed`, a filled active state, and Eye/EyeSlash icon; a compact
+  `role="status"` banner explains that preview/PDF are anonymized and the saved
+  resume is unchanged.
+- Tests: helper cases for the replaced basics/profiles/picture, company/school
+  dedupe and blank handling, and immutability; workspace cases prove only the
+  preview switches to the alias (header and store keep the real name) and the
+  captured print title uses `alex-taylor-…`. 625 pass (was 619).
+- Files: `src/lib/privacy/anonymizeDoc.ts` (+ test, new),
+  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (625 pass), `npm run lint`,
+  `npm run build` (static export; the security-advisory nudge needed the usual
+  second run). No new layout shell, so no e2e case was added; Playwright remains
+  blocked here.
 
 ### 2026-11-20 — Duplicate resume and per-entry Hide/Show
 - Task: top P1 Queue item. The hidden-entry *data* path already existed, so this
@@ -1014,27 +1061,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (587 pass), `npm run lint`. No new
-  layout chrome, so no e2e case was added; Playwright remains blocked here.
-
-### 2026-11-19 — Entry reorders keep their place in the Content column
-- Task: top genuine P1 Queue item — clicking Move up / Move down in an entry
-  form threw the Content column back to the top. The Queue's first item
-  (accent-swatch clipping) was already recorded in Done, so it was removed as a
-  stale duplicate before taking this one.
-- All six entry forms already keyed their cards by `item.id`, so the remaining
-  cause was focus/scroll churn when React reinserted the focused move button.
-  `EntryActions` now records the nearest scrollable ancestor's `scrollTop` and
-  the clicked button before the move and restores both in a layout effect
-  (`moveTick` ref guard, `focus({ preventScroll: true })`). Recorded as
-  Decision #48. No per-form change was needed.
-- Tests: a new `SectionFormControls` case stubs a scrollable wrapper, blurs the
-  button and zeroes `scrollTop` inside the move callback, then asserts both are
-  restored; a new `ExperienceForm` case proves the reordered card keeps the same
-  input DOM node (stable key) and the moved button holds focus. 583 pass.
-- Files: `src/components/editor/SectionFormControls.tsx` (+ test),
-  `src/components/editor/ExperienceForm.test.tsx`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (583 pass), `npm run lint`. No new
   layout chrome, so no e2e case was added; Playwright remains blocked here.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
