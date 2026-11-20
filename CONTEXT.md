@@ -591,6 +591,22 @@ rediscover.
     `scrollTop` on `[data-canvas-scroll]` directly and helper tests stub
     `clientHeight` / `scrollHeight` on the ancestor.
 
+50. **Short drawers must opt out of vaul snap points.** `EntryDrawer` defaults
+    to `snapPoints={[0.6, 0.95]}` because the section/entry forms are tall and
+    scrollable. vaul implements a snap point as
+    `translate3d(0, 0.4 × viewportHeight, 0)` at rest, so a **short** sheet is
+    pushed almost entirely below the fold and looks like it never opened in a
+    real browser. The JD matcher is the only short `EntryDrawer`, so it passes
+    `snapPoints={false}` and opens at its natural height. This class of bug is
+    invisible to jsdom (no layout/transform), which is why the original unit
+    tests passed while the deployed drawer appeared broken. Its vaul `Trigger
+    asChild` button also commits `open` explicitly in its `onClick` as a
+    defensive fallback for the controlled `Root` (Space/Enter share that click
+    path). A compact dialog like this must be guarded by **bounding-box**
+    geometry in Playwright, not `toBeVisible()` (which ignores transforms), and
+    its header trigger shares one `flex` row with the `Content` heading via
+    `[data-content-title-row]` so it never wraps to a second row at 390px.
+
 ## Verification and tooling
 
 ```powershell
@@ -651,6 +667,35 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-20 — Match JD actually opens a visible drawer
+- Task: top P1 Queue item — the compact **Match JD** trigger in the Content
+  header appeared to do nothing in the live deployed app despite passing unit
+  tests, and did not share the `Content` heading's row on phones.
+- Root cause: `EntryDrawer` always passed `snapPoints={[0.6, 0.95]}` to vaul.
+  vaul parks snap-point sheets ~40% of the viewport down; the JD dialog is short,
+  so only a sliver was on screen. jsdom has no layout/transform, so the unit
+  tests saw a "visible" dialog. `EntryDrawer` now accepts `snapPoints?: number[]
+  | false` (default `[0.6, 0.95]`), and `JdMatchDrawer` passes `snapPoints={false}`.
+  Its trigger keeps vaul's `Drawer.Trigger asChild` but also commits `open` in an
+  explicit `onClick` so the controlled `Root` mounts the portal even if the
+  composed handler is lost. Recorded as Decision #50.
+- The Content header now puts the heading and trigger in one
+  `[data-content-title-row]` flex row with the description below, so Match JD
+  never wraps to a second row at 390px.
+- Tests: `EntryDrawer` guards snap points vs. compact mode; `JdMatchDrawer`
+  opens with Enter and asserts no snap-point transform attribute;
+  `EditorWorkspace` asserts the heading/trigger share a row. The Playwright JD
+  case now measures the dialog's bounding box (>160px on screen) and the
+  heading/trigger row alignment rather than relying on `toBeVisible()` alone.
+  594 pass (was 592).
+- Files: `src/components/editor/EntryDrawer.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (594 pass), `npm run lint`.
+  Playwright remains blocked in this sandbox, so the new geometry case is
+  typechecked but browser-unverified.
 
 ### 2026-11-19 — Preview resets scroll the resume back to the top
 - Task: top P1 Queue item — clicking Reset in the preview pane should return
@@ -854,42 +899,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `e2e/layout-consistency.spec.ts`, `TASKS.md`, `CONTEXT.md`.
 - Verified: `npm run typecheck`, `npm test` (567 pass). A browser-enabled run
   should execute `npm run e2e -- e2e/layout-consistency.spec.ts`.
-
-### 2026-11-19 — Live Basics previews, graceful picture fallback, spaced verbs
-- Task: P1 editor micro-interactions item. Sub-point 3's paper-size cards, JD
-  drawer trigger, and Studio Sidebar split had already landed on 2026-11-17;
-  this run added coverage for them plus the two open sub-points.
-- `BasicsForm` now renders a live **Name preview** from `useWatch` (updates on
-  every keystroke, never waits for blur) and a `PicturePreview` thumbnail keyed
-  by the trimmed URL. A failed image becomes a `role="status"` message, and
-  `HeaderSlot` now remembers the failed URL, stops rendering `AvatarSlot`, and
-  lets the candidate name span both header columns instead of printing a
-  broken-image icon. Recorded as Decision #42.
-- Action-verb chips no longer glue a verb to the previous word: the new pure
-  `actionVerbInsertion` helper prepends a space only after non-whitespace, and
-  `RichTextField` reads the character before the cursor from TipTap's selection.
-  Recorded as Decision #43. (A plain cursor-at-start insertion still produces
-  `Built ` with no leading space.)
-- Sub-point 3 coverage: `StudioSidebarTemplate.test.tsx` proves Page 1 renders
-  `.studio-main` / `.studio-sidebar` with the sidebar `aria-label` and that
-  `studio.css` defines a two-column grid; the existing DesignPanel and
-  JdMatchDrawer tests already cover the full-card paper radios and drawer
-  trigger. `layout-consistency.spec.ts` gained a both-viewport Studio Sidebar
-  Page 1 geometry case (browser-unverified here).
-- Tests: BasicsForm name-preview and picture-fallback cases, an
-  `EditorWorkspace` typing-without-blur case, a `RichTextField` leading-space
-  case, a HeaderSlot broken-avatar case, and `actionVerbs.test.ts`. 567 pass.
-- Files: `src/components/editor/BasicsForm.tsx` (+ test),
-  `src/components/editor/RichTextField.tsx` (+ test),
-  `src/lib/richtext/actionVerbs.ts` (new) + test,
-  `src/components/editor/EditorWorkspace.test.tsx`,
-  `src/templates/shared/AvatarSlot.tsx` (+ test),
-  `src/templates/shared/HeaderSlot.tsx`,
-  `src/templates/studio/StudioSidebarTemplate.test.tsx` (new),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (567 pass), `npm run lint`.
-  Playwright is blocked in this sandbox, so the new `390x844` / `1280x800`
-  Studio Sidebar geometry case still needs a browser-enabled run.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

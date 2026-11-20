@@ -66,12 +66,22 @@ export function JdMatchDrawer({
   const total = result.matched.length + result.missing.length;
   const percent = Math.round(result.coverage * 100);
 
+  // vaul's Trigger already toggles the controlled Root through Radix. Committing
+  // the open state explicitly as well is harmless (both paths set `true`) and
+  // guarantees the portal mounts even if that composed click handler is lost —
+  // e.g. a ref-forwarding change under React 19. Native button activation means
+  // Space and Enter both go through this same click path.
+  function openDrawer() {
+    setOpen(true);
+  }
+
   // Both triggers keep the same accessible name and vaul ARIA wiring; only the
   // visual treatment changes so the header trigger stays compact on phones.
   const trigger = compact ? (
     <button
       type="button"
       aria-label="Match to a job description"
+      onClick={openDrawer}
       className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-line bg-white px-2.5 text-xs font-semibold text-primary transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
       <Target size={16} aria-hidden />
@@ -80,6 +90,7 @@ export function JdMatchDrawer({
   ) : (
     <button
       type="button"
+      onClick={openDrawer}
       className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
       <Target size={18} aria-hidden />
@@ -94,6 +105,7 @@ export function JdMatchDrawer({
       title="Job description keywords"
       description="Paste a job description to compare its keywords with your resume. Everything stays in your browser."
       trigger={trigger}
+      snapPoints={false}
     >
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">

@@ -197,7 +197,15 @@ describe("EditorWorkspace", () => {
     });
     // The trigger is surfaced in the Content panel header (not buried in the
     // form body) so it is equally reachable on desktop and in the mobile tab.
-    expect(trigger.closest("[data-content-header]")).not.toBeNull();
+    const header = trigger.closest("[data-content-header]");
+    expect(header).not.toBeNull();
+    // It shares a row with the Content heading; the description sits on the
+    // next line instead of wrapping the button onto a second row on phones.
+    const titleRow = trigger.closest("[data-content-title-row]");
+    expect(titleRow).not.toBeNull();
+    expect(titleRow).toContainElement(
+      screen.getByRole("heading", { name: "Content" }),
+    );
 
     await user.click(trigger);
 

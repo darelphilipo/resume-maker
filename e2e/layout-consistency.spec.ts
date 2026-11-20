@@ -566,13 +566,50 @@ for (const viewport of VIEWPORTS) {
       await expect(letter).toBeChecked();
 
       await showTab(page, "Content");
-      await page
-        .getByRole("button", { name: "Match to a job description" })
-        .click();
+      const trigger = page.getByRole("button", {
+        name: "Match to a job description",
+      });
+
+      // The compact trigger must share the Content heading's row, not wrap to
+      // a second line in the 390px Content column.
+      const headingBox = await page
+        .getByRole("heading", { name: "Content" })
+        .boundingBox();
+      const triggerBox = await trigger.boundingBox();
+      expect(headingBox).not.toBeNull();
+      expect(triggerBox).not.toBeNull();
+      const headingMid = (headingBox as NonNullable<typeof headingBox>).y +
+        (headingBox as NonNullable<typeof headingBox>).height / 2;
+      const triggerMid = (triggerBox as NonNullable<typeof triggerBox>).y +
+        (triggerBox as NonNullable<typeof triggerBox>).height / 2;
+      expect(Math.abs(headingMid - triggerMid)).toBeLessThan(12);
+
+      await trigger.click();
 
       const dialog = page.getByRole("dialog");
 
       await expect(dialog).toBeVisible();
+      // `toBeVisible` ignores CSS transforms, so measure the sheet itself: with
+      // vaul snap points a short drawer is translated ~40% of the viewport down
+      // and only a sliver is actually on screen, which looks like it never
+      // opened. The compact JD dialog opts out and must be substantially visible.
+      // Poll through vaul's 500ms slide-in so the measurement is taken after
+      // the sheet settles, not while it is still animating from below.
+      await expect
+        .poll(async () => {
+          const box = await dialog.boundingBox();
+          const viewport = page.viewportSize();
+
+          if (!box || !viewport) {
+            return 0;
+          }
+
+          return (
+            Math.min(box.y + box.height, viewport.height) - Math.max(box.y, 0)
+          );
+        })
+        .toBeGreaterThan(160);
+
       const description = dialog.getByLabel("Job description");
       await expect(description).toBeVisible();
 

@@ -81,6 +81,8 @@ _None._
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-20 — Fixed the live **Match JD** drawer so it actually opens and is visible. The compact JD sheet was the only short `EntryDrawer`, but it inherited `snapPoints={[0.6, 0.95]}` from the tall entry/section forms; vaul parks snap-point sheets ~40% of the viewport downward, leaving only a sliver on screen. `EntryDrawer` now accepts `snapPoints?: number[] | false` (default unchanged) and `JdMatchDrawer` opts out, so it opens at its natural height. Its vaul `Trigger asChild` also commits `open` explicitly in `onClick` as a fallback for the controlled `Root` (Enter/Space share that path). The Content heading and trigger now share one `[data-content-title-row]` flex row so Match JD never wraps on phones. Tests: snap-point vs compact drawer, Enter-to-open, shared row, plus Playwright bounding-box visibility (not just `toBeVisible`) and row-alignment geometry. Verified `npm run typecheck`, `npm test` (594 pass), `npm run lint`. Files: `src/components/editor/EntryDrawer.tsx` (+ test), `src/components/editor/JdMatchDrawer.tsx` (+ test), `src/components/editor/EditorWorkspace.tsx` (+ test), `e2e/layout-consistency.spec.ts`, `CONTEXT.md`, `TASKS.md`. Playwright remains blocked here, so the new geometry case is typechecked but browser-unverified.
+
 - [x] 2026-11-19 — Both preview reset controls now return the resume to the top,
   as on first landing in the Preview tab. The zoom/fit transform was already
   restored to `(0, 0, fitScale)`, but the element that scrolls the pages kept its

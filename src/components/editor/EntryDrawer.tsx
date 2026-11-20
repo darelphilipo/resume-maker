@@ -6,6 +6,9 @@ import type { ReactNode } from "react";
 
 import { useVisualViewportOffset } from "./useVisualViewportOffset";
 
+/** Snap points suit the tall section/entry forms; compact dialogs opt out. */
+const DEFAULT_SNAP_POINTS = [0.6, 0.95];
+
 export type EntryDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -18,6 +21,14 @@ export type EntryDrawerProps = {
    * opens reliably from the same element on desktop and touch.
    */
   trigger?: ReactNode;
+  /**
+   * vaul snap points for tall, scrollable drawers (default `[0.6, 0.95]`).
+   * Pass `false` for a short dialog: with snap points, vaul parks the sheet at
+   * 60% of the viewport by translating it down ~40%, so a short sheet ends up
+   * almost entirely below the fold and looks like it never opened in a real
+   * browser. jsdom has no layout/transform, which is why unit tests missed it.
+   */
+  snapPoints?: number[] | false;
 };
 
 export function EntryDrawer({
@@ -27,14 +38,19 @@ export function EntryDrawer({
   description,
   children,
   trigger,
+  snapPoints,
 }: EntryDrawerProps) {
   const viewportOffset = useVisualViewportOffset();
+  const resolvedSnapPoints =
+    snapPoints === undefined
+      ? DEFAULT_SNAP_POINTS
+      : snapPoints || undefined;
 
   return (
     <Drawer.Root
       open={open}
       onOpenChange={onOpenChange}
-      snapPoints={[0.6, 0.95]}
+      snapPoints={resolvedSnapPoints}
     >
       {trigger ? <Drawer.Trigger asChild>{trigger}</Drawer.Trigger> : null}
       <Drawer.Portal>

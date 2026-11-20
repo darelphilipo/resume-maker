@@ -79,6 +79,27 @@ describe("JdMatchDrawer", () => {
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 
+  it("opens the compact sheet at its natural height with a keyboard press", async () => {
+    const user = userEvent.setup();
+
+    render(<JdMatchDrawer doc={buildDoc()} compact />);
+
+    const trigger = screen.getByRole("button", {
+      name: "Match to a job description",
+    });
+
+    trigger.focus();
+    await user.keyboard("{Enter}");
+
+    const dialog = await screen.findByRole("dialog");
+
+    // No snap points: a short sheet is not translated most of the way below
+    // the viewport, which made the live drawer look like it never opened.
+    expect(dialog).toHaveAttribute("data-vaul-snap-points", "false");
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByLabelText("Job description")).toBeInTheDocument();
+  });
+
   it("splits pasted job keywords into matched and missing chips", async () => {
     const user = userEvent.setup();
 

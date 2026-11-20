@@ -106,6 +106,40 @@ describe("EntryDrawer", () => {
     expect(onOpenChange).toHaveBeenCalledWith(true);
   });
 
+  it("uses snap points for tall drawers but not for compact dialogs", async () => {
+    const { unmount } = render(
+      <EntryDrawer open onOpenChange={vi.fn()} title="Experience">
+        <p>Drawer body</p>
+      </EntryDrawer>,
+    );
+
+    expect(await screen.findByRole("dialog")).toHaveAttribute(
+      "data-vaul-snap-points",
+      "true",
+    );
+    unmount();
+
+    render(
+      <EntryDrawer
+        open
+        onOpenChange={vi.fn()}
+        title="Job description keywords"
+        snapPoints={false}
+      >
+        <p>Drawer body</p>
+      </EntryDrawer>,
+    );
+
+    const compactDialog = await screen.findByRole("dialog");
+
+    // vaul parks snap-point sheets ~40% of the viewport below the fold; a short
+    // dialog must sit at its natural height instead of looking unopened.
+    expect(compactDialog).toHaveAttribute("data-vaul-snap-points", "false");
+    expect(compactDialog.style.getPropertyValue("--snap-point-height")).toBe(
+      "",
+    );
+  });
+
   it("reports close requests through onOpenChange", async () => {
     const user = userEvent.setup();
     const onOpenChange = vi.fn();

@@ -308,19 +308,22 @@ export function EditorWorkspace() {
           className={panelClass("content", "lg:order-1")}
         >
           <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_8px_rgba(23,40,57,0.04)]">
-            <div
-              data-content-header=""
-              className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2"
-            >
-              <div className="flex flex-col gap-1">
+            <div data-content-header className="flex flex-col gap-2">
+              {/* Keep the title and its trigger on one row at every width; the
+                  descriptive line wraps below instead of pushing Match JD to a
+                  second row on phones. */}
+              <div
+                data-content-title-row
+                className="flex items-center justify-between gap-2"
+              >
                 <h2 className="font-serif text-xl font-semibold tracking-tight">
                   Content
                 </h2>
-                <p className="text-sm text-muted">
-                  Reorder, hide, or open a section to edit it.
-                </p>
+                <JdMatchDrawer doc={doc} compact />
               </div>
-              <JdMatchDrawer doc={doc} compact />
+              <p className="text-sm text-muted">
+                Reorder, hide, or open a section to edit it.
+              </p>
             </div>
             <section aria-labelledby="basics-heading" className="flex flex-col gap-3">
               <h3
