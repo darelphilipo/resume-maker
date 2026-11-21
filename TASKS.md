@@ -22,6 +22,11 @@ _empty
 
 ## Queue (Ready for Next Run)
 
+- [ ] P1: Fix bottom-nav gap below icons and Preview horizontal centering on tall / tablet-width (`768px–1023px` & mobile desktop-site) viewports (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/MobileBottomNav.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
+  1. **Pin `<MobileBottomNav>` flush to the bottom edge:** Ensure `EditorWorkspace.tsx` uses `fixed inset-0 flex flex-col overflow-hidden lg:static lg:h-dvh` so the editor shell always spans 100% of the visual viewport with zero blank `<body>` space beneath the bottom tab bar, and cap `<MobileBottomNav>` bottom padding cleanly (`pb-[min(env(safe-area-inset-bottom),20px)]`) so the active tab fill reaches cleanly to the bottom edge with no awkward blank gap below the labels.
+  2. **Center the resume page horizontally in Preview:** In `LiveCanvasViewport.tsx`, center the scaled `<PageStack>` horizontally inside `[data-canvas-scroll]` when the scaled page width is narrower than the viewport (avoiding the empty gray strip on the right side), and size the canvas backdrop so it doesn't show an oversized empty gray void below a 1-page resume.
+  3. **Tighten Content / Design vertical fill on tall `< lg` screens:** Allow the Content and Design panel cards to sit naturally with balanced padding (or switch to a 2-column Content + Preview layout earlier if desired at `md:` `768px+`) rather than leaving a giant empty band above the bottom nav.
+
 ### P2 — Lightweight High-Value UX Additions
 
 - [ ] P2: Add a client-side **Orphan-Line & Bullet-Length Catcher** (`src/lib/lint/bulletMetrics.ts`, `src/components/preview/PageOverflowBanner.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
