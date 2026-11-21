@@ -21,6 +21,16 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
+### P0 — Mobile & Web Overlay / Preview Defects
+
+- [ ] P0: Fix `Check` popover left-edge clipping, rename/de-emphasize trigger, and move `Trim tips` out of the mobile preview chrome (`src/components/editor/ResumeLintPopover.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`, `src/lib/lint/bulletMetrics.ts`).
+  1. **Bullet lint UI (`ResumeLintPopover.tsx`):** Rename the `Check` button to a quieter secondary control (e.g., subtle ghost/link button `"Bullet polish"` or compact icon trigger so it doesn't compete with `Match JD` or imply a full-resume audit), and render its panel inside `EntryDrawer` on mobile (or a viewport-clamped popover with `left-0`/`inset-x-4` and an explicit `X` close button) so it never clips off the left edge on either mobile or desktop.
+  2. **`Trim tips` sheet & copy fixes:** Open `Trim tips` inside `EntryDrawer` (or a dismissible overlay with a clear `X` button) instead of expanding inline inside the `shrink-0` Preview chrome so the resume preview stays fully accessible on mobile. Fix the plural/range formatter (`"1 word"` instead of `"1–1 word"` when `min === max`) and remove the duplicated summary sentence between the yellow spill banner and the `Trim tips` panel.
+
+- [ ] P1: Fix `Match JD` two-click `X` close, desktop Preview right-edge date clipping, and `Anonymize` entry locations (`src/components/editor/JdMatchDrawer.tsx`, `src/components/editor/EntryDrawer.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/lib/privacy/anonymizeDoc.ts`).
+  1. **`Match JD` single-click close:** Fix why clicking `X` once in `JdMatchDrawer` / `EntryDrawer` only collapses Vaul to a minimized bottom bar instead of unmounting/closing on the first click (ensure controlled `open={false}` fully closes Vaul with no residual snap point).
+  2. **Preview right-edge date clipping:** Subtract a small horizontal safety margin (e.g., `8–12px` or scrollbar width via `clientWidth`) when computing `fitScale` in `LiveCanvasViewport.tsx` so right-aligned dates (`Aug 2025`, `Nov 2023`) never clip by a few pixels on initial load or after drawer transitions.
+  3. **Redact entry locations in `anonymizeResumeDoc`:** Replace `location` fields on `experience`, `education`, `volunteer`, and `customSections` entries (e.g., `"City, ST"`) so personal geography isn't leaked in Anonymize mode.
 
 ### P2 — Lightweight High-Value UX Additions
 
