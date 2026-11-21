@@ -83,6 +83,14 @@ export function isVisibleItem(
     );
   }
 
+  // A profile can be a URL-only row (pasted links often have no network or
+  // username), so any of its three display fields makes the entry real.
+  if (sectionId === "profiles") {
+    return ["network", "username", "url"].some(
+      (field) => text(item, field).trim() !== "",
+    );
+  }
+
   const primaryField =
     sectionId === "custom" ? "name" : PRIMARY_FIELDS[sectionId];
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { detectProfileLink, websiteLabelFromUrl } from "./contactLinks";
+import { detectProfileLink, externalLinkHref, websiteLabelFromUrl } from "./contactLinks";
 
 describe("detectProfileLink", () => {
   it("detects the network, icon, and username from a bare host", () => {
@@ -58,6 +58,26 @@ describe("detectProfileLink", () => {
     expect(detectProfileLink("")).toBeNull();
     expect(detectProfileLink("   ")).toBeNull();
     expect(detectProfileLink("not a url")).toBeNull();
+  });
+});
+
+describe("externalLinkHref", () => {
+  it("keeps absolute http(s) links and upgrades bare hosts", () => {
+    expect(externalLinkHref("https://example.com/ada")).toBe(
+      "https://example.com/ada",
+    );
+    expect(externalLinkHref("http://example.com")).toBe("http://example.com");
+    expect(externalLinkHref("example.com/ada")).toBe("https://example.com/ada");
+    expect(externalLinkHref("  github.com/ada  ")).toBe(
+      "https://github.com/ada",
+    );
+  });
+
+  it("rejects blank input and non-http schemes", () => {
+    expect(externalLinkHref("")).toBe("");
+    expect(externalLinkHref("   ")).toBe("");
+    expect(externalLinkHref("javascript:alert(1)")).toBe("");
+    expect(externalLinkHref("data:text/html,hello")).toBe("");
   });
 });
 

@@ -753,6 +753,22 @@ rediscover.
      the mobile Playwright geometry case (every expanded card/fieldset/input
      `right <= card/viewport`) is the real guard.
 
+  61. **Editable fields must reach all three renderers, with link/ATS asymmetry.**
+      `src/templates/shared/allFieldsWiring.test.tsx` is the exhaustive guard: it
+      fills every editable field across all 12 standard list sections, Summary,
+      Basics, and a custom section with unique sentinels and asserts each appears
+      in `HeaderSlot` + `SectionRenderer` (the Visual/PDF path) and in
+      `buildAtsText`. Extend it whenever a field or section is added. URL fields
+      render through `ResumeLink` / `HeaderSlot` using `externalLinkHref`
+      (`src/lib/links/contactLinks.ts`), which upgrades a bare host to `https://`
+      and rejects non-http schemes — so the *href* is absolute while the visible
+      label stays `websiteLabelFromUrl`-clean. ATS text is plain text and prints
+      the raw stored `url` value verbatim (no invented scheme). Visibility rules
+      for URL-only profiles must stay in sync across `isVisibleItem`
+      (`sectionData.ts`), `isDraft` (`selectors.ts`), and `visibleItems`
+      (`atsText.ts`); links for profiles, certifications, and publications plus
+      Education `grade` now render in `SectionRenderer` too.
+
 ## Verification and tooling
 
 ```powershell
@@ -813,6 +829,28 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — All-fields wiring to Preview/PDF/ATS
+- Task: top P0 Queue item — five editable fields were dropped between the
+  editor and the rendered resume/ATS text. A prior run had left the code and
+  most tests uncommitted; this run finished and verified it.
+- Fixes: URL-only Profiles rows stay visible and render the cleaned URL as a
+  clickable link (`sectionData.ts`, `selectors.ts`, `atsText.ts`,
+  `SectionRenderer.tsx`); `basics.website.url` becomes a clickable header link
+  labelled by `website.label` or the cleaned URL (`HeaderSlot.tsx`); Education
+  `grade` and Certifications/Publications `url` now render in Visual/PDF and
+  ATS text. Shared `externalLinkHref` adds `https://` to bare hosts and rejects
+  non-http schemes (Decision #61).
+- New exhaustive `allFieldsWiring.test.tsx` fills every field in all 14 sections
+  with sentinels and asserts each appears in Visual/PDF and ATS. Its two initial
+  failures were **test-expectation bugs**, not code bugs: hrefs are absolute
+  (`https://…`) while ATS keeps the raw stored URL. Fixed those assertions.
+- Files: `src/templates/shared/allFieldsWiring.test.tsx` (new),
+  `src/templates/shared/{sectionData,SectionRenderer,HeaderSlot}.tsx`,
+  `src/lib/ats/atsText.ts` (+ test), `src/lib/store/selectors.ts` (+ test),
+  `src/lib/links/contactLinks.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (647 pass), `npm run lint`.
 
 ### 2026-11-21 — Mobile expanded-card clipping
 - Task: top P0 Queue item (first half of the Mobile Card Clipping & Input-to-PDF
@@ -1079,26 +1117,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (594 pass), `npm run lint`.
   Playwright remains blocked in this sandbox, so the new geometry case is
   typechecked but browser-unverified.
-
-### 2026-11-19 — Preview resets scroll the resume back to the top
-- Task: top P1 Queue item — clicking Reset in the preview pane should return
-  the resume to the top, just like on first landing in the Preview tab.
-- The zoom/fit transform was already restored to `(0, 0, fitScale)`, but the
-  scroller holding the pages kept its offset: `[data-canvas-scroll]` on phones
-  (inner box) and the sticky `#panel-preview` at `lg` (ancestor of the root).
-  New pure `scrollToResumeTop` in `src/lib/zoom/touchScroll.ts` zeroes both;
-  `LiveCanvasViewport` refs the inner box and calls it from a shared
-  `resetScroll` used by `resetZoom` and the `Reset fit` handler. Recorded as
-  Decision #49.
-- Tests: three `touchScroll` cases (desktop ancestor + inner box, phone inner
-  box only, null tolerance) and a `LiveCanvasViewport` case that scrolls
-  `[data-canvas-scroll]` down, clicks `Reset fit`, and asserts `scrollTop === 0`
-  plus `onFit(1)`. 592 pass (was 588).
-- Files: `src/lib/zoom/touchScroll.ts` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (592 pass), `npm run lint`. No new
-  layout chrome, so no e2e case was added; Playwright remains blocked here.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

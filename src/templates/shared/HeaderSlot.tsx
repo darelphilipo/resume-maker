@@ -10,6 +10,10 @@ import {
   SealCheck,
 } from "@phosphor-icons/react";
 
+import {
+  externalLinkHref,
+  websiteLabelFromUrl,
+} from "@/lib/links/contactLinks";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 
 import { AvatarSlot, shouldShowAvatar } from "./AvatarSlot";
@@ -26,6 +30,7 @@ type ContactEntry = {
   id: string;
   kind: ContactKind;
   text: string;
+  href?: string;
 };
 
 function ContactIcon({ kind }: { kind: ContactKind }) {
@@ -80,11 +85,15 @@ function buildContactEntries(doc: ResumeDocument): ContactEntry[] {
     });
   }
 
-  if (doc.basics.website.label.trim() !== "") {
+  const websiteLabel = doc.basics.website.label.trim();
+  const websiteUrl = doc.basics.website.url.trim();
+
+  if (websiteLabel !== "" || websiteUrl !== "") {
     entries.push({
       id: "website",
       kind: "website",
-      text: doc.basics.website.label.trim(),
+      text: websiteLabel || websiteLabelFromUrl(websiteUrl) || websiteUrl,
+      href: externalLinkHref(websiteUrl) || undefined,
     });
   }
 
@@ -193,7 +202,18 @@ export function HeaderSlot({ doc }: { doc: ResumeDocument }) {
                   }}
                 >
                   {hideIcons ? null : <ContactIcon kind={entry.kind} />}
-                  <span>{entry.text}</span>
+                  {entry.href ? (
+                    <a
+                      className="resume-link"
+                      href={entry.href}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {entry.text}
+                    </a>
+                  ) : (
+                    <span>{entry.text}</span>
+                  )}
                 </span>
               </Fragment>
             ))}

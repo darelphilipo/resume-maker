@@ -50,6 +50,14 @@ describe("isDraft", () => {
     expect(isDraft("education", { school: "" })).toBe(true);
     expect(isDraft("education", { school: "MIT" })).toBe(false);
   });
+
+  it("treats any profile display field as real content", () => {
+    expect(isDraft("profiles", {})).toBe(true);
+    expect(isDraft("profiles", { network: "   " })).toBe(true);
+    expect(isDraft("profiles", { network: "GitHub" })).toBe(false);
+    expect(isDraft("profiles", { username: "ada" })).toBe(false);
+    expect(isDraft("profiles", { url: "example.com/ada" })).toBe(false);
+  });
 });
 
 describe("selectSection", () => {
@@ -106,6 +114,23 @@ describe("selectVisibleSectionIds", () => {
     ];
 
     expect(selectVisibleSectionIds({ doc })).toEqual(["skills"]);
+  });
+
+  it("keeps a URL-only profiles section visible", () => {
+    const doc = createEmptyResume();
+    doc.metadata.layout.pages = [
+      { fullWidth: false, main: ["profiles"], sidebar: [] },
+    ];
+    doc.sections.profiles.items = [
+      ProfileItemSchema.parse({
+        id: "p1",
+        network: "",
+        username: "",
+        url: "https://example.com/ada",
+      }),
+    ];
+
+    expect(selectVisibleSectionIds({ doc })).toEqual(["profiles"]);
   });
 
   it("drops every item when all are hidden", () => {

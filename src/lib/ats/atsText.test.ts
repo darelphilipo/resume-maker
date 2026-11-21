@@ -6,7 +6,9 @@ import {
   CustomSectionSchema,
   EducationItemSchema,
   ExperienceItemSchema,
+  ProfileItemSchema,
   ProjectItemSchema,
+  PublicationItemSchema,
   SkillItemSchema,
 } from "@/lib/schema/resume.schema";
 
@@ -227,6 +229,69 @@ describe("buildAtsText", () => {
     ];
 
     expect(buildAtsText(doc)).toBe("Ada");
+  });
+
+  it("prints URL-only profiles and falls back to the website URL", () => {
+    const doc = createEmptyResume();
+
+    doc.basics.website = { url: "https://example.com/portfolio", label: "" };
+    doc.metadata.layout.pages = [
+      { fullWidth: false, main: ["profiles"], sidebar: [] },
+    ];
+    doc.sections.profiles.items = [
+      ProfileItemSchema.parse({
+        id: "profile-1",
+        network: "",
+        username: "",
+        url: "https://example.com/ada",
+      }),
+    ];
+
+    const text = buildAtsText(doc);
+
+    expect(text).toContain("https://example.com/portfolio");
+    expect(text).toContain("https://example.com/ada");
+  });
+
+  it("prints education grades and certification/publication URLs", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.education.items = [
+      EducationItemSchema.parse({
+        id: "edu-1",
+        school: "University of Example",
+        degree: "BSc",
+        area: "Computer Science",
+        location: "Berlin",
+        grade: "3.9",
+      }),
+    ];
+    doc.sections.certifications.items = [
+      CertificationItemSchema.parse({
+        id: "cert-1",
+        name: "AWS Solutions Architect",
+        issuer: "Amazon",
+        date: "2023-10",
+        url: "https://example.com/cert",
+      }),
+    ];
+    doc.sections.publications.items = [
+      PublicationItemSchema.parse({
+        id: "pub-1",
+        title: "Scaling static exports",
+        publisher: "Example Press",
+        date: "2024-02",
+        url: "https://example.com/paper",
+      }),
+    ];
+
+    const text = buildAtsText(doc);
+
+    expect(text).toContain(
+      "BSc\nUniversity of Example · Computer Science · Berlin · 3.9",
+    );
+    expect(text).toContain("https://example.com/cert");
+    expect(text).toContain("https://example.com/paper");
   });
 });
 

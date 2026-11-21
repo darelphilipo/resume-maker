@@ -1,5 +1,9 @@
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 
+import {
+  externalLinkHref,
+  websiteLabelFromUrl,
+} from "@/lib/links/contactLinks";
 import { decodeBlock } from "@/lib/pagination/blockIds";
 import type { ResumeDocument, SectionId } from "@/lib/schema/resume.schema";
 
@@ -20,6 +24,27 @@ type GenericKind = Exclude<
   "experience" | "education" | "projects" | "skills"
 > | "custom";
 
+function ResumeLink({ url }: { url: string }) {
+  const trimmed = url.trim();
+  const label = websiteLabelFromUrl(trimmed) || trimmed;
+
+  if (label === "") {
+    return null;
+  }
+
+  const href = externalLinkHref(trimmed);
+
+  if (href === "") {
+    return <span>{label}</span>;
+  }
+
+  return (
+    <a className="resume-link" href={href} target="_blank" rel="noreferrer">
+      {label}
+    </a>
+  );
+}
+
 function EntryShell({
   title,
   subtitle,
@@ -31,7 +56,7 @@ function EntryShell({
   keepTogether = false,
 }: {
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   date?: ReactNode;
   aside?: ReactNode;
   extra?: ReactNode;
@@ -112,11 +137,12 @@ function EducationEntry({ item }: { item: ItemRecord }) {
   const degree = text(item, "degree");
   const area = text(item, "area");
   const location = text(item, "location");
+  const grade = text(item, "grade");
 
   return (
     <EntryShell
       title={degree || school}
-      subtitle={[degree ? school : "", area, location]
+      subtitle={[degree ? school : "", area, location, grade]
         .filter(Boolean)
         .join(" · ")}
       date={dateNode(item)}
@@ -186,26 +212,48 @@ function GenericEntry({
   item: ItemRecord;
 }) {
   let title = "";
-  let subtitle = "";
+  let subtitle: ReactNode = "";
   let summary = "";
   let date: ReactNode = null;
   let aside: ReactNode = null;
   let extra: ReactNode = null;
 
   switch (kind) {
-    case "profiles":
-      title = text(item, "network");
-      subtitle = [text(item, "username"), text(item, "url")]
-        .filter(Boolean)
-        .join(" · ");
+    case "profiles": {
+      const network = text(item, "network").trim();
+      const username = text(item, "username").trim();
+      const url = text(item, "url").trim();
+
+      title = network;
+
+      if (username !== "" || url !== "") {
+        subtitle = (
+          <>
+            {username !== "" ? username : null}
+            {username !== "" && url !== "" ? " · " : null}
+            {url !== "" ? <ResumeLink url={url} /> : null}
+          </>
+        );
+      }
       break;
-    case "certifications":
+    }
+    case "certifications": {
+      const url = text(item, "url").trim();
+
       title = text(item, "name");
       subtitle = text(item, "issuer");
       if (text(item, "date").trim() !== "") {
         date = <DateRange start={text(item, "date")} end="" />;
       }
+      if (url !== "") {
+        extra = (
+          <p className="resume-entry-extra">
+            <ResumeLink url={url} />
+          </p>
+        );
+      }
       break;
+    }
     case "awards":
       title = text(item, "title");
       subtitle = text(item, "awarder");
@@ -239,14 +287,24 @@ function GenericEntry({
       summary = text(item, "summary");
       date = dateNode(item);
       break;
-    case "publications":
+    case "publications": {
+      const url = text(item, "url").trim();
+
       title = text(item, "title");
       subtitle = text(item, "publisher");
       summary = text(item, "summary");
       if (text(item, "date").trim() !== "") {
         date = <DateRange start={text(item, "date")} end="" />;
       }
+      if (url !== "") {
+        extra = (
+          <p className="resume-entry-extra">
+            <ResumeLink url={url} />
+          </p>
+        );
+      }
       break;
+    }
     case "references":
       title = text(item, "name");
       subtitle = [text(item, "position"), text(item, "company")]

@@ -53,6 +53,14 @@ export function isDraft(sectionId: SectionId, item: SectionItem): boolean {
     return !hasKeywords(item);
   }
 
+  // Profiles may be URL-only, with neither a network nor a username.
+  if (sectionId === "profiles") {
+    return !["network", "username", "url"].some((field) => {
+      const fieldValue = item[field];
+      return typeof fieldValue === "string" && fieldValue.trim() !== "";
+    });
+  }
+
   return true;
 }
 

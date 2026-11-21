@@ -74,7 +74,14 @@ in control of every line, and your data stays on your device.
   is shown without `https://` or `www.` — there is no separate label to
   maintain.
 - Profiles: paste a profile URL such as `github.com/you` and the network,
-  username, and icon are filled in automatically.
+  username, and icon are filled in automatically. A row with only a URL still
+  counts, so pasted links are never silently dropped.
+- **Everything you type makes it into the resume.** Your website, profile links,
+  certification links, and publication links appear as clickable links in the
+  preview and PDF — even if you pasted a bare address such as `github.com/you` —
+  and as plain text in the ATS view. An Education **grade** prints beside the
+  school and degree too, so no field quietly disappears between the editor and
+  the final document.
 - Summary plus Profiles, Experience, Projects, Education, Skills, and
   Certifications, with optional Awards, Languages, Interests, Volunteer,
   Publications, and References.

@@ -21,14 +21,6 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-### P0 — Mobile Card Clipping & Input-to-PDF Wiring Fixes
-
-- [ ] P0: Wire all 5 dropped/unrendered fields to Visual Preview, Print PDF, and ATS text (`src/templates/shared/sectionData.ts`, `src/templates/shared/SectionRenderer.tsx`, `src/templates/shared/HeaderSlot.tsx`, `src/lib/ats/atsText.ts`, `src/lib/store/selectors.ts`).
-  1. **`Profiles` URL-only entries:** Treat a profile entry as visible when *any* of `network`, `username`, or `url` is non-empty (in `sectionData.ts`, `selectVisibleSectionIds`, and `atsText.ts`), falling back to displaying the cleaned `url` (`example.com/path`) as a clickable link when `network`/`username` are blank.
-  2. **`Basics` `website.url`:** Render `doc.basics.website.url` as a clickable `<a href>` in `HeaderSlot.tsx` (using `website.label` or cleaned `website.url` as text) and fall back to `website.url` in `atsText.ts` when `label` is empty.
-  3. **`Education` `grade`, `Certifications` `url`, and `Publications` `url`:** Render `item.grade` in `EducationEntry` + `educationLines`, and render clickable `item.url` links for both `certifications` and `publications` in `SectionRenderer.tsx` + `atsText.ts`.
-  4. Add an exhaustive `src/templates/shared/allFieldsWiring.test.tsx` test populating every editable field across all 14 sections with unique sentinel values and asserting every single one appears in Visual Preview/PDF and ATS text.
-
 ### P1 — Regression Visual & UX Fixes
 
 - [ ] P1: Fix Studio Sidebar blank Page 2 and `ATS text` spill-banner overlap (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/lib/pagination/computePages.ts`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/AtsTextView.tsx`).
@@ -66,6 +58,21 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-21 — Wired the five dropped fields through Visual Preview/Print PDF
+  and ATS text. URL-only Profiles rows now stay visible and show the cleaned URL
+  as a clickable link; `basics.website.url` is a clickable header link labelled by
+  `website.label` (falling back to the cleaned URL); Education `grade` prints in
+  the entry subtitle; Certifications and Publications `url` render as clickable
+  links. A shared `externalLinkHref` upgrades bare hosts to `https://` and rejects
+  non-http schemes, while ATS text keeps the raw stored URL. Added an exhaustive
+  `allFieldsWiring.test.tsx` covering every editable field in all 14 sections.
+  Verified `npm run typecheck`, `npm test` (647 pass), `npm run lint`. Files:
+  `src/templates/shared/allFieldsWiring.test.tsx` (new),
+  `src/templates/shared/sectionData.ts`, `src/templates/shared/SectionRenderer.tsx`,
+  `src/templates/shared/HeaderSlot.tsx`, `src/lib/ats/atsText.ts` (+ test),
+  `src/lib/store/selectors.ts` (+ test), `src/lib/links/contactLinks.ts` (+ test),
+  `src/templates/shared/AvatarSlot.test.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-21 — Stopped expanded section cards clipping off the right edge on
   phones. `EntryCard`'s `<fieldset>` now carries `w-full min-w-0 max-w-full`,

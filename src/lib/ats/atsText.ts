@@ -72,7 +72,13 @@ function keywordList(item: ItemRecord): string[] {
 function visibleItems(
   items: readonly unknown[],
   primaryField: string,
-  keywordsCountAsContent = false,
+  {
+    keywordsCountAsContent = false,
+    anyOfFields = [],
+  }: {
+    keywordsCountAsContent?: boolean;
+    anyOfFields?: readonly string[];
+  } = {},
 ): ItemRecord[] {
   return items
     .map((item) => item as ItemRecord)
@@ -80,7 +86,8 @@ function visibleItems(
       (item) =>
         item.hidden !== true &&
         (text(item, primaryField).trim() !== "" ||
-          (keywordsCountAsContent && keywordList(item).length > 0)),
+          (keywordsCountAsContent && keywordList(item).length > 0) ||
+          anyOfFields.some((field) => text(item, field).trim() !== "")),
     );
 }
 
@@ -186,7 +193,10 @@ function contactLine(doc: ResumeDocument): string[] {
   pushText(entries, doc.basics.phone);
   pushText(entries, doc.basics.location);
   pushText(entries, doc.basics.workAuth);
-  pushText(entries, doc.basics.website.label);
+  pushText(
+    entries,
+    doc.basics.website.label.trim() || doc.basics.website.url,
+  );
 
   for (const field of doc.basics.customFields) {
     pushText(entries, field.text);
@@ -234,7 +244,12 @@ function educationLines(item: ItemRecord): string[] {
   pushText(lines, degree || school);
   pushText(
     lines,
-    joinedField(item, degree !== "" ? ["school", "area", "location"] : ["area", "location"]),
+    joinedField(
+      item,
+      degree !== ""
+        ? ["school", "area", "location", "grade"]
+        : ["area", "location", "grade"],
+    ),
   );
   addDateLine(lines, item);
   pushRichText(lines, text(item, "summary"));
@@ -276,6 +291,7 @@ function genericLines(kind: string, item: ItemRecord): string[] {
       pushText(lines, text(item, "name"));
       pushText(lines, text(item, "issuer"));
       addDateLine(lines, item, true);
+      pushText(lines, text(item, "url"));
       break;
     case "awards":
       pushText(lines, text(item, "title"));
@@ -301,6 +317,7 @@ function genericLines(kind: string, item: ItemRecord): string[] {
       pushText(lines, text(item, "title"));
       pushText(lines, text(item, "publisher"));
       addDateLine(lines, item, true);
+      pushText(lines, text(item, "url"));
       pushRichText(lines, text(item, "summary"));
       break;
     case "references":
@@ -426,7 +443,10 @@ function knownCopySection(
   const items = visibleItems(
     section.items,
     PRIMARY_FIELDS[sectionId],
-    sectionId === "skills",
+    {
+      keywordsCountAsContent: sectionId === "skills",
+      anyOfFields: sectionId === "profiles" ? ["username", "url"] : [],
+    },
   );
 
   if (items.length === 0) {

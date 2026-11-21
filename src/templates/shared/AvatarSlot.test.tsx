@@ -129,6 +129,29 @@ describe("HeaderSlot", () => {
     expect(container.querySelectorAll(".resume-work-auth")).toHaveLength(1);
   });
 
+  it("links a website from its URL when the label is blank", () => {
+    const doc = createEmptyResume();
+    doc.basics.website = { url: "https://example.com/portfolio", label: "" };
+
+    render(<HeaderSlot doc={doc} />);
+
+    const link = screen.getByRole("link", { name: "example.com/portfolio" });
+
+    expect(link).toHaveAttribute("href", "https://example.com/portfolio");
+  });
+
+  it("links a website with its custom label", () => {
+    const doc = createEmptyResume();
+    doc.basics.website = { url: "example.com/portfolio", label: "Portfolio" };
+
+    render(<HeaderSlot doc={doc} />);
+
+    expect(screen.getByRole("link", { name: "Portfolio" })).toHaveAttribute(
+      "href",
+      "https://example.com/portfolio",
+    );
+  });
+
   it("omits the work auth tag when it is empty", () => {
     const doc = createEmptyResume();
     doc.basics.email = "ada@example.com";

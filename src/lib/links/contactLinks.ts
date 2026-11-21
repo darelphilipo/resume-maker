@@ -57,6 +57,7 @@ const NETWORKS = new Map<string, NetworkDefinition>([
 ]);
 
 const PROTOCOL_PATTERN = /^[a-z][a-z0-9+.-]*:\/\//i;
+const SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
 const WWW_PATTERN = /^www\./;
 const LEADING_USERNAME_MARKS = /^[@~]+/;
 const TRAILING_SLASHES = /\/+$/;
@@ -142,6 +143,29 @@ export function detectProfileLink(input: string): DetectedProfileLink | null {
     icon: definition.icon,
     username: usernameFromPath(url, definition.skip),
   };
+}
+
+/**
+ * Absolute href for a user-entered resume link. Bare hosts get `https://`, and
+ * anything with a non-http scheme (for example `javascript:`) is rejected so a
+ * pasted value can never become an executable link in the preview.
+ */
+export function externalLinkHref(input: string): string {
+  const trimmed = input.trim();
+
+  if (trimmed === "") {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (SCHEME_PATTERN.test(trimmed)) {
+    return "";
+  }
+
+  return `https://${trimmed}`;
 }
 
 /**
