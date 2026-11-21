@@ -33,6 +33,18 @@ _empty
   1. **Bullet lint UI (`ResumeLintPopover.tsx`):** Rename the `Check` button to a quieter secondary control (e.g., subtle ghost/link button `"Bullet polish"` or compact icon trigger so it doesn't compete with `Match JD` or imply a full-resume audit), and render its panel inside `EntryDrawer` on mobile (or a viewport-clamped popover with `left-0`/`inset-x-4` and an explicit `X` close button) so it never clips off the left edge on either mobile or desktop.
   2. **`Trim tips` sheet & copy fixes:** Open `Trim tips` inside `EntryDrawer` (or a dismissible overlay with a clear `X` button) instead of expanding inline inside the `shrink-0` Preview chrome so the resume preview stays fully accessible on mobile. Fix the plural/range formatter (`"1 word"` instead of `"1–1 word"` when `min === max`) and remove the duplicated summary sentence between the yellow spill banner and the `Trim tips` panel.
 
+### P0 / P1 — Newly Uncovered Regression Bugs
+
+- [ ] P0: Fix `Studio Sidebar` + `Compact` density silently truncating bottom content on Page 1 (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/lib/pagination/computePages.ts`, `src/components/preview/MeasureLayer.tsx`). Reproduce with a 2-page resume in `Studio Sidebar` + `Letter` + `Classic` switched to `Compact` density: ensure `MeasureLayer` measures with the exact active template/density/font CSS variables so content that exceeds Page 1's printable height always spills onto Page 2 instead of reporting `1 page` and clipping off `Projects`/`Education`.
+
+- [ ] P1: Fix `Match JD` false-positive substring matches and empty trailing `•` bullets in Preview/PDF (`src/lib/keywords/jdMatch.ts`, `src/templates/shared/RichTextDisplay.tsx` or `SectionRenderer.tsx`).
+  1. **Word-boundary matching (`jdMatch.ts`):** Match JD keywords on whole-word boundaries (handling tech tokens like `C++`, `C#`, `Node.js`, `.NET`) instead of raw substring includes so words like `"rust"` or `"hiring"` never falsely match unrelated words.
+  2. **Strip empty trailing bullets:** Filter out empty `<li><p></p></li>` / whitespace-only list items before rendering in Visual Preview, `PrintPortal`, and `atsText.ts` so pressing `Enter` at the end of a bullet list never prints a stray `•` dot.
+
+- [ ] P1: Fix `Enter` key in `MonthSelect` year input jumping the Content panel to the top, and fix Launcher Paste button blur delay (`src/components/editor/SectionFormControls.tsx`, `src/components/launcher/Launcher.tsx`).
+  1. **`MonthSelect` year `Enter` key:** Handle `onKeyDown` (`Enter`) in the year input so it commits the entered year cleanly without triggering an unintended form submit or scrolling the Content sidebar to the top.
+  2. **Launcher Paste enablement:** Ensure `"Create resume from text"` enables immediately on `onChange` / `onPaste` without requiring a blur event first.
+
 - [ ] P1: Fix `Match JD` two-click `X` close, desktop Preview right-edge date clipping, and `Anonymize` entry locations (`src/components/editor/JdMatchDrawer.tsx`, `src/components/editor/EntryDrawer.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/lib/privacy/anonymizeDoc.ts`).
   1. **`Match JD` single-click close:** Fix why clicking `X` once in `JdMatchDrawer` / `EntryDrawer` only collapses Vaul to a minimized bottom bar instead of unmounting/closing on the first click (ensure controlled `open={false}` fully closes Vaul with no residual snap point).
   2. **Preview right-edge date clipping:** Subtract a small horizontal safety margin (e.g., `8–12px` or scrollbar width via `clientWidth`) when computing `fitScale` in `LiveCanvasViewport.tsx` so right-aligned dates (`Aug 2025`, `Nov 2023`) never clip by a few pixels on initial load or after drawer transitions.
