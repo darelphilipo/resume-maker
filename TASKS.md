@@ -21,6 +21,18 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
+### P0 — Mobile Card Clipping & Input-to-PDF Wiring Fixes
+
+- [ ] P0: Fix expanded section cards (`Education`, `Profiles`, `Experience`, etc.) clipping off the right edge on mobile (`src/components/editor/SectionFormControls.tsx`, `src/components/editor/SectionList.tsx`).
+  1. Add `min-w-0 w-full max-w-full` to `EntryCard`'s `<fieldset>` in `SectionFormControls.tsx` (overriding CSS's default `min-width: min-content`) and `min-w-0` on the section body wrapper in `SectionList.tsx`.
+  2. Allow `EntryActions` to wrap cleanly (`flex-wrap`) on narrow widths (`< 380px`) and ensure `MonthSelect` fits within `100%` without pushing the `<fieldset>` sideways.
+  3. Add a `390x844` check in `e2e/layout-consistency.spec.ts` asserting every expanded section's `<fieldset>` and `<input>` right edge stays within the card/viewport (`rect.right <= window.innerWidth`).
+
+- [ ] P0: Wire all 5 dropped/unrendered fields to Visual Preview, Print PDF, and ATS text (`src/templates/shared/sectionData.ts`, `src/templates/shared/SectionRenderer.tsx`, `src/templates/shared/HeaderSlot.tsx`, `src/lib/ats/atsText.ts`, `src/lib/store/selectors.ts`).
+  1. **`Profiles` URL-only entries:** Treat a profile entry as visible when *any* of `network`, `username`, or `url` is non-empty (in `sectionData.ts`, `selectVisibleSectionIds`, and `atsText.ts`), falling back to displaying the cleaned `url` (`example.com/path`) as a clickable link when `network`/`username` are blank.
+  2. **`Basics` `website.url`:** Render `doc.basics.website.url` as a clickable `<a href>` in `HeaderSlot.tsx` (using `website.label` or cleaned `website.url` as text) and fall back to `website.url` in `atsText.ts` when `label` is empty.
+  3. **`Education` `grade`, `Certifications` `url`, and `Publications` `url`:** Render `item.grade` in `EducationEntry` + `educationLines`, and render clickable `item.url` links for both `certifications` and `publications` in `SectionRenderer.tsx` + `atsText.ts`.
+  4. Add an exhaustive `src/templates/shared/allFieldsWiring.test.tsx` test populating every editable field across all 14 sections with unique sentinel values and asserting every single one appears in Visual Preview/PDF and ATS text.
 
 ### P1 — Live Bug Fixes & Surface UI Polish
 
