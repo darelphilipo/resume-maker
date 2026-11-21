@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { X } from "@phosphor-icons/react";
+import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 
 import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
 import { MAX_LISTED_ISSUES } from "@/lib/lint/bulletMetrics";
@@ -15,48 +17,51 @@ const BLOCKED_COPY: Record<FitBlockedReason, string> = {
   )}% — trim a line or two.`,
 };
 
-/**
- * A subtle, collapsible list of bullets that waste space.
- *
- * Each issue names the reason in plain language ("2-word line", "4 lines") and
- * shows the bullet's opening words, so the user can find it in the editor
- * without an AI rewrite. It stays session-only and read-only: trimming is the
- * user's edit and keeps normal undo history.
- */
-export function BulletTrimTips({
+function TrimTipsDialog({
   report,
-  defaultOpen = false,
+  titleId,
+  hiddenCount,
+  onClose,
 }: {
-  report?: BulletLintReport | null;
-  defaultOpen?: boolean;
+  report: BulletLintReport;
+  titleId: string;
+  hiddenCount: number;
+  onClose: () => void;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  if (!report || report.issues.length === 0) {
-    return null;
-  }
-
-  const hiddenCount = Math.max(0, report.issues.length - MAX_LISTED_ISSUES);
-
   return (
-    <details
+    <div
       data-bullet-trim-tips=""
-      open={open}
-      onToggle={(event) => {
-        setOpen(event.currentTarget.open);
-      }}
-      className="max-w-full rounded-lg border border-line/70 bg-surface/95 text-text shadow-sm"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      onClick={onClose}
     >
-      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-primary marker:content-none [&::-webkit-details-marker]:hidden sm:min-h-8">
-        Trim tips ({report.issues.length})
-      </summary>
-      <div className="border-t border-line/70 px-2.5 py-2">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={(event) => {
+          event.stopPropagation();
+        }}
+        className="max-h-[70vh] w-full max-w-md overflow-y-auto rounded-xl border border-line bg-surface p-4 text-left text-text shadow-xl"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <h2 id={titleId} className="text-sm font-semibold">
+            Trim tips
+          </h2>
+          <button
+            type="button"
+            aria-label="Close trim tips"
+            onClick={onClose}
+            className="-mr-1 -mt-1 flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-black/5 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            <X size={18} aria-hidden />
+          </button>
+        </div>
         {report.summary ? (
-          <p className="mb-2 text-[11px] leading-snug text-muted">
+          <p className="mt-1 text-[11px] leading-snug text-muted">
             {report.summary}
           </p>
         ) : null}
-        <ul className="space-y-1.5">
+        <ul className="mt-2 space-y-1.5">
           {report.issues.slice(0, MAX_LISTED_ISSUES).map((issue, index) => (
             <li
               key={`${issue.kind}-${index}`}
@@ -79,7 +84,83 @@ export function BulletTrimTips({
           <p className="mt-1.5 text-[11px] text-muted">+{hiddenCount} more</p>
         ) : null}
       </div>
-    </details>
+    </div>
+  );
+}
+
+/**
+ * A dismissible trim-tips sheet for bullets that waste space.
+ *
+ * It opens from a compact toolbar pill as an overlay instead of expanding
+ * inline inside the preview chrome: the chrome is `shrink-0` on phones, so an
+ * inline list used to eat the space the resume preview needs. Each issue names
+ * the reason in plain language ("2-word line", "4 lines") and shows the
+ * bullet's opening words, so the user can find it in the editor without an AI
+ * rewrite. It stays session-only and read-only: trimming is the user's edit and
+ * keeps normal undo history.
+ */
+export function BulletTrimTips({
+  report,
+  defaultOpen = false,
+}: {
+  report?: BulletLintReport | null;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const titleId = useId();
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  if (!report || report.issues.length === 0) {
+    return null;
+  }
+
+  const hiddenCount = Math.max(0, report.issues.length - MAX_LISTED_ISSUES);
+
+  return (
+    <>
+      <button
+        type="button"
+        data-bullet-trim-trigger=""
+        aria-expanded={open}
+        aria-controls={open ? titleId : undefined}
+        onClick={() => {
+          setOpen((current) => !current);
+        }}
+        className="flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-line/70 bg-surface/95 px-2.5 text-xs font-semibold text-primary shadow-sm transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:min-h-8"
+      >
+        Trim tips ({report.issues.length})
+      </button>
+      {open && typeof document !== "undefined"
+        ? createPortal(
+            <TrimTipsDialog
+              report={report}
+              titleId={titleId}
+              hiddenCount={hiddenCount}
+              onClose={() => {
+                setOpen(false);
+              }}
+            />,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
 
@@ -89,7 +170,6 @@ export function PageOverflowBanner({
   lineHeightPx,
   fitScale = null,
   fitBlockedReason = null,
-  bulletReport = null,
   onFit,
 }: {
   overflowPx: number;
@@ -97,8 +177,6 @@ export function PageOverflowBanner({
   lineHeightPx: number;
   fitScale?: number | null;
   fitBlockedReason?: FitBlockedReason | null;
-  /** Rendered-bullet hints, scanned from the live preview DOM. */
-  bulletReport?: BulletLintReport | null;
   onFit?: (scale: number) => void;
 }) {
   if (overflowPx <= 0 && pageCount <= 1) {
@@ -125,14 +203,6 @@ export function PageOverflowBanner({
       {overflowPx > 0 ? (
         <span>
           Runs onto page {pageCount} by ~{lines} lines
-        </span>
-      ) : null}
-      {pageCount > 1 && bulletReport?.summary ? (
-        <span
-          data-bullet-trim-summary=""
-          className="w-full text-xs font-medium text-amber-800 sm:w-auto"
-        >
-          {bulletReport.summary}
         </span>
       ) : null}
       {blockedCopy ? (

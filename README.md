@@ -192,13 +192,17 @@ in control of every line, and your data stays on your device.
   **Reset fit** pill in the preview header returns the page to 100%.
 - **Trim tips** find the bullets that quietly cost you a line. When a bullet
   wraps and leaves only a word or two on its last line, or grows into a long
-  block, the preview counts it and shows the opening words in a compact
-  **Trim tips** list. Trimming those bullets can reclaim whole lines before you
-  shrink the font or spill onto a second page.
-- **Bullet check** in the Content panel header flags the small consistency
+  block, the preview counts it. Tap **Trim tips** in the preview header to open a
+  dismissible list with each bullet's opening words and a plain-language reason;
+  it covers the preview only while open, so the resume stays fully readable on a
+  phone. Trimming those bullets can reclaim whole lines before you shrink the
+  font or spill onto a second page.
+- **Bullet polish** in the Content panel header flags the small consistency
   problems a recruiter notices first: bullets that mix ending periods,
   first-person pronouns, filler adverbs, and repeated opening verbs within one
-  role. Each finding shows the opening words so you can find the bullet, and
+  role. It is a quiet text button beside **Match JD**; tapping it opens a compact
+  panel that stays inside the screen and closes with its own X or Escape. Each
+  finding shows the opening words so you can find the bullet, and
   **Standardize bullet periods** can remove every trailing period or add one to
   every bare bullet in a single undoable tap. The check runs locally with plain
   rules — no AI and no network.

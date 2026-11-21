@@ -56,6 +56,18 @@ function plural(count: number, singular: string): string {
   return count === 1 ? singular : `${singular}s`;
 }
 
+/**
+ * Formats the orphan line range. A single-word overflow is not a range, so it
+ * reads "1 word" instead of the confusing "1–1 word".
+ */
+function wordRangeLabel(maxWords: number): string {
+  if (maxWords <= 1) {
+    return `1 ${plural(1, "word")}`;
+  }
+
+  return `1–${maxWords} ${plural(maxWords, "word")}`;
+}
+
 export function bulletSnippet(text: string, maxLength = 92): string {
   const normalized = normalizeBulletText(text);
 
@@ -137,9 +149,8 @@ export function summarizeBulletIssues(
       `${orphanIssues.length} ${plural(
         orphanIssues.length,
         "bullet",
-      )} spill${orphanIssues.length === 1 ? "s" : ""} by 1–${maxWords} ${plural(
+      )} spill${orphanIssues.length === 1 ? "s" : ""} by ${wordRangeLabel(
         maxWords,
-        "word",
       )}`,
     );
   }

@@ -12,7 +12,7 @@ import { ResumeLintPopover } from "./ResumeLintPopover";
 
 function openCheck(): void {
   fireEvent.click(
-    screen.getByRole("button", { name: /Resume check:/ }),
+    screen.getByRole("button", { name: /Bullet polish:/ }),
   );
 }
 
@@ -30,16 +30,16 @@ describe("ResumeLintPopover", () => {
     render(<ResumeLintPopover doc={doc} />);
 
     const trigger = screen.getByRole("button", {
-      name: "Resume check: no issues",
+      name: "Bullet polish: no issues",
     });
 
-    expect(trigger).toHaveTextContent("Check");
+    expect(trigger).toHaveTextContent("Bullet polish");
     expect(trigger).not.toHaveTextContent("(");
 
     fireEvent.click(trigger);
 
     expect(
-      screen.getByRole("region", { name: "Resume check" }),
+      screen.getByRole("region", { name: "Bullet polish" }),
     ).toHaveTextContent("No bullet issues found.");
   });
 
@@ -53,14 +53,14 @@ describe("ResumeLintPopover", () => {
     render(<ResumeLintPopover doc={doc} />);
 
     const trigger = screen.getByRole("button", {
-      name: "Resume check: 2 issues",
+      name: "Bullet polish: 2 issues",
     });
 
-    expect(trigger).toHaveTextContent("Check (2)");
+    expect(trigger).toHaveTextContent("Bullet polish (2)");
 
     fireEvent.click(trigger);
 
-    const panel = screen.getByRole("region", { name: "Resume check" });
+    const panel = screen.getByRole("region", { name: "Bullet polish" });
 
     expect(panel).toHaveTextContent("First-person pronouns");
     expect(panel).toHaveTextContent("Filler adverbs");
@@ -124,7 +124,7 @@ describe("ResumeLintPopover", () => {
       screen.getByRole("button", { name: "Add periods to all bullets" }),
     ).toBeDisabled();
     expect(
-      screen.getByRole("region", { name: "Resume check" }),
+      screen.getByRole("region", { name: "Bullet polish" }),
     ).toHaveTextContent("Add a bullet to a section first.");
   });
 
@@ -138,15 +138,48 @@ describe("ResumeLintPopover", () => {
     openCheck();
 
     expect(
-      screen.getByRole("region", { name: "Resume check" }),
+      screen.getByRole("region", { name: "Bullet polish" }),
     ).toBeVisible();
 
-    fireEvent.keyDown(screen.getByRole("button", { name: /Resume check:/ }), {
+    fireEvent.keyDown(screen.getByRole("button", { name: /Bullet polish:/ }), {
       key: "Escape",
     });
 
     expect(
-      screen.queryByRole("region", { name: "Resume check" }),
+      screen.queryByRole("region", { name: "Bullet polish" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("de-emphasizes the trigger and clamps the panel to the viewport", () => {
+    const doc = createEmptyResume();
+
+    doc.summary.content = "<ul><li>Built APIs.</li></ul>";
+    useResumeStore.getState().setDoc(doc);
+
+    render(<ResumeLintPopover doc={doc} />);
+
+    const trigger = screen.getByRole("button", { name: /Bullet polish:/ });
+
+    // A quiet text trigger must not look like a second primary CTA.
+    expect(trigger.className).not.toContain("border-line");
+    expect(trigger.className).toContain("font-medium");
+
+    fireEvent.click(trigger);
+
+    const panel = screen.getByRole("region", { name: "Bullet polish" });
+
+    // Fixed with inset gutters on phones, then a right-aligned popover at lg.
+    expect(panel.className).toContain("fixed");
+    expect(panel.className).toContain("inset-x-4");
+    expect(panel.className).toContain("lg:absolute");
+    expect(panel.className).toContain("lg:right-0");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Close bullet polish" }),
+    );
+
+    expect(
+      screen.queryByRole("region", { name: "Bullet polish" }),
     ).not.toBeInTheDocument();
   });
 });

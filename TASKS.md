@@ -22,12 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-### P0 — Mobile & Web Overlay / Preview Defects
-
-- [ ] P0: Fix `Check` popover left-edge clipping, rename/de-emphasize trigger, and move `Trim tips` out of the mobile preview chrome (`src/components/editor/ResumeLintPopover.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`, `src/lib/lint/bulletMetrics.ts`).
-  1. **Bullet lint UI (`ResumeLintPopover.tsx`):** Rename the `Check` button to a quieter secondary control (e.g., subtle ghost/link button `"Bullet polish"` or compact icon trigger so it doesn't compete with `Match JD` or imply a full-resume audit), and render its panel inside `EntryDrawer` on mobile (or a viewport-clamped popover with `left-0`/`inset-x-4` and an explicit `X` close button) so it never clips off the left edge on either mobile or desktop.
-  2. **`Trim tips` sheet & copy fixes:** Open `Trim tips` inside `EntryDrawer` (or a dismissible overlay with a clear `X` button) instead of expanding inline inside the `shrink-0` Preview chrome so the resume preview stays fully accessible on mobile. Fix the plural/range formatter (`"1 word"` instead of `"1–1 word"` when `min === max`) and remove the duplicated summary sentence between the yellow spill banner and the `Trim tips` panel.
-
 ### P0 / P1 — Newly Uncovered Regression Bugs
 
 - [ ] P0: Fix `Studio Sidebar` + `Compact` density silently truncating bottom content on Page 1 (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/lib/pagination/computePages.ts`, `src/components/preview/MeasureLayer.tsx`). Reproduce with a 2-page resume in `Studio Sidebar` + `Letter` + `Classic` switched to `Compact` density: ensure `MeasureLayer` measures with the exact active template/density/font CSS variables so content that exceeds Page 1's printable height always spills onto Page 2 instead of reporting `1 page` and clipping off `Projects`/`Education`.
@@ -79,6 +73,25 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-21 — Made the bullet helpers mobile-safe and quieter. The
+  Content-header **Check** trigger is now a quiet text button named **Bullet
+  polish** (muted/amber text, no competing border), and its panel opens as a
+  viewport-clamped overlay (`fixed inset-x-4` with a `lg:absolute lg:right-0`
+  popover at desktop) with an explicit **Close bullet polish** X, so it can no
+  longer clip off the left edge on phones or in the 22rem column. **Trim tips**
+  no longer expands inline inside the `shrink-0` preview chrome: it is now a
+  compact toolbar pill that opens a dismissible `role="dialog"` sheet with a
+  clear X and Escape-to-close, leaving the resume preview fully accessible. The
+  yellow spill banner no longer repeats the trim summary (the panel owns it),
+  and the range formatter now reads `"1 word"` instead of `"1–1 word"` when the
+  orphan max is one. Verified `npm run typecheck`, `npm test` (731 pass),
+  `npm run lint`. Files: `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.test.tsx`,
+  `src/components/preview/PageOverflowBanner.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/lib/lint/bulletMetrics.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-21 — Stopped the Preview canvas from "dancing". The fit scale and
   centring offset are derived from the observed stage width, so a scrollbar

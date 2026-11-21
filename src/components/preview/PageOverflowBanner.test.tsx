@@ -125,19 +125,15 @@ describe("PageOverflowBanner", () => {
     expect(screen.getByRole("status")).toHaveTextContent("by ~1 lines");
   });
 
-  it("summarizes trim tips when the resume spills onto another page", () => {
+  it("keeps the trim summary in the Trim tips panel, not the spill banner", () => {
     render(
-      <PageOverflowBanner
-        overflowPx={0}
-        pageCount={2}
-        lineHeightPx={14}
-        bulletReport={ORPHAN_REPORT}
-      />,
+      <PageOverflowBanner overflowPx={0} pageCount={2} lineHeightPx={14} />,
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "2 bullets spill by 1–3 words and 1 long bullet (240+ characters) — trimming them can reclaim 3 lines.",
-    );
+    const status = screen.getByRole("status");
+
+    expect(status).toHaveTextContent("Spills onto 2 pages");
+    expect(status).not.toHaveTextContent("trimming them can reclaim");
   });
 });
 
@@ -179,5 +175,39 @@ describe("BulletTrimTips", () => {
     expect(screen.getByText("Trim tips (7)")).toBeVisible();
     expect(screen.getByText("+2 more")).toBeVisible();
     expect(screen.getAllByText("1-word line")).toHaveLength(5);
+  });
+
+  it("opens as a dismissible overlay with an explicit close", () => {
+    render(<BulletTrimTips report={ORPHAN_REPORT} />);
+
+    expect(
+      screen.queryByRole("dialog", { name: "Trim tips" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Trim tips (3)" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Trim tips" });
+
+    expect(dialog).toBeVisible();
+    expect(dialog.className).toContain("max-h-[70vh]");
+    expect(dialog).toHaveTextContent("trimming them can reclaim 3 lines");
+
+    fireEvent.click(screen.getByRole("button", { name: "Close trim tips" }));
+
+    expect(
+      screen.queryByRole("dialog", { name: "Trim tips" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("closes the trim overlay on Escape", () => {
+    render(<BulletTrimTips report={ORPHAN_REPORT} defaultOpen />);
+
+    expect(screen.getByRole("dialog", { name: "Trim tips" })).toBeVisible();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(
+      screen.queryByRole("dialog", { name: "Trim tips" }),
+    ).not.toBeInTheDocument();
   });
 });

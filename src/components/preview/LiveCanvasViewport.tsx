@@ -533,7 +533,6 @@ export function LiveCanvasViewport({
       lineHeightPx={lineHeightPx}
       fitScale={layout.fitScale}
       fitBlockedReason={layout.fitBlockedReason ?? null}
-      bulletReport={bulletReport}
       onFit={onFit}
     />
   );

@@ -311,8 +311,17 @@ describe("LiveCanvasViewport", () => {
   it("scans rendered bullets and surfaces trim tips in the toolbar", async () => {
     await renderCanvas(1);
 
-    expect(await screen.findByText("Trim tips (1)")).toBeVisible();
-    expect(screen.getByText(/long bullet/)).toBeInTheDocument();
+    const trigger = await screen.findByRole("button", {
+      name: "Trim tips (1)",
+    });
+
+    expect(trigger).toBeVisible();
+
+    fireEvent.click(trigger);
+
+    expect(
+      screen.getByRole("dialog", { name: "Trim tips" }),
+    ).toHaveTextContent(/long bullet/);
   });
 
   it("renders the page count in a toolbar above the canvas, never over the page", async () => {

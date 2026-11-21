@@ -349,9 +349,9 @@ describe("EditorWorkspace", () => {
     expect(titleRow).toContainElement(
       screen.getByRole("heading", { name: "Content" }),
     );
-    // The zero-AI resume check sits beside Match JD in the same row.
+    // The zero-AI bullet check sits beside Match JD in the same row.
     expect(titleRow).toContainElement(
-      screen.getByRole("button", { name: /Resume check:/ }),
+      screen.getByRole("button", { name: /Bullet polish:/ }),
     );
 
     await user.click(trigger);

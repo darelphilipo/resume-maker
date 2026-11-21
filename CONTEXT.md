@@ -861,10 +861,13 @@ rediscover.
       so that would re-scan and re-render forever. jsdom has no layout, so
       `measureBulletLines` falls back to one line and character checks still
       work; the trim list itself is read-only and session-only, so trimming
-      stays a normal user edit with undo history.
+      stays a normal user edit with undo history. The toolbar pill opens a
+      dismissible dialog rather than expanding inline in the `shrink-0` chrome
+      (Decision #70), and the spill banner never repeats the trim summary.
 
   68. **Resume lint reads the document model, and only visible bullets.** The
-      zero-AI **Check** popover is not a DOM scan: `src/lib/lint/resumeLint.ts`
+      zero-AI **Bullet polish** popover (renamed from `Check`, see #70) is not a
+      DOM scan: `src/lib/lint/resumeLint.ts`
       walks `metadata.layout.pages` through `resolveSection`/`visibleItems`, so
       hidden sections and hidden entries cannot raise the badge and the Content
       tab does not need the Preview mounted. It reads the rich-text fields that
@@ -899,6 +902,23 @@ rediscover.
       so React bails out and `useFitTransform`'s fit key no longer flips. The zoom
       library creates its own ResizeObserver too, so component tests must target
       the instance that observed the viewport root.
+
+  70. **Bullet helpers are quiet controls with viewport-clamped overlays.** The
+      Content-header lint trigger is a ghost text button labelled **Bullet
+      polish** (muted when clean, amber with a count), not a bordered CTA beside
+      **Match JD**. Its panel is `fixed inset-x-4 top-20` on phones and
+      `lg:absolute lg:left-auto lg:right-0 lg:top-full lg:w-80` in the 22rem
+      column, so it is anchored to the trigger only at desktop and can never
+      clip off the left edge; both variants carry an explicit X close (plus the
+      existing outside-tap and Escape handlers). **Trim tips** is a toolbar pill
+      that opens a `role="dialog"` overlay (`fixed inset-0`, `max-h-[70vh]`,
+      backdrop tap / X / Escape to close) instead of a `<details>` expanding
+      inline inside the `shrink-0` preview chrome — an inline list ate the
+      mobile preview height. The yellow spill banner owns only the spill copy;
+      the trim summary lives in the dialog so the sentence is not duplicated.
+      `summarizeBulletIssues` formats a one-word orphan as `"1 word"`, never
+      `"1–1 word"`. The overlay root keeps `data-bullet-trim-tips` so
+      `scanBulletLint` still skips it.
 
 ## Verification and tooling
 
@@ -960,6 +980,33 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — Quiet bullet helpers and mobile-safe overlays
+- Task: top P0 Queue item (three bundled mobile/preview defects).
+- Bullet polish: the Content-header trigger is now a quiet text button named
+  **Bullet polish** (muted when clean, amber with a count) instead of a bordered
+  **Check** CTA competing with **Match JD**. Its panel is `fixed inset-x-4
+  top-20` on phones and a `lg:absolute lg:right-0 lg:w-80` popover in the 22rem
+  column, with an explicit X close; the old `absolute right-0 w-72` panel could
+  clip off the left edge. Decision #70; #68 updated.
+- Trim tips: `BulletTrimTips` is no longer a `<details>` inside the `shrink-0`
+  Preview chrome. It is a compact pill that opens a dismissible
+  `role="dialog"` overlay (backdrop tap, X, Escape) so the mobile preview keeps
+  its height. `PageOverflowBanner` no longer renders the trim summary, removing
+  the duplicate sentence; the dialog owns it.
+- Copy: `summarizeBulletIssues` uses a `wordRangeLabel` helper so a one-word
+  orphan reads "1 word" instead of "1–1 word".
+- Tests: panel clamp/close and trigger contract in `ResumeLintPopover`; dialog
+  open/close/Escape and no banner duplication in `PageOverflowBanner`; the
+  LiveCanvasViewport scan test now opens the pill; a one-word summary case in
+  `bulletMetrics`. 731 pass (was 727).
+- Files: `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.test.tsx`,
+  `src/components/preview/PageOverflowBanner.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/lib/lint/bulletMetrics.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (731 pass), `npm run lint`.
 
 ### 2026-11-21 — Steady preview fit (ResizeObserver feedback loop)
 - Task: top P0 Queue item. The Preview canvas could oscillate between two fit
@@ -1209,32 +1256,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/lib/links/contactLinks.ts` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (647 pass), `npm run lint`.
-
-### 2026-11-21 — Mobile expanded-card clipping
-- Task: top P0 Queue item (first half of the Mobile Card Clipping & Input-to-PDF
-  Wiring Fixes pair). Expanded section cards such as Education/Profiles/
-  Experience were clipped off the right edge on phones.
-- Root cause: `<fieldset>` has a UA `min-width: min-content`, and
-  `EntryActions` was `flex-nowrap`. Four coarse-pointer 44px actions are wider
-  than the inner width of an entry card at 390px, so the fieldset's min-content
-  width widened the card; the row's `overflow-hidden` only clipped it. The
-  month/year grid could contribute the same way.
-- Fix: `EntryCard` is `w-full min-w-0 max-w-full`; the `SectionList` `<li>` and
-  expanded body are `min-w-0`; `EntryActions` is `flex-wrap` with `shrink-0`
-  buttons; `MonthSelect`'s wrapper/grid are `w-full min-w-0 max-w-full` with
-  `minmax(0,1fr) / minmax(0,6rem)` tracks; `INPUT_CLASS` adds `max-w-full`.
-  Recorded as Decision #60 and updates #31.
-- Tests: SectionFormControls (fieldset classes, wrapping action row, clamped
-  month grid/inputs) and SectionList (body + row `min-w-0`) unit cases, plus a
-  mobile-only Playwright geometry case that expands six sections at 390x844 and
-  asserts every card/fieldset/input/select right edge stays inside the card and
-  viewport. 635 pass (was 633).
-- Files: `src/components/editor/SectionFormControls.tsx` (+ test),
-  `src/components/editor/SectionList.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (635 pass). Playwright remains
-  blocked here, so the new e2e geometry case is typechecked but
-  browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

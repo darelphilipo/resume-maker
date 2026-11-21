@@ -161,6 +161,19 @@ describe("summarizeBulletIssues", () => {
       "1 bullet spills by 1–3 words — trimming it can reclaim 1 line.",
     );
   });
+
+  it("does not render a one-word orphan as a 1–1 range", () => {
+    const report = summarizeBulletIssues([
+      analyzeBulletLines([
+        "Shipped the onboarding flow for every new customer",
+        "weekly",
+      ])!,
+    ]);
+
+    expect(report.summary).toBe(
+      "1 bullet spills by 1 word — trimming it can reclaim 1 line.",
+    );
+  });
 });
 
 describe("bulletSnippet", () => {

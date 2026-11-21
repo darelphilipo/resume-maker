@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, WarningCircle } from "@phosphor-icons/react";
+import { CheckCircle, WarningCircle, X } from "@phosphor-icons/react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import {
@@ -15,10 +15,13 @@ const PERIOD_ACTION_CLASS =
   "inline-flex min-h-9 items-center justify-center rounded-md border border-line bg-surface px-2 py-1 text-[11px] font-semibold text-primary transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-muted disabled:text-muted disabled:opacity-100 pointer-coarse:min-h-11";
 
 /**
- * A compact, zero-AI resume check for the Content header.
+ * A compact, zero-AI bullet check for the Content header.
  *
- * The badge stays quiet when the bullets are clean and turns into a warning
- * count when any deterministic check fires. The popover lists plain-language
+ * The trigger is a quiet text button, not a second primary CTA: the badge stays
+ * muted when the bullets are clean and turns amber when any deterministic check
+ * fires. The panel opens as a viewport-clamped overlay on phones (where an
+ * anchored popover clipped off the left edge) and as a right-aligned popover at
+ * `lg`, with an explicit close button in both. The popover lists plain-language
  * findings and offers the only automatic edit in this feature: standardizing
  * trailing periods. That edit goes through `setDoc`, so it is one undoable
  * change in the existing Zundo history and autosaves like any other edit.
@@ -82,8 +85,8 @@ export function ResumeLintPopover({ doc }: { doc: ResumeDocument }) {
         data-resume-lint-trigger=""
         aria-label={
           issueCount === 0
-            ? "Resume check: no issues"
-            : `Resume check: ${issueCount} ${
+            ? "Bullet polish: no issues"
+            : `Bullet polish: ${issueCount} ${
                 issueCount === 1 ? "issue" : "issues"
               }`
         }
@@ -92,10 +95,10 @@ export function ResumeLintPopover({ doc }: { doc: ResumeDocument }) {
         onClick={() => {
           setOpen((current) => !current);
         }}
-        className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+        className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
           issueCount === 0
-            ? "border-line bg-surface text-primary hover:border-black/30 hover:bg-black/5"
-            : "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
+            ? "text-muted hover:bg-black/5 hover:text-text"
+            : "text-amber-800 hover:bg-amber-50 hover:text-amber-900"
         }`}
       >
         {issueCount === 0 ? (
@@ -104,7 +107,7 @@ export function ResumeLintPopover({ doc }: { doc: ResumeDocument }) {
           <WarningCircle size={16} aria-hidden />
         )}
         <span>
-          Check
+          Bullet polish
           {issueCount > 0 ? ` (${issueCount})` : ""}
         </span>
       </button>
@@ -112,10 +115,23 @@ export function ResumeLintPopover({ doc }: { doc: ResumeDocument }) {
       <div
         id={panelId}
         role="region"
-        aria-label="Resume check"
+        aria-label="Bullet polish"
         hidden={!open}
-        className="absolute right-0 top-full z-30 mt-1 max-h-[70vh] w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-line bg-surface p-3 text-left text-xs text-text shadow-lg"
+        className="fixed inset-x-4 top-20 z-40 max-h-[70vh] overflow-y-auto rounded-lg border border-line bg-surface p-3 text-left text-xs text-text shadow-lg lg:absolute lg:left-auto lg:right-0 lg:top-full lg:mt-1 lg:w-80"
       >
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <h2 className="text-sm font-semibold">Bullet polish</h2>
+          <button
+            type="button"
+            aria-label="Close bullet polish"
+            onClick={() => {
+              setOpen(false);
+            }}
+            className="-mr-1 -mt-1 flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-black/5 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+          >
+            <X size={16} aria-hidden />
+          </button>
+        </div>
         <p className="text-[11px] leading-snug text-muted">
           A deterministic check of the bullets in your visible sections. No AI,
           no network, no changes until you tap a fix.
@@ -130,7 +146,7 @@ export function ResumeLintPopover({ doc }: { doc: ResumeDocument }) {
             <span>No bullet issues found.</span>
           </p>
         ) : (
-          <ul aria-label="Resume check findings" className="mt-2 space-y-2.5">
+          <ul aria-label="Bullet polish findings" className="mt-2 space-y-2.5">
             {report.findings.map((finding, index) => (
               <li key={`${finding.id}-${index}`}>
                 <p className="font-semibold text-text">{finding.title}</p>
