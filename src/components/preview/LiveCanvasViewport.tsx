@@ -13,6 +13,8 @@ import type {
   ReactZoomPanPinchRef,
 } from "react-zoom-pan-pinch";
 
+import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
+import { scanBulletLint } from "@/lib/lint/bulletMetrics";
 import type { CanvasFrame } from "@/lib/pagination/canvasFrame";
 import {
   centeredCanvasOffsetX,
@@ -35,7 +37,7 @@ import {
 
 import { AtsTextView } from "./AtsTextView";
 import { CanvasResetButton, RESET_ANIMATION_MS } from "./CanvasResetButton";
-import { PageOverflowBanner } from "./PageOverflowBanner";
+import { BulletTrimTips, PageOverflowBanner } from "./PageOverflowBanner";
 import { PageStack } from "./PageStack";
 import { TouchPanCanvas } from "./TouchPanCanvas";
 import { useFitTransform } from "./useFitTransform";
@@ -209,12 +211,14 @@ function CanvasToolbar({
   pageCount,
   appliedFitScale,
   isZoomed,
+  bulletReport,
   onResetZoom,
   onResetFit,
 }: {
   pageCount: number;
   appliedFitScale: number;
   isZoomed: boolean;
+  bulletReport?: BulletLintReport | null;
   onResetZoom: () => void;
   onResetFit?: () => void;
 }) {
@@ -232,6 +236,7 @@ function CanvasToolbar({
         {pageCount} {pageCount === 1 ? "page" : "pages"}
       </span>
       <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+        <BulletTrimTips report={bulletReport} />
         {canResetFit ? (
           <button
             type="button"
@@ -336,6 +341,13 @@ export function LiveCanvasViewport({
     fitScale: number;
     zoomed: boolean;
   } | null>(null);
+  /**
+   * Trim hints are measured from the rendered bullets, never guessed from the
+   * document model, so the count matches what the user sees on paper.
+   */
+  const [bulletReport, setBulletReport] = useState<BulletLintReport | null>(
+    null,
+  );
   const appliedFitScale = doc.metadata.page.fitScale;
 
   useIsomorphicLayoutEffect(() => {
@@ -500,11 +512,52 @@ export function LiveCanvasViewport({
       lineHeightPx={lineHeightPx}
       fitScale={layout.fitScale}
       fitBlockedReason={layout.fitBlockedReason ?? null}
+      bulletReport={bulletReport}
       onFit={onFit}
     />
   );
   const showOverflowBanner = layout.overflowPx > 0 || layout.pages.length > 1;
   const showCanvas = mode === "canvas" && frame !== null && !layout.isMeasuring;
+
+  useIsomorphicLayoutEffect(() => {
+    if (
+      mode !== "canvas" ||
+      layout.isMeasuring ||
+      fitScale === null ||
+      doc.metadata.layout.pages.length === 0
+    ) {
+      setBulletReport(null);
+      return;
+    }
+
+    const root = scrollRef.current;
+
+    if (!root) {
+      setBulletReport(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const update = (): void => {
+      if (!cancelled) {
+        setBulletReport(scanBulletLint(root));
+      }
+    };
+
+    update();
+
+    // Web fonts can change wrapping after the first layout pass.
+    const fonts = document.fonts;
+
+    if (fonts) {
+      void fonts.ready.then(update).catch(() => undefined);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [doc, fitScale, layout.isMeasuring, mode]);
 
   return (
     <div
@@ -519,6 +572,7 @@ export function LiveCanvasViewport({
               pageCount={layout.pages.length}
               appliedFitScale={appliedFitScale}
               isZoomed={isZoomed}
+              bulletReport={bulletReport}
               onResetZoom={resetZoom}
               onResetFit={onFit ? resetFit : undefined}
             />

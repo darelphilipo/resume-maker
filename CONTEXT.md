@@ -848,11 +848,26 @@ rediscover.
      panel keeps the full stage. The mobile nav caps its safe-area padding with
      `pb-[min(env(safe-area-inset-bottom),20px)]`.
 
+  67. **Bullet trim hints are measured from the rendered line boxes, not the
+      schema.** `src/lib/lint/bulletMetrics.ts` walks each preview `li`, gives
+      every whitespace-delimited word its own `Range`, and groups the returned
+      rects by vertical position. That is the only way to know whether a
+      wrapped bullet left 1–3 words on its last line; character counts alone
+      cannot tell an orphan from a healthy two-line bullet. `analyzeBulletLines`
+      is pure and testable, `scanBulletLint` queries the active page stack, and
+      `LiveCanvasViewport` runs the scan in a layout effect keyed on `doc`,
+      `fitScale`, `isMeasuring`, and `mode`. Do **not** add `layout.pages` to
+      those deps: `usePageLayout` builds a fresh `pages` array on every render,
+      so that would re-scan and re-render forever. jsdom has no layout, so
+      `measureBulletLines` falls back to one line and character checks still
+      work; the trim list itself is read-only and session-only, so trimming
+      stays a normal user edit with undo history.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~665 tests
+npm test               # vitest, ~695 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -908,6 +923,35 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — Orphan-line and bullet-length trim hints
+- Task: top P2 Queue item. Added a zero-AI **Trim tips** catcher for bullets
+  that waste a line in the live preview.
+- Metrics: new pure `src/lib/lint/bulletMetrics.ts`. `measureBulletLines`
+  measures each preview `li` word by word with `Range.getClientRects()` and
+  groups rects by vertical position, so inline formatting does not hide a word.
+  `analyzeBulletLines` flags a wrapped bullet whose final line has 1–3 words
+  (one reclaimable line) and bullets with 240+ characters or more than three
+  rendered lines. `summarizeBulletIssues` owns the plain-language summary and
+  counts. `scanBulletLint` skips parent `<li>`s of nested lists and the trim
+  panel itself.
+- Wiring: `LiveCanvasViewport` scans the active page stack in a layout effect
+  after document/layout changes and passes the report to the Preview chrome.
+  `PageOverflowBanner` shows the concise summary when the resume spills, and
+  `BulletTrimTips` (exported from the same file) renders a collapsible toolbar
+  popover listing the first five bullets with a reason badge and opening words.
+  Everything is read-only and client-side; no AI, network, or store writes.
+  Decision #67 records the effect dependencies and the jsdom fallback.
+- Tests: pure orphan/long classification, long-wins precedence, summary copy
+  (mixed + singular), snippet truncation, Range-based line grouping, no-layout
+  fallback, nested-list/trim-panel skipping, banner summary, trim-list rendering
+  and 5-item cap, plus a LiveCanvasViewport scan-and-render case. 696 pass
+  (was 675). No new layout shell, so no Playwright case was added.
+- Files: `src/lib/lint/bulletMetrics.ts` (+ test, new),
+  `src/components/preview/PageOverflowBanner.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (696 pass), `npm run lint`.
 
 ### 2026-11-21 — Centred tablet preview and a page-height canvas desk
 - Task: top P1 Queue item (mobile/tablet layout polish).
@@ -1160,39 +1204,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `npm run build` (static export; the security-advisory nudge needed the usual
   second run). No new layout shell, so no e2e case was added; Playwright remains
   blocked here.
-
-### 2026-11-20 — Duplicate resume and per-entry Hide/Show
-- Task: top P1 Queue item. The hidden-entry *data* path already existed, so this
-  run replaced the scattered "Hide entry" checkboxes with one eye toggle and
-  added the missing duplicate action.
-- Launcher/db: `duplicateResume(id)` clones the row under `newId()`, appends
-  ` (Copy)` to `basics.name` (falling back to `Untitled resume`), and bumps
-  `updatedAt`; the original is untouched. Each **Recent resumes** row gained a
-  Duplicate icon button (`min-h-11 min-w-11`, `stopPropagation`, busy state) that
-  refreshes the list without navigating, so the copy appears first.
-- Editor: `EntryActions` accepts optional `hidden`/`onToggleHidden` and renders
-  an icon-only Eye/EyeSlash toggle with `aria-pressed`; `EntryCard` accepts
-  `hidden` and dims itself (`data-hidden`, opacity restored on hover/focus).
-  The old checkbox was removed from Experience, Education, Projects, Skills,
-  Generic, and Custom forms; the field still persists through the form schemas.
-  Filtering was already shared by `sectionData`, `atsText`, and the pagination
-  plans, and is now guarded by an integration test.
-- Tests: `duplicateResume` (copy name/ids/original/untitled/missing), launcher
-  duplicate flow (list refresh, no navigation), EntryActions/EntryCard toggle
-  states and the opt-in case, and an ExperienceForm hide→show round-trip that
-  flips `selectVisibleSectionIds`. 619 pass (was 611).
-- Files: `src/lib/store/db.ts` (+ test),
-  `src/components/launcher/Launcher.tsx` (+ test),
-  `src/components/editor/SectionFormControls.tsx` (+ test),
-  `src/components/editor/ExperienceForm.tsx` (+ test),
-  `src/components/editor/EducationForm.tsx`,
-  `src/components/editor/ProjectsForm.tsx`,
-  `src/components/editor/SkillsForm.tsx`,
-  `src/components/editor/GenericSectionForm.tsx`,
-  `src/components/editor/CustomSectionForm.tsx`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (619 pass), `npm run lint`. No new
-  layout shell, so no e2e case was added; Playwright remains blocked here.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

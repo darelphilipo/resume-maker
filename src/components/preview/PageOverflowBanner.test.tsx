@@ -1,7 +1,24 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { PageOverflowBanner } from "./PageOverflowBanner";
+import {
+  analyzeBulletLines,
+  summarizeBulletIssues,
+} from "@/lib/lint/bulletMetrics";
+
+import { BulletTrimTips, PageOverflowBanner } from "./PageOverflowBanner";
+
+const ORPHAN_REPORT = summarizeBulletIssues([
+  analyzeBulletLines([
+    "Led the billing migration for the platform and",
+    "saved 3 hours",
+  ])!,
+  analyzeBulletLines([
+    "Shipped the onboarding flow for every new customer",
+    "weekly",
+  ])!,
+  analyzeBulletLines(["Built ".repeat(60)])!,
+]);
 
 describe("PageOverflowBanner", () => {
   it("renders nothing when the document fits on one page", () => {
@@ -106,5 +123,61 @@ describe("PageOverflowBanner", () => {
     render(<PageOverflowBanner overflowPx={1} pageCount={1} lineHeightPx={0} />);
 
     expect(screen.getByRole("status")).toHaveTextContent("by ~1 lines");
+  });
+
+  it("summarizes trim tips when the resume spills onto another page", () => {
+    render(
+      <PageOverflowBanner
+        overflowPx={0}
+        pageCount={2}
+        lineHeightPx={14}
+        bulletReport={ORPHAN_REPORT}
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "2 bullets spill by 1–3 words and 1 long bullet (240+ characters) — trimming them can reclaim 3 lines.",
+    );
+  });
+});
+
+describe("BulletTrimTips", () => {
+  it("renders nothing when there is nothing to trim", () => {
+    const { container } = render(
+      <BulletTrimTips report={summarizeBulletIssues([])} />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("lists each issue with a plain-language reason", () => {
+    render(<BulletTrimTips report={ORPHAN_REPORT} defaultOpen />);
+
+    expect(screen.getByText("Trim tips (3)")).toBeVisible();
+    expect(screen.getByText("3-word line")).toBeVisible();
+    expect(screen.getByText("1-word line")).toBeVisible();
+    expect(screen.getByText("1 line")).toBeVisible();
+    expect(
+      screen.getByText(/Led the billing migration for the platform/),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/trimming them can reclaim 3 lines/),
+    ).toBeVisible();
+  });
+
+  it("caps the visible list and reports the remainder", () => {
+    const issues = Array.from({ length: 7 }, (_, index) =>
+      analyzeBulletLines([
+        `Shipped the onboarding flow for customer segment ${index}`,
+        "weekly",
+      ])!,
+    );
+    const report = summarizeBulletIssues(issues);
+
+    render(<BulletTrimTips report={report} defaultOpen />);
+
+    expect(screen.getByText("Trim tips (7)")).toBeVisible();
+    expect(screen.getByText("+2 more")).toBeVisible();
+    expect(screen.getAllByText("1-word line")).toHaveLength(5);
   });
 });

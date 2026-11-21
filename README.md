@@ -187,6 +187,11 @@ in control of every line, and your data stays on your device.
   shrinks the page below a readable size — if one page would need microscopic
   type, the preview says so instead. Whenever a reduced fit is active, a
   **Reset fit** pill in the preview header returns the page to 100%.
+- **Trim tips** find the bullets that quietly cost you a line. When a bullet
+  wraps and leaves only a word or two on its last line, or grows into a long
+  block, the preview counts it and shows the opening words in a compact
+  **Trim tips** list. Trimming those bullets can reclaim whole lines before you
+  shrink the font or spill onto a second page.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
   apply. **Copy all plain text** grabs the whole resume for Workday, Greenhouse,

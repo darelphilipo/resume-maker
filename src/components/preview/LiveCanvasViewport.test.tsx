@@ -15,7 +15,13 @@ import { LiveCanvasViewport } from "./LiveCanvasViewport";
 import { usePreservedScroll } from "./usePreservedScroll";
 
 vi.mock("./PageStack", () => ({
-  PageStack: () => <div data-testid="page-stack" />,
+  PageStack: () => (
+    <div data-testid="page-stack">
+      <ul>
+        <li>{Array.from({ length: 60 }, () => "Built").join(" ")}</li>
+      </ul>
+    </div>
+  ),
 }));
 
 vi.mock("./usePreservedScroll", () => ({
@@ -272,6 +278,13 @@ describe("LiveCanvasViewport", () => {
     expect(
       screen.queryByRole("button", { name: "Reset preview zoom" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("scans rendered bullets and surfaces trim tips in the toolbar", async () => {
+    await renderCanvas(1);
+
+    expect(await screen.findByText("Trim tips (1)")).toBeVisible();
+    expect(screen.getByText(/long bullet/)).toBeInTheDocument();
   });
 
   it("renders the page count in a toolbar above the canvas, never over the page", async () => {
