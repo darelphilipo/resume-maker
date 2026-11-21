@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
 
+import { buildAtsText } from "@/lib/ats/atsText";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
+  CertificationItemSchema,
+  CustomSectionSchema,
   EducationItemSchema,
   ExperienceItemSchema,
   ProfileItemSchema,
+  ProjectItemSchema,
+  PublicationItemSchema,
 } from "@/lib/schema/resume.schema";
 
 import {
   ANONYMIZED_EMAIL,
+  ANONYMIZED_ENTRY_URL,
   ANONYMIZED_LOCATION,
   ANONYMIZED_NAME,
   ANONYMIZED_PHONE,
@@ -123,6 +129,82 @@ describe("anonymizeResumeDoc", () => {
     expect(anonymized.basics.website).toEqual({ url: "", label: "" });
   });
 
+  it("redacts project, certification, publication, and custom entry URLs", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.projects.items = [
+      ProjectItemSchema.parse({
+        id: "project-1",
+        name: "Resume Maker",
+        url: "https://github.com/mayachen/resume-maker",
+      }),
+      ProjectItemSchema.parse({ id: "project-2", name: "No link" }),
+    ];
+    doc.sections.certifications.items = [
+      CertificationItemSchema.parse({
+        id: "certification-1",
+        name: "Cloud Architect",
+        url: "https://github.com/mayachen/certs",
+      }),
+    ];
+    doc.sections.publications.items = [
+      PublicationItemSchema.parse({
+        id: "publication-1",
+        title: "Local-first resumes",
+        url: "https://github.com/mayachen/paper",
+      }),
+    ];
+    doc.customSections = [
+      CustomSectionSchema.parse({
+        id: "custom-1",
+        title: "Speaking",
+        items: [
+          {
+            id: "custom-item-1",
+            name: "Browser-only tools",
+            url: "https://github.com/mayachen/talks",
+          },
+          { id: "custom-item-2", name: "No link" },
+        ],
+      }),
+    ];
+
+    const anonymized = anonymizeResumeDoc(doc);
+
+    expect(anonymized.sections.projects.items.map((item) => item.url)).toEqual(
+      [ANONYMIZED_ENTRY_URL, ""],
+    );
+    expect(anonymized.sections.certifications.items[0].url).toBe(
+      ANONYMIZED_ENTRY_URL,
+    );
+    expect(anonymized.sections.publications.items[0].url).toBe(
+      ANONYMIZED_ENTRY_URL,
+    );
+    expect(anonymized.customSections[0].items[0].url).toBe(
+      ANONYMIZED_ENTRY_URL,
+    );
+    // An absent optional URL stays absent instead of growing fake content.
+    expect(anonymized.customSections[0].items[1].url).toBeUndefined();
+    expect(JSON.stringify(anonymized)).not.toContain("mayachen");
+  });
+
+  it("keeps entry URLs out of the ATS text too", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.projects.items = [
+      ProjectItemSchema.parse({
+        id: "project-1",
+        name: "Resume Maker",
+        url: "https://github.com/mayachen/resume-maker",
+      }),
+    ];
+
+    const atsText = buildAtsText(anonymizeResumeDoc(doc));
+
+    expect(atsText).toContain(ANONYMIZED_ENTRY_URL);
+    expect(atsText).not.toContain("mayachen");
+  });
+
   it("does not mutate the saved document", () => {
     const doc = createEmptyResume();
 
@@ -146,6 +228,13 @@ describe("anonymizeResumeDoc", () => {
         school: "State University",
       }),
     ];
+    doc.sections.projects.items = [
+      ProjectItemSchema.parse({
+        id: "project-1",
+        name: "Resume Maker",
+        url: "https://github.com/jordan/resume-maker",
+      }),
+    ];
 
     anonymizeResumeDoc(doc);
 
@@ -154,5 +243,8 @@ describe("anonymizeResumeDoc", () => {
     expect(doc.picture.hidden).toBe(false);
     expect(doc.sections.experience.items[0].company).toBe("Acme");
     expect(doc.sections.education.items[0].school).toBe("State University");
+    expect(doc.sections.projects.items[0].url).toBe(
+      "https://github.com/jordan/resume-maker",
+    );
   });
 });

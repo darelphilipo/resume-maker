@@ -23,10 +23,6 @@ _empty
 ## Queue (Ready for Next Run)
 ### P1 — Regression Visual & UX Fixes
 
-- [ ] P1: Fix `Anonymize` leaking Project URLs and `Match JD` drawer two-click close + stopwords (`src/lib/privacy/anonymizeDoc.ts`, `src/components/editor/JdMatchDrawer.tsx`, `src/lib/keywords/jdMatch.ts`).
-  1. **Redact all entry URLs in `anonymizeResumeDoc`:** Also redact `url` fields on `projects`, `certifications`, `publications`, and `customSections` (e.g. `https://example.com/project-1`) so usernames like `github.com/mayachen/...` never leak in Visual Preview, PDF, or ATS text.
-  2. **`Match JD` single-click close & stopwords:** Fix the `X` close button in `JdMatchDrawer` so clicking it once immediately closes the drawer instead of snapping to a shorter Vaul snap point first, and expand the `jdMatch.ts` stopword list to filter out common filler words like `"for"` and `"looking"`.
-
 - [ ] P1: Fix `Profiles` footer button clipping, Launcher 6th preset / paste hint, and disabled Undo/Redo contrast (`src/components/editor/SectionList.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/editor/EditorWorkspace.tsx`).
   1. **Section footer clipping:** Fix the section-level `Hide | Move up | Move down` button row in `SectionList.tsx` so `↑ Move up`'s arrow and `Move down` never clip against the right border of expanded cards like `Profiles` at `22rem` desktop or `390px` mobile widths.
   2. **Launcher polish:** Balance the 2-column `"OR START FROM A ROLE"` grid to 6 cards (add a 6th role preset such as *Data Analyst* or *Marketing & Growth*) so `Fresh Graduate` has no empty slot beside it, and show a subtle helper hint (or enable on any non-empty text) if `"Create resume from text"` requires a minimum character length.
@@ -56,6 +52,26 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-21 — Stopped **Anonymize** leaking entry URLs and fixed the
+  **Match JD** one-click close and filler stopwords. `anonymizeResumeDoc` now
+  redacts `url` on projects, certifications, publications, and custom-section
+  items with `ANONYMIZED_ENTRY_URL` (blank stays blank, an absent optional URL
+  stays absent), and an ATS regression proves no original username survives.
+  The shared `EntryDrawer` X now carries `data-vaul-no-drag` and stops
+  `pointerdown` propagation so vaul cannot treat the tap as a drag start and
+  snap a snap-point sheet shorter instead of closing; `JdMatchDrawer` gained a
+  single-click close test. `jdMatch.ts` filters filler/boilerplate such as
+  `for`, `looking`, `seek`/`seeking`, `want`, `ideal`, `prefer`, `join`,
+  `opportunity`, `within`/`without`, `per`/`via`, and month/week units. Verified
+  `npm run typecheck`, `npm test` (660 pass), `npm run lint`. Files:
+  `src/lib/privacy/anonymizeDoc.ts` (+ test),
+  `src/components/editor/EntryDrawer.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.test.tsx`,
+  `src/lib/keywords/jdMatch.ts` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  The one-click e2e assertion is typechecked but was not run in this
+  environment.
 
 - [x] 2026-11-21 — Fixed the Studio Sidebar blank Page 2 and the `ATS text` spill-banner overlap.
   `computePages` gained a `pinnedToFirstPage` section-id set: a trailing run of

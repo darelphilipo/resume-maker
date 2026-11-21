@@ -8,9 +8,19 @@ export const ANONYMIZED_WEBSITE_URL = "https://example.com/alex-taylor";
 export const ANONYMIZED_WEBSITE_LABEL = "example.com";
 export const ANONYMIZED_PROFILE_USERNAME = "alex-taylor";
 export const ANONYMIZED_PROFILE_URL = "https://example.com/alex-taylor";
+export const ANONYMIZED_ENTRY_URL = "https://example.com/alex-taylor";
 
 function replaceWhenPresent(value: string, replacement: string): string {
   return value.trim() === "" ? value : replacement;
+}
+
+function replaceOptionalWhenPresent(
+  value: string | undefined,
+  replacement: string,
+): string | undefined {
+  return value === undefined
+    ? undefined
+    : replaceWhenPresent(value, replacement);
 }
 
 /**
@@ -109,6 +119,34 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
           school: schoolLabel(item.school),
         })),
       },
+      projects: {
+        ...doc.sections.projects,
+        items: doc.sections.projects.items.map((item) => ({
+          ...item,
+          url: replaceWhenPresent(item.url, ANONYMIZED_ENTRY_URL),
+        })),
+      },
+      certifications: {
+        ...doc.sections.certifications,
+        items: doc.sections.certifications.items.map((item) => ({
+          ...item,
+          url: replaceWhenPresent(item.url, ANONYMIZED_ENTRY_URL),
+        })),
+      },
+      publications: {
+        ...doc.sections.publications,
+        items: doc.sections.publications.items.map((item) => ({
+          ...item,
+          url: replaceWhenPresent(item.url, ANONYMIZED_ENTRY_URL),
+        })),
+      },
     },
+    customSections: doc.customSections.map((section) => ({
+      ...section,
+      items: section.items.map((item) => ({
+        ...item,
+        url: replaceOptionalWhenPresent(item.url, ANONYMIZED_ENTRY_URL),
+      })),
+    })),
   };
 }

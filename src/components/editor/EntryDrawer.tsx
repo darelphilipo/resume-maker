@@ -73,6 +73,13 @@ export function EntryDrawer({
             <button
               type="button"
               aria-label="Close drawer"
+              data-vaul-no-drag
+              onPointerDown={(event) => {
+                // Keep vaul's drag/snap handler from claiming a tap on X: a
+                // pointer-down here must be a plain close click, not the first
+                // step of a drag that snaps to a shorter snap point instead.
+                event.stopPropagation();
+              }}
               onClick={() => onOpenChange(false)}
               className="-mr-2 -mt-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-black/5 active:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >

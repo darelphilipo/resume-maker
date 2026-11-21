@@ -721,6 +721,11 @@ for (const viewport of VIEWPORTS) {
       await expect(matched.getByText("typescript")).toBeVisible();
       await expect(matched.getByText("kubernetes")).toBeVisible();
       await expect(missing.getByText("cobol")).toBeVisible();
+
+      // One tap on X must dismiss the sheet outright; a tap claimed by vaul's
+      // drag handler used to snap the drawer shorter and keep it open.
+      await dialog.getByRole("button", { name: "Close drawer" }).click();
+      await expect(dialog).toBeHidden();
     });
   });
 }

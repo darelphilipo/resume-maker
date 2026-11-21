@@ -184,14 +184,17 @@ in control of every line, and your data stays on your device.
   section or one role.
 - **Anonymize for review**: tap the **Anonymize** pill in the preview header to
   replace your name, contact details, website, profile links, photo, and company
-  or school names with neutral placeholders. The banner makes review mode
-  obvious, the Visual and ATS views and the PDF all use the hidden version, and
-  your saved resume is never changed — tap the pill again to return to the real
-  details.
+  or school names with neutral placeholders. Project, certification,
+  publication, and custom-section links are replaced too, so a username inside a
+  URL cannot give you away. The banner makes review mode obvious, the Visual and
+  ATS views and the PDF all use the hidden version, and your saved resume is
+  never changed — tap the pill again to return to the real details.
 - **Job description keyword matcher**: tap **Match JD** in the Content panel
   header to open the matcher on any device, then paste a posting to see which
-  of its keywords already appear in your resume and which are missing. Matching
-  runs locally with simple word heuristics, not AI.
+  of its keywords already appear in your resume and which are missing. Common
+  filler words such as “for” and “looking” are ignored, and one tap on the
+  drawer's **X** closes it. Matching runs locally with simple word heuristics,
+  not AI.
 - The **Visual / ATS text** switch, page-count pill, fit/zoom reset pills, and
   overflow warning stay pinned above the paper while you scroll, so they never
   cover your name or header — and the paper stops cleanly below that header

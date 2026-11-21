@@ -81,6 +81,34 @@ describe("EntryDrawer", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it("keeps a tap on the X out of vaul's drag and snap handler", async () => {
+    const onOpenChange = vi.fn();
+    const onPointerDown = vi.fn();
+
+    render(
+      <div onPointerDown={onPointerDown}>
+        <EntryDrawer open onOpenChange={onOpenChange} title="Experience">
+          <p>Drawer body</p>
+        </EntryDrawer>
+      </div>,
+    );
+
+    const close = await screen.findByRole("button", { name: "Close drawer" });
+
+    // vaul opts controls out of dragging through this attribute; the pointer
+    // stop keeps a tap on X from being claimed as the first drag step, which
+    // made the sheet snap to a shorter snap point instead of closing.
+    expect(close).toHaveAttribute("data-vaul-no-drag");
+
+    fireEvent.pointerDown(close);
+
+    expect(onPointerDown).not.toHaveBeenCalled();
+
+    fireEvent.click(close);
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
   it("opens from an optional trigger rendered through the dialog primitive", async () => {
     const user = userEvent.setup();
     const onOpenChange = vi.fn();

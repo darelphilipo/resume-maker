@@ -783,6 +783,19 @@ rediscover.
       template keeps its canonical trailing page. The page count, canvas frame,
       print, and overflow banner all derive from the corrected `pages`.
 
+  63. **Review mode redacts every rendered URL, and the drawer X bypasses vaul's
+      drag handler.** `anonymizeResumeDoc` replaces entry `url` fields on
+      projects, certifications, publications, and custom-section items with
+      `ANONYMIZED_ENTRY_URL` as well as the basics/profiles URLs from #58. Blank
+      URLs stay blank, and an absent optional custom `url` stays absent. Add any
+      new URL-bearing section to that clone or review mode will leak a username
+      through the Visual/PDF/ATS link. Separately, the shared `EntryDrawer` X
+      carries `data-vaul-no-drag` and stops `pointerdown` propagation: without
+      that, vaul can claim the tap as a drag start and snap a snap-point sheet
+      shorter instead of closing, so users need two taps. Keep the isolation if
+      the drawer header changes; the compact Match JD sheet also opts out of
+      snap points (#50).
+
 ## Verification and tooling
 
 ```powershell
@@ -843,6 +856,31 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — Anonymize URL leaks, Match JD close, and stopwords
+- Task: top P1 Queue item (three small regressions bundled together).
+- Anonymize: `anonymizeResumeDoc` now redacts `url` on projects,
+  certifications, publications, and custom-section items with
+  `ANONYMIZED_ENTRY_URL`, not just profiles/basics. Blank project URLs stay
+  blank and an absent optional custom URL stays absent. Decision #63.
+- Match JD close: the shared `EntryDrawer` X gained `data-vaul-no-drag` plus a
+  `pointerdown` stopPropagation, so a tap on X is a plain close click instead of
+  a drag start that vaul snaps to a shorter point. The compact JD sheet already
+  opted out of snap points (#50). Added unit coverage in `EntryDrawer` and
+  `JdMatchDrawer`, plus a one-click dismiss assertion in the existing Playwright
+  JD case.
+- Stopwords: `jdMatch.ts` now drops filler/boilerplate such as `for`,
+  `looking`, `seek`/`seeking`, `want`, `ideal`, `prefer`, `join`, `opportunity`,
+  `within`/`without`, `per`/`via`, and month/week units, with extraction and
+  matched/missing tests.
+- Files: `src/lib/privacy/anonymizeDoc.ts` (+ test),
+  `src/components/editor/EntryDrawer.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.test.tsx`,
+  `src/lib/keywords/jdMatch.ts` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (660 pass, was 654), `npm run lint`.
+  The new Playwright one-click dismiss assertion is typechecked but was not run
+  here.
 
 ### 2026-11-21 — Studio Sidebar blank Page 2 and ATS banner overlap
 - Task: top P1 Queue item. Two regressions: a Studio Sidebar resume could show
@@ -1103,37 +1141,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `npm run build` (static export; the usual Next.js security-advisory nudge
   needed a second run). Playwright remains blocked here, so the scroll fix still
   needs a real browser check at `390x844` and `1280x800`.
-
-### 2026-11-20 — Editor header and column ergonomics
-- Task: top genuine P1 Queue item after removing the stale **Match JD** entry
-  (already in Done with Decision #50). Polish header hierarchy, desktop
-  scrollbars, and Content panel ergonomics.
-- Header: `Save PDF` is now the solid primary CTA; a hairline divider separates
-  Back from the title; disabled Undo/Redo use readable muted tokens. The desktop
-  shell no longer reverts to `lg:h-auto` — all three columns scroll inside a
-  viewport-tall grid, removing the second right-edge scrollbar. Recorded as
-  Decisions #51/#52; #28 is superseded and #31/#33/#37/#42 updated.
-- Content: dropped the redundant Name preview box, replaced the rotated expand
-  caret with an explicit `CaretUp`, nowrapped section Move up/down, tightened
-  the eight-button toolbar to one row in the 22rem column, made the writing-
-  helper strip collapsible, and gave entry Delete a quiet destructive cue.
-- Tests: updated `BasicsForm`, `RichTextField` (new collapsible-helpers case),
-  `SectionList` (chevron + nowrap), `SectionFormControls` (Delete cue),
-  `PrintTriggerButton` (primary CTA), `EditorWorkspace` (locked columns + header
-  divider), and `layout-consistency.spec.ts` (single toolbar row, independent
-  columns instead of sticky panels). 596 pass (was 594).
-- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/preview/PrintTriggerButton.tsx` (+ test),
-  `src/components/editor/BasicsForm.tsx` (+ test),
-  `src/components/editor/SectionList.tsx` (+ test),
-  `src/components/editor/SectionFormControls.tsx` (+ test),
-  `src/components/editor/RichTextField.tsx` (+ test),
-  `src/lib/schema/resumeName.ts`, `e2e/layout-consistency.spec.ts`, `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (596 pass), `npm run lint`,
-  `npm run build` (static export; the usual Next.js security-advisory nudge
-  needed a second run). Playwright is still blocked here, so the two rewritten
-  e2e cases are typechecked but browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

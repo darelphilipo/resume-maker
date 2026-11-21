@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -98,6 +98,32 @@ describe("JdMatchDrawer", () => {
     expect(dialog).toHaveAttribute("data-vaul-snap-points", "false");
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByLabelText("Job description")).toBeInTheDocument();
+  });
+
+  it("closes from a single click on the X", async () => {
+    const user = userEvent.setup();
+
+    render(<JdMatchDrawer doc={buildDoc()} compact />);
+
+    const trigger = screen.getByRole("button", {
+      name: "Match to a job description",
+    });
+
+    await user.click(trigger);
+    await screen.findByRole("dialog");
+
+    const close = screen.getByRole("button", { name: "Close drawer" });
+
+    expect(close).toHaveAttribute("data-vaul-no-drag");
+
+    // One click must close the sheet outright. Before the pointer isolation a
+    // tap on X could be consumed by vaul's drag handler and only snap the
+    // drawer shorter, so users had to tap twice.
+    fireEvent.click(close);
+
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+    });
   });
 
   it("splits pasted job keywords into matched and missing chips", async () => {

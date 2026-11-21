@@ -26,6 +26,15 @@ describe("extractJobKeywords", () => {
   it("returns an empty list for blank text", () => {
     expect(extractJobKeywords("   ")).toEqual([]);
   });
+
+  it("drops filler and posting boilerplate words", () => {
+    expect(
+      extractJobKeywords(
+        "We are looking for a Data Analyst for our team. " +
+          "The ideal candidate is seeking a role and wants to join us.",
+      ),
+    ).toEqual(["analyst", "data"]);
+  });
 });
 
 describe("matchJobKeywords", () => {
@@ -68,5 +77,16 @@ describe("matchJobKeywords", () => {
       missing: [],
       coverage: 0,
     });
+  });
+
+  it("ignores filler words when splitting matched from missing", () => {
+    const result = matchJobKeywords(
+      "Looking for TypeScript and React",
+      "TypeScript developer",
+    );
+
+    expect(result.matched).toEqual(["typescript"]);
+    expect(result.missing).toEqual(["react"]);
+    expect(result.coverage).toBe(0.5);
   });
 });
