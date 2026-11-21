@@ -29,6 +29,25 @@ _empty
   3. **Disabled Undo/Redo contrast:** Slightly darken disabled Undo/Redo icon opacity/color in `EditorWorkspace.tsx` so the icons remain clearly legible before the first edit.
   4. Add a highlight on the tab the user is currently on content /design /preview 
 
+### P2 — Lightweight High-Value UX Additions
+
+- [ ] P2: Add a client-side **Orphan-Line & Bullet-Length Catcher** (`src/lib/lint/bulletMetrics.ts`, `src/components/preview/PageOverflowBanner.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
+  1. Using the rendered preview DOM (`li` elements inside the active page stack), detect bullets that wrap onto a last line with ≤3 short words ("orphan wrap", saving 1 full line if trimmed) or exceed 2–3 lines (~240+ chars).
+  2. When the resume spills onto 2+ pages (or inside a subtle collapsible `"Trim tips"` popover in the Preview toolbar), surface a concise count and list of those bullets (e.g. `"3 bullets spill by 1–2 words — trimming them can reclaim 3 lines"`) so users can fit 1 page cleanly before shrinking font size.
+
+- [ ] P2: Add a **One-Click Bullet Period Normalizer & Zero-AI Resume Lint** drawer/popover (`src/lib/lint/resumeLint.ts`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/editor/EditorWorkspace.tsx`).
+  1. Create pure deterministic checks over visible resume sections flagging: (a) mixed trailing periods across bullets, (b) first-person pronouns (`I`, `me`, `my`, `we`, `our`), (c) filler fluff adverbs (`meticulously`, `diligently`, `synergistic`, `successfully`, `expertly`), and (d) repeated starting verbs within the same role.
+  2. Provide a compact `"Check"` badge/popover in the Content header (or next to `Match JD`) showing issue counts plus a one-click **"Standardize bullet periods"** action (`Remove all trailing periods` / `Add periods to all bullets`) that commits through the Zustand/Zundo store so it is instantly undoable.
+
+- [ ] P2: Add a **"6-Second Recruiter Scan"** preview toggle (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/ScanHighlightOverlay.tsx` or CSS class on `PageStack.tsx`).
+  1. Add a session-only **6s Scan** toggle pill in the Preview toolbar (next to **Anonymize**; never applied to `PrintPortal` / exported PDF).
+  2. When active, dim regular body prose (`opacity: 0.28`) while keeping high-signal scan anchors at full contrast (`Name`, `Headline`, section titles, job titles, companies, dates, `<strong>` bold spans, and numeric metrics like `%`, `$`, `x`, or digit counts) so users immediately see whether their key impact pops out in a quick skim.
+
+- [ ] P2: Add **One-Click "Sort newest first"** and **Date Sanity Warnings** on dated sections (`src/lib/date/sortEntries.ts`, `src/components/editor/ExperienceForm.tsx`, `src/components/editor/EducationForm.tsx`, `src/components/editor/ProjectsForm.tsx`).
+  1. Add a pure helper `sortEntriesNewestFirst(items)` that orders entries in reverse chronological order (`current: true` / `"Present"` first, then latest `endDate`, then latest `startDate`, keeping undated entries last) and wire a compact **"Sort newest first"** button in the `Experience`, `Education`, and `Projects` section headers (only shown when 2+ entries exist and are out of order, committed via Zustand/Zundo so it's undoable).
+  2. Show a subtle inline warning caption under `End date` whenever a non-current entry has `endDate < startDate` (e.g. `"End date is earlier than start date"`).
+
+
 ### P2 — High-Value Reddit-Inspired Features
 
 - [ ] P2: Add **Grouped Promotions (multiple roles at the same company)** in Experience (`src/types/`, `src/components/editor/ExperienceForm.tsx`, `src/templates/`, `src/components/preview/AtsTextView.tsx`).
