@@ -21,6 +21,12 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
+- [ ] P0: Stop the Preview canvas from "dancing" (oscillating scale & X-offset) by breaking the `ResizeObserver` ↔ scrollbar feedback loop (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/EditorWorkspace.tsx`).
+  1. **Eliminate scrollbar width jitter:** Apply `scrollbar-gutter: stable` (e.g. `[scrollbar-gutter:stable]`) on the Preview vertical scroll containers (`#panel-preview` on desktop and `[data-canvas-scroll]` on mobile) so adding or removing a scrollbar never changes `clientWidth`.
+  2. **Observe a non-scrolling width & add oscillation guard:** Measure the outer non-scrolling Preview container width (or subtract a fixed scrollbar-safe gutter) instead of a scrollbar-sensitive `clientWidth`, and guard `updateWidth` against rapid A↔B oscillation within `<= 24px` (locking to the smaller width if alternating within one frame/150ms) so `fitScale` and `fitOffsetX` stay rock-steady.
+  3. **Unit test:** Add a regression test in `LiveCanvasViewport.test.tsx` simulating a `ResizeObserver` alternating between `W` and `W - 15` and asserting `setTransform` settles instead of oscillating continuously.
+
+
 ### P0 — Mobile & Web Overlay / Preview Defects
 
 - [ ] P0: Fix `Check` popover left-edge clipping, rename/de-emphasize trigger, and move `Trim tips` out of the mobile preview chrome (`src/components/editor/ResumeLintPopover.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`, `src/lib/lint/bulletMetrics.ts`).
