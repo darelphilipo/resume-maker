@@ -71,7 +71,7 @@ function saveStatusLabel(
 }
 
 const HEADER_ACTION_CLASS =
-  "flex min-h-11 min-w-10 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-text transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:border-line disabled:bg-surface-muted disabled:text-muted disabled:opacity-100 disabled:hover:border-line disabled:hover:bg-surface-muted sm:min-w-11";
+  "flex min-h-11 min-w-10 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-text transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:border-line disabled:bg-surface-muted disabled:text-text/80 disabled:opacity-100 disabled:hover:border-line disabled:hover:bg-surface-muted sm:min-w-11";
 
 function EmptyState({
   title,

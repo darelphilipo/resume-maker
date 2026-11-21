@@ -644,6 +644,143 @@ const FINANCE_OPERATIONS: Archetype = {
   },
 };
 
+const DATA_ANALYST: Archetype = {
+  id: "data-analyst",
+  label: "Data Analyst",
+  description:
+    "SQL, dashboards, and experiments turned into decision-ready metrics.",
+  build() {
+    const doc = createEmptyResume("onyx");
+
+    return {
+      ...doc,
+      basics: {
+        ...doc.basics,
+        name: "Noah Williams",
+        headline: "Senior Data Analyst",
+        email: "noah.williams@example.com",
+        phone: "(512) 555-0173",
+        location: "Austin, TX",
+        website: { url: "https://noahwilliams.dev", label: "noahwilliams.dev" },
+      },
+      summary: {
+        ...doc.summary,
+        content:
+          "<p>Data analyst with 6 years of experience turning product and operations data into decisions. Builds trustworthy dashboards, designs experiments, and partners with non-technical teams to move the numbers that matter.</p>",
+      },
+      sections: {
+        ...doc.sections,
+        experience: {
+          ...doc.sections.experience,
+          items: [
+            experience({
+              company: "Brightwater Retail",
+              position: "Senior Data Analyst",
+              location: "Austin, TX",
+              startDate: "2021-04",
+              endDate: "2025-08",
+              bullets: [
+                "Grew repeat purchases by 18% by identifying 3 churn signals across a 1.2 million-customer cohort.",
+                "Cut report turnaround from 5 days to 4 hours by rebuilding 14 dashboards on a governed SQL layer.",
+                "Saved 26 analyst hours per week by automating 9 recurring exports with tested Python scripts.",
+              ],
+            }),
+            experience({
+              company: "Lumen Health",
+              position: "Data Analyst",
+              location: "Dallas, TX",
+              startDate: "2018-06",
+              endDate: "2021-03",
+              bullets: [
+                "Raised appointment show rates by 11% by testing 4 reminder schedules across 32,000 patients.",
+                "Reduced claims reporting errors by 37% by adding 48 validation checks to the weekly pipeline.",
+                "Built a 12-metric operations scorecard used by 8 clinic managers every morning.",
+              ],
+            }),
+          ],
+        },
+        education: {
+          ...doc.sections.education,
+          items: [
+            education({
+              school: "University of Texas at Austin",
+              degree: "B.S.",
+              area: "Statistics",
+              location: "Austin, TX",
+              startDate: "2014-08",
+              endDate: "2018-05",
+              grade: "3.8 GPA",
+            }),
+          ],
+        },
+        skills: {
+          ...doc.sections.skills,
+          items: [
+            skillCategory("Analysis", [
+              "SQL",
+              "Python",
+              "Statistics",
+              "Experimentation",
+            ]),
+            skillCategory("Visualization", [
+              "Tableau",
+              "Power BI",
+              "Looker",
+              "Excel",
+            ]),
+            skillCategory("Collaboration", [
+              "Stakeholder Management",
+              "Data Storytelling",
+              "Documentation",
+              "Data Governance",
+            ]),
+          ],
+        },
+        projects: {
+          ...doc.sections.projects,
+          items: [
+            project({
+              name: "Retention Deep Dive",
+              url: "https://noahwilliams.dev/work/retention",
+              startDate: "2024-01",
+              endDate: "2024-05",
+              bullets: [
+                "Interviewed 18 churned customers and isolated 4 repeatable cancellation reasons.",
+                "Built a 6-segment model that recovered 2,300 accounts in 90 days.",
+                "Cut the analysis cycle from 3 weeks to 5 days with reusable SQL models.",
+              ],
+              keywords: ["SQL", "Retention", "Cohorts"],
+            }),
+            project({
+              name: "Inventory Dashboard",
+              url: "https://noahwilliams.dev/work/inventory",
+              startDate: "2022-03",
+              endDate: "2022-08",
+              bullets: [
+                "Replaced 7 spreadsheets with one dashboard tracking 1,400 SKUs across 4 warehouses.",
+                "Reduced stockouts by 22% by flagging reorder points 3 days earlier.",
+                "Trained 16 store leads on the 9 core metrics in 4 sessions.",
+              ],
+              keywords: ["Tableau", "Inventory", "Automation"],
+            }),
+          ],
+        },
+        certifications: {
+          ...doc.sections.certifications,
+          items: [
+            certification(
+              "Google Data Analytics Professional Certificate",
+              "Google",
+              "2021-03",
+              "https://www.coursera.org",
+            ),
+          ],
+        },
+      },
+    };
+  },
+};
+
 const FRESH_GRADUATE: Archetype = {
   id: "fresh-graduate",
   label: "Fresh Graduate",
@@ -768,6 +905,7 @@ export const ARCHETYPES: Archetype[] = [
   PRODUCT_MANAGER,
   UX_UI_DESIGNER,
   FINANCE_OPERATIONS,
+  DATA_ANALYST,
   FRESH_GRADUATE,
 ];
 

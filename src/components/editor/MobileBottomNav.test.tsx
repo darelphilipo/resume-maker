@@ -61,4 +61,24 @@ describe("MobileBottomNav", () => {
       "false",
     );
   });
+
+  it("highlights only the tab the user is currently on", () => {
+    const { rerender } = render(
+      <MobileBottomNav activeTab="content" onChange={vi.fn()} />,
+    );
+
+    const content = screen.getByRole("tab", { name: "Content" });
+    const design = screen.getByRole("tab", { name: "Design" });
+
+    expect(content).toHaveClass("bg-primary/10", "text-primary");
+    expect(content.querySelector("[data-active-indicator]")).not.toBeNull();
+    expect(design).not.toHaveClass("bg-primary/10");
+    expect(design.querySelector("[data-active-indicator]")).toBeNull();
+
+    rerender(<MobileBottomNav activeTab="design" onChange={vi.fn()} />);
+
+    expect(design).toHaveClass("bg-primary/10", "text-primary");
+    expect(design.querySelector("[data-active-indicator]")).not.toBeNull();
+    expect(content.querySelector("[data-active-indicator]")).toBeNull();
+  });
 });

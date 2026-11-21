@@ -65,7 +65,7 @@ function defaultTitle(id: string): string {
 
 /** Shared surface so every section action fills one ordered grid cell. */
 const SECTION_ACTION_CLASS =
-  "flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-black/10 px-2 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent";
+  "flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-lg border border-black/10 px-2 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent";
 
 type SectionRow = {
   id: string;
@@ -402,7 +402,11 @@ export function SectionList({
                   {row.id === openSectionId ? null : (
                     <SectionForm sectionId={row.id} />
                   )}
-                  <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
+                  {/* Two columns at every width: three ~90px cells in the
+                      22rem desktop column cannot fit "↑ Move up" plus
+                      "Move down", so the labels and arrows clipped off the
+                      card. Two columns keep every action inside the border. */}
+                  <div className="grid min-w-0 grid-cols-2 gap-2">
                     <button
                       type="button"
                       aria-label={
@@ -452,7 +456,7 @@ export function SectionList({
                     ) : null}
                     {isCustomRow ? (
                       confirmDeleteId === row.id ? (
-                        <div className="col-span-2 flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-2 lg:col-span-3">
+                        <div className="col-span-2 flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-2">
                           <p className="text-sm text-red-900">
                             Delete “{row.title}” and all its entries?
                           </p>
@@ -476,7 +480,7 @@ export function SectionList({
                           type="button"
                           aria-label={`Delete ${row.title} section`}
                           onClick={() => setConfirmDeleteId(row.id)}
-                          className="col-span-2 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-800 transition-colors hover:border-red-400 active:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 lg:col-span-3"
+                          className="col-span-2 flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-800 transition-colors hover:border-red-400 active:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                         >
                           <Trash size={16} aria-hidden />
                           <span>Delete section</span>

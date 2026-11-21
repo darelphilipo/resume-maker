@@ -52,10 +52,13 @@ in control of every line, and your data stays on your device.
   with a comma, such as `University of California, Berkeley`, stay whole, and
   skills keep their categories under headings such as **Skills & Expertise**.
   **Create resume from text** turns on the moment you type or paste, so one tap
-  starts the import.
+  starts the import. A short hint under the box makes clear that one line is
+  enough: your name, a role, or the whole resume all work, and headings and
+  dates are optional.
 - **Role presets** for Software Engineer, Product Manager, UX/UI Designer,
-  Finance & Operations, and Fresh Graduate, each with a complete editable sample
-  including categorized skills you can adapt.
+  Finance & Operations, Data Analyst, and Fresh Graduate, each with a complete
+  editable sample including categorized skills you can adapt. The six cards fill
+  the two-column grid evenly, so no role sits beside an empty slot.
 - **Backup & Restore** lives at the bottom of the home page as a secondary
   option: restore a JSON backup you exported earlier, without treating JSON as
   the main way to start.
@@ -113,7 +116,8 @@ in control of every line, and your data stays on your device.
   Custom sections can be deleted when you no longer need them.
 - Show, hide, and reorder whole sections; empty sections stay out of the PDF.
   The Show/Hide, Move up, Move down, and Open section editor controls line up in
-  an orderly grid with even-sized buttons, so nothing sits at odd angles.
+  a two-column grid with even-sized buttons, so labels and arrows stay inside
+  the card even in the narrow desktop Content column.
   Awards, Languages, Interests, Volunteer, Publications, and References stay
   tucked behind **Add optional section** until you need them.
 - On a phone, **Open section editor** opens that section in a single full editor
@@ -161,7 +165,8 @@ in control of every line, and your data stays on your device.
   Page 1 while the pages re-measure; reordering individual entries keeps your
   place in Content too. Your name follows every keystroke in both the header and
   the preview canvas, without waiting for a pause. Phones keep the
-  one-tab-at-a-time layout, so nothing is squeezed.
+  one-tab-at-a-time layout, and the tab you are on gets a filled highlight plus a
+  top indicator, so Content, Design, and Preview are never ambiguous.
 - **Scroll or zoom the preview naturally**: on a phone, two fingers zoom the
   resume and a one-finger drag moves freely in any direction across the zoomed
   page. At normal size a one-finger swipe scrolls a multi-page preview smoothly

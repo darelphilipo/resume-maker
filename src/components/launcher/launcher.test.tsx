@@ -189,7 +189,9 @@ describe("Launcher", () => {
       screen.getByRole("region", { name: "Start from scratch" }),
     ).getAllByRole("listitem");
 
-    expect(presets).toHaveLength(5);
+    // Six cards fill the two-column grid evenly, so Fresh Graduate always has
+    // a sibling instead of sitting beside an empty slot.
+    expect(presets).toHaveLength(6);
 
     for (const preset of presets) {
       expect(preset).toHaveClass("h-full");
@@ -199,6 +201,9 @@ describe("Launcher", () => {
     }
 
     expect(presets.at(-1)).toHaveTextContent("Fresh Graduate");
+    expect(
+      screen.getByRole("button", { name: /Data Analyst/ }),
+    ).toBeInTheDocument();
   });
 
   it("shows the creating state only on the chosen preset", async () => {
@@ -260,6 +265,17 @@ describe("Launcher", () => {
 
     expect(button).toBeEnabled();
     expect(textarea).toHaveValue("Ada Lovelace\nSoftware Engineer");
+  });
+
+  it("explains that a single line is enough before pasting", () => {
+    render(<Launcher />);
+
+    const textarea = screen.getByLabelText("Resume text");
+    const hint = document.getElementById("resume-paste-hint");
+
+    expect(hint).not.toBeNull();
+    expect(hint).toHaveTextContent("One line is enough");
+    expect(textarea).toHaveAttribute("aria-describedby", "resume-paste-hint");
   });
 
   it("styles the blank-resume action as a secondary call to action", () => {

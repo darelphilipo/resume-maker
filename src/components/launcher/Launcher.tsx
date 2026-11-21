@@ -510,8 +510,13 @@ export function Launcher() {
           >
             Resume text
           </label>
+          <p id="resume-paste-hint" className="mt-1 text-xs text-[#6a7683]">
+            One line is enough — paste your name, a role, or your whole resume.
+            Headings and dates help, but they are optional.
+          </p>
           <textarea
             id="resume-paste-input"
+            aria-describedby="resume-paste-hint"
             value={pastedText}
             onChange={(event) => {
               setPastedText(event.currentTarget.value);

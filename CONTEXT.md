@@ -625,9 +625,9 @@ rediscover.
 
 52. **Editor chrome keeps one clear primary action and compact helper rows.**
     `Save PDF` is the only solid CTA (`bg-primary text-white`, border too), with
-    Undo/Redo/JSON outlined; disabled Undo/Redo use `disabled:text-muted
+    Undo/Redo/JSON outlined; disabled Undo/Redo use `disabled:text-text/80
     disabled:bg-surface-muted disabled:opacity-100` instead of a faint 30%
-    ghost. A hairline `[data-header-divider]` separates Back from the title
+    ghost, so the icons stay clearly legible before the first edit. A hairline `[data-header-divider]` separates Back from the title
     (1px, `mx-0.5 sm:mx-1`) without stealing name space. In the Content column,
     entering an entry's `Delete` button now reads `text-red-700/80` with
     `hover:bg-red-50 hover:text-red-800`, and section `Move up`/`Move down` are
@@ -796,11 +796,24 @@ rediscover.
       the drawer header changes; the compact Match JD sheet also opts out of
       snap points (#50).
 
+ 64. **Section actions use two columns, and the active mobile tab is filled.**
+     The expanded section footer is `grid-cols-2` at every width: the 22rem
+     Content column leaves ~90px per cell in a three-column grid, which clipped
+     the arrow and label of `Move up`/`Move down` against the card border.
+     Custom-section delete/confirm rows span both columns (`col-span-2`, no
+     `lg:col-span-3`). `MobileBottomNav` marks the current tab with
+     `bg-primary/10 text-primary` plus a `[data-active-indicator]` top bar; keep
+     the indicator `aria-hidden` and rely on `aria-selected` for assistive tech.
+     The Launcher pairs six role presets (Data Analyst was added before Fresh
+     Graduate) so the two-column grid has no empty slot, and the paste box
+     carries `aria-describedby="resume-paste-hint"` explaining one line is
+     enough.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~633 tests
+npm test               # vitest, ~665 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -856,6 +869,38 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — Section footer clipping, six presets, and mobile tab highlight
+- Task: top P1 Queue item (four small visual/UX fixes bundled together).
+- Section footer: the expanded action row is now `grid-cols-2` at every width
+  (with `min-w-0` on the grid and buttons). Three ~90px cells in the 22rem
+  desktop column could not fit `↑ Move up` + `Move down`, so both clipped at
+  the card border; custom delete/confirm rows now span both columns
+  (`col-span-2`, no `lg:col-span-3`). Decision #64.
+- Launcher: added a sixth **Data Analyst** archetype before **Fresh Graduate**,
+  so the two-column role grid has three full rows and no empty slot. The paste
+  textarea carries `aria-describedby="resume-paste-hint"` with a one-line hint
+  that a name or role alone is enough.
+- Header: disabled Undo/Redo now use `disabled:text-text/80` instead of
+  `disabled:text-muted`, keeping the icons clearly legible before the first
+  edit (updates Decision #52).
+- Tabs: the active mobile tab gets `bg-primary/10 text-primary` plus an
+  `aria-hidden` `[data-active-indicator]` top bar; `aria-selected` stays the
+  accessibility contract.
+- Tests: SectionList two-column grid/spans, Launcher six presets + paste hint,
+  Data Analyst archetype loops (schema, skills, quantified bullets), disabled
+  header class, MobileBottomNav active indicator. 665 pass (was 660). Added a
+  both-viewport Playwright action-row geometry case and mobile indicator checks.
+- Files: `src/components/editor/SectionList.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test),
+  `src/lib/presets/archetypes.ts` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/MobileBottomNav.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `e2e/mobile.spec.ts`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (665 pass), `npm run lint`.
+  Playwright remains blocked here, so the new geometry/indicator assertions are
+  typechecked but browser-unverified.
 
 ### 2026-11-21 — Anonymize URL leaks, Match JD close, and stopwords
 - Task: top P1 Queue item (three small regressions bundled together).
@@ -1107,40 +1152,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (605 pass), `npm run lint`. No new
   layout shell, so no e2e case was added; Playwright remains blocked here.
-
-### 2026-11-20 — Live Name edits and entry-reorder scroll jumps
-- Task: top genuine P1 Queue item — both "fixed" by 2026-11-19 unit tests but
-  still seen in the live app: the header/preview canvas followed the Name field
-  only after blur, and `↓ Down` on Experience Entry 1 jumped the Content column
-  upward after the desktop three-column change.
-- Root cause (Name): a real-timer probe showed the 50 ms `useDebouncedCommit`
-  keeps resetting while typing, so `doc.basics.name` lags until a pause. The
-  previous run had only unified the fallback/added a test, not changed the
-  commit path. `BasicsForm` now publishes each keystroke through
-  `onLiveNameChange`; `EditorWorkspace` keeps a self-invalidating `{name, base}`
-  override and passes a name-only `displayDoc` to the preview and print button.
-  Pagination still measures the committed doc, so no re-measure per keystroke.
-  Decision #53.
-- Root cause (scroll): `EntryActions` restored only the nearest scroller and
-  assumed the clicked button stayed focusable. After #51 the desktop scroller
-  is the Content panel, and a boundary move disables the clicked Down button so
-  focus drops to `body`. It now restores every overflowing ancestor, falls back
-  to an enabled sibling with `preventScroll`, and the panel carries
-  `[overflow-anchor:none]`. Decision #54.
-- Tests: new `BasicsForm` live-publication case, an `EditorWorkspace` case that
-  asserts the h1 and mocked canvas update with no timer advanced, and a
-  `SectionFormControls` case with two scrollers plus a disabled-button fallback.
-  599 pass (was 596). A throwaway timing probe was repurposed as the
-  `BasicsForm` regression file (`__explore.test.tsx`); rename it when file-delete
-  access is available.
-- Files: `src/components/editor/BasicsForm.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/SectionFormControls.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run lint`, `npm run typecheck`, `npm test` (599 pass),
-  `npm run build` (static export; the usual Next.js security-advisory nudge
-  needed a second run). Playwright remains blocked here, so the scroll fix still
-  needs a real browser check at `390x844` and `1280x800`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

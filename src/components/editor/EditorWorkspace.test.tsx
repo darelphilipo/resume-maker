@@ -349,7 +349,8 @@ describe("EditorWorkspace", () => {
     const redo = screen.getByRole("button", { name: "Redo" });
 
     expect(redo).toBeDisabled();
-    expect(redo).toHaveClass("disabled:text-muted", "disabled:opacity-100");
+    expect(redo).toHaveClass("disabled:text-text/80", "disabled:opacity-100");
+    expect(redo).not.toHaveClass("disabled:text-muted");
     // The divider sits between Back and the title, not in the action group.
     const divider = row?.querySelector<HTMLElement>("[data-header-divider]");
 

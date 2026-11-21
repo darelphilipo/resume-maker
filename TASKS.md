@@ -21,14 +21,6 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-### P1 — Regression Visual & UX Fixes
-
-- [ ] P1: Fix `Profiles` footer button clipping, Launcher 6th preset / paste hint, and disabled Undo/Redo contrast (`src/components/editor/SectionList.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/editor/EditorWorkspace.tsx`).
-  1. **Section footer clipping:** Fix the section-level `Hide | Move up | Move down` button row in `SectionList.tsx` so `↑ Move up`'s arrow and `Move down` never clip against the right border of expanded cards like `Profiles` at `22rem` desktop or `390px` mobile widths.
-  2. **Launcher polish:** Balance the 2-column `"OR START FROM A ROLE"` grid to 6 cards (add a 6th role preset such as *Data Analyst* or *Marketing & Growth*) so `Fresh Graduate` has no empty slot beside it, and show a subtle helper hint (or enable on any non-empty text) if `"Create resume from text"` requires a minimum character length.
-  3. **Disabled Undo/Redo contrast:** Slightly darken disabled Undo/Redo icon opacity/color in `EditorWorkspace.tsx` so the icons remain clearly legible before the first edit.
-  4. Add a highlight on the tab the user is currently on content /design /preview 
-
 ### P2 — Lightweight High-Value UX Additions
 
 - [ ] P2: Add a client-side **Orphan-Line & Bullet-Length Catcher** (`src/lib/lint/bulletMetrics.ts`, `src/components/preview/PageOverflowBanner.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
@@ -71,6 +63,28 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-21 — Fixed expanded-section footer clipping, balanced the
+  Launcher role grid, clarified the paste minimum, darkened disabled Undo/Redo,
+  and highlighted the active mobile tab. The section footer is now
+  `grid-cols-2` at every width (custom delete/confirm rows span both columns),
+  so `↑ Move up` and `Move down` stay inside the 22rem desktop column and the
+  390px card instead of clipping against the right border. A sixth **Data
+  Analyst** preset fills the two-column role grid beside **Fresh Graduate**, and
+  the paste box gained an `aria-describedby` hint that one line is enough.
+  Disabled header actions use `disabled:text-text/80`, and `MobileBottomNav`
+  gives the current tab `bg-primary/10 text-primary` plus an `aria-hidden` top
+  indicator. Verified `npm run typecheck`, `npm test` (665 pass), `npm run lint`.
+  Added a both-viewport Playwright action-row geometry case and a mobile tab
+  indicator assertion; Playwright is still blocked here, so those are
+  typechecked but browser-unverified. Files:
+  `src/components/editor/SectionList.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test),
+  `src/lib/presets/archetypes.ts` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/MobileBottomNav.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `e2e/mobile.spec.ts`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-21 — Stopped **Anonymize** leaking entry URLs and fixed the
   **Match JD** one-click close and filler stopwords. `anonymizeResumeDoc` now

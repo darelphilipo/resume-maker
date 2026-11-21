@@ -115,7 +115,7 @@ describe("SectionList", () => {
     expect(moveDown).toBeEnabled();
   });
 
-  it("lays out section actions in one ordered responsive grid", async () => {
+  it("lays out section actions in one ordered two-column grid", async () => {
     const user = userEvent.setup();
 
     render(<SectionList onOpenSection={vi.fn()} />);
@@ -132,7 +132,10 @@ describe("SectionList", () => {
     const open = screen.getByRole("button", { name: "Open section editor" });
     const grid = hide.parentElement;
 
-    expect(grid).toHaveClass("grid", "grid-cols-2", "lg:grid-cols-3");
+    // Two columns at every width: three cells in the 22rem desktop column
+    // clipped the "Move up"/"Move down" labels and arrows.
+    expect(grid).toHaveClass("grid", "grid-cols-2", "min-w-0");
+    expect(grid).not.toHaveClass("lg:grid-cols-3");
     expect(moveUp.parentElement).toBe(grid);
     expect(moveDown.parentElement).toBe(grid);
     expect(open.parentElement).toBe(grid);
@@ -370,7 +373,8 @@ describe("SectionList", () => {
       name: "Delete Speaking section",
     });
     expect(deleteButton.parentElement).toHaveClass("grid");
-    expect(deleteButton).toHaveClass("col-span-2", "lg:col-span-3");
+    expect(deleteButton).toHaveClass("col-span-2");
+    expect(deleteButton).not.toHaveClass("lg:col-span-3");
 
     await user.click(deleteButton);
     expect(

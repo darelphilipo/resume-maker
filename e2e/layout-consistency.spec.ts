@@ -344,6 +344,75 @@ for (const viewport of VIEWPORTS) {
       expect(metrics.overflow).toEqual([]);
     });
 
+    test("section action buttons stay inside the expanded card", async ({
+      page,
+    }) => {
+      await createPresetResume(page);
+      await showTab(page, "Content");
+
+      for (const id of ["profiles", "experience"]) {
+        await expandSection(page, id);
+      }
+
+      const overflow = await page.evaluate(() => {
+        const issues: Array<{
+          section: string;
+          label: string;
+          right: number;
+          limit: number;
+        }> = [];
+
+        for (const body of Array.from(
+          document.querySelectorAll<HTMLElement>(
+            '#panel-content [id^="section-body-"]',
+          ),
+        )) {
+          const card = body.closest<HTMLElement>("li");
+          const limit = Math.min(
+            card?.getBoundingClientRect().right ?? window.innerWidth,
+            window.innerWidth,
+          );
+          const grid = body.querySelector<HTMLElement>(":scope > div.grid");
+
+          if (!grid) {
+            continue;
+          }
+
+          if (grid.scrollWidth > grid.clientWidth + 1) {
+            issues.push({
+              section: body.id,
+              label: "grid",
+              right: grid.scrollWidth,
+              limit: grid.clientWidth,
+            });
+          }
+
+          for (const button of Array.from(
+            grid.querySelectorAll<HTMLElement>("button"),
+          )) {
+            const right = button.getBoundingClientRect().right;
+
+            if (right > limit + 0.5) {
+              issues.push({
+                section: body.id,
+                label:
+                  button.getAttribute("aria-label") ??
+                  (button.textContent ?? "").trim(),
+                right,
+                limit,
+              });
+            }
+          }
+        }
+
+        return issues;
+      });
+
+      // Hide / Move up / Move down / Open section editor must never clip off
+      // the right border at 390px or in the 22rem desktop column.
+      expect(overflow).toEqual([]);
+    });
+
     test("the page-count badge never overlaps the resume name", async ({
       page,
     }) => {

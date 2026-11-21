@@ -44,12 +44,19 @@ export function MobileBottomNav({
               aria-selected={isActive}
               aria-controls={`panel-${id}`}
               onClick={() => onChange(id)}
-              className={`flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 px-2 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+              className={`relative flex min-h-11 min-w-11 flex-col items-center justify-center gap-1 px-2 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                 isActive
-                  ? "text-primary"
+                  ? "bg-primary/10 text-primary"
                   : "text-muted hover:text-text active:bg-black/5"
               }`}
             >
+              {isActive ? (
+                <span
+                  aria-hidden
+                  data-active-indicator
+                  className="absolute inset-x-3 top-0 h-0.5 rounded-full bg-primary"
+                />
+              ) : null}
               <Icon size={20} aria-hidden />
               <span>{label}</span>
             </button>

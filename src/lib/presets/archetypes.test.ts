@@ -12,12 +12,13 @@ function bulletLines(html: string): string[] {
 }
 
 describe("ARCHETYPES", () => {
-  it("defines exactly the five approved archetypes", () => {
+  it("defines exactly the six approved archetypes", () => {
     expect(ARCHETYPES.map((archetype) => archetype.id)).toEqual([
       "software-engineer",
       "product-manager",
       "ux-ui-designer",
       "finance-operations",
+      "data-analyst",
       "fresh-graduate",
     ]);
     expect(ARCHETYPES.map((archetype) => archetype.label)).toEqual([
@@ -25,6 +26,7 @@ describe("ARCHETYPES", () => {
       "Product Manager",
       "UX/UI Designer",
       "Finance & Operations",
+      "Data Analyst",
       "Fresh Graduate",
     ]);
   });

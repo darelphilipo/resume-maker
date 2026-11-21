@@ -200,6 +200,11 @@ test("the tab bar stays pinned inside the viewport while a panel scrolls", async
     "aria-selected",
     "true",
   );
+  await expect(
+    page.locator(
+      '.mobile-bottom-bar [role="tab"][aria-selected="true"] [data-active-indicator]',
+    ),
+  ).toHaveCount(1);
 
   await showTab(page, "Design");
 
@@ -208,6 +213,11 @@ test("the tab bar stays pinned inside the viewport while a panel scrolls", async
     "aria-selected",
     "true",
   );
+  await expect(
+    page.locator(
+      '.mobile-bottom-bar [role="tab"][aria-selected="true"] [data-active-indicator]',
+    ),
+  ).toHaveCount(1);
 });
 
 test("the mobile shell leaves no dead band under the design panel", async ({
