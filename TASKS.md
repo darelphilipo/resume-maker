@@ -40,6 +40,7 @@ _empty
 
 - [ ] P2: Promote existing **`Profiles` links** (`LinkedIn`, `GitHub`, `Portfolio`) cleanly into the resume header (`src/components/editor/BasicsForm.tsx`, `src/lib/links/contactLinks.ts`, `src/templates/shared/HeaderSlot.tsx`).
   1. Reuse the existing `Profiles` data (`contactLinks.ts`)—do not create a duplicate `basics.links` array—and render visible profile links inline in the top contact header across all 6 templates as clean clickable `<a href>` links (stripping `https://` / `www.`), with a quick shortcut in `BasicsForm` to manage them.
+  2. Include the icons for most common websites like github ,LinkedIn .only high value websites for resumes .else default to globe icon 
 
 - [ ] P2: Add lightweight **Application Status & Target Company tags** to Recent Resumes on `/` (`src/types/`, `src/lib/store/db.ts`, `src/components/launcher/Launcher.tsx`).
   1. Add optional `targetCompany?: string` and `status?: "master" | "draft" | "applied" | "interview" | "offer"` fields to saved resume records with safe defaults for existing Dexie rows.
