@@ -34,9 +34,20 @@ _empty
   3. **`Education` `grade`, `Certifications` `url`, and `Publications` `url`:** Render `item.grade` in `EducationEntry` + `educationLines`, and render clickable `item.url` links for both `certifications` and `publications` in `SectionRenderer.tsx` + `atsText.ts`.
   4. Add an exhaustive `src/templates/shared/allFieldsWiring.test.tsx` test populating every editable field across all 14 sections with unique sentinel values and asserting every single one appears in Visual Preview/PDF and ATS text.
 
-### P1 — Live Bug Fixes & Surface UI Polish
+### P1 — Regression Visual & UX Fixes
 
-<!-- The stale "Match JD drawer" item was removed 2026-11-20: it is already in Done with Decision #50. -->
+- [ ] P1: Fix Studio Sidebar blank Page 2 and `ATS text` spill-banner overlap (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/lib/pagination/computePages.ts`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/AtsTextView.tsx`).
+  1. **Studio Sidebar empty Page 2:** After `StudioSidebarTemplate` moves sidebar blocks (`Skills`, `Certifications`) onto Page 1, filter out any trailing page whose remaining `main` block list is empty so Page 2 (and the `"Spills onto 2 pages"` / `"2 pages"` count) is never rendered when all content fits on Page 1 (repro: Software Engineer preset, `Letter`, `Normal` density).
+  2. **`ATS text` sticky banner overlap:** Ensure the `"Spills onto N pages | Fit to 1 Page"` banner stays in normal flow above the `ATS text` scroll container (or is hidden/non-sticky in `ATS text` mode) so it never overlaps or clips the `"Copy all"` button and helper text on a 2-page resume.
+
+- [ ] P1: Fix `Anonymize` leaking Project URLs and `Match JD` drawer two-click close + stopwords (`src/lib/privacy/anonymizeDoc.ts`, `src/components/editor/JdMatchDrawer.tsx`, `src/lib/keywords/jdMatch.ts`).
+  1. **Redact all entry URLs in `anonymizeResumeDoc`:** Also redact `url` fields on `projects`, `certifications`, `publications`, and `customSections` (e.g. `https://example.com/project-1`) so usernames like `github.com/mayachen/...` never leak in Visual Preview, PDF, or ATS text.
+  2. **`Match JD` single-click close & stopwords:** Fix the `X` close button in `JdMatchDrawer` so clicking it once immediately closes the drawer instead of snapping to a shorter Vaul snap point first, and expand the `jdMatch.ts` stopword list to filter out common filler words like `"for"` and `"looking"`.
+
+- [ ] P1: Fix `Profiles` footer button clipping, Launcher 6th preset / paste hint, and disabled Undo/Redo contrast (`src/components/editor/SectionList.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/editor/EditorWorkspace.tsx`).
+  1. **Section footer clipping:** Fix the section-level `Hide | Move up | Move down` button row in `SectionList.tsx` so `↑ Move up`'s arrow and `Move down` never clip against the right border of expanded cards like `Profiles` at `22rem` desktop or `390px` mobile widths.
+  2. **Launcher polish:** Balance the 2-column `"OR START FROM A ROLE"` grid to 6 cards (add a 6th role preset such as *Data Analyst* or *Marketing & Growth*) so `Fresh Graduate` has no empty slot beside it, and show a subtle helper hint (or enable on any non-empty text) if `"Create resume from text"` requires a minimum character length.
+  3. **Disabled Undo/Redo contrast:** Slightly darken disabled Undo/Redo icon opacity/color in `EditorWorkspace.tsx` so the icons remain clearly legible before the first edit.
 
 ### P2 — High-Value Reddit-Inspired Features
 
