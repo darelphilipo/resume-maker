@@ -164,15 +164,24 @@ function WheelZoom({
  */
 function PreviewChrome({
   banner,
+  sticky = true,
   children,
 }: {
   banner: ReactNode;
+  /**
+   * Sticky only over the canvas. The ATS text view is a separate scroll region
+   * with copy controls at the top, so its banner must stay in normal flow or it
+   * would cover the "Copy all" button while the panel scrolls.
+   */
+  sticky?: boolean;
   children?: ReactNode;
 }) {
   return (
     <div
       data-preview-header=""
-      className="z-10 -mx-4 -mt-4 flex shrink-0 flex-col gap-2 border-b border-line/70 bg-background/95 px-4 pb-2 pt-3 backdrop-blur lg:sticky lg:top-14"
+      className={`z-10 -mx-4 -mt-4 flex shrink-0 flex-col gap-2 border-b border-line/70 bg-background/95 px-4 pb-2 pt-3 backdrop-blur${
+        sticky ? " lg:sticky lg:top-14" : ""
+      }`}
     >
       {banner}
       {children}
@@ -476,7 +485,7 @@ export function LiveCanvasViewport({
     >
       {layout.measureLayer}
       {(mode === "canvas" || showOverflowBanner) ? (
-        <PreviewChrome banner={banner}>
+        <PreviewChrome banner={banner} sticky={mode === "canvas"}>
           {showCanvas ? (
             <CanvasToolbar
               pageCount={layout.pages.length}

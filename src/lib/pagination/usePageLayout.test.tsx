@@ -195,6 +195,51 @@ describe("usePageLayout", () => {
     ]);
   });
 
+  it("folds a Studio Sidebar page that only holds sidebar sections into Page 1", () => {
+    const doc = createEmptyResume("gengar");
+    doc.metadata.layout.pages = [
+      {
+        fullWidth: false,
+        main: ["experience"],
+        sidebar: ["skills"],
+      },
+    ];
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: { experience: 900, skills: 300 },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    // Page 2 would render an empty main column after the template moves Skills
+    // to Page 1's sidebar, so it must not survive as a blank page.
+    expect(result.current.pages).toEqual([
+      ["__header", "experience", "skills"],
+    ]);
+  });
+
+  it("keeps the trailing sidebar page for a single-column template", () => {
+    const doc = createEmptyResume();
+    doc.metadata.layout.pages = [
+      {
+        fullWidth: false,
+        main: ["experience"],
+        sidebar: ["skills"],
+      },
+    ];
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: { experience: 900, skills: 300 },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    expect(result.current.pages).toEqual([
+      ["__header", "experience"],
+      ["skills"],
+    ]);
+  });
+
   it("forces a section with startOnNewPage onto the next page", () => {
     const doc = makeDoc();
     doc.sections.skills.startOnNewPage = true;

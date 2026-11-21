@@ -8,6 +8,7 @@ import {
 import { HeaderSlot } from "../shared/HeaderSlot";
 import { SectionRenderer } from "../shared/SectionRenderer";
 import { buildTemplateThemeStyle } from "../shared/templateTheme";
+import { STUDIO_SIDEBAR_SECTION_IDS } from "./sidebarSections";
 import "./studio.css";
 
 export type StudioSidebarTemplateProps = {
@@ -15,14 +16,6 @@ export type StudioSidebarTemplateProps = {
   pages: string[][];
   pageIndex: number;
 };
-
-/** Compact, scan-friendly sections that live in the narrow review column. */
-export const STUDIO_SIDEBAR_SECTION_IDS: ReadonlySet<string> = new Set([
-  "skills",
-  "languages",
-  "certifications",
-  "interests",
-]);
 
 /** Split sections contribute entry-level block ids; route them by the
  * underlying section id so the two columns keep the same section split. */

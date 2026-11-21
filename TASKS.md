@@ -23,10 +23,6 @@ _empty
 ## Queue (Ready for Next Run)
 ### P1 — Regression Visual & UX Fixes
 
-- [ ] P1: Fix Studio Sidebar blank Page 2 and `ATS text` spill-banner overlap (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/lib/pagination/computePages.ts`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/AtsTextView.tsx`).
-  1. **Studio Sidebar empty Page 2:** After `StudioSidebarTemplate` moves sidebar blocks (`Skills`, `Certifications`) onto Page 1, filter out any trailing page whose remaining `main` block list is empty so Page 2 (and the `"Spills onto 2 pages"` / `"2 pages"` count) is never rendered when all content fits on Page 1 (repro: Software Engineer preset, `Letter`, `Normal` density).
-  2. **`ATS text` sticky banner overlap:** Ensure the `"Spills onto N pages | Fit to 1 Page"` banner stays in normal flow above the `ATS text` scroll container (or is hidden/non-sticky in `ATS text` mode) so it never overlaps or clips the `"Copy all"` button and helper text on a 2-page resume.
-
 - [ ] P1: Fix `Anonymize` leaking Project URLs and `Match JD` drawer two-click close + stopwords (`src/lib/privacy/anonymizeDoc.ts`, `src/components/editor/JdMatchDrawer.tsx`, `src/lib/keywords/jdMatch.ts`).
   1. **Redact all entry URLs in `anonymizeResumeDoc`:** Also redact `url` fields on `projects`, `certifications`, `publications`, and `customSections` (e.g. `https://example.com/project-1`) so usernames like `github.com/mayachen/...` never leak in Visual Preview, PDF, or ATS text.
   2. **`Match JD` single-click close & stopwords:** Fix the `X` close button in `JdMatchDrawer` so clicking it once immediately closes the drawer instead of snapping to a shorter Vaul snap point first, and expand the `jdMatch.ts` stopword list to filter out common filler words like `"for"` and `"looking"`.
@@ -58,6 +54,29 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-21 — Fixed the Studio Sidebar blank Page 2 and the `ATS text` spill-banner overlap.
+  `computePages` gained a `pinnedToFirstPage` section-id set: a trailing run of
+  pages holding only those blocks is folded back into Page 1 in canonical order
+  (folding, not deleting, so `StudioSidebarTemplate` still recovers every
+  sidebar block from `pages.flat()`). `usePageLayout` passes
+  `STUDIO_SIDEBAR_SECTION_IDS` for the `gengar` template only, so the page
+  count, canvas frame, print, and `"Spills onto N pages"` banner all agree that
+  a main column which fits on Page 1 is one page. `PreviewChrome` now takes a
+  `sticky` prop and `LiveCanvasViewport` passes `sticky={mode === "canvas"}`, so
+  in `ATS text` mode the banner stays in normal flow above the ATS scroll
+  container instead of overlaying the `"Copy all"` button and helper copy. Added
+  computePages folding cases (single/multiple tail pages, split entry blocks,
+  unpinned tails kept), `usePageLayout` gengar-vs-onyx cases, and a
+  `LiveCanvasViewport` ATS non-sticky banner case. Verified `npm run typecheck`,
+  `npm test` (654 pass), `npm run lint`. Files:
+  `src/lib/pagination/computePages.ts` (+ test),
+  `src/lib/pagination/usePageLayout.ts` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/templates/studio/StudioSidebarTemplate.tsx`,
+  `src/templates/studio/sidebarSections.ts` (new), `README.md`, `CONTEXT.md`,
+  `TASKS.md`. Playwright remains blocked here, so the `390x844` / `1280x800`
+  visual check is browser-unverified.
 
 - [x] 2026-11-21 — Wired the five dropped fields through Visual Preview/Print PDF
   and ATS text. URL-only Profiles rows now stay visible and show the cleaned URL

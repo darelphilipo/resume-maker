@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import { ExperienceItemSchema } from "@/lib/schema/resume.schema";
 
+import { encodeEntryBlock } from "./blockIds";
 import { computePages, type ComputePagesInput } from "./computePages";
 import { getSectionPlans, planBlockKeys } from "./sectionPlans";
 
@@ -86,6 +87,82 @@ describe("computePages", () => {
     );
 
     expect(result.pages).toEqual([["__header"], ["a"]]);
+  });
+});
+
+describe("computePages with sections pinned to Page 1", () => {
+  it("folds a trailing page holding only pinned sidebar blocks back into Page 1", () => {
+    const result = computePages(
+      makeInput({
+        sectionIds: ["experience", "skills"],
+        heights: { experience: 900, skills: 300 },
+        headerHeightPx: 100,
+        gapPx: 0,
+        contentHeightPx: 1000,
+        pinnedToFirstPage: new Set(["skills"]),
+      }),
+    );
+
+    // Page 2 would have rendered an empty main column once the template moved
+    // Skills into Page 1's sidebar, so the blocks travel with the page.
+    expect(result.pages).toEqual([
+      ["__header", "experience", "skills"],
+    ]);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("keeps a trailing page that still carries unpinned main content", () => {
+    const result = computePages(
+      makeInput({
+        sectionIds: ["experience", "projects", "skills"],
+        heights: { experience: 900, projects: 300, skills: 300 },
+        headerHeightPx: 100,
+        gapPx: 0,
+        contentHeightPx: 1000,
+        pinnedToFirstPage: new Set(["skills"]),
+      }),
+    );
+
+    expect(result.pages).toEqual([
+      ["__header", "experience"],
+      ["projects", "skills"],
+    ]);
+  });
+
+  it("recognises split (entry-level) sidebar blocks", () => {
+    const skillBlock = encodeEntryBlock("skills", "skill-1", true);
+
+    const result = computePages(
+      makeInput({
+        sectionIds: ["experience", skillBlock],
+        heights: { experience: 900, [skillBlock]: 300 },
+        headerHeightPx: 100,
+        gapPx: 0,
+        contentHeightPx: 1000,
+        pinnedToFirstPage: new Set(["skills"]),
+      }),
+    );
+
+    expect(result.pages).toEqual([
+      ["__header", "experience", skillBlock],
+    ]);
+  });
+
+  it("folds every trailing pinned-only page, not just the last one", () => {
+    const result = computePages(
+      makeInput({
+        sectionIds: ["experience", "skills", "certifications"],
+        heights: { experience: 900, skills: 900, certifications: 900 },
+        headerHeightPx: 100,
+        gapPx: 0,
+        contentHeightPx: 1000,
+        pinnedToFirstPage: new Set(["skills", "certifications"]),
+      }),
+    );
+
+    expect(result.pages).toEqual([
+      ["__header", "experience", "skills", "certifications"],
+    ]);
   });
 });
 

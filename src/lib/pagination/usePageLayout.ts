@@ -10,6 +10,7 @@ import {
   type ResumeDocument,
 } from "@/lib/schema/resume.schema";
 import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
+import { STUDIO_SIDEBAR_SECTION_IDS } from "@/templates/studio/sidebarSections";
 
 import { HEADER_BLOCK_ID } from "./constants";
 import { computePages } from "./computePages";
@@ -229,6 +230,13 @@ export function usePageLayout(
     };
   }
 
+  // The Studio Sidebar always renders its side column on Page 1, so a trailing
+  // page holding only those sections must not survive as a blank page.
+  const pinnedToFirstPage =
+    doc.metadata.template === "gengar"
+      ? STUDIO_SIDEBAR_SECTION_IDS
+      : undefined;
+
   const packed = computePages({
     sectionIds: order,
     heights: measurements.heights,
@@ -237,6 +245,7 @@ export function usePageLayout(
     contentHeightPx,
     startOnNewPage,
     plans,
+    pinnedToFirstPage,
   });
 
   const blockHeights = buildPackBlocks(

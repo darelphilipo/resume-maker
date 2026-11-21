@@ -347,6 +347,42 @@ describe("LiveCanvasViewport", () => {
     ).toBeTruthy();
   });
 
+  it("keeps the overflow banner in normal flow above the ATS text view", () => {
+    const { container } = render(
+      <LiveCanvasViewport
+        doc={createEmptyResume()}
+        layout={createLayout(2)}
+        mode="ats"
+      />,
+    );
+
+    const banner = screen.getByText("Spills onto 2 pages");
+    const header = banner.closest("[data-preview-header]");
+    const ats = container.querySelector(
+      '[aria-label="ATS plain text preview"]',
+    );
+    const scroll = container.querySelector("[data-canvas-scroll]");
+
+    expect(header).not.toBeNull();
+    expect(ats).not.toBeNull();
+    expect(scroll).not.toBeNull();
+    expect(header).toHaveClass("shrink-0", "z-10");
+    // Sticky chrome belongs to the canvas only: over the ATS text it would
+    // cover the "Copy all" button and helper copy while the panel scrolls.
+    expect(header).not.toHaveClass("lg:sticky");
+    expect(header).not.toHaveClass("lg:top-14");
+    expect(header).not.toContainElement(ats as HTMLElement);
+    expect(scroll).not.toContainElement(header as HTMLElement);
+    expect(
+      header!.compareDocumentPosition(ats as HTMLElement) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      header!.compareDocumentPosition(scroll as HTMLElement) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("scrolls the paper in its own region below the preview chrome", async () => {
     const { wrapper } = await renderCanvas(2);
 

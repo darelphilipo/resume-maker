@@ -769,6 +769,20 @@ rediscover.
       (`atsText.ts`); links for profiles, certifications, and publications plus
       Education `grade` now render in `SectionRenderer` too.
 
+  62. **A page that only holds Studio Sidebar blocks is folded into Page 1, not
+      deleted.** Packing is one shared main-then-sidebar sequence (#34/#46), so
+      a full main column can push `skills`/`certifications` onto a Page 2 whose
+      main side is empty; `StudioSidebarTemplate` then moves those blocks into
+      Page 1's `<aside>`, leaving a blank Page 2 and a misleading "2 pages"
+      count. `computePages` accepts `pinnedToFirstPage` and folds the trailing
+      run of pages that contain only those section ids back into Page 1 in
+      canonical order. Folding (rather than dropping the ids) is essential: the
+      template recovers its side column from `pages.flat()`, so deleted blocks
+      would vanish from the resume. `usePageLayout` passes
+      `STUDIO_SIDEBAR_SECTION_IDS` only for the `gengar` template; every other
+      template keeps its canonical trailing page. The page count, canvas frame,
+      print, and overflow banner all derive from the corrected `pages`.
+
 ## Verification and tooling
 
 ```powershell
@@ -829,6 +843,38 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — Studio Sidebar blank Page 2 and ATS banner overlap
+- Task: top P1 Queue item. Two regressions: a Studio Sidebar resume could show
+  a blank Page 2 with a "2 pages" count, and the ATS text tab's spill banner
+  (sticky at `lg`) could cover the Copy all row while the preview panel
+  scrolled.
+- Pagination: `computePages` gained `pinnedToFirstPage`. A trailing run of
+  pages containing only those sections is folded into Page 1 in canonical order
+  (not deleted, because `StudioSidebarTemplate` reads its sidebar blocks from
+  `pages.flat()`); `usePageLayout` passes `STUDIO_SIDEBAR_SECTION_IDS` for the
+  `gengar` template only. Page count, canvas frame, print, and the overflow
+  banner all follow the corrected `pages`. Decision #62.
+- ATS: `PreviewChrome` takes `sticky` (default true) and `LiveCanvasViewport`
+  passes `sticky={mode === "canvas"}`. In ATS mode the banner stays in normal
+  flow above `[data-canvas-scroll]`, so it scrolls with the panel instead of
+  overlaying the ATS copy controls.
+- Moved `STUDIO_SIDEBAR_SECTION_IDS` into
+  `src/templates/studio/sidebarSections.ts` so pagination can import it without
+  pulling in the template component.
+- Tests: computePages (single/multiple folded pages, split entry blocks,
+  main-content tails kept), usePageLayout (gengar folds; onyx keeps Page 2), and
+  LiveCanvasViewport (ATS banner not sticky, in flow above the ATS view). 654
+  pass (was 647).
+- Files: `src/lib/pagination/computePages.ts` (+ test),
+  `src/lib/pagination/usePageLayout.ts` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/templates/studio/StudioSidebarTemplate.tsx`,
+  `src/templates/studio/sidebarSections.ts` (new), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (654 pass), `npm run lint`.
+  Playwright remains blocked here, so the visual check at `390x844` /
+  `1280x800` is still browser-unverified.
 
 ### 2026-11-21 — All-fields wiring to Preview/PDF/ATS
 - Task: top P0 Queue item — five editable fields were dropped between the
@@ -1088,35 +1134,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `npm run build` (static export; the usual Next.js security-advisory nudge
   needed a second run). Playwright is still blocked here, so the two rewritten
   e2e cases are typechecked but browser-unverified.
-
-### 2026-11-20 — Match JD actually opens a visible drawer
-- Task: top P1 Queue item — the compact **Match JD** trigger in the Content
-  header appeared to do nothing in the live deployed app despite passing unit
-  tests, and did not share the `Content` heading's row on phones.
-- Root cause: `EntryDrawer` always passed `snapPoints={[0.6, 0.95]}` to vaul.
-  vaul parks snap-point sheets ~40% of the viewport down; the JD dialog is short,
-  so only a sliver was on screen. jsdom has no layout/transform, so the unit
-  tests saw a "visible" dialog. `EntryDrawer` now accepts `snapPoints?: number[]
-  | false` (default `[0.6, 0.95]`), and `JdMatchDrawer` passes `snapPoints={false}`.
-  Its trigger keeps vaul's `Drawer.Trigger asChild` but also commits `open` in an
-  explicit `onClick` so the controlled `Root` mounts the portal even if the
-  composed handler is lost. Recorded as Decision #50.
-- The Content header now puts the heading and trigger in one
-  `[data-content-title-row]` flex row with the description below, so Match JD
-  never wraps to a second row at 390px.
-- Tests: `EntryDrawer` guards snap points vs. compact mode; `JdMatchDrawer`
-  opens with Enter and asserts no snap-point transform attribute;
-  `EditorWorkspace` asserts the heading/trigger share a row. The Playwright JD
-  case now measures the dialog's bounding box (>160px on screen) and the
-  heading/trigger row alignment rather than relying on `toBeVisible()` alone.
-  594 pass (was 592).
-- Files: `src/components/editor/EntryDrawer.tsx` (+ test),
-  `src/components/editor/JdMatchDrawer.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (594 pass), `npm run lint`.
-  Playwright remains blocked in this sandbox, so the new geometry case is
-  typechecked but browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit
