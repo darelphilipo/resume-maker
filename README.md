@@ -183,6 +183,9 @@ in control of every line, and your data stays on your device.
   bring you back to the top of the resume, just like when you first open the
   Preview tab. On a computer, the mouse wheel and two-finger scrolling move the
   editor; hold **Ctrl** (or **⌘**) while scrolling to zoom the resume.
+  The fitted page holds its size and position
+  when a scrollbar appears or disappears, so it never shrinks and grows on its
+  own.
 - **Fit to 1 Page** when a resume spills just past one page. Fitting never
   shrinks the page below a readable size — if one page would need microscopic
   type, the preview says so instead. Whenever a reduced fit is active, a

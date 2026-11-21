@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -58,6 +58,34 @@ class ResizeObserverStub {
 
   unobserve = vi.fn();
   disconnect = vi.fn();
+}
+
+/**
+ * A ResizeObserver whose width source and callback firing are controlled by the
+ * test, so it can reproduce the scrollbar <-> fit-scale feedback loop exactly.
+ */
+class DrivenResizeObserverStub {
+  static instances: DrivenResizeObserverStub[] = [];
+
+  private callback: ResizeObserverCallback;
+  observed: Element | null = null;
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+    DrivenResizeObserverStub.instances.push(this);
+  }
+
+  observe = (target: Element): void => {
+    this.observed = target;
+    this.emit();
+  };
+
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+
+  emit(): void {
+    this.callback([], this as unknown as ResizeObserver);
+  }
 }
 
 const clientWidthDescriptor = Object.getOwnPropertyDescriptor(
@@ -504,5 +532,101 @@ describe("LiveCanvasViewport", () => {
       expect.anything(),
       true,
     );
+  });
+
+  it("reserves the scrollbar gutter on the mobile canvas scroller", async () => {
+    const { view } = await renderCanvas(2);
+    const scroll = view.container.querySelector("[data-canvas-scroll]");
+
+    expect(scroll).not.toBeNull();
+    // The scrollbar space is always reserved, so showing or hiding it can no
+    // longer change the width the fit transform is derived from.
+    expect(scroll).toHaveClass("[scrollbar-gutter:stable]");
+  });
+
+  it("settles the fit transform when the observer alternates by a scrollbar width", async () => {
+    const wide = CONTAINER_WIDTH;
+    const narrow = wide - 15;
+    let width = wide;
+
+    Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+      configurable: true,
+      get: () => width,
+    });
+    globalThis.ResizeObserver =
+      DrivenResizeObserverStub as unknown as typeof ResizeObserver;
+    DrivenResizeObserverStub.instances = [];
+
+    const doc = createEmptyResume();
+    const view = render(
+      <LiveCanvasViewport doc={doc} layout={createLayout(1)} />,
+    );
+
+    await waitFor(() => {
+      expect(
+        view.container.querySelector(".react-transform-wrapper"),
+      ).not.toBeNull();
+    });
+
+    // The library itself also creates a ResizeObserver; ours is the one watching
+    // the LiveCanvasViewport root (the component's outermost element).
+    const observer = DrivenResizeObserverStub.instances.find(
+      (instance) => instance.observed === view.container.firstElementChild,
+    );
+
+    expect(observer).toBeDefined();
+
+    const geometry = pageGeometry(
+      doc.metadata.page.format,
+      doc.metadata.page.marginX,
+      doc.metadata.page.marginY,
+    );
+    const narrowFit = Math.min(1, (narrow - 32) / geometry.widthPx);
+    const settledHeight = computeCanvasFrame({
+      pageCount: 1,
+      pageWidthPx: geometry.widthPx,
+      pageHeightPx: geometry.heightPx,
+      fitScale: narrowFit,
+    }).height;
+
+    const wrapper = (): HTMLElement =>
+      view.container.querySelector<HTMLElement>(".react-transform-wrapper")!;
+    const transform = (): string =>
+      view.container.querySelector<HTMLElement>(".react-transform-component")!
+        .style.transform;
+    const heights: string[] = [];
+    const transforms: string[] = [];
+
+    // Reproduce the feedback loop: a narrow width shrinks the canvas, which
+    // hides the scrollbar and widens it again, over and over.
+    const alternating = [
+      narrow,
+      wide,
+      narrow,
+      wide,
+      narrow,
+      wide,
+      narrow,
+      wide,
+      narrow,
+      wide,
+    ];
+
+    for (const next of alternating) {
+      width = next;
+      act(() => observer!.emit());
+      heights.push(wrapper().style.height);
+      transforms.push(transform());
+    }
+
+    // Once the guard locks to the smaller width, further A/B alternation must
+    // not re-fit the canvas: both the frame height and the applied setTransform
+    // settle instead of dancing between two values forever.
+    expect(new Set(heights.slice(-5)).size).toBe(1);
+    expect(new Set(transforms.slice(-5)).size).toBe(1);
+
+    for (const height of heights.slice(-5)) {
+      expect(Number.parseFloat(height)).toBeCloseTo(settledHeight, 1);
+    }
   });
 });

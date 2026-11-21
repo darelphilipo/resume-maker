@@ -21,11 +21,6 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P0: Stop the Preview canvas from "dancing" (oscillating scale & X-offset) by breaking the `ResizeObserver` ↔ scrollbar feedback loop (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/EditorWorkspace.tsx`).
-  1. **Eliminate scrollbar width jitter:** Apply `scrollbar-gutter: stable` (e.g. `[scrollbar-gutter:stable]`) on the Preview vertical scroll containers (`#panel-preview` on desktop and `[data-canvas-scroll]` on mobile) so adding or removing a scrollbar never changes `clientWidth`.
-  2. **Observe a non-scrolling width & add oscillation guard:** Measure the outer non-scrolling Preview container width (or subtract a fixed scrollbar-safe gutter) instead of a scrollbar-sensitive `clientWidth`, and guard `updateWidth` against rapid A↔B oscillation within `<= 24px` (locking to the smaller width if alternating within one frame/150ms) so `fitScale` and `fitOffsetX` stay rock-steady.
-  3. **Unit test:** Add a regression test in `LiveCanvasViewport.test.tsx` simulating a `ResizeObserver` alternating between `W` and `W - 15` and asserting `setTransform` settles instead of oscillating continuously.
-
 
 ### P0 — Mobile & Web Overlay / Preview Defects
 
@@ -84,6 +79,22 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-21 — Stopped the Preview canvas from "dancing". The fit scale and
+  centring offset are derived from the observed stage width, so a scrollbar
+  appearing narrowed the canvas, which hid the scrollbar again in an endless
+  feedback loop. `#panel-preview` (desktop) and `[data-canvas-scroll]` (phones)
+  now reserve the scrollbar space with `[scrollbar-gutter:stable]`, and a new pure
+  `stabilizeObservedWidth` guard locks an A/B/A width alternation within 24px /
+  150ms to the smaller width until a genuine resize releases it, so `setTransform`
+  stops flipping between two scales and X offsets. Added 11 pure guard cases, a
+  driven-`ResizeObserver` regression that alternates 326/311px and asserts the
+  frame height and applied transform settle, plus gutter-class contracts for both
+  scrollers. Verified `npm run typecheck`, `npm test` (727 pass), `npm run lint`.
+  Files: `src/lib/zoom/stableWidth.ts` (+ test, new),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-21 — Added the **Zero-AI Resume Lint & one-click bullet period
   normalizer**. A compact **Check** popover sits beside **Match JD** in the

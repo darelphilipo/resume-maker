@@ -30,6 +30,11 @@ import {
 } from "@/lib/zoom/canvasGestures";
 import { scrollToResumeTop } from "@/lib/zoom/touchScroll";
 import {
+  initialStableWidthState,
+  stabilizeObservedWidth,
+  type StableWidthState,
+} from "@/lib/zoom/stableWidth";
+import {
   isZoomWheel,
   normalizeWheelDelta,
   wheelZoomTarget,
@@ -324,6 +329,13 @@ export function LiveCanvasViewport({
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<ReactZoomPanPinchContentRef | null>(null);
+  /**
+   * The observed width is fed through an oscillation guard before it can drive
+   * `fitScale` / `fitOffsetX`. A scrollbar appearing shrinks the measured width,
+   * which shrinks the canvas and can hide the scrollbar again — without the guard
+   * the observer would alternate between the two widths forever (Decision #69).
+   */
+  const widthStateRef = useRef<StableWidthState>(initialStableWidthState);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
   /**
@@ -382,9 +394,18 @@ export function LiveCanvasViewport({
     const updateWidth = (): void => {
       const width = element.clientWidth;
 
-      if (width > 0) {
-        setContainerWidth(width);
+      if (width <= 0) {
+        return;
       }
+
+      const result = stabilizeObservedWidth(widthStateRef.current, {
+        width,
+        time:
+          typeof performance !== "undefined" ? performance.now() : Date.now(),
+      });
+
+      widthStateRef.current = result.state;
+      setContainerWidth(result.width);
     };
 
     updateWidth();
@@ -587,7 +608,7 @@ export function LiveCanvasViewport({
       <div
         ref={scrollRef}
         data-canvas-scroll=""
-        className="relative isolate min-h-0 flex-1 overflow-y-auto overscroll-contain lg:flex-none lg:overflow-visible"
+        className="relative isolate min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] lg:flex-none lg:overflow-visible"
       >
         {showCanvas ? (
           // The gray desk stops at the bottom of the page stack instead of

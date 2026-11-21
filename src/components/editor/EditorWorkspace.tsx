@@ -418,7 +418,7 @@ export function EditorWorkspace() {
           aria-labelledby="tab-preview"
           className={`${panelClass("preview", "lg:order-2", {
             display: "flex",
-          })} min-h-0 flex-1 flex-col`}
+          })} min-h-0 flex-1 flex-col [scrollbar-gutter:stable]`}
         >
           <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-none">
             <div

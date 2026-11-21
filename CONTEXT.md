@@ -883,6 +883,23 @@ rediscover.
       through a per-field debounce — the single `setDoc` is what keeps undo
       atomic.
 
+  69. **The fit width must not be a scrollbar feedback loop.** `fitScale` and
+      the centring `fitOffsetX` are derived from the observed width of the
+      non-scrolling `LiveCanvasViewport` stage. When the Preview scroller gained
+      a scrollbar the stage narrowed, the canvas shrank, the scrollbar
+      disappeared and the observer reported the wide value again — an endless
+      A/B loop that made the paper "dance" between two scales and offsets.
+      `#panel-preview` (desktop) and `[data-canvas-scroll]` (phones) now carry
+      `scrollbar-gutter: stable`, so the scrollbar space is always reserved and
+      the observed `clientWidth` stops changing. As a second line of defence,
+      `stabilizeObservedWidth` (`src/lib/zoom/stableWidth.ts`) locks an A/B/A
+      alternation of two widths within 24px over 150ms to the smaller width until
+      a genuinely different (>24px) resize releases it. `updateWidth` threads
+      the observed width through a ref; once locked it sets the same state value,
+      so React bails out and `useFitTransform`'s fit key no longer flips. The zoom
+      library creates its own ResizeObserver too, so component tests must target
+      the instance that observed the viewport root.
+
 ## Verification and tooling
 
 ```powershell
@@ -943,6 +960,29 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — Steady preview fit (ResizeObserver feedback loop)
+- Task: top P0 Queue item. The Preview canvas could oscillate between two fit
+  scales and X offsets as a scrollbar appeared and disappeared.
+- Scrollers: `[scrollbar-gutter:stable]` on `#panel-preview` (desktop) and
+  `[data-canvas-scroll]` (phones) reserves the scrollbar space, so the observed
+  stage width no longer changes when the paper grows past one page. Decision #69.
+- Guard: new pure `stabilizeObservedWidth` (`src/lib/zoom/stableWidth.ts`) locks
+  an A/B/A width alternation within 24px / 150ms to the smaller width until a
+  genuine (>24px) resize releases it. `LiveCanvasViewport.updateWidth` threads
+  the observed `clientWidth` through a ref; a locked sample sets the same state
+  value, so React skips the re-render and the applied transform stops flipping.
+- Tests: 11 pure guard cases, a `LiveCanvasViewport` case driving the observer
+  between 326 and 311 px that asserts the frame height and applied transform
+  settle, and class-contract cases for both scrollers (mobile canvas plus the
+  desktop Preview panel). 727 pass (was 713). No new layout shell, so no
+  Playwright case was added; a real-browser check with a multi-page resume at
+  `390x844` / `1280x800` is still worthwhile.
+- Files: `src/lib/zoom/stableWidth.ts` (+ test, new),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (727 pass), `npm run lint`.
 
 ### 2026-11-21 — Zero-AI resume lint and one-click bullet periods
 - Task: top P2 Queue item. Added a compact **Check** popover beside **Match JD**
@@ -1195,33 +1235,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (635 pass). Playwright remains
   blocked here, so the new e2e geometry case is typechecked but
   browser-unverified.
-
-### 2026-11-21 — Copy for Workday in the ATS text tab
-- Task: top P1 Queue item. Added one-tap plain-text copying to the ATS view.
-- `buildAtsText` is now a wrapper over the new pure `buildAtsCopyBlocks`, which
-  exposes the header plus ordered section and entry blocks without changing a
-  byte of the existing ATS output. Entry labels use the primary field (position,
-  degree, name, …); keyword-only Skills rows fall back to their first keyword.
-- `AtsTextView` renders the preview as section cards with a top **Copy all plain
-  text** CTA, a per-section Copy button, and compact per-entry Copy buttons. All
-  writes go through the new `copyText` helper (Clipboard API + legacy fallback),
-  with a 1.5 s **Copied** label and an `aria-live` announcement; copy-all is
-  disabled when the document is empty. `InAppBrowserNotice` now reuses the same
-  helper instead of its private legacy copy.
-- Tests: `buildAtsCopyBlocks` (full text parity, header/section/entry shapes,
-  hidden entries, keyword-only Skills labels), `copyText` (API, fallback,
-  failure, blank input), and `AtsTextView` (copy all with fake-timer reset,
-  per-section/per-entry clipboard payloads, disabled empty state). 633 pass
-  (was 625).
-- Files: `src/lib/clipboard/copyText.ts` (+ test, new),
-  `src/lib/ats/atsText.ts` (+ test),
-  `src/components/preview/AtsTextView.tsx` (+ test),
-  `src/components/preview/InAppBrowserNotice.tsx`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (633 pass), `npm run lint`,
-  `npm run build` (static export; the security-advisory nudge needed the usual
-  second run). No new layout shell, so no e2e case was added; Playwright remains
-  blocked here.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

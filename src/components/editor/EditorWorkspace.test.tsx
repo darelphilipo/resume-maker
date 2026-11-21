@@ -252,6 +252,24 @@ describe("EditorWorkspace", () => {
     ]);
   });
 
+  it("reserves the preview scrollbar gutter so the fit width cannot jitter", async () => {
+    await renderReadyWorkspace();
+
+    const preview = screen.getByRole("tabpanel", { name: "Preview" });
+
+    expect(preview).toHaveClass(
+      "lg:overflow-y-auto",
+      "[scrollbar-gutter:stable]",
+    );
+    // Only the Preview column is a fit-measured scroll region; the other two
+    // keep their natural gutter behaviour.
+    for (const name of ["Content", "Design"]) {
+      expect(screen.getByRole("tabpanel", { name })).not.toHaveClass(
+        "[scrollbar-gutter:stable]",
+      );
+    }
+  });
+
   it("locks the desktop shell and scrolls each column independently", async () => {
     await renderReadyWorkspace();
 
