@@ -43,6 +43,10 @@ describe("MobileBottomNav", () => {
     expect(nav).not.toHaveClass("fixed");
     expect(nav).not.toHaveClass("absolute");
     expect(nav).toHaveClass("shrink-0");
+    // Cap the home-indicator inset so a tall/tablet viewport cannot leave a
+    // blank strip below the tab labels.
+    expect(nav).toHaveClass("pb-[min(env(safe-area-inset-bottom),20px)]");
+    expect(nav).not.toHaveClass("pb-[env(safe-area-inset-bottom)]");
   });
 
   it("reflects a controlled active tab", () => {

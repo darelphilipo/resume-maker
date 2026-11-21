@@ -829,6 +829,25 @@ rediscover.
      Playwright case taps **Rose** and asserts `scrollY === 0`, no document
      overflow, and the nav bottom flush with `innerHeight`.
 
+ 66. **A capped fit is centred with a transform offset, and the gray desk ends
+     with the page.** `fitScale` stops at 1, so on a wide tablet or a phone
+     showing the desktop site the scaled paper is narrower than the preview
+     scroller. The transform wrapper stays full width (so zooming can still use
+     the whole panel), but `LiveCanvasViewport` computes
+     `centeredCanvasOffsetX(containerWidth - 32, frame.width)` and passes it to
+     `useFitTransform` and `initialPositionX`; `resetZoom` restores the same X.
+     The offset is part of the fit key (`${fitScale}:${offsetX}`), so a resize
+     that keeps the scale but changes the leftover space still re-centres. Do not
+     move centring onto the wrapper's CSS width or auto margins: that would clip
+     the zoomed canvas to the fitted width. The preview root is transparent; an
+     absolute `[data-canvas-desk]` inside `[data-canvas-scroll]` carries the
+     `bg-black/5` and is exactly `frame.height` tall, so a one-page resume does
+     not leave a full-panel gray void below it. On `< lg`, Content and Design are
+     `my-auto max-w-3xl self-center` (reset at `lg`) so short cards get balanced
+     space above and below instead of one giant band above the nav; the Preview
+     panel keeps the full stage. The mobile nav caps its safe-area padding with
+     `pb-[min(env(safe-area-inset-bottom),20px)]`.
+
 ## Verification and tooling
 
 ```powershell
@@ -889,6 +908,35 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — Centred tablet preview and a page-height canvas desk
+- Task: top P1 Queue item (mobile/tablet layout polish).
+- Nav: `MobileBottomNav` caps its safe-area padding with
+  `pb-[min(env(safe-area-inset-bottom),20px)]`, so the active fill reaches the
+  screen edge without a blank strip below the labels; the fixed `h-dvh` shell
+  from #65 is unchanged.
+- Preview: added pure `centeredCanvasOffsetX` (`canvasFrame.ts`). The fitted
+  canvas is nudged right by half the leftover space through
+  `useFitTransform(fitScale, offsetX)` and `initialPositionX`, and `resetZoom`
+  restores that same X. The fit key includes the offset, so a width change that
+  keeps the scale still re-centres (Decision #66).
+- Backdrop: the preview root is transparent; an absolute `[data-canvas-desk]`
+  inside `[data-canvas-scroll]` is exactly `frame.height` tall, so a 1-page
+  resume no longer sits above an oversized gray void. ATS mode has no desk.
+- Content/Design: short cards are `my-auto max-w-3xl self-center` on `< lg`
+  (reset at `lg`) for balanced space above/below instead of one empty band.
+- Tests: nav padding, panel classes, `centeredCanvasOffsetX` cases, fit-offset
+  refits, LiveCanvasViewport centring + desk height + no ATS desk, and a
+  `1023×1600` Playwright case for equal side gaps, desk bottom = paper bottom,
+  no document scroll, and nav flush. 675 pass (was 667). Playwright remains
+  blocked here, so the e2e case is typechecked but browser-unverified.
+- Files: `src/components/editor/MobileBottomNav.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/useFitTransform.ts` (+ test),
+  `src/lib/pagination/canvasFrame.ts` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (675 pass), `npm run lint`.
 
 ### 2026-11-21 — Mobile shell lock, anchored sr-only controls, and a 0×0 measure layer
 - Task: top P0 Queue item. Tapping a Design accent swatch (for example **Rose**)
@@ -1145,33 +1193,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (619 pass), `npm run lint`. No new
   layout shell, so no e2e case was added; Playwright remains blocked here.
-
-### 2026-11-20 — Launcher polish: paste enablement and Recent resumes UX
-- Task: top P1 Queue item. The launcher's paste CTA, promise alignment, preset
-  widths, blank CTA, recent-row interaction, 5-item cap, and backup border were
-  all addressed together because they share one component.
-- Paste: the textarea keeps the controlled `onChange`, and a new `onPaste`
-  handler computes the next value from `selectionStart`/`selectionEnd` before
-  the browser commits it, so **Create resume from text** enables after a single
-  paste without a blur. The textarea is now `resize-none`.
-- Layout: the promise row is left-aligned with the hero instead of centered, the
-  hero-to-choices spacing is tighter, and `Fresh Graduate` no longer spans both
-  preset columns (all five cards keep the same width). The blank-resume button
-  is a secondary outline CTA (`data-cta="secondary"`), leaving the paste action
-  as the only filled primary.
-- Recent resumes: the whole row opens the resume through an `onClick` that
-  ignores clicks inside controls, while the `Open {name}` button stays for
-  keyboard users and the Rename/Delete actions stop propagation. The list loads
-  up to 50 rows but shows 5 until **Show all (N)** / **Show fewer**. The outer
-  Backup & Restore shell is now a solid `#e3ddd2` border; only the file
-  dropzones remain dashed.
-- Tests: paste enablement (change + paste), `resize-none`, secondary CTA,
-  equal-width presets, row-click open, action-click isolation, the 5-to-7 show
-  all toggle, and the solid backup border. 611 pass (was 605).
-- Files: `src/components/launcher/Launcher.tsx` (+ test),
-  `src/app/page.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (611 pass). No new layout shell, so
-  no e2e case was added; Playwright remains blocked here.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

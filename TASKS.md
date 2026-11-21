@@ -22,11 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P1: Fix bottom-nav gap below icons and Preview horizontal centering on tall / tablet-width (`768px–1023px` & mobile desktop-site) viewports (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/MobileBottomNav.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
-  1. **Pin `<MobileBottomNav>` flush to the bottom edge:** Ensure `EditorWorkspace.tsx` uses `fixed inset-0 flex flex-col overflow-hidden lg:static lg:h-dvh` so the editor shell always spans 100% of the visual viewport with zero blank `<body>` space beneath the bottom tab bar, and cap `<MobileBottomNav>` bottom padding cleanly (`pb-[min(env(safe-area-inset-bottom),20px)]`) so the active tab fill reaches cleanly to the bottom edge with no awkward blank gap below the labels.
-  2. **Center the resume page horizontally in Preview:** In `LiveCanvasViewport.tsx`, center the scaled `<PageStack>` horizontally inside `[data-canvas-scroll]` when the scaled page width is narrower than the viewport (avoiding the empty gray strip on the right side), and size the canvas backdrop so it doesn't show an oversized empty gray void below a 1-page resume.
-  3. **Tighten Content / Design vertical fill on tall `< lg` screens:** Allow the Content and Design panel cards to sit naturally with balanced padding (or switch to a 2-column Content + Preview layout earlier if desired at `md:` `768px+`) rather than leaving a giant empty band above the bottom nav.
-
 ### P2 — Lightweight High-Value UX Additions
 
 - [ ] P2: Add a client-side **Orphan-Line & Bullet-Length Catcher** (`src/lib/lint/bulletMetrics.ts`, `src/components/preview/PageOverflowBanner.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
@@ -69,6 +64,26 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-21 — Fixed the tall/tablet Preview layout and bottom-nav gap.
+  The fitted canvas is now centred with a transform X offset
+  (`centeredCanvasOffsetX`) that survives resets and re-centres when only the
+  leftover width changes; the preview stage is transparent and a
+  `[data-canvas-desk]` backdrop is exactly as tall as the page frame, so a
+  one-page resume no longer sits above a full-panel gray void. The mobile nav
+  caps its safe-area padding at `min(env(safe-area-inset-bottom), 20px)`, and
+  short Content/Design cards get balanced vertical space plus a `max-w-3xl`
+  tablet cap (`lg` resets). Added unit coverage for the nav class, panel
+  classes, centring helper, fit offset, and desk height, plus a `1023×1600`
+  Playwright geometry case. Verified `npm run typecheck`, `npm test` (675 pass),
+  `npm run lint`; Playwright remains blocked here, so the e2e case is
+  typechecked but browser-unverified. Files:
+  `src/components/editor/MobileBottomNav.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/useFitTransform.ts` (+ test),
+  `src/lib/pagination/canvasFrame.ts` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-21 — Locked the mobile editor shell so tapping Design accent
   cards (**Rose**) can no longer jump the bottom nav into mid-screen. The root

@@ -352,7 +352,10 @@ export function EditorWorkspace() {
           id="panel-content"
           role="tabpanel"
           aria-labelledby="tab-content"
-          className={`${panelClass("content", "lg:order-1")} [overflow-anchor:none]`}
+          className={`${panelClass(
+            "content",
+            "lg:order-1",
+          )} my-auto w-full max-w-3xl self-center [overflow-anchor:none] lg:my-0 lg:max-w-none lg:self-stretch`}
         >
           <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_8px_rgba(23,40,57,0.04)]">
             <div data-content-header className="flex flex-col gap-2">
@@ -392,7 +395,10 @@ export function EditorWorkspace() {
           id="panel-design"
           role="tabpanel"
           aria-labelledby="tab-design"
-          className={panelClass("design", "lg:order-3")}
+          className={`${panelClass(
+            "design",
+            "lg:order-3",
+          )} my-auto w-full max-w-3xl self-center lg:my-0 lg:max-w-none lg:self-stretch`}
         >
           <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_8px_rgba(23,40,57,0.04)]">
             <h2 className="font-serif text-xl font-semibold tracking-tight">

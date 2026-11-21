@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { PAGE_STACK_GAP_PX, computeCanvasFrame } from "./canvasFrame";
+import {
+  PAGE_STACK_GAP_PX,
+  centeredCanvasOffsetX,
+  computeCanvasFrame,
+} from "./canvasFrame";
 
 const PAGE_WIDTH = 600;
 const PAGE_HEIGHT = 800;
@@ -54,5 +58,23 @@ describe("computeCanvasFrame", () => {
 
   it("guards against non-finite page counts", () => {
     expect(frame({ pageCount: Number.NaN }).height).toBe(PAGE_HEIGHT);
+  });
+});
+
+describe("centeredCanvasOffsetX", () => {
+  it("splits the leftover space when the paper is narrower than the viewport", () => {
+    expect(centeredCanvasOffsetX(900, 700)).toBe(100);
+  });
+
+  it("does not offset a paper that already fills the viewport", () => {
+    expect(centeredCanvasOffsetX(700, 700)).toBe(0);
+    expect(centeredCanvasOffsetX(700, 820)).toBe(0);
+  });
+
+  it("falls back to zero for missing or invalid sizes", () => {
+    expect(centeredCanvasOffsetX(0, 700)).toBe(0);
+    expect(centeredCanvasOffsetX(900, 0)).toBe(0);
+    expect(centeredCanvasOffsetX(Number.NaN, 700)).toBe(0);
+    expect(centeredCanvasOffsetX(900, Number.POSITIVE_INFINITY)).toBe(0);
   });
 });

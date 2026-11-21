@@ -13,8 +13,16 @@ vi.mock("react-zoom-pan-pinch", () => ({
 
 import { useFitTransform } from "./useFitTransform";
 
-function Harness({ fitScale, tick = 0 }: { fitScale: number; tick?: number }) {
-  useFitTransform(fitScale);
+function Harness({
+  fitScale,
+  offsetX = 0,
+  tick = 0,
+}: {
+  fitScale: number;
+  offsetX?: number;
+  tick?: number;
+}) {
+  useFitTransform(fitScale, offsetX);
 
   return <span data-testid="tick">{tick}</span>;
 }
@@ -55,8 +63,31 @@ describe("useFitTransform", () => {
     expect(controls.setTransform).toHaveBeenCalledWith(0, 0, 0.55, 0);
   });
 
+  it("centres a narrower paper with the fitted X offset", () => {
+    render(<Harness fitScale={1} offsetX={72} />);
+
+    expect(controls.setTransform).toHaveBeenCalledTimes(1);
+    expect(controls.setTransform).toHaveBeenCalledWith(72, 0, 1, 0);
+  });
+
+  it("re-fits when only the centring offset changes", () => {
+    const view = render(<Harness fitScale={1} offsetX={24} />);
+
+    controls.setTransform.mockClear();
+    view.rerender(<Harness fitScale={1} offsetX={72} />);
+
+    expect(controls.setTransform).toHaveBeenCalledTimes(1);
+    expect(controls.setTransform).toHaveBeenCalledWith(72, 0, 1, 0);
+  });
+
   it("ignores a non-finite fit scale", () => {
     render(<Harness fitScale={Number.NaN} />);
+
+    expect(controls.setTransform).not.toHaveBeenCalled();
+  });
+
+  it("ignores a non-finite offset", () => {
+    render(<Harness fitScale={1} offsetX={Number.NaN} />);
 
     expect(controls.setTransform).not.toHaveBeenCalled();
   });

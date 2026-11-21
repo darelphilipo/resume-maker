@@ -840,3 +840,76 @@ for (const viewport of VIEWPORTS) {
     });
   });
 }
+
+test.describe("tall tablet preview", () => {
+  // 1023px is the widest layout that still uses the mobile tab shell. The page
+  // is capped at 100% there, so the fitted canvas is narrower than the preview
+  // scroller and must be centred instead of hugging the left edge.
+  test.use({ viewport: { width: 1023, height: 1600 } });
+
+  test("centres the fitted page, ends the gray desk with it, and pins the nav", async ({
+    page,
+  }) => {
+    await createPresetResume(page);
+    await showPreview(page);
+
+    const metrics = await page.evaluate(() => {
+      const scroll = document.querySelector<HTMLElement>(
+        "[data-canvas-scroll]",
+      );
+      const canvas = document.querySelector<HTMLElement>(
+        ".react-transform-component",
+      );
+      const desk = document.querySelector<HTMLElement>("[data-canvas-desk]");
+      const nav = document.querySelector<HTMLElement>(".mobile-bottom-bar");
+
+      if (!scroll || !canvas || !desk || !nav) {
+        return null;
+      }
+
+      const scrollRect = scroll.getBoundingClientRect();
+      const canvasRect = canvas.getBoundingClientRect();
+      const deskRect = desk.getBoundingClientRect();
+
+      return {
+        scrollLeft: scrollRect.left,
+        scrollRight: scrollRect.right,
+        scrollBottom: scrollRect.bottom,
+        canvasLeft: canvasRect.left,
+        canvasRight: canvasRect.right,
+        canvasBottom: canvasRect.bottom,
+        deskBottom: deskRect.bottom,
+        navBottom: nav.getBoundingClientRect().bottom,
+        innerHeight: window.innerHeight,
+        scrollY: window.scrollY,
+        documentOverflow:
+          document.documentElement.scrollHeight -
+          document.documentElement.clientHeight,
+      };
+    });
+
+    expect(metrics).not.toBeNull();
+
+    const result = metrics as NonNullable<typeof metrics>;
+    const leftGap = result.canvasLeft - result.scrollLeft;
+    const rightGap = result.scrollRight - result.canvasRight;
+
+    // Equal breathing room on both sides instead of a gray strip on the right.
+    expect(leftGap).toBeGreaterThan(1);
+    expect(Math.abs(leftGap - rightGap)).toBeLessThanOrEqual(2);
+
+    // The backdrop stops at the bottom of the one-page stack; it must not paint
+    // a full-panel gray void down to the tab bar.
+    expect(Math.abs(result.deskBottom - result.canvasBottom)).toBeLessThanOrEqual(
+      2,
+    );
+    expect(result.deskBottom).toBeLessThan(result.scrollBottom - 50);
+
+    // The fixed shell still spans the visual viewport with no body scroll.
+    expect(result.scrollY).toBe(0);
+    expect(result.documentOverflow).toBeLessThanOrEqual(1);
+    expect(Math.abs(result.navBottom - result.innerHeight)).toBeLessThanOrEqual(
+      1,
+    );
+  });
+});

@@ -296,6 +296,20 @@ describe("EditorWorkspace", () => {
       // Scrolling stays desktop-only; mobile keeps one tab panel at a time.
       expect(panel).not.toHaveClass("sticky", "overflow-y-auto");
     }
+
+    // Short Content/Design cards are vertically balanced on tall tablets and
+    // capped at a readable width; the preview keeps the full stage width.
+    for (const panel of panels.slice(0, 2)) {
+      expect(panel).toHaveClass(
+        "my-auto",
+        "max-w-3xl",
+        "self-center",
+        "lg:my-0",
+        "lg:max-w-none",
+        "lg:self-stretch",
+      );
+    }
+    expect(panels[2]).not.toHaveClass("my-auto", "max-w-3xl");
   });
 
   it("opens the job description keyword matcher from the content panel header", async () => {

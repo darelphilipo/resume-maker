@@ -17,18 +17,26 @@ import { useControls } from "react-zoom-pan-pinch";
  *
  * Re-fitting is only correct when the fitted scale genuinely changes (container
  * resize, paper size, or a new fit-to-one-page scale), so the ref guard ignores
- * the library's unstable function identity.
+ * the library's unstable function identity. The horizontal offset is part of the
+ * fit key because a wider viewport can keep the same scale while giving the
+ * narrower paper more leftover space to centre inside.
  */
-export function useFitTransform(fitScale: number): void {
+export function useFitTransform(fitScale: number, offsetX = 0): void {
   const { setTransform } = useControls();
-  const appliedFitScale = useRef<number | null>(null);
+  const appliedFit = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!Number.isFinite(fitScale) || appliedFitScale.current === fitScale) {
+    if (!Number.isFinite(fitScale) || !Number.isFinite(offsetX)) {
       return;
     }
 
-    appliedFitScale.current = fitScale;
-    void setTransform(0, 0, fitScale, 0);
-  }, [fitScale, setTransform]);
+    const nextFit = `${fitScale}:${offsetX}`;
+
+    if (appliedFit.current === nextFit) {
+      return;
+    }
+
+    appliedFit.current = nextFit;
+    void setTransform(offsetX, 0, fitScale, 0);
+  }, [fitScale, offsetX, setTransform]);
 }

@@ -167,8 +167,11 @@ in control of every line, and your data stays on your device.
   the preview canvas, without waiting for a pause. Phones keep the
   one-tab-at-a-time layout, and the tab you are on gets a filled highlight plus a
   top indicator, so Content, Design, and Preview are never ambiguous. The bottom
-  bar stays put while you switch tabs or try a new accent, template, or paper
-  size.
+  bar stays flush with the screen edge while you switch tabs or try a new accent,
+  template, or paper size. On tall tablets and phones showing the desktop site,
+  the fitted page sits centred with even side margins, the gray preview desk ends
+  with the last page instead of trailing into empty space, and short Content or
+  Design cards stay vertically balanced above the bar.
 - **Scroll or zoom the preview naturally**: on a phone, two fingers zoom the
   resume and a one-finger drag moves freely in any direction across the zoomed
   page. At normal size a one-finger swipe scrolls a multi-page preview smoothly

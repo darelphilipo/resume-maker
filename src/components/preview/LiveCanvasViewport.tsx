@@ -14,7 +14,10 @@ import type {
 } from "react-zoom-pan-pinch";
 
 import type { CanvasFrame } from "@/lib/pagination/canvasFrame";
-import { computeCanvasFrame } from "@/lib/pagination/canvasFrame";
+import {
+  centeredCanvasOffsetX,
+  computeCanvasFrame,
+} from "@/lib/pagination/canvasFrame";
 import type { PageLayout } from "@/lib/pagination/usePageLayout";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
@@ -53,8 +56,14 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function FitTransform({ fitScale }: { fitScale: number }) {
-  useFitTransform(fitScale);
+function FitTransform({
+  fitScale,
+  offsetX,
+}: {
+  fitScale: number;
+  offsetX: number;
+}) {
+  useFitTransform(fitScale, offsetX);
 
   return null;
 }
@@ -248,12 +257,14 @@ function CanvasToolbar({
 function CanvasSurface({
   frame,
   fitScale,
+  fitOffsetX,
   isCoarsePointer,
   hostRef,
   children,
 }: {
   frame: CanvasFrame;
   fitScale: number;
+  fitOffsetX: number;
   isCoarsePointer: boolean;
   hostRef: RefObject<HTMLDivElement | null>;
   children: ReactNode;
@@ -264,7 +275,7 @@ function CanvasSurface({
 
   return (
     <>
-      <FitTransform fitScale={fitScale} />
+      <FitTransform fitScale={fitScale} offsetX={fitOffsetX} />
       <TouchPanCanvas
         hostRef={hostRef}
         fitScale={fitScale}
@@ -403,6 +414,18 @@ export function LiveCanvasViewport({
           fitScale,
         });
 
+  // `fitScale` is capped at 1, so the paper can be narrower than the scroller on
+  // a wide tablet or a phone showing the desktop site. Centre the fitted canvas
+  // instead of leaving the leftover space as a gray strip on the right.
+  const canvasViewportWidth =
+    containerWidth === null
+      ? null
+      : Math.max(0, containerWidth - VIEWPORT_PADDING_PX);
+  const fitOffsetX =
+    frame === null || canvasViewportWidth === null
+      ? 0
+      : centeredCanvasOffsetX(canvasViewportWidth, frame.width);
+
   const lineHeightPx =
     doc.metadata.typography.body.fontSize *
     PT_TO_PX *
@@ -455,8 +478,13 @@ export function LiveCanvasViewport({
     }
 
     resetScroll();
-    void wrapperRef.current?.setTransform(0, 0, fitScale, RESET_ANIMATION_MS);
-  }, [fitScale, resetScroll]);
+    void wrapperRef.current?.setTransform(
+      fitOffsetX,
+      0,
+      fitScale,
+      RESET_ANIMATION_MS,
+    );
+  }, [fitOffsetX, fitScale, resetScroll]);
 
   const resetFit = useCallback((): void => {
     resetScroll();
@@ -481,7 +509,7 @@ export function LiveCanvasViewport({
   return (
     <div
       ref={containerRef}
-      className="relative flex min-h-0 w-full flex-1 flex-col gap-4 overflow-clip rounded-xl bg-black/5 p-4 lg:flex-none"
+      className="relative flex min-h-0 w-full flex-1 flex-col gap-4 overflow-clip rounded-xl p-4 lg:flex-none"
     >
       {layout.measureLayer}
       {(mode === "canvas" || showOverflowBanner) ? (
@@ -505,14 +533,25 @@ export function LiveCanvasViewport({
       <div
         ref={scrollRef}
         data-canvas-scroll=""
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain lg:flex-none lg:overflow-visible"
+        className="relative isolate min-h-0 flex-1 overflow-y-auto overscroll-contain lg:flex-none lg:overflow-visible"
       >
+        {showCanvas ? (
+          // The gray desk stops at the bottom of the page stack instead of
+          // stretching to the bottom of a tall preview panel, so a one-page
+          // resume no longer sits above an oversized empty gray void.
+          <div
+            aria-hidden
+            data-canvas-desk=""
+            className="pointer-events-none absolute inset-x-0 top-0 -z-10 bg-black/5"
+            style={{ height: `${frame!.height}px` }}
+          />
+        ) : null}
         {showCanvas ? (
           <TransformWrapper
             ref={wrapperRef}
             onTransform={handleTransform}
             initialScale={fitScale!}
-            initialPositionX={0}
+            initialPositionX={fitOffsetX}
             initialPositionY={0}
             minScale={Math.min(MIN_SCALE, fitScale!)}
             maxScale={MAX_SCALE}
@@ -526,6 +565,7 @@ export function LiveCanvasViewport({
             <CanvasSurface
               frame={frame!}
               fitScale={fitScale!}
+              fitOffsetX={fitOffsetX}
               isCoarsePointer={isCoarsePointer}
               hostRef={containerRef}
             >

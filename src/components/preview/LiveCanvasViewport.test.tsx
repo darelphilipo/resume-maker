@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   PAGE_STACK_GAP_PX,
+  centeredCanvasOffsetX,
   computeCanvasFrame,
 } from "@/lib/pagination/canvasFrame";
 import type { PageLayout } from "@/lib/pagination/usePageLayout";
@@ -104,9 +105,19 @@ async function renderCanvas(
   options: {
     doc?: ResumeDocument;
     onFit?: (scale: number) => void;
+    containerWidth?: number;
   } = {},
 ) {
   const doc = options.doc ?? createEmptyResume();
+  const containerWidth = options.containerWidth ?? CONTAINER_WIDTH;
+
+  if (options.containerWidth !== undefined) {
+    Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+      configurable: true,
+      get: () => options.containerWidth as number,
+    });
+  }
+
   const view = render(
     <LiveCanvasViewport
       doc={doc}
@@ -130,7 +141,7 @@ async function renderCanvas(
     doc.metadata.page.marginX,
     doc.metadata.page.marginY,
   );
-  const fitScale = (CONTAINER_WIDTH - 32) / geometry.widthPx;
+  const fitScale = Math.min(1, (containerWidth - 32) / geometry.widthPx);
 
   return { geometry, fitScale, view, wrapper, doc };
 }
@@ -158,6 +169,47 @@ describe("LiveCanvasViewport", () => {
       "data-canvas-height",
       String(frame.height),
     );
+  });
+
+  it("centres a fitted page that is narrower than the scroll area", async () => {
+    const containerWidth = 1023;
+    const { geometry, view } = await renderCanvas(1, { containerWidth });
+    const content = view.container.querySelector<HTMLElement>(
+      ".react-transform-component",
+    );
+    const expectedOffset = centeredCanvasOffsetX(
+      containerWidth - 32,
+      geometry.widthPx,
+    );
+
+    expect(expectedOffset).toBeGreaterThan(0);
+    expect(content).not.toBeNull();
+    await waitFor(() => {
+      expect(content!.style.transform).toContain(
+        `translate(${expectedOffset}px, 0px)`,
+      );
+    });
+  });
+
+  it("sizes the canvas backdrop to the page stack, not the whole panel", async () => {
+    const { geometry, fitScale, view } = await renderCanvas();
+    const frame = computeCanvasFrame({
+      pageCount: 1,
+      pageWidthPx: geometry.widthPx,
+      pageHeightPx: geometry.heightPx,
+      fitScale,
+    });
+    const desk = view.container.querySelector<HTMLElement>(
+      "[data-canvas-desk]",
+    );
+    const root = view.container.firstElementChild as HTMLElement;
+
+    expect(desk).not.toBeNull();
+    expect(Number.parseFloat(desk!.style.height)).toBeCloseTo(frame.height, 1);
+    expect(desk).toHaveClass("bg-black/5");
+    // The stage itself must stay transparent, or a short resume still shows a
+    // full-height gray void below the paper.
+    expect(root).not.toHaveClass("bg-black/5");
   });
 
   it("includes the scaled stack gap when a second page is added", async () => {
@@ -366,6 +418,9 @@ describe("LiveCanvasViewport", () => {
     expect(header).not.toBeNull();
     expect(ats).not.toBeNull();
     expect(scroll).not.toBeNull();
+    expect(
+      container.querySelector("[data-canvas-desk]"),
+    ).not.toBeInTheDocument();
     expect(header).toHaveClass("shrink-0", "z-10");
     // Sticky chrome belongs to the canvas only: over the ATS text it would
     // cover the "Copy all" button and helper copy while the panel scrolls.

@@ -6,6 +6,31 @@ export type CanvasFrame = {
   scale: number;
 };
 
+/**
+ * Left offset that centres a scaled page stack inside its viewport.
+ *
+ * `fitScale` is capped at 1, so on a wide tablet (or a phone showing the
+ * desktop site) the paper can be narrower than the preview scroller. The
+ * transform wrapper is still full width, so the canvas must be nudged right by
+ * half of the leftover space or it hugs the left edge and leaves a gray strip
+ * on the right.
+ */
+export function centeredCanvasOffsetX(
+  viewportWidth: number,
+  canvasWidth: number,
+): number {
+  if (
+    !Number.isFinite(viewportWidth) ||
+    !Number.isFinite(canvasWidth) ||
+    viewportWidth <= 0 ||
+    canvasWidth <= 0
+  ) {
+    return 0;
+  }
+
+  return Math.max(0, (viewportWidth - canvasWidth) / 2);
+}
+
 export function computeCanvasFrame(input: {
   pageCount: number;
   pageWidthPx: number;
