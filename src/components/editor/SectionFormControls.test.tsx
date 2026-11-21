@@ -86,7 +86,7 @@ describe("SectionFormControls", () => {
     expect(screen.getByText("Month is enough.")).toHaveClass("text-muted");
   });
 
-  it("keeps entry actions on one compact row in the narrow sidebar", () => {
+  it("keeps entry actions compact and wraps them instead of overflowing", () => {
     render(
       <EntryActions
         index={0}
@@ -102,8 +102,10 @@ describe("SectionFormControls", () => {
     const remove = screen.getByRole("button", { name: "Delete entry 1" });
     const row = up.parentElement;
 
-    expect(row).toHaveClass("flex-nowrap");
-    expect(row).not.toHaveClass("flex-wrap");
+    // Four 44px coarse-pointer targets do not fit the inner width of an entry
+    // card at 390px; wrapping keeps the card from widening past the viewport.
+    expect(row).toHaveClass("flex", "flex-wrap", "min-w-0", "items-center");
+    expect(row).not.toHaveClass("flex-nowrap");
 
     for (const button of [up, down, remove]) {
       expect(button).toHaveClass(
@@ -139,8 +141,16 @@ describe("SectionFormControls", () => {
     const card = screen.getByText("Entry 1").closest("fieldset");
     const input = screen.getByLabelText("Entry name");
 
-    expect(card).toHaveClass("bg-surface-muted", "border-line");
-    expect(input).toHaveClass("bg-surface");
+    // A <fieldset> defaults to `min-width: min-content`, which lets its widest
+    // child widen the card past the phone viewport. These classes opt out.
+    expect(card).toHaveClass(
+      "bg-surface-muted",
+      "border-line",
+      "w-full",
+      "min-w-0",
+      "max-w-full",
+    );
+    expect(input).toHaveClass("bg-surface", "min-w-0", "max-w-full");
   });
 
   it("toggles visibility from the action row and dims a hidden card", () => {
@@ -374,6 +384,21 @@ describe("MonthSelect", () => {
     expect(month).toHaveClass("bg-surface", "min-h-11");
     expect(year).toHaveClass("bg-surface", "min-h-11", "min-w-0");
     expect(year).toHaveAttribute("inputmode", "numeric");
+  });
+
+  it("clamps the month + year grid to the entry card width", () => {
+    const { month } = renderSelect("2023-10");
+    const grid = screen.getByRole("group", { name: "Start date" });
+    const wrapper = grid.parentElement;
+
+    expect(wrapper).toHaveClass("w-full", "min-w-0", "max-w-full");
+    expect(grid).toHaveClass(
+      "w-full",
+      "min-w-0",
+      "max-w-full",
+      "grid-cols-[minmax(0,1fr)_minmax(0,6rem)]",
+    );
+    expect(month).toHaveClass("w-full", "min-w-0", "max-w-full");
   });
 
   it("never renders a native month input", () => {

@@ -23,11 +23,6 @@ _empty
 ## Queue (Ready for Next Run)
 ### P0 — Mobile Card Clipping & Input-to-PDF Wiring Fixes
 
-- [ ] P0: Fix expanded section cards (`Education`, `Profiles`, `Experience`, etc.) clipping off the right edge on mobile (`src/components/editor/SectionFormControls.tsx`, `src/components/editor/SectionList.tsx`).
-  1. Add `min-w-0 w-full max-w-full` to `EntryCard`'s `<fieldset>` in `SectionFormControls.tsx` (overriding CSS's default `min-width: min-content`) and `min-w-0` on the section body wrapper in `SectionList.tsx`.
-  2. Allow `EntryActions` to wrap cleanly (`flex-wrap`) on narrow widths (`< 380px`) and ensure `MonthSelect` fits within `100%` without pushing the `<fieldset>` sideways.
-  3. Add a `390x844` check in `e2e/layout-consistency.spec.ts` asserting every expanded section's `<fieldset>` and `<input>` right edge stays within the card/viewport (`rect.right <= window.innerWidth`).
-
 - [ ] P0: Wire all 5 dropped/unrendered fields to Visual Preview, Print PDF, and ATS text (`src/templates/shared/sectionData.ts`, `src/templates/shared/SectionRenderer.tsx`, `src/templates/shared/HeaderSlot.tsx`, `src/lib/ats/atsText.ts`, `src/lib/store/selectors.ts`).
   1. **`Profiles` URL-only entries:** Treat a profile entry as visible when *any* of `network`, `username`, or `url` is non-empty (in `sectionData.ts`, `selectVisibleSectionIds`, and `atsText.ts`), falling back to displaying the cleaned `url` (`example.com/path`) as a clickable link when `network`/`username` are blank.
   2. **`Basics` `website.url`:** Render `doc.basics.website.url` as a clickable `<a href>` in `HeaderSlot.tsx` (using `website.label` or cleaned `website.url` as text) and fall back to `website.url` in `atsText.ts` when `label` is empty.
@@ -71,6 +66,23 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-21 — Stopped expanded section cards clipping off the right edge on
+  phones. `EntryCard`'s `<fieldset>` now carries `w-full min-w-0 max-w-full`,
+  overriding the browser's default `min-width: min-content`, and the
+  `SectionList` row/body opt out of intrinsic widening (`min-w-0`). The four
+  `EntryActions` buttons now `flex-wrap` (keeping `shrink-0` targets) instead of
+  forcing the card wider on coarse-pointer phones, and `MonthSelect`'s two-track
+  grid is clamped with `w-full min-w-0 max-w-full` +
+  `minmax(0,1fr)/minmax(0,6rem)`. Added unit assertions for every class contract
+  and a mobile-only Playwright case that expands Profiles/Experience/Education/
+  Projects/Skills/Certifications at `390x844` and asserts every card, fieldset,
+  input, and select right edge stays inside the card/viewport. Verified
+  `npm run typecheck`, `npm test` (635 pass). Playwright remains blocked here, so
+  the geometry case is typechecked but browser-unverified. Files:
+  `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/SectionList.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-21 — Added **Copy for Workday** actions to the `ATS text` tab. The
   ATS output is unchanged byte-for-byte: `buildAtsText` now derives from a new

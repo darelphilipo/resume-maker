@@ -74,6 +74,20 @@ describe("SectionList", () => {
     ).toHaveClass("whitespace-nowrap");
   });
 
+  it("keeps the expanded body and its cards from widening the section", () => {
+    render(<SectionList />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: new RegExp(LONG_TITLE) }),
+    );
+
+    const body = document.getElementById("section-body-summary");
+    const row = body?.closest("li");
+
+    expect(body).toHaveClass("flex", "min-w-0", "flex-col");
+    expect(row).toHaveClass("min-w-0", "overflow-hidden");
+  });
+
   it("relocates hide and move actions into the expanded body", async () => {
     const user = userEvent.setup();
 

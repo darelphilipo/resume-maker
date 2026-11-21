@@ -21,7 +21,7 @@ import {
   toMonthValue,
 } from "@/lib/date/month";
 const INPUT_CLASS =
-  "min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-text caret-primary transition-colors placeholder:text-muted placeholder:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:bg-surface-muted disabled:text-muted";
+  "min-h-11 w-full min-w-0 max-w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-text caret-primary transition-colors placeholder:text-muted placeholder:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:bg-surface-muted disabled:text-muted";
 
 const ACTION_BUTTON_CLASS =
   "inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line disabled:hover:bg-transparent pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:px-2.5 pointer-coarse:py-2";
@@ -173,14 +173,14 @@ export function MonthSelect({
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
+    <div className="flex w-full min-w-0 max-w-full flex-col gap-1.5">
       <span id={labelId} className="text-sm font-medium">
         {label}
       </span>
       <div
         role="group"
         aria-labelledby={labelId}
-        className="grid grid-cols-[minmax(0,1fr)_6rem] gap-2"
+        className="grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)_minmax(0,6rem)] gap-2"
       >
         <select
           id={monthId}
@@ -381,7 +381,7 @@ export function EntryCard({
   return (
     <fieldset
       data-hidden={hidden ? "true" : undefined}
-      className={`flex flex-col gap-3 rounded-xl border border-line bg-surface-muted p-3 transition-opacity ${
+      className={`flex w-full min-w-0 max-w-full flex-col gap-3 rounded-xl border border-line bg-surface-muted p-3 transition-opacity ${
         hidden ? "opacity-60 focus-within:opacity-100 hover:opacity-100" : ""
       }`}
     >
@@ -548,7 +548,7 @@ export function EntryActions({
   }
 
   return (
-    <div ref={rootRef} className="flex flex-nowrap items-center gap-1">
+    <div ref={rootRef} className="flex min-w-0 flex-wrap items-center gap-1">
       {onToggleHidden ? (
         <button
           type="button"

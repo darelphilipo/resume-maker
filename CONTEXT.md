@@ -310,8 +310,10 @@ rediscover.
     pointer-coarse:min-w-11` targets and wrap. `flex-wrap` stays as a safety net,
     never `overflow-x-auto`: the old nowrap+overflow row hid Undo/Redo behind an
     invisible horizontal scroll strip, so users could not see that Redo existed.
-    `EntryActions` still fits on one line and keeps `flex-nowrap gap-1`. All
-    shared inputs carry `min-w-0` (`INPUT_CLASS` plus the `TextInput` /
+    `EntryActions` is now `flex-wrap gap-1` (see #60): on fine pointers the four
+    actions still share one row in the 22rem column, while coarse-pointer 44px
+    targets wrap to a second row instead of widening the card. All shared inputs
+    carry `min-w-0` (`INPUT_CLASS` plus the `TextInput` /
     `MonthInput` wrapper) so a control's intrinsic width can never force the
     narrow column sideways. Paper-size cards need an explicit `htmlFor`/`id`
     pair plus `w-full` — a bare `<label><input/></label>` does not reliably
@@ -737,6 +739,20 @@ rediscover.
      accessible label; keyword-only Skills rows fall back to the first keyword.
      `InAppBrowserNotice` reuses the same helper for its copy-link action.
 
+ 60. **`<fieldset>` needs an explicit `min-w-0` or it widens the card.** The UA
+     stylesheet gives `fieldset` `min-width: min-content`, so an `EntryCard`
+     whose widest child cannot shrink (the four coarse-pointer `EntryActions`
+     targets, a month/year grid) grows past the section card and clips off the
+     right edge at 390px — `overflow-hidden` on the row only hides the symptom.
+     `EntryCard` therefore carries `w-full min-w-0 max-w-full`, the
+     `SectionList` `<li>`/body carry `min-w-0`, and `EntryActions` uses
+     `flex-wrap` with `shrink-0` buttons so it wraps rather than widens.
+     `MonthSelect` clamps its grid (`w-full min-w-0 max-w-full` and
+     `minmax(0,1fr) / minmax(0,6rem)`), and shared `INPUT_CLASS` includes
+     `max-w-full`. Keep these when adding a new field: jsdom has no layout, so
+     the mobile Playwright geometry case (every expanded card/fieldset/input
+     `right <= card/viewport`) is the real guard.
+
 ## Verification and tooling
 
 ```powershell
@@ -797,6 +813,32 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — Mobile expanded-card clipping
+- Task: top P0 Queue item (first half of the Mobile Card Clipping & Input-to-PDF
+  Wiring Fixes pair). Expanded section cards such as Education/Profiles/
+  Experience were clipped off the right edge on phones.
+- Root cause: `<fieldset>` has a UA `min-width: min-content`, and
+  `EntryActions` was `flex-nowrap`. Four coarse-pointer 44px actions are wider
+  than the inner width of an entry card at 390px, so the fieldset's min-content
+  width widened the card; the row's `overflow-hidden` only clipped it. The
+  month/year grid could contribute the same way.
+- Fix: `EntryCard` is `w-full min-w-0 max-w-full`; the `SectionList` `<li>` and
+  expanded body are `min-w-0`; `EntryActions` is `flex-wrap` with `shrink-0`
+  buttons; `MonthSelect`'s wrapper/grid are `w-full min-w-0 max-w-full` with
+  `minmax(0,1fr) / minmax(0,6rem)` tracks; `INPUT_CLASS` adds `max-w-full`.
+  Recorded as Decision #60 and updates #31.
+- Tests: SectionFormControls (fieldset classes, wrapping action row, clamped
+  month grid/inputs) and SectionList (body + row `min-w-0`) unit cases, plus a
+  mobile-only Playwright geometry case that expands six sections at 390x844 and
+  asserts every card/fieldset/input/select right edge stays inside the card and
+  viewport. 635 pass (was 633).
+- Files: `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/SectionList.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (635 pass). Playwright remains
+  blocked here, so the new e2e geometry case is typechecked but
+  browser-unverified.
 
 ### 2026-11-21 — Copy for Workday in the ATS text tab
 - Task: top P1 Queue item. Added one-tap plain-text copying to the ATS view.
@@ -1057,30 +1099,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (592 pass), `npm run lint`. No new
   layout chrome, so no e2e case was added; Playwright remains blocked here.
-
-### 2026-11-19 — JD match trigger surfaced in the Content header
-- Task: top P1 Queue item — surface **Match to a job description** in the
-  Content panel header and add a Playwright check that it scores pasted JD
-  keywords. A full-width trigger already lived in the Content panel body, so
-  the real gaps were its placement and the missing browser-level score check.
-- `JdMatchDrawer` gained a `compact` trigger variant used by `EditorWorkspace`;
-  it keeps the accessible name "Match to a job description" and vaul's
-  `Drawer.Trigger asChild` ARIA wiring, so every existing unit/e2e selector
-  still finds it. The Content header is now a wrapping flex row
-  (`data-content-header`) with the title/description and the compact trigger,
-  which also avoids the global header (CONTEXT #25: no room for another 44px
-  control there).
-- Tests: `JdMatchDrawer` covers the compact contract; `EditorWorkspace` asserts
-  the trigger is inside the Content header; `layout-consistency.spec.ts` now
-  pastes "TypeScript, Kubernetes, and Cobol" and asserts the matched list
-  (`typescript`, `kubernetes`) and missing list (`cobol`) — it no longer only
-  checks dialog visibility.
-- Files: `src/components/editor/JdMatchDrawer.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (588 pass). Playwright remains
-  blocked in this sandbox, so the extended e2e case is typechecked but
-  browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

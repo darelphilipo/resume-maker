@@ -250,6 +250,100 @@ for (const viewport of VIEWPORTS) {
       );
     });
 
+    test("expanded section cards keep every field inside the phone viewport", async ({
+      page,
+    }) => {
+      test.skip(viewport.name !== "mobile", "phone-only card-width regression");
+
+      await createPresetResume(page);
+      await showTab(page, "Content");
+
+      for (const id of [
+        "profiles",
+        "experience",
+        "education",
+        "projects",
+        "skills",
+        "certifications",
+      ]) {
+        await expandSection(page, id);
+      }
+
+      const metrics = await page.evaluate(() => {
+        const viewportWidth = window.innerWidth;
+        const overflow: Array<{
+          section: string;
+          kind: string;
+          right: number;
+          limit: number;
+        }> = [];
+        let fieldsetCount = 0;
+        let inputCount = 0;
+
+        for (const body of Array.from(
+          document.querySelectorAll<HTMLElement>(
+            '#panel-content [id^="section-body-"]',
+          ),
+        )) {
+          const card = body.closest<HTMLElement>("li");
+          const cardRight =
+            card?.getBoundingClientRect().right ?? viewportWidth;
+          const limit = Math.min(cardRight, viewportWidth);
+
+          // The <li> itself must stay inside the viewport too; a card that
+          // widens the column is the bug this guards.
+          if (cardRight > viewportWidth + 0.5) {
+            overflow.push({
+              section: body.id,
+              kind: "card",
+              right: cardRight,
+              limit: viewportWidth,
+            });
+          }
+
+          for (const fieldset of Array.from(
+            body.querySelectorAll<HTMLElement>("fieldset"),
+          )) {
+            fieldsetCount += 1;
+            const right = fieldset.getBoundingClientRect().right;
+
+            if (right > limit + 0.5) {
+              overflow.push({
+                section: body.id,
+                kind: "fieldset",
+                right,
+                limit,
+              });
+            }
+          }
+
+          for (const input of Array.from(
+            body.querySelectorAll<HTMLElement>("input, select"),
+          )) {
+            inputCount += 1;
+            const right = input.getBoundingClientRect().right;
+
+            if (right > limit + 0.5) {
+              overflow.push({
+                section: body.id,
+                kind: input.tagName.toLowerCase(),
+                right,
+                limit,
+              });
+            }
+          }
+        }
+
+        return { viewportWidth, fieldsetCount, inputCount, overflow };
+      });
+
+      expect(metrics.fieldsetCount).toBeGreaterThan(0);
+      expect(metrics.inputCount).toBeGreaterThan(0);
+      // `rect.right <= window.innerWidth` for every expanded card, fieldset,
+      // input, and month/year select.
+      expect(metrics.overflow).toEqual([]);
+    });
+
     test("the page-count badge never overlaps the resume name", async ({
       page,
     }) => {

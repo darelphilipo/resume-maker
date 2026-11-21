@@ -353,7 +353,7 @@ export function SectionList({
           return (
             <li
               key={row.id}
-              className="overflow-hidden rounded-xl border border-black/10 bg-background"
+              className="min-w-0 overflow-hidden rounded-xl border border-black/10 bg-background"
             >
               <button
                 type="button"
@@ -384,7 +384,7 @@ export function SectionList({
               {isExpanded ? (
                 <div
                   id={bodyId}
-                  className="flex flex-col gap-3 border-t border-black/10 px-4 py-3"
+                  className="flex min-w-0 flex-col gap-3 border-t border-black/10 px-4 py-3"
                 >
                   {/* Custom section titles are edited inside CustomSectionForm. */}
                   {isCustomRow ? null : (
