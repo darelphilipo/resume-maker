@@ -81,7 +81,7 @@ jobs:
 
           const deepseekCooling = now < (state.deepseekCooldownUntil || 0);
           const hy4Cooling = now < (state.hy4CooldownUntil || 0);
-          const softCapHit = reqs24h >= 320 || state.recentRuns.length >= 10;
+          const softCapHit = reqs24h >= 320 || state.recentRuns.length >= 20;
 
           let primaryModel = "opencode/deepseek-v4.1-flash-free";
           let skip = false;
