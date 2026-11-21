@@ -10,7 +10,7 @@ import {
   SkillItemSchema,
 } from "@/lib/schema/resume.schema";
 
-import { buildAtsText, richTextToPlainText } from "./atsText";
+import { buildAtsCopyBlocks, buildAtsText, richTextToPlainText } from "./atsText";
 
 function lineIndex(text: string, line: string): number {
   return text.split("\n").indexOf(line);
@@ -227,5 +227,74 @@ describe("buildAtsText", () => {
     ];
 
     expect(buildAtsText(doc)).toBe("Ada");
+  });
+});
+
+describe("buildAtsCopyBlocks", () => {
+  it("exposes the same text as buildAtsText, split by section and entry", () => {
+    const doc = createEmptyResume();
+
+    doc.basics.name = "Ada Lovelace";
+    doc.basics.email = "ada@example.com";
+    doc.summary.content = "<p>Engineer with a focus on developer tools.</p>";
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "exp-1",
+        company: "Acme",
+        position: "Senior Engineer",
+        summary: "<ul><li>Shipped APIs</li></ul>",
+      }),
+      ExperienceItemSchema.parse({
+        id: "exp-2",
+        company: "Globex",
+        position: "Engineer",
+        hidden: true,
+      }),
+    ];
+
+    const blocks = buildAtsCopyBlocks(doc);
+
+    expect(blocks.text).toBe(buildAtsText(doc));
+    expect(blocks.header).toMatchObject({
+      id: "header",
+      text: "Ada Lovelace\nada@example.com",
+    });
+    expect(blocks.sections.map((section) => section.id)).toEqual([
+      "summary",
+      "experience",
+    ]);
+
+    const experience = blocks.sections[1];
+    const entry = experience.entries[0];
+
+    expect(entry.id).toBe("exp-1");
+    expect(entry.label).toBe("Senior Engineer");
+    expect(entry.text).toBe("Senior Engineer\nAcme\n- Shipped APIs");
+    expect(experience.text).toBe(
+      "Experience\nSenior Engineer\nAcme\n- Shipped APIs",
+    );
+    expect(blocks.text).not.toContain("Globex");
+  });
+
+  it("labels keyword-only skills entries by their first keyword", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.skills.items = [
+      SkillItemSchema.parse({
+        id: "skill-1",
+        name: "",
+        level: 0,
+        keywords: ["SQL", "Excel"],
+      }),
+    ];
+
+    const [skills] = buildAtsCopyBlocks(doc).sections;
+
+    expect(skills.entries[0]).toMatchObject({
+      id: "skill-1",
+      label: "SQL",
+      text: "SQL, Excel",
+    });
+    expect(skills.text).toBe("Skills\nSQL, Excel");
   });
 });

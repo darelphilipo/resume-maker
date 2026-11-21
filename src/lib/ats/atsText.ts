@@ -23,6 +23,25 @@ const PRIMARY_FIELDS: Record<SectionId, string> = {
   references: "name",
 };
 
+export interface AtsCopyEntry {
+  id: string;
+  label: string;
+  text: string;
+}
+
+export interface AtsCopySection {
+  id: string;
+  title: string;
+  text: string;
+  entries: AtsCopyEntry[];
+}
+
+export interface AtsCopyBlocks {
+  header: AtsCopyEntry | null;
+  sections: AtsCopySection[];
+  text: string;
+}
+
 const NAMED_ENTITIES: Record<string, string> = {
   amp: "&",
   apos: "'",
@@ -316,23 +335,65 @@ function itemLines(kind: string, item: ItemRecord): string[] {
   }
 }
 
-function itemBlocks(kind: string, items: ItemRecord[]): string[] {
-  return items
-    .map((item) => itemLines(kind, item).join("\n"))
-    .filter((block) => block !== "");
+function entryId(item: ItemRecord, fallback: string): string {
+  return typeof item.id === "string" && item.id.trim() !== ""
+    ? item.id
+    : fallback;
 }
 
-function sectionBlock(title: string, blocks: string[]): string | null {
-  const body = blocks.filter((block) => block !== "").join("\n\n");
+function entryLabel(kind: string, item: ItemRecord): string {
+  switch (kind) {
+    case "experience":
+      return text(item, "position").trim() || text(item, "company").trim();
+    case "education":
+      return text(item, "degree").trim() || text(item, "school").trim();
+    case "skills":
+      return text(item, "name").trim() || keywordList(item)[0]?.trim() || "";
+    default: {
+      const primaryField = (PRIMARY_FIELDS as Record<string, string>)[kind];
+
+      return text(item, primaryField ?? "name").trim();
+    }
+  }
+}
+
+function copyEntries(kind: string, items: ItemRecord[]): AtsCopyEntry[] {
+  return items
+    .map((item, index) => ({
+      id: entryId(item, `${kind}-${index + 1}`),
+      label: entryLabel(kind, item),
+      text: itemLines(kind, item).join("\n"),
+    }))
+    .filter((entry) => entry.text !== "");
+}
+
+function copySection(
+  id: string,
+  title: string,
+  showHeading: boolean,
+  entries: AtsCopyEntry[],
+): AtsCopySection | null {
+  const body = entries
+    .map((entry) => entry.text)
+    .filter((entry) => entry !== "")
+    .join("\n\n");
 
   if (body === "") {
     return null;
   }
 
-  return title.trim() !== "" ? `${title.trim()}\n${body}` : body;
+  const heading = showHeading ? title.trim() : "";
+  const text = heading !== "" ? `${heading}\n${body}` : body;
+
+  return {
+    id,
+    title: title.trim() || id,
+    text,
+    entries,
+  };
 }
 
-function summaryBlock(doc: ResumeDocument): string | null {
+function summaryCopySection(doc: ResumeDocument): AtsCopySection | null {
   if (doc.summary.hidden) {
     return null;
   }
@@ -343,16 +404,19 @@ function summaryBlock(doc: ResumeDocument): string | null {
     return null;
   }
 
-  return sectionBlock(
-    doc.summary.showHeading ? doc.summary.title : "",
-    [plain],
-  );
+  return copySection("summary", doc.summary.title, doc.summary.showHeading, [
+    {
+      id: "summary-text",
+      label: doc.summary.title.trim() || "Summary",
+      text: plain,
+    },
+  ]);
 }
 
-function knownSectionBlock(
+function knownCopySection(
   doc: ResumeDocument,
   sectionId: SectionId,
-): string | null {
+): AtsCopySection | null {
   const section = doc.sections[sectionId];
 
   if (section.hidden) {
@@ -369,16 +433,18 @@ function knownSectionBlock(
     return null;
   }
 
-  return sectionBlock(
-    section.showHeading ? section.title : "",
-    itemBlocks(sectionId, items),
+  return copySection(
+    sectionId,
+    section.title,
+    section.showHeading,
+    copyEntries(sectionId, items),
   );
 }
 
-function customSectionBlock(
+function customCopySection(
   doc: ResumeDocument,
   sectionId: string,
-): string | null {
+): AtsCopySection | null {
   const section = doc.customSections.find(
     (candidate) => candidate.id === sectionId,
   );
@@ -393,9 +459,11 @@ function customSectionBlock(
     return null;
   }
 
-  return sectionBlock(
-    section.showHeading ? section.title : "",
-    itemBlocks("custom", items),
+  return copySection(
+    section.id,
+    section.title,
+    section.showHeading,
+    copyEntries("custom", items),
   );
 }
 
@@ -409,20 +477,15 @@ export function resolveAtsSectionOrder(doc: ResumeDocument): string[] {
   return [...firstPage.main, ...firstPage.sidebar];
 }
 
-export function buildAtsText(doc: ResumeDocument): string {
-  const blocks: string[] = [];
-  const header = headerLines(doc);
-
-  if (header.length > 0) {
-    blocks.push(header.join("\n"));
-  }
+export function buildAtsCopyBlocks(doc: ResumeDocument): AtsCopyBlocks {
+  const sections: AtsCopySection[] = [];
 
   for (const sectionId of resolveAtsSectionOrder(doc)) {
     if (sectionId === "summary") {
-      const block = summaryBlock(doc);
+      const block = summaryCopySection(doc);
 
       if (block) {
-        blocks.push(block);
+        sections.push(block);
       }
 
       continue;
@@ -432,13 +495,36 @@ export function buildAtsText(doc: ResumeDocument): string {
       (candidate) => candidate === sectionId,
     );
     const block = knownSectionId
-      ? knownSectionBlock(doc, knownSectionId)
-      : customSectionBlock(doc, sectionId);
+      ? knownCopySection(doc, knownSectionId)
+      : customCopySection(doc, sectionId);
 
     if (block) {
-      blocks.push(block);
+      sections.push(block);
     }
   }
 
-  return blocks.join("\n\n");
+  const header = headerLines(doc);
+  const headerBlock: AtsCopyEntry | null =
+    header.length > 0
+      ? {
+          id: "header",
+          label: "Contact details",
+          text: header.join("\n"),
+        }
+      : null;
+
+  const blocks = [
+    headerBlock?.text ?? "",
+    ...sections.map((section) => section.text),
+  ].filter((block) => block !== "");
+
+  return {
+    header: headerBlock,
+    sections,
+    text: blocks.join("\n\n"),
+  };
+}
+
+export function buildAtsText(doc: ResumeDocument): string {
+  return buildAtsCopyBlocks(doc).text;
 }

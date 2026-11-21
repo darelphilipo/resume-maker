@@ -4,33 +4,11 @@ import { Copy, X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 
 import { ExportJsonButton } from "@/components/shared/ExportJsonButton";
+import { copyText } from "@/lib/clipboard/copyText";
 import {
   detectInAppBrowser,
   type InAppBrowserInfo,
 } from "@/lib/print/detectInAppBrowser";
-
-function legacyCopy(text: string): boolean {
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.setAttribute("readonly", "");
-  textarea.style.position = "fixed";
-  textarea.style.top = "0";
-  textarea.style.left = "-10000px";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-
-  let copied = false;
-
-  try {
-    copied = document.execCommand("copy");
-  } catch {
-    copied = false;
-  }
-
-  textarea.remove();
-  return copied;
-}
 
 export function InAppBrowserNotice() {
   const [info, setInfo] = useState<InAppBrowserInfo | null>(null);
@@ -52,21 +30,7 @@ export function InAppBrowserNotice() {
   }, []);
 
   async function handleCopyLink(): Promise<void> {
-    const url = window.location.href;
-    let copiedNow = false;
-
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
-        copiedNow = true;
-      }
-    } catch {
-      copiedNow = false;
-    }
-
-    if (!copiedNow) {
-      copiedNow = legacyCopy(url);
-    }
+    const copiedNow = await copyText(window.location.href);
 
     if (copiedNow) {
       setCopied(true);

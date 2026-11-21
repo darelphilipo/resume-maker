@@ -724,11 +724,24 @@ rediscover.
      rendered personal field, add it here or review mode will leak it in the
      preview/PDF.
 
+ 59. **Copy for Workday shares the ATS text contract.** `buildAtsText` is now a
+     thin wrapper over `buildAtsCopyBlocks(doc)`, which returns the header plus
+     ordered `{ id, title, text, entries }` section blocks used by the ATS tab's
+     copy controls. Any new rendered field or section must be added to those
+     builders (and therefore stays mirrored by `AtsTextView`, print, and paste
+     targets) — never build copy strings in the component. Clipboard writes go
+     through `copyText` (`src/lib/clipboard/copyText.ts`): async Clipboard API
+     first, then the legacy `execCommand("copy")` fallback, returning `false` on
+     blank input or failure so the 1.5 s **Copied** state only appears after a
+     real success. Per-entry buttons use the item's primary field as their
+     accessible label; keyword-only Skills rows fall back to the first keyword.
+     `InAppBrowserNotice` reuses the same helper for its copy-link action.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~619 tests
+npm test               # vitest, ~633 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -784,6 +797,33 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — Copy for Workday in the ATS text tab
+- Task: top P1 Queue item. Added one-tap plain-text copying to the ATS view.
+- `buildAtsText` is now a wrapper over the new pure `buildAtsCopyBlocks`, which
+  exposes the header plus ordered section and entry blocks without changing a
+  byte of the existing ATS output. Entry labels use the primary field (position,
+  degree, name, …); keyword-only Skills rows fall back to their first keyword.
+- `AtsTextView` renders the preview as section cards with a top **Copy all plain
+  text** CTA, a per-section Copy button, and compact per-entry Copy buttons. All
+  writes go through the new `copyText` helper (Clipboard API + legacy fallback),
+  with a 1.5 s **Copied** label and an `aria-live` announcement; copy-all is
+  disabled when the document is empty. `InAppBrowserNotice` now reuses the same
+  helper instead of its private legacy copy.
+- Tests: `buildAtsCopyBlocks` (full text parity, header/section/entry shapes,
+  hidden entries, keyword-only Skills labels), `copyText` (API, fallback,
+  failure, blank input), and `AtsTextView` (copy all with fake-timer reset,
+  per-section/per-entry clipboard payloads, disabled empty state). 633 pass
+  (was 625).
+- Files: `src/lib/clipboard/copyText.ts` (+ test, new),
+  `src/lib/ats/atsText.ts` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test),
+  `src/components/preview/InAppBrowserNotice.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (633 pass), `npm run lint`,
+  `npm run build` (static export; the security-advisory nudge needed the usual
+  second run). No new layout shell, so no e2e case was added; Playwright remains
+  blocked here.
 
 ### 2026-11-20 — Anonymize for review
 - Task: top P1 Queue item. Added a session-only review mode that hides
@@ -1041,27 +1081,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (588 pass). Playwright remains
   blocked in this sandbox, so the extended e2e case is typechecked but
   browser-unverified.
-
-### 2026-11-19 — Live Name edits reach the header and preview canvas
-- Task: top P1 Queue item — sync live `Name` edits to the main Preview canvas
-  and top editor header. The store commit was already on `onChange` (one
-  50 ms `useDebouncedCommit` in `BasicsForm`), so the header and canvas already
-  tracked typing without a blur; the missing pieces were a shared display-name
-  contract and a regression test for the preview-canvas half.
-- New `resumeDisplayName` (`src/lib/schema/resumeName.ts`) owns the single
-  `"Untitled resume"` fallback. Both `BasicsForm`'s Name preview and
-  `EditorWorkspace`'s header h1 call it, so an empty name always reads the same
-  and live edits stay in sync. Extended Decision #42.
-- Tests: `resumeName.test.ts` covers trim + fallback;
-  `EditorWorkspace.test.tsx` now surfaces `doc.basics.name` through the mocked
-  preview canvas and proves typing a name updates both the h1 and the canvas
-  name without a blur. 587 pass (was 583).
-- Files: `src/lib/schema/resumeName.ts` (+ test, new),
-  `src/components/editor/BasicsForm.tsx`,
-  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (587 pass), `npm run lint`. No new
-  layout chrome, so no e2e case was added; Playwright remains blocked here.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

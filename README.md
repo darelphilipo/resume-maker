@@ -171,7 +171,9 @@ in control of every line, and your data stays on your device.
   **Reset fit** pill in the preview header returns the page to 100%.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
-  apply.
+  apply. **Copy all plain text** grabs the whole resume for Workday, Greenhouse,
+  or Lever in one tap, and compact **Copy** buttons let you paste just one
+  section or one role.
 - **Anonymize for review**: tap the **Anonymize** pill in the preview header to
   replace your name, contact details, website, profile links, photo, and company
   or school names with neutral placeholders. The banner makes review mode

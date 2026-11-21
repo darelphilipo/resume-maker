@@ -26,11 +26,6 @@ _empty
 
 <!-- The stale "Match JD drawer" item was removed 2026-11-20: it is already in Done with Decision #50. -->
 
-### P1 — Quick-Win User Features
-
-- [ ] P1: Add **"Copy for Workday"** one-click copy buttons in the `ATS text` tab (`src/components/preview/AtsTextView.tsx`).
-  1. Add a top **"Copy all plain text"** button plus compact per-section and per-entry **Copy** buttons using `navigator.clipboard.writeText(...)` (with a 1.5s `"Copied"` state) outputting clean plain text ready for Workday/Greenhouse/Lever forms.
-
 ### P2 — High-Value Reddit-Inspired Features
 
 - [ ] P2: Add **Grouped Promotions (multiple roles at the same company)** in Experience (`src/types/`, `src/components/editor/ExperienceForm.tsx`, `src/templates/`, `src/components/preview/AtsTextView.tsx`).
@@ -53,6 +48,25 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-21 — Added **Copy for Workday** actions to the `ATS text` tab. The
+  ATS output is unchanged byte-for-byte: `buildAtsText` now derives from a new
+  pure `buildAtsCopyBlocks(doc)` that exposes the contact header plus ordered
+  section and entry copy blocks. `AtsTextView` renders those blocks as section
+  cards with a top **Copy all plain text** CTA, per-section Copy buttons, and
+  compact per-entry Copy buttons (entry labels use position/degree/name, or the
+  first keyword for keyword-only skills). Every write goes through the shared
+  `copyText` helper (async Clipboard API, then legacy `execCommand` fallback),
+  shows **Copied** for 1.5 s, announces through `aria-live`, and disables
+  copy-all on an empty resume; `InAppBrowserNotice` reuses the same helper.
+  Verified `npm run typecheck`, `npm test` (633 pass), `npm run lint`,
+  `npm run build` (static export; the security-advisory nudge needed the usual
+  second run). Files: `src/lib/clipboard/copyText.ts` (+ test, new),
+  `src/lib/ats/atsText.ts` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test),
+  `src/components/preview/InAppBrowserNotice.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`. No new layout shell, so no e2e case was added; Playwright remains
+  blocked here.
 
 - [x] 2026-11-20 — Added **Anonymize for review** to Preview. A new
   `anonymizeResumeDoc(doc)` returns a display-only clone with `"Alex Taylor"`,
