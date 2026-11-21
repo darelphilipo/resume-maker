@@ -331,6 +331,10 @@ describe("EditorWorkspace", () => {
     expect(titleRow).toContainElement(
       screen.getByRole("heading", { name: "Content" }),
     );
+    // The zero-AI resume check sits beside Match JD in the same row.
+    expect(titleRow).toContainElement(
+      screen.getByRole("button", { name: /Resume check:/ }),
+    );
 
     await user.click(trigger);
 

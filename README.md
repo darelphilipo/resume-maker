@@ -192,6 +192,13 @@ in control of every line, and your data stays on your device.
   block, the preview counts it and shows the opening words in a compact
   **Trim tips** list. Trimming those bullets can reclaim whole lines before you
   shrink the font or spill onto a second page.
+- **Bullet check** in the Content panel header flags the small consistency
+  problems a recruiter notices first: bullets that mix ending periods,
+  first-person pronouns, filler adverbs, and repeated opening verbs within one
+  role. Each finding shows the opening words so you can find the bullet, and
+  **Standardize bullet periods** can remove every trailing period or add one to
+  every bare bullet in a single undoable tap. The check runs locally with plain
+  rules — no AI and no network.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
   apply. **Copy all plain text** grabs the whole resume for Workday, Greenhouse,

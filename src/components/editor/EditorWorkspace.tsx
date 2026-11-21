@@ -37,6 +37,7 @@ import { DesignPanel } from "./DesignPanel";
 import { EditorLoading } from "./EditorLoading";
 import { EntryDrawer } from "./EntryDrawer";
 import { JdMatchDrawer } from "./JdMatchDrawer";
+import { ResumeLintPopover } from "./ResumeLintPopover";
 import { SectionForm } from "./SectionForm";
 import {
   MobileBottomNav,
@@ -369,7 +370,10 @@ export function EditorWorkspace() {
                 <h2 className="font-serif text-xl font-semibold tracking-tight">
                   Content
                 </h2>
-                <JdMatchDrawer doc={doc} compact />
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
+                  <ResumeLintPopover doc={doc} />
+                  <JdMatchDrawer doc={doc} compact />
+                </div>
               </div>
               <p className="text-sm text-muted">
                 Reorder, hide, or open a section to edit it.

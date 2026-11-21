@@ -24,10 +24,6 @@ _empty
 
 ### P2 — Lightweight High-Value UX Additions
 
-- [ ] P2: Add a **One-Click Bullet Period Normalizer & Zero-AI Resume Lint** drawer/popover (`src/lib/lint/resumeLint.ts`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/editor/EditorWorkspace.tsx`).
-  1. Create pure deterministic checks over visible resume sections flagging: (a) mixed trailing periods across bullets, (b) first-person pronouns (`I`, `me`, `my`, `we`, `our`), (c) filler fluff adverbs (`meticulously`, `diligently`, `synergistic`, `successfully`, `expertly`), and (d) repeated starting verbs within the same role.
-  2. Provide a compact `"Check"` badge/popover in the Content header (or next to `Match JD`) showing issue counts plus a one-click **"Standardize bullet periods"** action (`Remove all trailing periods` / `Add periods to all bullets`) that commits through the Zustand/Zundo store so it is instantly undoable.
-
 - [ ] P2: Add a **"6-Second Recruiter Scan"** preview toggle (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/ScanHighlightOverlay.tsx` or CSS class on `PageStack.tsx`).
   1. Add a session-only **6s Scan** toggle pill in the Preview toolbar (next to **Anonymize**; never applied to `PrintPortal` / exported PDF).
   2. When active, dim regular body prose (`opacity: 0.28`) while keeping high-signal scan anchors at full contrast (`Name`, `Headline`, section titles, job titles, companies, dates, `<strong>` bold spans, and numeric metrics like `%`, `$`, `x`, or digit counts) so users immediately see whether their key impact pops out in a quick skim.
@@ -60,6 +56,24 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-21 — Added the **Zero-AI Resume Lint & one-click bullet period
+  normalizer**. A compact **Check** popover sits beside **Match JD** in the
+  Content header. A new pure `resumeLint.ts` walks the visible layout through
+  `resolveSection` (hidden sections/entries excluded) and collects every
+  rich-text bullet, flagging mixed trailing periods, first-person pronouns,
+  filler adverbs, and repeated opening verbs within one role, with up to three
+  opening-word snippets per finding. The same module exposes
+  `standardizeBulletPeriods(doc, "add" | "remove")`, which clones the document,
+  preserves inline markup, leaves `? ! ; :` endings alone, and returns a new
+  doc; the popover commits it through `setDoc`, so one Zundo undo restores the
+  original prose. The badge shows `Check (N)` in amber when findings exist and a
+  quiet **Check** when clean; the panel closes on outside tap or Escape. Verified
+  `npm run typecheck`, `npm test` (713 pass), `npm run lint`. Files:
+  `src/lib/lint/resumeLint.ts` (+ test, new),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test, new),
+  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-21 — Added the **Orphan-Line & Bullet-Length Catcher**.
   `src/lib/lint/bulletMetrics.ts` measures the rendered preview `li` line

@@ -863,6 +863,26 @@ rediscover.
       work; the trim list itself is read-only and session-only, so trimming
       stays a normal user edit with undo history.
 
+  68. **Resume lint reads the document model, and only visible bullets.** The
+      zero-AI **Check** popover is not a DOM scan: `src/lib/lint/resumeLint.ts`
+      walks `metadata.layout.pages` through `resolveSection`/`visibleItems`, so
+      hidden sections and hidden entries cannot raise the badge and the Content
+      tab does not need the Preview mounted. It reads the rich-text fields that
+      contain lists (`summary.content`, experience/education/awards/volunteer/
+      publications/references `summary`, projects `description`, custom
+      `description`). Bullets are extracted with a depth-aware `<li>` scanner
+      (nested-list parents are skipped, matching `bulletMetrics`), and plain
+      text reuses `richTextToPlainText`. Findings are mixed trailing periods,
+      first-person pronouns, filler adverbs, and repeated opening verbs grouped
+      per role; articles/pronouns are excluded from the verb check so "The" is
+      not reported as a verb. `standardizeBulletPeriods(doc, "add" | "remove")`
+      clones the document, edits only visible list items, preserves inline
+      markup, leaves `? ! ; :` endings alone, and returns a new document; the
+      popover commits that through `setDoc` so it is one Zundo undo step and the
+      normal autosave path. Do not make the check mutate on render or write
+      through a per-field debounce — the single `setDoc` is what keeps undo
+      atomic.
+
 ## Verification and tooling
 
 ```powershell
@@ -923,6 +943,35 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — Zero-AI resume lint and one-click bullet periods
+- Task: top P2 Queue item. Added a compact **Check** popover beside **Match JD**
+  in the Content header and a deterministic lint pass over visible bullets.
+- Lint: new pure `src/lib/lint/resumeLint.ts`. `collectResumeBullets` walks the
+  layout order through `resolveSection` (hidden sections/entries excluded),
+  extracts top-level `<li>` spans with a depth-aware scanner, and reuses
+  `richTextToPlainText` for bullet text. `analyzeResumeLint` reports mixed
+  trailing periods, first-person pronouns, filler adverbs, and repeated opening
+  verbs per role (articles/pronouns are not treated as verbs).
+- Fix: `standardizeBulletPeriods(doc, "add" | "remove")` clones the document,
+  edits only visible list items, keeps inline markup, leaves `? ! ; :` alone,
+  and returns a new doc. The popover commits it with one `setDoc`, so a single
+  undo restores the original prose and autosave sees a normal edit.
+- UI: the trigger shows `Check (N)` in amber when findings exist and a quiet
+  `Check` when clean; the popover lists plain-language findings plus up to three
+  opening-word snippets, enables only the applicable period action, announces
+  the result, and closes on outside tap or Escape. Decision #68.
+- Tests: 11 pure cases (visibility, nested lists, mixed/consistent periods,
+  pronouns, filler/truncated snippets, repeated verbs per role, stoplist,
+  remove/add transformations, hidden entries, immutability) and 6 popover cases
+  (clean badge, counts/findings, remove + undo through the store, add,
+  disabled-with-no-bullets, Escape). 713 pass (was 696). No new layout shell, so
+  no Playwright case was added.
+- Files: `src/lib/lint/resumeLint.ts` (+ test, new),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test, new),
+  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (713 pass), `npm run lint`.
 
 ### 2026-11-21 — Orphan-line and bullet-length trim hints
 - Task: top P2 Queue item. Added a zero-AI **Trim tips** catcher for bullets
@@ -1170,37 +1219,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/preview/InAppBrowserNotice.tsx`, `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (633 pass), `npm run lint`,
-  `npm run build` (static export; the security-advisory nudge needed the usual
-  second run). No new layout shell, so no e2e case was added; Playwright remains
-  blocked here.
-
-### 2026-11-20 — Anonymize for review
-- Task: top P1 Queue item. Added a session-only review mode that hides
-  identifying details from the preview and PDF without touching saved data.
-- New pure `anonymizeResumeDoc` copies the doc and replaces basics
-  name/email/phone/location/website, hides the picture, rewrites profile
-  usernames/URLs, and gives distinct experience companies / education schools
-  stable `Company A` / `University A` labels. Empty fields stay empty, duplicates
-  share a label, and the input document is never mutated. Recorded as Decision
-  #58.
-- `EditorWorkspace` derives `previewDoc` from the existing live-name
-  `displayDoc`, so review mode also covers a name keystroke that has not hit the
-  store yet. The anonymous clone goes only to `PrintTriggerButton` and
-  `LiveCanvasViewport` (which owns `PageStack` and `AtsTextView`), so the header,
-  Dexie row, undo history, and pagination keep the real document. The print
-  title therefore uses the alias too.
-- UI: an **Anonymize** pill sits in the Preview mode header with
-  `aria-pressed`, a filled active state, and Eye/EyeSlash icon; a compact
-  `role="status"` banner explains that preview/PDF are anonymized and the saved
-  resume is unchanged.
-- Tests: helper cases for the replaced basics/profiles/picture, company/school
-  dedupe and blank handling, and immutability; workspace cases prove only the
-  preview switches to the alias (header and store keep the real name) and the
-  captured print title uses `alex-taylor-…`. 625 pass (was 619).
-- Files: `src/lib/privacy/anonymizeDoc.ts` (+ test, new),
-  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (625 pass), `npm run lint`,
   `npm run build` (static export; the security-advisory nudge needed the usual
   second run). No new layout shell, so no e2e case was added; Playwright remains
   blocked here.
