@@ -264,7 +264,9 @@ export function EditorWorkspace() {
    * The desktop shell is locked to the viewport, so every column scrolls on
    * its own instead of growing the document and producing a second scrollbar
    * at the right edge. Sticky offsets are no longer needed once the document
-   * itself cannot scroll.
+   * itself cannot scroll. On phones the shell is `fixed inset-0` for the same
+   * reason: focusing a hidden control or re-measuring the canvas must never
+   * scroll the document and slide the bottom nav into mid-screen.
    *
    * `display` picks the mobile display for the active state. The preview passes
    * `flex` because it owns a fixed-height column with its own scroller; using
@@ -282,7 +284,7 @@ export function EditorWorkspace() {
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background text-text">
+    <div className="fixed inset-0 flex h-dvh flex-col overflow-hidden bg-background text-text lg:static lg:h-dvh">
       <InAppBrowserNotice />
       <header className="editor-chrome shrink-0 sticky top-0 z-20 border-b border-line bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1600px] flex-nowrap items-center gap-x-1.5 px-2 py-1.5 sm:gap-x-2 sm:px-6">

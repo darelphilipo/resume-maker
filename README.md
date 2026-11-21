@@ -166,7 +166,9 @@ in control of every line, and your data stays on your device.
   place in Content too. Your name follows every keystroke in both the header and
   the preview canvas, without waiting for a pause. Phones keep the
   one-tab-at-a-time layout, and the tab you are on gets a filled highlight plus a
-  top indicator, so Content, Design, and Preview are never ambiguous.
+  top indicator, so Content, Design, and Preview are never ambiguous. The bottom
+  bar stays put while you switch tabs or try a new accent, template, or paper
+  size.
 - **Scroll or zoom the preview naturally**: on a phone, two fingers zoom the
   resume and a one-finger drag moves freely in any direction across the zoomed
   page. At normal size a one-finger swipe scrolls a multi-page preview smoothly

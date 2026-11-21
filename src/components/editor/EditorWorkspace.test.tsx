@@ -270,9 +270,23 @@ describe("EditorWorkspace", () => {
     ];
 
     // A viewport-tall shell removes the document scrollbar; <main> clips its
-    // grid and each column owns the only scrollbar along the right edge.
-    expect(shell).toHaveClass("h-dvh", "overflow-hidden");
-    expect(shell).not.toHaveClass("lg:h-auto", "lg:overflow-visible");
+    // grid and each column owns the only scrollbar along the right edge. On
+    // phones the same shell is fixed to the viewport, so a focused control or
+    // a canvas re-measure can never scroll the document and shift the bottom
+    // nav into mid-screen.
+    expect(shell).toHaveClass(
+      "fixed",
+      "inset-0",
+      "h-dvh",
+      "overflow-hidden",
+      "lg:static",
+      "lg:h-dvh",
+    );
+    expect(shell).not.toHaveClass(
+      "lg:h-auto",
+      "lg:overflow-visible",
+      "absolute",
+    );
     expect(main).toHaveClass("min-h-0", "flex-1", "lg:overflow-hidden");
     expect(main).not.toHaveClass("lg:overflow-visible");
 

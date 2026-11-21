@@ -144,6 +144,9 @@ describe("Launcher", () => {
     const fileInput = screen.getByLabelText("Resume PDF");
 
     expect(fileInput).toHaveAttribute("accept", ".pdf,application/pdf");
+    // The clipped input stays anchored to its dropzone, so focusing it cannot
+    // scroll the page on mobile.
+    expect(fileInput.closest("label")).toHaveClass("relative");
   });
 
   it("keeps JSON restore in a secondary Backup & Restore menu", async () => {
@@ -165,6 +168,9 @@ describe("Launcher", () => {
       "accept",
       ".json,application/json",
     );
+    expect(
+      screen.getByLabelText("Resume backup file").closest("label"),
+    ).toHaveClass("relative");
 
     await openBackupMenu(user);
 

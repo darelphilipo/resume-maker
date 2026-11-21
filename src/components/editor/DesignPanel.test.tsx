@@ -41,6 +41,20 @@ describe("DesignPanel", () => {
     expect(screen.getByRole("radio", { name: /Letter/ })).toBeChecked();
   });
 
+  it("anchors every option card so a focused hidden radio cannot scroll the page", () => {
+    render(<DesignPanel />);
+
+    const radios = screen.getAllByRole("radio");
+
+    expect(radios.length).toBeGreaterThan(0);
+
+    for (const radio of radios) {
+      // `sr-only` inputs are absolutely positioned; without a positioned card
+      // an ancestor/document scroll can jump the mobile shell on focus.
+      expect(radio.closest("label")).toHaveClass("relative");
+    }
+  });
+
   it("lists all six templates with an ATS-Safe badge on the single-column ones", () => {
     render(<DesignPanel />);
 

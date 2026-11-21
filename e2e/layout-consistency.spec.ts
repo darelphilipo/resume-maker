@@ -344,6 +344,48 @@ for (const viewport of VIEWPORTS) {
       expect(metrics.overflow).toEqual([]);
     });
 
+    test("tapping a Design accent keeps the mobile shell locked and the nav flush", async ({
+      page,
+    }) => {
+      test.skip(viewport.name !== "mobile", "phone-only shell lock regression");
+
+      await createPresetResume(page);
+      await showTab(page, "Design");
+
+      // The accent radios are `sr-only`; tap the visible card text, exactly as
+      // a user would. Changing the accent also re-measures the canvas.
+      await page.getByText("Rose", { exact: true }).click();
+      await expect(page.locator("#accent-rose")).toBeChecked();
+
+      const metrics = await page.evaluate(() => {
+        const nav = document.querySelector<HTMLElement>(
+          'nav[aria-label="Editor panels"]',
+        );
+        const shell = document.querySelector<HTMLElement>("main")
+          ?.parentElement;
+
+        return {
+          scrollY: window.scrollY,
+          innerHeight: window.innerHeight,
+          navBottom: nav?.getBoundingClientRect().bottom ?? null,
+          documentScrollHeight: document.documentElement.scrollHeight,
+          shellPosition: shell ? getComputedStyle(shell).position : null,
+        };
+      });
+
+      // Focusing the hidden radio and re-measuring must never scroll the
+      // document: the shell is fixed, so the nav stays at the viewport bottom.
+      expect(metrics.shellPosition).toBe("fixed");
+      expect(metrics.scrollY).toBe(0);
+      expect(metrics.documentScrollHeight).toBeLessThanOrEqual(
+        metrics.innerHeight + 1,
+      );
+      expect(metrics.navBottom).not.toBeNull();
+      expect(
+        Math.abs((metrics.navBottom as number) - metrics.innerHeight),
+      ).toBeLessThanOrEqual(1);
+    });
+
     test("section action buttons stay inside the expanded card", async ({
       page,
     }) => {

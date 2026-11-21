@@ -56,10 +56,13 @@ rediscover.
 ## Decisions & gotchas
 
 1. **The mobile shell owns its own scroll.** `EditorWorkspace` is
-   `flex h-dvh flex-col overflow-hidden`; `<main>` is the only scroll container
-   and `MobileBottomNav` is **in normal flow** (never `position: fixed`, which
-   anchors to the layout viewport and disappears behind mobile browser chrome).
-   Use `min-h-dvh`, not `min-h-screen`.
+   `fixed inset-0 h-dvh flex flex-col overflow-hidden lg:static lg:h-dvh`;
+   `<main>` is the only scroll container and `MobileBottomNav` is **in normal
+   flow** (never `position: fixed`, which anchors to the layout viewport and
+   disappears behind mobile browser chrome). The fixed mobile shell removes the
+   document scroll entirely, so focusing a clipped control or re-measuring the
+   canvas cannot slide the nav into mid-screen. Use `min-h-dvh`, not
+   `min-h-screen`.
 2. **`viewport-fit=cover` is required** (`src/app/layout.tsx` `viewport` export)
    or `env(safe-area-inset-*)` silently resolves to 0.
 3. **Canvas gestures differ by pointer type.** Pinch is enabled everywhere.
@@ -809,6 +812,23 @@ rediscover.
      carries `aria-describedby="resume-paste-hint"` explaining one line is
      enough.
 
+ 65. **A clipped `sr-only` input needs a positioned card, and the measure layer
+     must be 0×0.** Tapping an accent swatch focuses its hidden radio; without
+     `relative` on the `<label>`, the absolutely positioned `sr-only` input is
+     laid out against the viewport/initial containing block and the browser can
+     scroll the document to reveal it, sliding the normal-flow
+     `MobileBottomNav` into mid-screen. The shared `cardClass` in `DesignPanel`
+     is `relative`, and both Launcher file dropzones are `relative` too — keep
+     that for any new label wrapping an `sr-only` control. The mobile editor
+     root is `fixed inset-0 h-dvh flex flex-col overflow-hidden lg:static
+     lg:h-dvh` so the document cannot scroll at all (#1). `MeasureLayer` is now
+     a fixed `0×0 overflow-hidden`
+     shell; its inner `.onyx` column carries `contentWidthPx`, and the
+     zero-width guard checks that column (not the 0×0 shell), so a design change
+     still measures real widths without adding document height. The `390x844`
+     Playwright case taps **Rose** and asserts `scrollY === 0`, no document
+     overflow, and the nav bottom flush with `innerHeight`.
+
 ## Verification and tooling
 
 ```powershell
@@ -869,6 +889,34 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-21 — Mobile shell lock, anchored sr-only controls, and a 0×0 measure layer
+- Task: top P0 Queue item. Tapping a Design accent swatch (for example **Rose**)
+  could scroll the document and slide the normal-flow `MobileBottomNav` into
+  mid-screen.
+- Shell: the editor root is now `fixed inset-0 h-dvh flex flex-col
+  overflow-hidden lg:static lg:h-dvh`, so the document has no scroll range on
+  phones and `<main>` stays the only scroller. Desktop keeps the viewport-tall
+  three-column shell (Decision #51) via `lg:static lg:h-dvh`.
+- Hidden controls: the shared `DesignPanel` `cardClass` and both Launcher file
+  dropzones are `relative`, anchoring their `sr-only` inputs to their own card
+  so browser focus cannot scroll an ancestor.
+- Measure layer: the root is a fixed `0×0 overflow-hidden pointer-events-none`
+  shell; the inner `.onyx` column carries `contentWidthPx` and Onyx typography,
+  and the zero-width guard now checks that inner column. Measurements keep real
+  widths, but a re-measure can never add document height (Decision #65).
+- Tests: EditorWorkspace shell classes, DesignPanel every-radio `relative`,
+  Launcher PDF/backup labels, MeasureLayer 0×0 shell + inner width, and a
+  mobile-only Playwright case that taps **Rose** and asserts `scrollY === 0`,
+  no document overflow, and nav bottom flush with `innerHeight`. 667 pass
+  (was 665). Playwright remains blocked here, so the e2e case is typechecked
+  but browser-unverified.
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test),
+  `src/components/preview/MeasureLayer.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (667 pass), `npm run lint`.
 
 ### 2026-11-21 — Section footer clipping, six presets, and mobile tab highlight
 - Task: top P1 Queue item (four small visual/UX fixes bundled together).
@@ -1124,34 +1172,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/app/page.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (611 pass). No new layout shell, so
   no e2e case was added; Playwright remains blocked here.
-
-### 2026-11-20 — Design panel polish and the missing Density highlight
-- Task: top P1 Queue item. The In Progress slot only held a stale duplicate of
-  the already-Done live Name/entry-scroll fix, so it was cleared first.
-- Root cause (Density): `design.density` shipped after the first Dexie rows were
-  saved, and `loadResume` keeps a stored row as-is. A legacy doc therefore has
-  `density === undefined` at runtime, so `density === preset.id` never matched
-  and no card was highlighted. New pure `resolveDensityId(density, gapY,
-  lineHeight)` (known id → matching spacing → `normal`) now drives the checked
-  state; the shared card active style is a solid primary border + 10% fill +
-  subtle ring, so Density/Font/Template/Paper selections all read clearly.
-- Accent swatches: kept the accessible radio (`sr-only`) but dropped the drawn
-  circle, added a fixed right-side checkmark plus the active card border/fill,
-  and added an eighth `rose` accent so the 2-column grid is four full rows with
-  no orphaned `Indigo`. Two-row `flex-wrap` card shape from #47 is unchanged.
-- Template cards: badge now lives in one `[data-template-title-row]`
-  `justify-between` row (name wraps, badge stays nowrap top-right) instead of
-  `flex-wrap` that moved the badge line by line. Font pairing names render in
-  their own family via inline `fontFamily`.
-- Tests: `designOptions` (8 accents, `resolveDensityId` enum/spacing/fallback),
-  `DesignPanel` (badge slot matrix, hidden accent radio + checkmark, active
-  density classes, legacy doc with no stored density, density spacing, font
-  previews). 605 pass (was 599).
-- Files: `src/components/editor/DesignPanel.tsx` (+ test),
-  `src/lib/design/designOptions.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (605 pass), `npm run lint`. No new
-  layout shell, so no e2e case was added; Playwright remains blocked here.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

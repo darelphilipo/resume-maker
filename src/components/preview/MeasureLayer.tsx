@@ -45,6 +45,7 @@ export function MeasureLayer({
   plans,
 }: MeasureLayerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const onMeasureRef = useRef(onMeasure);
   const resolvedPlans = useMemo(
     () => plans ?? getSectionPlans(doc, order),
@@ -57,8 +58,9 @@ export function MeasureLayer({
 
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current;
+    const content = contentRef.current;
 
-    if (!root) {
+    if (!root || !content) {
       return;
     }
 
@@ -77,9 +79,11 @@ export function MeasureLayer({
 
       // A hidden tree (for example during print media) reports zero width.
       // Keep the last good measurements instead of overwriting them with zeros.
+      // The outer fixed box is intentionally 0×0; the inner column carries the
+      // real content width, so check that element instead.
       if (
-        root.clientWidth === 0 ||
-        root.getBoundingClientRect().width === 0
+        content.clientWidth === 0 ||
+        content.getBoundingClientRect().width === 0
       ) {
         return;
       }
@@ -155,28 +159,33 @@ export function MeasureLayer({
       ref={rootRef}
       aria-hidden="true"
       data-measure-layer=""
-      className="onyx"
       style={{
         position: "fixed",
-        left: -10000,
+        left: 0,
         top: 0,
-        width: contentWidthPx,
+        width: 0,
+        height: 0,
+        overflow: "hidden",
         visibility: "hidden",
         pointerEvents: "none",
         transform: "none",
         ...themeStyle,
       }}
     >
-      <div data-measure-id={HEADER_BLOCK_ID}>
-        <HeaderSlot doc={doc} />
+      {/* The 0×0 fixed shell above can never add document height or a scroll
+          range on mobile. This inner column keeps the real measuring width. */}
+      <div ref={contentRef} className="onyx" style={{ width: contentWidthPx }}>
+        <div data-measure-id={HEADER_BLOCK_ID}>
+          <HeaderSlot doc={doc} />
+        </div>
+        {resolvedPlans.flatMap((plan) =>
+          planBlockKeys(plan).map((key) => (
+            <div key={key} data-measure-id={key}>
+              <SectionRenderer doc={doc} pageSectionIds={[key]} />
+            </div>
+          )),
+        )}
       </div>
-      {resolvedPlans.flatMap((plan) =>
-        planBlockKeys(plan).map((key) => (
-          <div key={key} data-measure-id={key}>
-            <SectionRenderer doc={doc} pageSectionIds={[key]} />
-          </div>
-        )),
-      )}
     </div>
   );
 }

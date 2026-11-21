@@ -59,6 +59,41 @@ describe("MeasureLayer", () => {
     }
   });
 
+  it("contains the measuring column in a fixed 0x0 overflow-hidden shell", () => {
+    const restore = mockLayoutWidth(700);
+
+    try {
+      const doc = createEmptyResume();
+      const onMeasure = vi.fn();
+
+      const { container } = render(
+        <MeasureLayer
+          doc={doc}
+          order={["experience"]}
+          contentWidthPx={700}
+          onMeasure={onMeasure}
+        />,
+      );
+      const root = container.firstElementChild as HTMLElement;
+      const content = root.firstElementChild as HTMLElement;
+
+      // The off-screen shell can never add document height or a scroll range,
+      // even while a design change re-measures a tall resume.
+      expect(root.style.position).toBe("fixed");
+      expect(root.style.width).toBe("0px");
+      expect(root.style.height).toBe("0px");
+      expect(root.style.overflow).toBe("hidden");
+      expect(root.style.pointerEvents).toBe("none");
+
+      // The inner column keeps the real measuring width and Onyx typography.
+      expect(content).toHaveClass("onyx");
+      expect(content.style.width).toBe("700px");
+      expect(onMeasure).toHaveBeenCalledWith("__header", 0);
+    } finally {
+      restore();
+    }
+  });
+
   it("measures each entry of a multi-entry section separately", () => {
     const restore = mockLayoutWidth(700);
 

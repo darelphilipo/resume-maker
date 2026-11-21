@@ -22,13 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P0: Fix mobile bottom nav jumping to mid-screen when tapping Design panel radio cards like **Rose** (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/DesignPanel.tsx`, `src/components/preview/MeasureLayer.tsx`).
-  1. **Lock the mobile editor shell to the viewport:** On mobile (`< lg`), prevent `window` / `document` scrolling from shifting the editor shell (use `fixed inset-0 flex flex-col overflow-hidden lg:static lg:h-dvh` on the editor root wrapper, keeping `<main>` as the sole scrollable container and `<MobileBottomNav>` pinned at the bottom).
-  2. **Anchor every `sr-only` radio input:** Add `relative` to every `<label>` wrapping an `sr-only` `<input type="radio">` in `DesignPanel.tsx` (templates, accent colors, font pairing, density, paper size) so browser focus never scrolls an ancestor container.Also grep for sr-only across src/ (e.g. file inputs in Launcher.tsx) and ensure every <label> or container wrapping a focusable sr-only <input> has relative
-  3. **Verify off-screen `MeasureLayer`:** Ensure `MeasureLayer` is `fixed` / `overflow-hidden` (`top-0 left-0 h-0 w-0 overflow-hidden pointer-events-none`) so re-measuring on accent/design changes never expands document height on mobile.
-  4. Add a `390x844` test in `e2e/layout-consistency.spec.ts` that switches to the **Design** tab, taps **Rose**, and asserts `window.scrollY === 0` and `MobileBottomNav`'s bottom edge stays flush with `window.innerHeight`.
-
-
 ### P2 — Lightweight High-Value UX Additions
 
 - [ ] P2: Add a client-side **Orphan-Line & Bullet-Length Catcher** (`src/lib/lint/bulletMetrics.ts`, `src/components/preview/PageOverflowBanner.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
@@ -71,6 +64,26 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-21 — Locked the mobile editor shell so tapping Design accent
+  cards (**Rose**) can no longer jump the bottom nav into mid-screen. The root
+  wrapper is now `fixed inset-0 h-dvh … lg:static lg:h-dvh`, so the document
+  cannot scroll and `<main>` remains the only mobile scroller; every Design
+  option card and both Launcher file dropzones are `relative`, anchoring their
+  clipped `sr-only` inputs so focus cannot scroll an ancestor; and
+  `MeasureLayer` is a fixed `0×0 overflow-hidden` shell with an inner
+  `contentWidthPx` Onyx column, so re-measuring never contributes document
+  height while real widths (and the zero-width skip guard) are preserved. Added
+  a `390x844` Playwright case that taps **Rose** and asserts `window.scrollY ===
+  0`, no document overflow, and the mobile nav's bottom edge flush with
+  `window.innerHeight`. Verified `npm run typecheck`, `npm test` (667 pass),
+  `npm run lint`. Playwright remains blocked here, so the new e2e case is
+  typechecked but browser-unverified. Files:
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test),
+  `src/components/preview/MeasureLayer.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-21 — Fixed expanded-section footer clipping, balanced the
   Launcher role grid, clarified the paste minimum, darkened disabled Undo/Redo,

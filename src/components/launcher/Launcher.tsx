@@ -552,10 +552,12 @@ export function Launcher() {
             title="Upload a PDF"
             description="Choose an existing resume PDF and its text is read locally into editable sections. Scans and image-only files need pasted text."
           >
+            {/* `relative` keeps the clipped file input anchored to this card, so
+                focusing it cannot scroll the page (and the mobile chrome). */}
             <label
               htmlFor="resume-pdf-input"
               aria-disabled={isReadingPdf}
-              className={`flex min-h-44 flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#c9c2b6] bg-[#fbfaf7] px-4 py-6 text-center transition-colors hover:border-[#1b3a57] hover:bg-[#f6f8f9] ${
+              className={`relative flex min-h-44 flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#c9c2b6] bg-[#fbfaf7] px-4 py-6 text-center transition-colors hover:border-[#1b3a57] hover:bg-[#f6f8f9] ${
                 isReadingPdf ? "cursor-wait opacity-60" : ""
               }`}
             >
@@ -937,7 +939,7 @@ export function Launcher() {
             <label
               htmlFor="resume-backup-input"
               aria-disabled={isRestoring}
-              className={`flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#c9c2b6] bg-[#fbfaf7] px-4 py-5 text-center transition-colors hover:border-[#1b3a57] ${
+              className={`relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#c9c2b6] bg-[#fbfaf7] px-4 py-5 text-center transition-colors hover:border-[#1b3a57] ${
                 isRestoring ? "cursor-wait opacity-60" : ""
               }`}
             >

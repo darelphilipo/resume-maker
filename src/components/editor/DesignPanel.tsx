@@ -23,8 +23,12 @@ const PAGE_FORMATS: readonly { id: PageFormat; label: string; detail: string }[]
     { id: "letter", label: "Letter", detail: "8.5 × 11 in" },
   ];
 
+// `relative` anchors the `sr-only` accent radios to their own card. Without a
+// positioned ancestor, focusing a clipped input makes the browser scroll the
+// document to its static position, which slides the mobile bottom nav into
+// mid-screen.
 function cardClass(isCurrent: boolean): string {
-  return `flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
+  return `relative flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 ${
     isCurrent
       ? "border-primary bg-primary/10 ring-1 ring-primary/30"
       : "border-line hover:border-black/30"
