@@ -31,6 +31,7 @@ _empty
   1. **Section footer clipping:** Fix the section-level `Hide | Move up | Move down` button row in `SectionList.tsx` so `↑ Move up`'s arrow and `Move down` never clip against the right border of expanded cards like `Profiles` at `22rem` desktop or `390px` mobile widths.
   2. **Launcher polish:** Balance the 2-column `"OR START FROM A ROLE"` grid to 6 cards (add a 6th role preset such as *Data Analyst* or *Marketing & Growth*) so `Fresh Graduate` has no empty slot beside it, and show a subtle helper hint (or enable on any non-empty text) if `"Create resume from text"` requires a minimum character length.
   3. **Disabled Undo/Redo contrast:** Slightly darken disabled Undo/Redo icon opacity/color in `EditorWorkspace.tsx` so the icons remain clearly legible before the first edit.
+  4. Add a highlight on the tab the user is currently on content /design /preview 
 
 ### P2 — High-Value Reddit-Inspired Features
 
