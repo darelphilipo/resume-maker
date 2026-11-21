@@ -21,6 +21,14 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
+
+- [ ] P0: Fix mobile bottom nav jumping to mid-screen when tapping Design panel radio cards like **Rose** (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/DesignPanel.tsx`, `src/components/preview/MeasureLayer.tsx`).
+  1. **Lock the mobile editor shell to the viewport:** On mobile (`< lg`), prevent `window` / `document` scrolling from shifting the editor shell (use `fixed inset-0 flex flex-col overflow-hidden lg:static lg:h-dvh` on the editor root wrapper, keeping `<main>` as the sole scrollable container and `<MobileBottomNav>` pinned at the bottom).
+  2. **Anchor every `sr-only` radio input:** Add `relative` to every `<label>` wrapping an `sr-only` `<input type="radio">` in `DesignPanel.tsx` (templates, accent colors, font pairing, density, paper size) so browser focus never scrolls an ancestor container.Also grep for sr-only across src/ (e.g. file inputs in Launcher.tsx) and ensure every <label> or container wrapping a focusable sr-only <input> has relative
+  3. **Verify off-screen `MeasureLayer`:** Ensure `MeasureLayer` is `fixed` / `overflow-hidden` (`top-0 left-0 h-0 w-0 overflow-hidden pointer-events-none`) so re-measuring on accent/design changes never expands document height on mobile.
+  4. Add a `390x844` test in `e2e/layout-consistency.spec.ts` that switches to the **Design** tab, taps **Rose**, and asserts `window.scrollY === 0` and `MobileBottomNav`'s bottom edge stays flush with `window.innerHeight`.
+
+
 ### P2 — Lightweight High-Value UX Additions
 
 - [ ] P2: Add a client-side **Orphan-Line & Bullet-Length Catcher** (`src/lib/lint/bulletMetrics.ts`, `src/components/preview/PageOverflowBanner.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
