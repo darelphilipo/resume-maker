@@ -25,6 +25,11 @@ import {
 } from "react";
 
 import { actionVerbInsertion } from "@/lib/richtext/actionVerbs";
+import {
+  BULLET_FORMULAS,
+  bulletFormulaInsertion,
+  type BulletFormula,
+} from "@/lib/richtext/bulletFormulas";
 import { sanitizeRichText } from "@/lib/richtext/sanitize";
 
 export const ACTION_VERBS = ["Built", "Reduced", "Led", "Automated"] as const;
@@ -75,7 +80,6 @@ export function RichTextField({
   actionHelpers = false,
 }: RichTextFieldProps) {
   const onChangeRef = useRef(onChange);
-  const actionHintId = useId();
   const helperPanelId = useId();
   const [helpersOpen, setHelpersOpen] = useState(true);
 
@@ -158,13 +162,13 @@ export function RichTextField({
     editor.commands.setContent(next, { emitUpdate: false });
   }, [editor, value]);
 
-  function insertActionVerb(verb: string): void {
+  function insertAtCursor(build: (textBeforeCursor: string) => string): void {
     if (!editor) {
       return;
     }
 
     const { $from } = editor.state.selection;
-    const beforeCursor =
+    const textBeforeCursor =
       $from.parentOffset > 0
         ? $from.parent.textBetween(
             $from.parentOffset - 1,
@@ -174,11 +178,17 @@ export function RichTextField({
           )
         : "";
 
-    editor
-      .chain()
-      .focus()
-      .insertContent(actionVerbInsertion(verb, beforeCursor))
-      .run();
+    editor.chain().focus().insertContent(build(textBeforeCursor)).run();
+  }
+
+  function insertActionVerb(verb: string): void {
+    insertAtCursor((beforeCursor) => actionVerbInsertion(verb, beforeCursor));
+  }
+
+  function insertBulletFormula(formula: BulletFormula): void {
+    insertAtCursor((beforeCursor) =>
+      bulletFormulaInsertion(formula, beforeCursor),
+    );
   }
 
   function toggleLink(): void {
@@ -306,18 +316,32 @@ export function RichTextField({
               id={helperPanelId}
               className="flex flex-col gap-1.5 px-2 pb-1.5"
             >
-              <p id={actionHintId} className="text-xs text-muted">
-                <span className="font-medium text-text">
-                  [Action] + [What] + [Result by X%]
-                </span>{" "}
-                <span>
-                  e.g. Built a checkout flow that reduced drop-off by 18%.
-                </span>
-              </p>
+              <div
+                role="group"
+                aria-label="Impact bullet formulas"
+                className="flex flex-wrap items-stretch gap-1"
+              >
+                {BULLET_FORMULAS.map((formula) => (
+                  <button
+                    key={formula.verb}
+                    type="button"
+                    aria-label={`Insert impact formula ${formula.template}`}
+                    disabled={!editor}
+                    onClick={() => insertBulletFormula(formula)}
+                    className="inline-flex min-h-9 max-w-full items-start whitespace-normal rounded-md border border-line bg-surface px-2 py-1 text-left text-xs leading-snug text-muted transition-colors hover:border-black/30 hover:text-text active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line pointer-coarse:min-h-11"
+                  >
+                    <span className="font-medium text-text">
+                      {formula.verb}
+                    </span>{" "}
+                    <span>
+                      {formula.template.slice(formula.verb.length).trimStart()}
+                    </span>
+                  </button>
+                ))}
+              </div>
               <div
                 role="group"
                 aria-label="Action verb helpers"
-                aria-describedby={actionHintId}
                 className="flex flex-wrap items-center gap-1"
               >
                 {ACTION_VERBS.map((verb) => (

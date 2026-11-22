@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { actionVerbInsertion } from "./actionVerbs";
+import { actionVerbInsertion, textInsertion } from "./actionVerbs";
 
 describe("actionVerbInsertion", () => {
   it("prepends a space after non-whitespace text", () => {
@@ -15,5 +15,13 @@ describe("actionVerbInsertion", () => {
 
   it("starts cleanly at the beginning of a line", () => {
     expect(actionVerbInsertion("Automated", "")).toBe("Automated ");
+  });
+});
+
+describe("textInsertion", () => {
+  it("prepends a single space only after non-whitespace text", () => {
+    expect(textInsertion("Built [feature]", ".")).toBe(" Built [feature]");
+    expect(textInsertion("Built [feature]", " ")).toBe("Built [feature]");
+    expect(textInsertion("Built [feature]", "")).toBe("Built [feature]");
   });
 });

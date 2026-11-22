@@ -202,14 +202,20 @@ rediscover.
     cards). Export stays in the editor header (`ExportJsonButton`), and the
     disclosure copy points users there. PDF upload now has its own input and
     error state; do not fold JSON back into the primary file picker.
-22. **Action-verb helpers are opt-in and insert plain text.** `RichTextField`'s
-    `actionHelpers` prop renders the `[Action] + [What] + [Result by X%]` prompt
-    and four 44px chips (Built, Reduced, Led, Automated). A chip inserts the verb
-    plus a trailing space at the cursor via TipTap `insertContent`; it does not
-    wrap the current selection or add formatting. Only achievement-style fields
-    (Experience and Projects descriptions) pass the prop — Summary, award
-    notes, and reference notes stay prose-only. Keep the chips local and
-    client-side: no AI suggestions, prompts, or network calls.
+22. **Action-verb and impact-formula helpers are opt-in and insert plain text.**
+    `RichTextField`'s `actionHelpers` prop renders four one-tap action verbs
+    (Built, Reduced, Led, Automated) and four tappable impact formulas
+    (`BULLET_FORMULAS` in `src/lib/richtext/bulletFormulas.ts`). A verb inserts
+    the verb plus a trailing space at the cursor; a formula inserts its whole
+    fill-in skeleton (bracketed placeholders intact) plus a trailing space. Both
+    go through TipTap `insertContent` and the shared `textInsertion` spacing rule
+    in `actionVerbs.ts`, so they do not wrap the current selection, add
+    formatting, or glue themselves to the preceding word. The formulas replace
+    the old static `[Action] + [What] + [Result by X%]` paragraph in the
+    collapsible strip rather than adding another stacked helper row. Only
+    achievement-style fields (Experience and Projects descriptions) pass the
+    prop — Summary, award notes, and reference notes stay prose-only. Keep the
+    helpers local and client-side: no AI suggestions, prompts, or network calls.
 23. **The home page is a landing page, not a bare form.** `src/app/page.tsx`
     owns the only `h1`, the `Resume Maker` wordmark; the e2e a11y and page tests
     look that heading up by name, so the value proposition stays an `h2`. The
@@ -1138,6 +1144,28 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-22 — Tappable impact-bullet formulas in RichTextField
+- Task: top P2 Queue item. The writing-helper strip now opens with four tappable
+  Zero-AI fill-in formulas instead of a static prompt.
+- Helper: new pure `bulletFormulas.ts` owns `BULLET_FORMULAS` and
+  `bulletFormulaInsertion`; the generic `textInsertion` in `actionVerbs.ts` keeps
+  the leading-space rule shared with the verb chips. A formula inserts its full
+  bracketed skeleton plus a trailing space at the cursor, so the user only
+  replaces the placeholders and the normal debounced save/undo path owns the
+  edit.
+- UI: `RichTextField` replaces the hint paragraph with an **Impact bullet
+  formulas** group; the existing verb chips stay in their own compact group, so
+  the strip does not gain an extra stacked row. The whole strip remains
+  collapsible through **Writing helpers**. Decision #22 updated.
+- Tests: formula data/insertion cases, generic insertion spacing, formula group
+  rendering/classes, formula insert and leading-space component cases, and the
+  collapse/reopen coverage now includes both groups. 850 pass (was 843).
+- Files: `src/lib/richtext/bulletFormulas.ts` (+ test, new),
+  `src/lib/richtext/actionVerbs.ts` (+ test),
+  `src/components/editor/RichTextField.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (850 pass), `npm run lint`.
+
 ### 2026-11-22 — Application status and target-company tags on Recent resumes
 - Task: top P2 Queue item. Saved resumes on `/` can now be tracked as
   **Master / Draft / Applied / Interview / Offer** and tagged with a target
@@ -1377,33 +1405,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/templates/studio/StudioSidebarTemplate.tsx`, `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (735 pass), `npm run lint`.
-
-### 2026-11-21 — Quiet bullet helpers and mobile-safe overlays
-- Task: top P0 Queue item (three bundled mobile/preview defects).
-- Bullet polish: the Content-header trigger is now a quiet text button named
-  **Bullet polish** (muted when clean, amber with a count) instead of a bordered
-  **Check** CTA competing with **Match JD**. Its panel is `fixed inset-x-4
-  top-20` on phones and a `lg:absolute lg:right-0 lg:w-80` popover in the 22rem
-  column, with an explicit X close; the old `absolute right-0 w-72` panel could
-  clip off the left edge. Decision #70; #68 updated.
-- Trim tips: `BulletTrimTips` is no longer a `<details>` inside the `shrink-0`
-  Preview chrome. It is a compact pill that opens a dismissible
-  `role="dialog"` overlay (backdrop tap, X, Escape) so the mobile preview keeps
-  its height. `PageOverflowBanner` no longer renders the trim summary, removing
-  the duplicate sentence; the dialog owns it.
-- Copy: `summarizeBulletIssues` uses a `wordRangeLabel` helper so a one-word
-  orphan reads "1 word" instead of "1–1 word".
-- Tests: panel clamp/close and trigger contract in `ResumeLintPopover`; dialog
-  open/close/Escape and no banner duplication in `PageOverflowBanner`; the
-  LiveCanvasViewport scan test now opens the pill; a one-word summary case in
-  `bulletMetrics`. 731 pass (was 727).
-- Files: `src/components/editor/ResumeLintPopover.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.test.tsx`,
-  `src/components/preview/PageOverflowBanner.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/lib/lint/bulletMetrics.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (731 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

@@ -26,15 +26,29 @@ _empty
 
 ### P2 — High-Value Reddit-Inspired Features
 
-- [ ] P2: Upgrade the existing `RichTextField` writing hint into **tappable Zero-AI XYZ / STAR Impact Bullet Formulas** (`src/components/editor/RichTextField.tsx`).
-  1. Replace the static `[Action] + [What] + [Result by X%]` text hint inside the collapsible helper strip with 4 tappable fill-in formula chips (`Reduced [metric] by [X%] by [action]`, `Built [feature/system] for [N] users, improving [outcome]`, `Led [team/project] to deliver [result]`, `Automated [workflow], saving [N] hrs/wk`) that insert cleanly at the cursor without adding a second stacked helper row.
-
 ### P2 — Larger work
 
 - [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Turned the `RichTextField` writing hint into **tappable
+  Zero-AI XYZ/STAR impact-bullet formulas**. The collapsible **Writing helpers**
+  strip now opens with four fill-in chips (`Reduced [metric] by [X%] by
+  [action]`, `Built [feature/system] for [N] users, improving [outcome]`,
+  `Led [team/project] to deliver [result]`, `Automated [workflow], saving
+  [N] hrs/wk`) instead of a static `[Action] + [What] + [Result by X%]`
+  paragraph. A new pure `BULLET_FORMULAS` / `bulletFormulaInsertion` module
+  inserts the full bracketed skeleton at the cursor with the shared leading-space
+  rule, so the user only replaces placeholders; the existing verb chips keep
+  their own compact row, so the strip does not gain another stacked row. Added
+  formula data/insertion and component chip/insertion/spacing/collapse
+  regressions. Verified `npm run typecheck`, `npm test` (850 pass),
+  `npm run lint`. Files: `src/lib/richtext/bulletFormulas.ts` (+ test, new),
+  `src/lib/richtext/actionVerbs.ts` (+ test),
+  `src/components/editor/RichTextField.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-22 — Added **Application Status & Target Company tags** to
   **Recent resumes** on `/`. Saved rows now carry optional `status`

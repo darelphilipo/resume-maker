@@ -101,10 +101,14 @@ in control of every line, and your data stays on your device.
   editor undo. All eight formatting controls share one tidy row, even in the
   narrow desktop Content column. Experience and project bullets offer a compact
   row of one-tap action verbs (**Built**, **Reduced**, **Led**, **Automated**)
-  and an `[Action] + [What] + [Result by X%]` prompt; tap **Writing helpers** to
-  tuck that row away so your bullets stay in view. Achievements start with impact
-  and end with a number. The verb lands cleanly after the existing sentence and
-  gets a leading space when needed, so words never run together. A blank bullet
+  plus four tappable fill-in formulas: **Reduced [metric] by [X%] by [action]**,
+  **Built [feature/system] for [N] users, improving [outcome]**,
+  **Led [team/project] to deliver [result]**, and
+  **Automated [workflow], saving [N] hrs/wk**. Tap a formula to drop the whole
+  skeleton at your cursor, replace the bracketed parts with your own facts, and
+  keep the result. Everything inserts cleanly after the existing sentence with a
+  leading space when needed, so words never run together; tap **Writing
+  helpers** to tuck the strip away so your bullets stay in view. A blank bullet
   left at the end of a list is ignored in the preview, PDF, and ATS text, so it
   never prints as a stray dot.
 - Skills grouped by an optional category with comma-separated keywords (for
