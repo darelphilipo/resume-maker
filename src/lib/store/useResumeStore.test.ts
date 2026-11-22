@@ -113,6 +113,26 @@ describe("saveNow", () => {
     expect(useResumeStore.getState().lastSavedAt).toEqual(expect.any(Number));
   });
 
+  it("keeps the launcher's tracking tags when saving", async () => {
+    const id = "tracked-resume";
+    await putResume({
+      id,
+      updatedAt: 1_000,
+      doc: createEmptyResume(),
+      status: "interview",
+      targetCompany: "Acme",
+    });
+    await useResumeStore.getState().loadResume(id);
+    useResumeStore.getState().patchDoc({ basics: { name: "Tracked Person" } });
+
+    await useResumeStore.getState().saveNow();
+
+    const row = await getResume(id);
+    expect(row?.doc.basics.name).toBe("Tracked Person");
+    expect(row?.status).toBe("interview");
+    expect(row?.targetCompany).toBe("Acme");
+  });
+
   it("does nothing when no resume is active", async () => {
     await expect(useResumeStore.getState().saveNow()).resolves.toBeUndefined();
     expect(useResumeStore.getState().saveState).toBe("idle");

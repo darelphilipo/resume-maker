@@ -4,11 +4,24 @@ import { newId } from "@/lib/schema/defaults";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 
 import { UNTITLED_RESUME } from "./recentResumes";
+import {
+  normalizeTargetCompany,
+  resumeStatusOf,
+  resumeTargetCompany,
+  type ResumeStatus,
+} from "./resumeTracking";
 
 export type ResumeRow = {
   id: string;
   updatedAt: number;
   doc: ResumeDocument;
+  /**
+   * Application tracking lives on the row so JSON backups stay pure resume
+   * data. Both fields are optional: rows written before tracking existed load
+   * as a master resume with no target company.
+   */
+  status?: ResumeStatus;
+  targetCompany?: string;
 };
 
 export const RESUME_DB_NAME = "resume-maker";
@@ -28,6 +41,67 @@ export const resumeDb = new ResumeDatabase();
 
 export async function putResume(row: ResumeRow): Promise<void> {
   await resumeDb.resumes.put(row);
+}
+
+/**
+ * Saves only the document. The launcher's status/target-company tags live on
+ * the same row, so a plain `putResume({ id, updatedAt, doc })` would erase
+ * them. Read-merge-write keeps tracking metadata intact through every autosave.
+ */
+export async function saveResumeDoc(
+  id: string,
+  doc: ResumeDocument,
+): Promise<ResumeRow> {
+  const existing = await getResume(id);
+  const row: ResumeRow = {
+    ...existing,
+    id,
+    updatedAt: Date.now(),
+    doc,
+  };
+
+  await putResume(row);
+
+  return row;
+}
+
+export type ResumeMetaPatch = {
+  status?: ResumeStatus;
+  targetCompany?: string;
+};
+
+/**
+ * Updates only the launcher's tracking tags. `updatedAt` is deliberately left
+ * alone: changing a status is not a resume edit, and it must not reorder the
+ * "Recent resumes" list under the user's finger. A blank company tag removes
+ * the field instead of storing an empty string.
+ */
+export async function updateResumeMeta(
+  id: string,
+  patch: ResumeMetaPatch,
+): Promise<ResumeRow | null> {
+  const row = await getResume(id);
+
+  if (!row) {
+    return null;
+  }
+
+  const next: ResumeRow = {
+    ...row,
+    status: patch.status ?? resumeStatusOf(row),
+    targetCompany:
+      patch.targetCompany === undefined
+        ? resumeTargetCompany(row)
+        : normalizeTargetCompany(patch.targetCompany),
+  };
+
+  if (next.targetCompany === "") {
+    delete next.targetCompany;
+  }
+
+  await putResume(next);
+
+  return next;
 }
 
 export async function getResume(id: string): Promise<ResumeRow | undefined> {
@@ -68,6 +142,8 @@ export async function duplicateResume(id: string): Promise<ResumeRow | null> {
       ...row.doc,
       basics: { ...row.doc.basics, name },
     },
+    status: row.status,
+    targetCompany: row.targetCompany,
   };
 
   await putResume(copy);

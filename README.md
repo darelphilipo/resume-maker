@@ -39,9 +39,14 @@ in control of every line, and your data stays on your device.
 - **Recent resumes** on the home page list what you already saved in this
   browser, newest first. The five most recent show first, with a **Show all**
   toggle for the rest; tap anywhere on a row to reopen it, or use its buttons to
-  rename, duplicate, or delete it. A duplicate is saved as a separate copy
-  labelled **(Copy)**, so you can tailor one version for a job without changing
-  the original. Nothing leaves the device.
+  rename, duplicate, or delete it. Each row carries a status pill — **Master**,
+  **Draft**, **Applied**, **Interview**, or **Offer** — and an optional target
+  company tag, so you can see at a glance where each copy stands. Change a
+  status from the pill or type a company name right in the row without opening
+  the resume; when you have more than one saved, a compact filter line narrows
+  the list to a single status. A duplicate is saved as a separate copy labelled
+  **(Copy)**, keeping the same tracking tags, so you can tailor one version for
+  a job without changing the original. Nothing leaves the device.
 - **PDF import**: choose a PDF and its text is read locally in your browser,
   then split into editable contact details, summary, experience, education, and
   skills. Scanned or image-only PDFs need to be pasted as text instead.

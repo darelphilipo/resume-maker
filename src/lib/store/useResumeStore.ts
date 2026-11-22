@@ -8,7 +8,7 @@ import type {
   TemplateId,
 } from "@/lib/schema/resume.schema";
 
-import { getResume, putResume } from "./db";
+import { getResume, putResume, saveResumeDoc } from "./db";
 
 export type SaveState = "idle" | "saving" | "error";
 
@@ -141,7 +141,7 @@ export const useResumeStore = create<ResumeStore>()(
         set({ saveState: "saving" });
 
         try {
-          await putResume({ id: resumeId, updatedAt: Date.now(), doc });
+          await saveResumeDoc(resumeId, doc);
           set({ lastSavedAt: Date.now(), saveState: "idle" });
         } catch {
           set({ saveState: "error" });
@@ -211,7 +211,7 @@ async function flushPendingSave(): Promise<void> {
   useResumeStore.getState().setSaveState("saving");
 
   try {
-    await putResume({ id: resumeId, updatedAt: Date.now(), doc });
+    await saveResumeDoc(resumeId, doc);
     useResumeStore.setState({ lastSavedAt: Date.now(), saveState: "idle" });
   } catch {
     useResumeStore.getState().setSaveState("error");

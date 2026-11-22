@@ -3,6 +3,7 @@
 import {
   ArrowRight,
   BoxArrowDown,
+  Briefcase,
   CaretDown,
   CircleNotch,
   ClipboardText,
@@ -41,12 +42,26 @@ import {
   duplicateResume,
   listRecentResumes,
   renameResume,
+  updateResumeMeta,
   type ResumeRow,
 } from "@/lib/store/db";
 import {
   recentResumeEditedLabel,
   recentResumeName,
 } from "@/lib/store/recentResumes";
+import {
+  filterResumesByStatus,
+  isResumeStatus,
+  normalizeTargetCompany,
+  RESUME_STATUSES,
+  RESUME_STATUS_LABELS,
+  resolveStatusFilter,
+  resumeStatusCounts,
+  resumeStatusOf,
+  resumeTargetCompany,
+  type ResumeStatus,
+  type ResumeStatusFilter,
+} from "@/lib/store/resumeTracking";
 import { useResumeStore } from "@/lib/store/useResumeStore";
 
 const INVALID_FILE_MESSAGE =
@@ -74,6 +89,14 @@ const TRUST_POINTS = [
 
 const INPUT_CLASS =
   "mt-2 w-full rounded-xl border border-[#d8d2c6] bg-[#fbfaf7] px-3 py-2.5 text-sm text-[#172839] transition-colors placeholder:text-[#8a8f94] focus-visible:border-[#1b3a57] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/15";
+
+const STATUS_BADGE_CLASSES: Record<ResumeStatus, string> = {
+  master: "border-[#d8d2c6] bg-[#f1ede5] text-[#33465a]",
+  draft: "border-[#d8d2c6] bg-white text-[#5b6a7a]",
+  applied: "border-[#bcd3e8] bg-[#eef5fb] text-[#1b3a57]",
+  interview: "border-[#e2d09a] bg-[#fdf5dd] text-[#8a5a12]",
+  offer: "border-[#b9d8c3] bg-[#ecf7ef] text-[#1f6b3a]",
+};
 
 type EntryCardProps = {
   headingId: string;
@@ -125,6 +148,101 @@ function EntryCard({
   );
 }
 
+type RecentResumeTrackingProps = {
+  row: ResumeRow;
+  name: string;
+  saving: boolean;
+  onStatusChange(row: ResumeRow, status: ResumeStatus): void;
+  onTargetCompanyChange(row: ResumeRow, targetCompany: string): void;
+};
+
+/**
+ * Compact tracking row under a saved resume: a status pill that doubles as a
+ * quick selector and an editable target-company tag. Both stop row-click
+ * propagation so editing a tag never opens the resume. Local drafts keep typing
+ * smooth; the parent remounts it when the stored values change.
+ */
+function RecentResumeTracking({
+  row,
+  name,
+  saving,
+  onStatusChange,
+  onTargetCompanyChange,
+}: RecentResumeTrackingProps) {
+  const storedCompany = resumeTargetCompany(row);
+  const [statusDraft, setStatusDraft] = useState<ResumeStatus>(() =>
+    resumeStatusOf(row),
+  );
+  const [companyDraft, setCompanyDraft] = useState(storedCompany);
+
+  function commitCompany() {
+    const next = normalizeTargetCompany(companyDraft);
+
+    setCompanyDraft(next);
+
+    if (next !== storedCompany) {
+      onTargetCompanyChange(row, next);
+    }
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <label htmlFor={`recent-status-${row.id}`} className="sr-only">
+        Application status for {name}
+      </label>
+      <select
+        id={`recent-status-${row.id}`}
+        value={statusDraft}
+        disabled={saving}
+        onClick={(event) => event.stopPropagation()}
+        onChange={(event) => {
+          event.stopPropagation();
+
+          const next = event.currentTarget.value;
+
+          if (!isResumeStatus(next)) {
+            return;
+          }
+
+          setStatusDraft(next);
+          onStatusChange(row, next);
+        }}
+        className={`min-h-9 shrink-0 rounded-full border px-2.5 text-xs font-semibold transition-colors pointer-coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/30 disabled:cursor-wait disabled:opacity-60 ${STATUS_BADGE_CLASSES[statusDraft]}`}
+      >
+        {RESUME_STATUSES.map((status) => (
+          <option key={status} value={status}>
+            {RESUME_STATUS_LABELS[status]}
+          </option>
+        ))}
+      </select>
+
+      <label
+        htmlFor={`recent-company-${row.id}`}
+        onClick={(event) => event.stopPropagation()}
+        className="flex min-h-9 min-w-0 flex-1 basis-40 cursor-text items-center gap-1.5 rounded-full border border-dashed border-[#d8d2c6] bg-white px-3 transition-colors pointer-coarse:min-h-11 focus-within:border-[#1b3a57]"
+      >
+        <span className="sr-only">Target company for {name}</span>
+        <Briefcase size={13} aria-hidden className="shrink-0 text-[#7a8794]" />
+        <input
+          id={`recent-company-${row.id}`}
+          value={companyDraft}
+          disabled={saving}
+          placeholder="Target company"
+          onChange={(event) => setCompanyDraft(event.currentTarget.value)}
+          onBlur={commitCompany}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              event.currentTarget.blur();
+            }
+          }}
+          className="min-h-9 min-w-0 flex-1 bg-transparent text-xs text-[#172839] placeholder:text-[#8a8f94] pointer-coarse:min-h-11 focus-visible:outline-none disabled:cursor-wait"
+        />
+      </label>
+    </div>
+  );
+}
+
 export function Launcher() {
   const router = useRouter();
   const [pastedText, setPastedText] = useState("");
@@ -147,6 +265,9 @@ export function Launcher() {
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showAllRecent, setShowAllRecent] = useState(false);
+  const [statusFilter, setStatusFilter] =
+    useState<ResumeStatusFilter>("all");
+  const [savingMetaId, setSavingMetaId] = useState<string | null>(null);
 
   const refreshRecent = useCallback(async () => {
     try {
@@ -458,6 +579,67 @@ export function Launcher() {
     }
   }
 
+  async function handleStatusChange(row: ResumeRow, status: ResumeStatus) {
+    if (savingMetaId) {
+      return;
+    }
+
+    setSavingMetaId(row.id);
+    setRecentError(null);
+
+    try {
+      const updated = await updateResumeMeta(row.id, { status });
+
+      if (!updated) {
+        setRecentError(RECENT_MISSING_MESSAGE);
+      }
+
+      await refreshRecent();
+    } catch {
+      setRecentError(RECENT_ERROR_MESSAGE);
+    } finally {
+      setSavingMetaId(null);
+    }
+  }
+
+  async function handleTargetCompanyChange(
+    row: ResumeRow,
+    targetCompany: string,
+  ) {
+    if (savingMetaId) {
+      return;
+    }
+
+    setSavingMetaId(row.id);
+    setRecentError(null);
+
+    try {
+      const updated = await updateResumeMeta(row.id, { targetCompany });
+
+      if (!updated) {
+        setRecentError(RECENT_MISSING_MESSAGE);
+      }
+
+      await refreshRecent();
+    } catch {
+      setRecentError(RECENT_ERROR_MESSAGE);
+    } finally {
+      setSavingMetaId(null);
+    }
+  }
+
+  const recentRows = recent ?? [];
+  const statusCounts = resumeStatusCounts(recentRows);
+  const activeStatusFilter = resolveStatusFilter(recentRows, statusFilter);
+  const filteredRecent = filterResumesByStatus(
+    recentRows,
+    activeStatusFilter,
+  );
+  const statusFilterOptions: ResumeStatusFilter[] = [
+    "all",
+    ...RESUME_STATUSES.filter((status) => statusCounts[status] > 0),
+  ];
+
   return (
     <div className="mt-7 flex flex-col gap-5 sm:mt-9">
       <ul
@@ -702,14 +884,49 @@ export function Launcher() {
               </p>
             ) : (
               <div className="flex flex-col gap-2">
+                {recent.length >= 2 ? (
+                  <div
+                    role="group"
+                    aria-label="Filter recent resumes by status"
+                    className="flex flex-wrap gap-1.5"
+                  >
+                    {statusFilterOptions.map((filter) => {
+                      const isActive = activeStatusFilter === filter;
+                      const count =
+                        filter === "all"
+                          ? recent.length
+                          : statusCounts[filter];
+
+                      return (
+                        <button
+                          key={filter}
+                          type="button"
+                          aria-pressed={isActive}
+                          onClick={() => setStatusFilter(filter)}
+                          className={`min-h-9 rounded-full border px-2.5 text-xs font-medium transition-colors pointer-coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/30 ${
+                            isActive
+                              ? "border-[#1b3a57] bg-[#1b3a57] text-white"
+                              : "border-[#e3ddd2] bg-white text-[#33465a] hover:border-[#c9c2b6]"
+                          }`}
+                        >
+                          {filter === "all"
+                            ? "All"
+                            : RESUME_STATUS_LABELS[filter]}{" "}
+                          ({count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
                 <ul
                   id="recent-resume-list"
                   aria-label="Recent resumes"
                   className="flex flex-col gap-2"
                 >
                   {(showAllRecent
-                    ? recent
-                    : recent.slice(0, RECENT_INITIAL_COUNT)
+                    ? filteredRecent
+                    : filteredRecent.slice(0, RECENT_INITIAL_COUNT)
                   ).map((row) => {
                     const name = recentResumeName(row);
                     const isOpening = openingRecentId === row.id;
@@ -717,7 +934,10 @@ export function Launcher() {
                     const isDeleting = deletingId === row.id;
                     const isDuplicating = duplicatingId === row.id;
                     const rowIsInteractive =
-                      isRenaming || isDeleting || isDuplicating;
+                      isRenaming ||
+                      isDeleting ||
+                      isDuplicating ||
+                      savingMetaId === row.id;
 
                     return (
                       <li
@@ -859,6 +1079,21 @@ export function Launcher() {
                           </div>
                         )}
 
+                        {isRenaming ? null : (
+                          <RecentResumeTracking
+                            key={`${row.id}:${resumeStatusOf(row)}:${resumeTargetCompany(row)}`}
+                            row={row}
+                            name={name}
+                            saving={savingMetaId === row.id}
+                            onStatusChange={(targetRow, status) =>
+                              void handleStatusChange(targetRow, status)
+                            }
+                            onTargetCompanyChange={(targetRow, company) =>
+                              void handleTargetCompanyChange(targetRow, company)
+                            }
+                          />
+                        )}
+
                         {isDeleting ? (
                           <p
                             role="status"
@@ -872,7 +1107,7 @@ export function Launcher() {
                   })}
                 </ul>
 
-                {recent.length > RECENT_INITIAL_COUNT ? (
+                {filteredRecent.length > RECENT_INITIAL_COUNT ? (
                   <button
                     type="button"
                     aria-expanded={showAllRecent}
@@ -882,7 +1117,7 @@ export function Launcher() {
                   >
                     {showAllRecent
                       ? "Show fewer"
-                      : `Show all (${recent.length})`}
+                      : `Show all (${filteredRecent.length})`}
                   </button>
                 ) : null}
               </div>

@@ -26,10 +26,6 @@ _empty
 
 ### P2 — High-Value Reddit-Inspired Features
 
-- [ ] P2: Add lightweight **Application Status & Target Company tags** to Recent Resumes on `/` (`src/types/`, `src/lib/store/db.ts`, `src/components/launcher/Launcher.tsx`).
-  1. Add optional `targetCompany?: string` and `status?: "master" | "draft" | "applied" | "interview" | "offer"` fields to saved resume records with safe defaults for existing Dexie rows.
-  2. Display an inline status badge and target company tag on each **Recent resumes** card with a quick edit selector (stopping row click propagation), plus a compact status filter bar when 2+ resumes exist.
-
 - [ ] P2: Upgrade the existing `RichTextField` writing hint into **tappable Zero-AI XYZ / STAR Impact Bullet Formulas** (`src/components/editor/RichTextField.tsx`).
   1. Replace the static `[Action] + [What] + [Result by X%]` text hint inside the collapsible helper strip with 4 tappable fill-in formula chips (`Reduced [metric] by [X%] by [action]`, `Built [feature/system] for [N] users, improving [outcome]`, `Led [team/project] to deliver [result]`, `Automated [workflow], saving [N] hrs/wk`) that insert cleanly at the cursor without adding a second stacked helper row.
 
@@ -39,6 +35,27 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Added **Application Status & Target Company tags** to
+  **Recent resumes** on `/`. Saved rows now carry optional `status`
+  (`master` | `draft` | `applied` | `interview` | `offer`) and `targetCompany`
+  fields outside the resume document, so JSON backups stay portable and legacy
+  Dexie rows read as **Master** with no company tag. Each recent row shows a
+  status pill that is also a quick native selector, plus a compact editable
+  target-company field; both stop row-click propagation, so tagging never opens
+  the resume. When 2+ resumes exist, a compact **All / status (count)** filter
+  row narrows the list, hiding statuses with no rows and falling back to All if
+  the active status empties. `updateResumeMeta` deliberately leaves `updatedAt`
+  alone (tagging is not an edit and must not reorder the list), while a new
+  `saveResumeDoc` read-merge-writes every autosave so editor saves cannot erase
+  the tags; duplicates inherit them. Added pure helper/default/filter cases, db
+  meta + save/duplicate preservation cases, a store autosave regression, and
+  Launcher tracking/filter interactions. Verified `npm run typecheck`,
+  `npm test` (843 pass), `npm run lint`. Files:
+  `src/lib/store/resumeTracking.ts` (+ test, new), `src/lib/store/db.ts`
+  (+ test), `src/lib/store/useResumeStore.ts` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-22 — Promoted **Profiles links into the resume header**. The new
   pure `profileHeaderLink` / `headerProfileIcon` helpers in `contactLinks.ts`

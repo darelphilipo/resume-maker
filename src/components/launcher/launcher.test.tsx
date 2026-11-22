@@ -11,7 +11,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import { parsePdfResume } from "@/lib/import/pdfResume";
 import { serializeResume } from "@/lib/schema/serialize";
-import { putResume, resumeDb } from "@/lib/store/db";
+import { putResume, resumeDb, type ResumeRow } from "@/lib/store/db";
 import {
   resetResumeStore,
   useResumeStore,
@@ -33,10 +33,11 @@ async function seedRecent(
   id: string,
   name: string,
   updatedAt = Date.UTC(2026, 10, 18),
+  meta: Partial<Pick<ResumeRow, "status" | "targetCompany">> = {},
 ): Promise<void> {
   const doc = createEmptyResume();
   doc.basics.name = name;
-  await putResume({ id, updatedAt, doc });
+  await putResume({ id, updatedAt, doc, ...meta });
 }
 
 function jsonFile(content: string, name = "resume.json"): File {
@@ -351,6 +352,120 @@ describe("Launcher", () => {
     expect(
       await screen.findByText(/Nothing saved yet/),
     ).toBeInTheDocument();
+  });
+
+  it("shows editable tracking tags on a recent resume", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    render(<Launcher />);
+
+    expect(
+      await screen.findByLabelText("Application status for Grace Hopper"),
+    ).toHaveValue("master");
+    expect(
+      screen.getByLabelText("Target company for Grace Hopper"),
+    ).toHaveValue("");
+    expect(
+      screen.queryByRole("group", {
+        name: "Filter recent resumes by status",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("saves a status change without opening the resume", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    render(<Launcher />);
+
+    const status = await screen.findByLabelText(
+      "Application status for Grace Hopper",
+    );
+    fireEvent.change(status, { target: { value: "applied" } });
+
+    await waitFor(async () => {
+      expect((await resumeDb.resumes.get("recent-1"))?.status).toBe("applied");
+    });
+    expect(
+      await screen.findByLabelText("Application status for Grace Hopper"),
+    ).toHaveValue("applied");
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("saves a target company tag on blur without opening the resume", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    render(<Launcher />);
+
+    const company = await screen.findByLabelText(
+      "Target company for Grace Hopper",
+    );
+    fireEvent.change(company, { target: { value: "  Acme   Corp " } });
+    fireEvent.blur(company);
+
+    await waitFor(async () => {
+      expect((await resumeDb.resumes.get("recent-1"))?.targetCompany).toBe(
+        "Acme Corp",
+      );
+    });
+    expect(
+      await screen.findByLabelText("Target company for Grace Hopper"),
+    ).toHaveValue("Acme Corp");
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("filters recent resumes by status when more than one is saved", async () => {
+    await seedRecent(
+      "recent-1",
+      "Applied Person",
+      Date.UTC(2026, 10, 18, 12, 2),
+      { status: "applied" },
+    );
+    await seedRecent(
+      "recent-2",
+      "Offer Person",
+      Date.UTC(2026, 10, 18, 12, 1),
+      { status: "offer", targetCompany: "North Star" },
+    );
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    const filters = await screen.findByRole("group", {
+      name: "Filter recent resumes by status",
+    });
+    expect(
+      within(filters).getByRole("button", { name: "All (2)" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(filters).queryByRole("button", { name: "Draft (0)" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      within(filters).getByRole("button", { name: "Applied (1)" }),
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Open Applied Person" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Open Offer Person" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(filters).getByRole("button", { name: "Applied (1)" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("shows a saved target company tag", async () => {
+    await seedRecent(
+      "recent-1",
+      "Grace Hopper",
+      Date.UTC(2026, 10, 18),
+      { status: "interview", targetCompany: "North Star" },
+    );
+    render(<Launcher />);
+
+    expect(
+      await screen.findByLabelText("Target company for Grace Hopper"),
+    ).toHaveValue("North Star");
+    expect(
+      screen.getByLabelText("Application status for Grace Hopper"),
+    ).toHaveValue("interview");
   });
 
   it("opens a recent resume from the list", async () => {

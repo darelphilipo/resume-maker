@@ -1054,11 +1054,34 @@ rediscover.
       `allFieldsWiring` expects the profile link twice in Visual/PDF (header plus
       section).
 
+  79. **Launcher tracking tags live on the row, and saves must preserve them.**
+      Application `status` and `targetCompany` belong to `ResumeRow`, not
+      `ResumeDocument`, so JSON backups stay pure resume data and the editor
+      never sees or measures them. Both fields are optional; `resumeStatusOf`
+      treats missing, blank, or unknown values as **Master**, while
+      `resumeTargetCompany` trims/collapses whitespace and returns `""` for
+      legacy rows. `src/lib/store/resumeTracking.ts` owns those helpers plus
+      `filterResumesByStatus`, `resumeStatusCounts`, and `resolveStatusFilter`
+      (a chip never stays stuck on a status that lost its last row).
+      `updateResumeMeta` changes tags without bumping `updatedAt`, because
+      tagging is not a resume edit and must not reorder **Recent resumes**.
+      The critical trap is persistence: `putResume({ id, updatedAt, doc })`
+      replaces the whole row, so every editor save/autosave path now calls
+      `saveResumeDoc(id, doc)`, which reads the row first and merges the tags
+      back; `duplicateResume` copies them to the copy. In the launcher, the
+      status pill is a native `<select>` and the company tag is an input inside
+      a rounded field; both sit in a `pointer-coarse:min-h-11` row under the
+      resume name, stop click propagation, and are ignored by the row-level
+      "open" handler (`closest("button, a, input, form, textarea, select")`).
+      The target-company input commits on blur or Enter, not per keystroke, so
+      one tag change is one Dexie write. The filter bar appears only when 2+
+      rows are saved and lists **All** plus statuses with a non-zero count.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~760 tests
+npm test               # vitest, ~843 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1114,6 +1137,32 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — Application status and target-company tags on Recent resumes
+- Task: top P2 Queue item. Saved resumes on `/` can now be tracked as
+  **Master / Draft / Applied / Interview / Offer** and tagged with a target
+  company.
+- Model: optional `status` and `targetCompany` fields on `ResumeRow` (Dexie),
+  deliberately outside `ResumeDocument` so JSON backups stay portable. New pure
+  `resumeTracking.ts` normalizes legacy rows to **Master**, trims/collapses the
+  company tag, filters by status, counts statuses, and resolves a stale filter
+  back to **All**. Decision #79.
+- Persistence: the launcher writes tags through `updateResumeMeta` (no
+  `updatedAt` bump, so list order does not jump). Because Dexie `put` replaces
+  the whole row, the three editor save/autosave paths now use the new
+  `saveResumeDoc`, which merges the existing tags back; `duplicateResume` copies
+  them. A store regression covers this.
+- UI: each recent row has a status pill that doubles as a native select and a
+  compact target-company field (commit on blur/Enter). Both stop row-click
+  propagation. A filter row (**All** plus non-zero statuses) appears at 2+ rows.
+- Tests: helper defaults/filter/count cases, db meta update and save/duplicate
+  preservation, the autosave regression, and Launcher status/company/filter
+  interactions. 843 pass (was 819).
+- Files: `src/lib/store/resumeTracking.ts` (+ test, new), `src/lib/store/db.ts`
+  (+ test), `src/lib/store/useResumeStore.ts` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (843 pass), `npm run lint`.
 
 ### 2026-11-22 — Profiles promoted into the resume header
 - Task: top P2 Queue item. Visible `Profiles` rows now appear as clickable links
@@ -1355,29 +1404,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/lib/lint/bulletMetrics.ts` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (731 pass), `npm run lint`.
-
-### 2026-11-21 — Steady preview fit (ResizeObserver feedback loop)
-- Task: top P0 Queue item. The Preview canvas could oscillate between two fit
-  scales and X offsets as a scrollbar appeared and disappeared.
-- Scrollers: `[scrollbar-gutter:stable]` on `#panel-preview` (desktop) and
-  `[data-canvas-scroll]` (phones) reserves the scrollbar space, so the observed
-  stage width no longer changes when the paper grows past one page. Decision #69.
-- Guard: new pure `stabilizeObservedWidth` (`src/lib/zoom/stableWidth.ts`) locks
-  an A/B/A width alternation within 24px / 150ms to the smaller width until a
-  genuine (>24px) resize releases it. `LiveCanvasViewport.updateWidth` threads
-  the observed `clientWidth` through a ref; a locked sample sets the same state
-  value, so React skips the re-render and the applied transform stops flipping.
-- Tests: 11 pure guard cases, a `LiveCanvasViewport` case driving the observer
-  between 326 and 311 px that asserts the frame height and applied transform
-  settle, and class-contract cases for both scrollers (mobile canvas plus the
-  desktop Preview panel). 727 pass (was 713). No new layout shell, so no
-  Playwright case was added; a real-browser check with a multi-page resume at
-  `390x844` / `1280x800` is still worthwhile.
-- Files: `src/lib/zoom/stableWidth.ts` (+ test, new),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (727 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

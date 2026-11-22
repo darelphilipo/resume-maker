@@ -10,6 +10,8 @@ import {
   putResume,
   renameResume,
   resumeDb,
+  saveResumeDoc,
+  updateResumeMeta,
   type ResumeRow,
 } from "./db";
 
@@ -86,6 +88,102 @@ describe("duplicateResume", () => {
 
   it("ignores a resume that was already deleted", async () => {
     expect(await duplicateResume("missing")).toBeNull();
+  });
+
+  it("keeps the tracking tags on the copy", async () => {
+    await putResume({
+      ...row("source", 1_000, "Grace Hopper"),
+      status: "applied",
+      targetCompany: "Acme",
+    });
+
+    const copy = await duplicateResume("source");
+
+    expect(copy?.status).toBe("applied");
+    expect(copy?.targetCompany).toBe("Acme");
+  });
+});
+
+describe("updateResumeMeta", () => {
+  it("stores status and a normalized company without touching the doc", async () => {
+    const source = row("one", 1_000, "Grace Hopper");
+    await putResume(source);
+
+    const updated = await updateResumeMeta("one", {
+      status: "applied",
+      targetCompany: "  Acme   Corp ",
+    });
+
+    expect(updated?.status).toBe("applied");
+    expect(updated?.targetCompany).toBe("Acme Corp");
+    expect(updated?.doc).toEqual(source.doc);
+    // A tracking edit is not a resume edit: the recent list keeps its order.
+    expect(updated?.updatedAt).toBe(1_000);
+
+    const stored = await getResume("one");
+    expect(stored?.status).toBe("applied");
+    expect(stored?.targetCompany).toBe("Acme Corp");
+  });
+
+  it("leaves the other tag alone when only one changes", async () => {
+    await putResume({
+      ...row("one", 1_000, "Grace Hopper"),
+      status: "applied",
+      targetCompany: "Acme",
+    });
+
+    await updateResumeMeta("one", { status: "interview" });
+    expect((await getResume("one"))?.targetCompany).toBe("Acme");
+
+    await updateResumeMeta("one", { targetCompany: "North Star" });
+    expect((await getResume("one"))?.status).toBe("interview");
+  });
+
+  it("removes the company field when the tag is cleared", async () => {
+    await putResume({
+      ...row("one", 1_000, "Grace Hopper"),
+      targetCompany: "Acme",
+    });
+
+    await updateResumeMeta("one", { targetCompany: "   " });
+
+    expect((await getResume("one"))?.targetCompany).toBeUndefined();
+  });
+
+  it("ignores a resume that was already deleted", async () => {
+    expect(await updateResumeMeta("missing", { status: "offer" })).toBeNull();
+  });
+});
+
+describe("saveResumeDoc", () => {
+  it("updates the document while preserving tracking metadata", async () => {
+    await putResume({
+      ...row("one", 1_000, "Grace Hopper"),
+      status: "offer",
+      targetCompany: "North Star",
+    });
+
+    const nextDoc = createEmptyResume();
+    nextDoc.basics.name = "Admiral Grace";
+
+    const saved = await saveResumeDoc("one", nextDoc);
+
+    expect(saved.doc.basics.name).toBe("Admiral Grace");
+    expect(saved.status).toBe("offer");
+    expect(saved.targetCompany).toBe("North Star");
+    expect(saved.updatedAt).toBeGreaterThan(1_000);
+
+    const stored = await getResume("one");
+    expect(stored?.doc.basics.name).toBe("Admiral Grace");
+    expect(stored?.status).toBe("offer");
+  });
+
+  it("writes a new row when the id is not saved yet", async () => {
+    const doc = createEmptyResume();
+
+    await saveResumeDoc("fresh", doc);
+
+    expect((await getResume("fresh"))?.doc).toEqual(doc);
   });
 });
 
