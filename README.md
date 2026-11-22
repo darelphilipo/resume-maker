@@ -138,7 +138,10 @@ in control of every line, and your data stays on your device.
   Its narrow side column (Skills, Certifications, Languages, Interests) stays
   anchored on Page 1; later pages give the main column the full page width
   instead of leaving an empty sidebar beside it, and a resume whose main column
-  already fits on Page 1 never grows a blank second page.
+  already fits on Page 1 never grows a blank second page. Page breaks are
+  measured in the same two-column shape you see, so switching to **Compact**
+  density or a tighter font can never report one page while the bottom of the
+  main column is cut off.
 - **Accent, fonts, and density** in Design: pick an accent from seven curated
   colors (or plain monochrome), choose a **Sans**, **Serif**, or **Classic**
   body/heading pairing, and set spacing to **Compact**, **Normal**, or

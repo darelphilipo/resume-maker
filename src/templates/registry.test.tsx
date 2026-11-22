@@ -5,6 +5,7 @@ import { createEmptyResume } from "@/lib/schema/defaults";
 import { TEMPLATE_IDS } from "@/lib/schema/resume.schema";
 
 import { getTemplate, TEMPLATES, TEMPLATE_LIST } from "./registry";
+import { templateRootClassName } from "./shared/templateRoot";
 
 describe("template registry", () => {
   it("registers every schema template id with a renderer", () => {
@@ -53,6 +54,26 @@ describe("template registry", () => {
     expect(studio.columns).toBe(2);
     expect(studio.atsSafe).toBe(false);
     expect(studio.badge).toBe("Best for direct/human review");
+  });
+
+  it("keeps the measure-layer root class in sync with every template", () => {
+    for (const definition of TEMPLATE_LIST) {
+      const { container, unmount } = render(
+        <definition.Component
+          doc={createEmptyResume(definition.id)}
+          pages={[[]]}
+          pageIndex={0}
+        />,
+      );
+      const root = container.firstElementChild as HTMLElement;
+
+      // The measure layer uses `templateRootClassName`; a variant that adds a
+      // different root class would be measured with the wrong CSS.
+      expect(root, definition.id).toHaveClass(
+        ...templateRootClassName(definition.id).split(" "),
+      );
+      unmount();
+    }
   });
 
   it("renders a section through every registered template", () => {

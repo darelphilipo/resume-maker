@@ -15,9 +15,18 @@ import {
   type SectionPlan,
 } from "@/lib/pagination/sectionPlans";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
+import { isStudioSidebarSection } from "@/templates/studio/sidebarSections";
 import { HeaderSlot } from "@/templates/shared/HeaderSlot";
 import { SectionRenderer } from "@/templates/shared/SectionRenderer";
+import { resolveSection } from "@/templates/shared/sectionData";
+import {
+  buildTemplateThemeStyle,
+  scaledPt,
+} from "@/templates/shared/templateTheme";
+import { templateRootClassName } from "@/templates/shared/templateRoot";
 import "@/templates/onyx/onyx.css";
+import "@/templates/studio/studio.css";
+import "@/templates/variants/variants.css";
 
 export type MeasureLayerProps = {
   doc: ResumeDocument;
@@ -32,10 +41,6 @@ const MEASURED_SELECTOR = "[data-measure-id]";
 
 const useIsomorphicLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-function scaledPt(value: number, fitScale: number): string {
-  return `${Number((value * fitScale).toFixed(2))}pt`;
-}
 
 export function MeasureLayer({
   doc,
@@ -130,29 +135,41 @@ export function MeasureLayer({
   }, [doc, order, contentWidthPx, resolvedPlans]);
 
   const themeStyle = {
-    "--resume-font-size": scaledPt(
-      doc.metadata.typography.body.fontSize,
-      doc.metadata.page.fitScale,
-    ),
-    "--resume-line-height": String(doc.metadata.typography.body.lineHeight),
-    "--resume-heading-size": scaledPt(
-      doc.metadata.typography.heading.fontSize,
-      doc.metadata.page.fitScale,
-    ),
-    "--resume-heading-font": doc.metadata.typography.heading.fontFamily,
-    "--resume-fit-scale": String(doc.metadata.page.fitScale),
-    "--page-gap-y": scaledPt(doc.metadata.page.gapY, doc.metadata.page.fitScale),
-    "--page-gap-x": scaledPt(doc.metadata.page.gapX, doc.metadata.page.fitScale),
-    "--item-gap": scaledPt(6, doc.metadata.page.fitScale),
-    "--brand-primary": doc.metadata.design.colors.primary,
-    fontFamily: doc.metadata.typography.body.fontFamily,
+    ...buildTemplateThemeStyle(doc),
     fontSize: scaledPt(
       doc.metadata.typography.body.fontSize,
       doc.metadata.page.fitScale,
     ),
-    lineHeight: doc.metadata.typography.body.lineHeight,
-    color: doc.metadata.design.colors.text,
   } as CSSProperties;
+
+  const blocks = resolvedPlans.flatMap((plan) =>
+    planBlockKeys(plan).map((key) => ({
+      key,
+      sectionId: plan.sectionId,
+    })),
+  );
+  const isStudio = doc.metadata.template === "gengar";
+  const mainBlocks = isStudio
+    ? blocks.filter((block) => !isStudioSidebarSection(block.sectionId))
+    : blocks;
+  const sidebarBlocks = isStudio
+    ? blocks.filter((block) => isStudioSidebarSection(block.sectionId))
+    : [];
+  // The real template only shows its sidebar when a sidebar section actually
+  // has visible content. Empty sidebar plans still need to report a zero height
+  // (or pagination would wait forever), so keep them as blocks but collapse the
+  // grid to one full-width column when nothing would render beside the main.
+  const hasStudioSidebar =
+    isStudio &&
+    sidebarBlocks.some(
+      (block) => resolveSection(doc, block.sectionId) !== null,
+    );
+
+  const renderBlock = (block: { key: string }) => (
+    <div key={block.key} data-measure-id={block.key}>
+      <SectionRenderer doc={doc} pageSectionIds={[block.key]} />
+    </div>
+  );
 
   return (
     <div
@@ -169,21 +186,38 @@ export function MeasureLayer({
         visibility: "hidden",
         pointerEvents: "none",
         transform: "none",
-        ...themeStyle,
       }}
     >
       {/* The 0×0 fixed shell above can never add document height or a scroll
-          range on mobile. This inner column keeps the real measuring width. */}
-      <div ref={contentRef} className="onyx" style={{ width: contentWidthPx }}>
+          range on mobile. This inner column keeps the real measuring width, the
+          active template's root class, and its theme variables, so variant
+          spacing and the Studio Sidebar's narrower main column are measured
+          exactly as they render. */}
+      <div
+        ref={contentRef}
+        className={templateRootClassName(doc.metadata.template)}
+        style={{ width: contentWidthPx, ...themeStyle }}
+      >
         <div data-measure-id={HEADER_BLOCK_ID}>
           <HeaderSlot doc={doc} />
         </div>
-        {resolvedPlans.flatMap((plan) =>
-          planBlockKeys(plan).map((key) => (
-            <div key={key} data-measure-id={key}>
-              <SectionRenderer doc={doc} pageSectionIds={[key]} />
-            </div>
-          )),
+        {isStudio ? (
+          <div
+            className={`studio-layout${
+              hasStudioSidebar ? "" : " studio-layout--full"
+            }`}
+          >
+            <main className="page-stack studio-main">
+              {(hasStudioSidebar ? mainBlocks : blocks).map(renderBlock)}
+            </main>
+            {hasStudioSidebar ? (
+              <aside className="studio-sidebar" aria-label="At a glance">
+                {sidebarBlocks.map(renderBlock)}
+              </aside>
+            ) : null}
+          </div>
+        ) : (
+          <main className="page-stack">{blocks.map(renderBlock)}</main>
         )}
       </div>
     </div>

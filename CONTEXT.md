@@ -920,11 +920,32 @@ rediscover.
       `"1–1 word"`. The overlay root keeps `data-bullet-trim-tips` so
       `scanBulletLint` still skips it.
 
+  71. **The measure layer renders the active template, not a generic column.**
+      `MeasureLayer` used plain `.onyx` at the full content width, so template
+      CSS never applied and the Studio Sidebar's main column (1.7fr of a 2.7fr
+      grid) was measured at full width. Fewer line wraps under-reported height,
+      and after switching to **Compact** density the packer could report one page
+      while the real two-column main column clipped Projects/Education. The inner
+      measuring column now carries `templateRootClassName(doc.metadata.template)`
+      (shared with the registry test) and `buildTemplateThemeStyle(doc)`, so
+      variant spacing, heading fonts, gaps, and page margins match the preview.
+      For `gengar`, blocks are split by `STUDIO_SIDEBAR_SECTION_IDS` and rendered
+      inside the same `.studio-layout` / `.studio-main` / `.studio-sidebar` grid;
+      the grid falls back to `studio-layout--full` when no sidebar section has
+      visible content. Empty sidebar plans still render a 0-height
+      `[data-measure-id]` wrapper, otherwise `isMeasurementComplete` would wait
+      forever. `studioSectionIdOf` / `isStudioSidebarBlock` live in
+      `sidebarSections.ts` so the template and measure layer route split entry
+      blocks identically. Keep the root-class map in sync with `registry.ts`; the
+      registry test renders all six templates. Packing itself did not need a new
+      mode: a trailing page containing only pinned sidebar blocks is still folded
+      into Page 1, while any unpinned main overflow keeps its own page.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~695 tests
+npm test               # vitest, ~735 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -980,6 +1001,30 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — Studio Sidebar + Compact pagination measured in real columns
+- Task: top P0 Queue item. A Studio Sidebar resume switched to **Compact**
+  density could report one page while clipping the bottom of the main column
+  (Projects/Education).
+- Root cause: `MeasureLayer` rendered a plain `.onyx` at the full content width.
+  It missed template/variant CSS and measured the Studio main column at 100% of
+  the page instead of the real 1.7fr column, so line wraps were under-reported.
+- Fix: the inner measuring column now applies the active template root class and
+  `buildTemplateThemeStyle`, and `gengar` blocks render inside the same
+  `.studio-layout` grid (main/sidebar) as the real template. Empty sidebar plans
+  still report 0, and the grid falls back to `studio-layout--full` when no
+  sidebar section has visible content. Shared `templateRootClassName`,
+  `studioSectionIdOf`, and `isStudioSidebarBlock` helpers keep measurement and
+  rendering in sync. Decision #71.
+- Tests: MeasureLayer variant root/theme variables, Studio main/sidebar routing,
+  and full-width fallback; a registry case renders all six templates against the
+  root-class map. 735 pass (was 731).
+- Files: `src/components/preview/MeasureLayer.tsx` (+ test),
+  `src/templates/shared/templateRoot.ts` (new), `src/templates/registry.test.tsx`,
+  `src/templates/studio/sidebarSections.ts`,
+  `src/templates/studio/StudioSidebarTemplate.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (735 pass), `npm run lint`.
 
 ### 2026-11-21 — Quiet bullet helpers and mobile-safe overlays
 - Task: top P0 Queue item (three bundled mobile/preview defects).
@@ -1234,28 +1279,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (654 pass), `npm run lint`.
   Playwright remains blocked here, so the visual check at `390x844` /
   `1280x800` is still browser-unverified.
-
-### 2026-11-21 — All-fields wiring to Preview/PDF/ATS
-- Task: top P0 Queue item — five editable fields were dropped between the
-  editor and the rendered resume/ATS text. A prior run had left the code and
-  most tests uncommitted; this run finished and verified it.
-- Fixes: URL-only Profiles rows stay visible and render the cleaned URL as a
-  clickable link (`sectionData.ts`, `selectors.ts`, `atsText.ts`,
-  `SectionRenderer.tsx`); `basics.website.url` becomes a clickable header link
-  labelled by `website.label` or the cleaned URL (`HeaderSlot.tsx`); Education
-  `grade` and Certifications/Publications `url` now render in Visual/PDF and
-  ATS text. Shared `externalLinkHref` adds `https://` to bare hosts and rejects
-  non-http schemes (Decision #61).
-- New exhaustive `allFieldsWiring.test.tsx` fills every field in all 14 sections
-  with sentinels and asserts each appears in Visual/PDF and ATS. Its two initial
-  failures were **test-expectation bugs**, not code bugs: hrefs are absolute
-  (`https://…`) while ATS keeps the raw stored URL. Fixed those assertions.
-- Files: `src/templates/shared/allFieldsWiring.test.tsx` (new),
-  `src/templates/shared/{sectionData,SectionRenderer,HeaderSlot}.tsx`,
-  `src/lib/ats/atsText.ts` (+ test), `src/lib/store/selectors.ts` (+ test),
-  `src/lib/links/contactLinks.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (647 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

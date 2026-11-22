@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { encodeEntryBlock } from "@/lib/pagination/blockIds";
 import { createEmptyResume } from "@/lib/schema/defaults";
-import { ExperienceItemSchema } from "@/lib/schema/resume.schema";
+import {
+  ExperienceItemSchema,
+  SkillItemSchema,
+} from "@/lib/schema/resume.schema";
 
 import { MeasureLayer } from "./MeasureLayer";
 
@@ -153,10 +156,142 @@ describe("MeasureLayer", () => {
         />,
       );
       const root = container.firstElementChild as HTMLElement;
+      const content = root.firstElementChild as HTMLElement;
 
-      expect(root.style.fontSize).toBe("5.5pt");
-      expect(root.style.getPropertyValue("--resume-font-size")).toBe("5.5pt");
-      expect(root.style.getPropertyValue("--resume-fit-scale")).toBe("0.5");
+      expect(content.style.fontSize).toBe("5.5pt");
+      expect(content.style.getPropertyValue("--resume-font-size")).toBe("5.5pt");
+      expect(content.style.getPropertyValue("--resume-fit-scale")).toBe("0.5");
+    } finally {
+      restore();
+    }
+  });
+
+  it("applies the active template root class and theme variables", () => {
+    const restore = mockLayoutWidth(700);
+
+    try {
+      const doc = createEmptyResume("chikorita");
+      doc.metadata.typography.body.fontSize = 12;
+      doc.metadata.typography.heading.fontFamily = "var(--font-serif)";
+      doc.metadata.page.gapY = 8;
+      doc.metadata.page.gapX = 5;
+      doc.metadata.design.colors.primary = "#123456";
+
+      const { container } = render(
+        <MeasureLayer
+          doc={doc}
+          order={["experience"]}
+          contentWidthPx={700}
+          onMeasure={vi.fn()}
+        />,
+      );
+      const content = container.firstElementChild
+        ?.firstElementChild as HTMLElement;
+
+      // The Compact 1-Pager variant tightens section spacing; measuring it as
+      // plain Onyx would report a taller document than the preview renders.
+      expect(content).toHaveClass("onyx", "onyx--compact");
+      expect(content.style.fontSize).toBe("12pt");
+      expect(content.style.getPropertyValue("--page-gap-y")).toBe("8pt");
+      expect(content.style.getPropertyValue("--page-gap-x")).toBe("5pt");
+      expect(content.style.getPropertyValue("--resume-heading-font")).toBe(
+        "var(--font-serif)",
+      );
+      expect(content.style.getPropertyValue("--brand-primary")).toBe("#123456");
+      expect(content.style.getPropertyValue("--page-margin-x")).toBe("14pt");
+    } finally {
+      restore();
+    }
+  });
+
+  it("lays Studio Sidebar blocks out in their real main and sidebar columns", () => {
+    const restore = mockLayoutWidth(700);
+
+    try {
+      const doc = createEmptyResume("gengar");
+      doc.sections.experience.items = [
+        ExperienceItemSchema.parse({
+          id: "e1",
+          company: "Acme",
+          position: "Engineer",
+        }),
+      ];
+      doc.sections.skills.items = [
+        SkillItemSchema.parse({
+          id: "s1",
+          name: "Languages",
+          keywords: ["TypeScript"],
+        }),
+      ];
+      const onMeasure = vi.fn();
+
+      const { container } = render(
+        <MeasureLayer
+          doc={doc}
+          order={["experience", "skills"]}
+          contentWidthPx={700}
+          onMeasure={onMeasure}
+        />,
+      );
+      const content = container.firstElementChild
+        ?.firstElementChild as HTMLElement;
+      const layout = content.querySelector(".studio-layout");
+      const main = content.querySelector(".studio-main");
+      const sidebar = content.querySelector(".studio-sidebar");
+
+      // The Studio main column is ~63% of the page width. Measuring it at the
+      // full content width under-reports line wraps, which is how a compact
+      // resume reported one page while clipping Projects/Education.
+      expect(content).toHaveClass("onyx", "onyx--studio");
+      expect(layout).not.toBeNull();
+      expect(layout).not.toHaveClass("studio-layout--full");
+      expect(
+        main?.querySelector('[data-measure-id="experience"]'),
+      ).not.toBeNull();
+      expect(
+        sidebar?.querySelector('[data-measure-id="skills"]'),
+      ).not.toBeNull();
+      expect(
+        main?.querySelector('[data-measure-id="skills"]'),
+      ).toBeNull();
+      expect(onMeasure).toHaveBeenCalledWith("experience", 0);
+      expect(onMeasure).toHaveBeenCalledWith("skills", 0);
+    } finally {
+      restore();
+    }
+  });
+
+  it("collapses Studio to one full-width column when no sidebar content renders", () => {
+    const restore = mockLayoutWidth(700);
+
+    try {
+      const doc = createEmptyResume("gengar");
+      doc.sections.experience.items = [
+        ExperienceItemSchema.parse({
+          id: "e1",
+          company: "Acme",
+          position: "Engineer",
+        }),
+      ];
+      const onMeasure = vi.fn();
+
+      const { container } = render(
+        <MeasureLayer
+          doc={doc}
+          order={["experience", "skills"]}
+          contentWidthPx={700}
+          onMeasure={onMeasure}
+        />,
+      );
+      const content = container.firstElementChild
+        ?.firstElementChild as HTMLElement;
+      const layout = content.querySelector(".studio-layout");
+
+      expect(layout).toHaveClass("studio-layout--full");
+      expect(content.querySelector(".studio-sidebar")).toBeNull();
+      // An empty sidebar plan must still report zero, otherwise pagination
+      // waits for a measurement that never arrives.
+      expect(onMeasure).toHaveBeenCalledWith("skills", 0);
     } finally {
       restore();
     }

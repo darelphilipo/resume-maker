@@ -1,4 +1,3 @@
-import { decodeBlock } from "@/lib/pagination/blockIds";
 import { HEADER_BLOCK_ID } from "@/lib/pagination/constants";
 import {
   DEFAULT_SECTION_ORDER,
@@ -8,7 +7,7 @@ import {
 import { HeaderSlot } from "../shared/HeaderSlot";
 import { SectionRenderer } from "../shared/SectionRenderer";
 import { buildTemplateThemeStyle } from "../shared/templateTheme";
-import { STUDIO_SIDEBAR_SECTION_IDS } from "./sidebarSections";
+import { isStudioSidebarBlock } from "./sidebarSections";
 import "./studio.css";
 
 export type StudioSidebarTemplateProps = {
@@ -16,19 +15,6 @@ export type StudioSidebarTemplateProps = {
   pages: string[][];
   pageIndex: number;
 };
-
-/** Split sections contribute entry-level block ids; route them by the
- * underlying section id so the two columns keep the same section split. */
-function sectionIdOf(id: string): string {
-  const block = decodeBlock(id);
-  return block.kind === "section" ? block.sectionId : id;
-}
-
-function isSidebarBlock(id: string): boolean {
-  return (
-    id !== HEADER_BLOCK_ID && STUDIO_SIDEBAR_SECTION_IDS.has(sectionIdOf(id))
-  );
-}
 
 export function StudioSidebarTemplate({
   doc,
@@ -45,10 +31,10 @@ export function StudioSidebarTemplate({
   // of the main column's height: keep every sidebar block on Page 1 and let
   // later pages carry main-column overflow only.
   const sidebarIds = (pages.length > 0 ? pages.flat() : firstPage).filter(
-    isSidebarBlock,
+    isStudioSidebarBlock,
   );
   const mainIds = pageIds.filter(
-    (id) => id !== HEADER_BLOCK_ID && !isSidebarBlock(id),
+    (id) => id !== HEADER_BLOCK_ID && !isStudioSidebarBlock(id),
   );
   const showSidebar = pageIndex === 0 && sidebarIds.length > 0;
 

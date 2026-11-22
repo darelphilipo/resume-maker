@@ -24,8 +24,6 @@ _empty
 
 ### P0 / P1 — Newly Uncovered Regression Bugs
 
-- [ ] P0: Fix `Studio Sidebar` + `Compact` density silently truncating bottom content on Page 1 (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/lib/pagination/computePages.ts`, `src/components/preview/MeasureLayer.tsx`). Reproduce with a 2-page resume in `Studio Sidebar` + `Letter` + `Classic` switched to `Compact` density: ensure `MeasureLayer` measures with the exact active template/density/font CSS variables so content that exceeds Page 1's printable height always spills onto Page 2 instead of reporting `1 page` and clipping off `Projects`/`Education`.
-
 - [ ] P1: Fix `Match JD` false-positive substring matches and empty trailing `•` bullets in Preview/PDF (`src/lib/keywords/jdMatch.ts`, `src/templates/shared/RichTextDisplay.tsx` or `SectionRenderer.tsx`).
   1. **Word-boundary matching (`jdMatch.ts`):** Match JD keywords on whole-word boundaries (handling tech tokens like `C++`, `C#`, `Node.js`, `.NET`) instead of raw substring includes so words like `"rust"` or `"hiring"` never falsely match unrelated words.
   2. **Strip empty trailing bullets:** Filter out empty `<li><p></p></li>` / whitespace-only list items before rendering in Visual Preview, `PrintPortal`, and `atsText.ts` so pressing `Enter` at the end of a bullet list never prints a stray `•` dot.
@@ -73,6 +71,26 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Fixed Studio Sidebar + Compact pagination clipping the main
+  column. `MeasureLayer` now renders the active template's real root class and
+  `buildTemplateThemeStyle` variables, and routes `gengar` blocks through the
+  same `.studio-layout` main/sidebar grid as the preview, so the narrow main
+  column's line wraps are measured instead of the full page width. Empty sidebar
+  plans still report zero and the grid collapses to `studio-layout--full` when
+  no sidebar section has content. Shared `templateRootClassName`,
+  `studioSectionIdOf`, and `isStudioSidebarBlock` helpers keep measurement and
+  rendering in sync; packing needed no new mode because unpinned main overflow
+  already keeps its own page. Added MeasureLayer tests for variant root/theme
+  variables, Studio column routing, and the full-width fallback, plus a registry
+  test that renders all six templates against the root-class map. Verified
+  `npm run typecheck`, `npm test` (735 pass), `npm run lint`. Files:
+  `src/components/preview/MeasureLayer.tsx` (+ test),
+  `src/templates/shared/templateRoot.ts` (new),
+  `src/templates/registry.test.tsx`,
+  `src/templates/studio/sidebarSections.ts`,
+  `src/templates/studio/StudioSidebarTemplate.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-21 — Made the bullet helpers mobile-safe and quieter. The
   Content-header **Check** trigger is now a quiet text button named **Bullet
