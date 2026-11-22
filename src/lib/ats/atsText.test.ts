@@ -31,6 +31,14 @@ describe("richTextToPlainText", () => {
     expect(richTextToPlainText("   ")).toBe("");
     expect(richTextToPlainText("<p></p>")).toBe("");
   });
+
+  it("drops empty trailing bullet items", () => {
+    expect(
+      richTextToPlainText(
+        "<ul><li>Cut latency</li><li><p></p></li><li>   </li></ul>",
+      ),
+    ).toBe("- Cut latency");
+  });
 });
 
 describe("buildAtsText", () => {

@@ -13,9 +13,12 @@ describe("extractJobKeywords", () => {
   });
 
   it("lowercases, strips trailing punctuation, and keeps tech tokens", () => {
-    expect(
-      extractJobKeywords("C++, C#, .NET, Node.js, PostgreSQL."),
-    ).toEqual(["c#", "c++", "net", "node.js", "postgresql"]);
+    const keywords = extractJobKeywords("C++, C#, .NET, Node.js, PostgreSQL.");
+
+    expect(keywords).toHaveLength(5);
+    expect(keywords).toEqual(
+      expect.arrayContaining([".net", "c#", "c++", "node.js", "postgresql"]),
+    );
   });
 
   it("honours the keyword limit", () => {
@@ -34,6 +37,12 @@ describe("extractJobKeywords", () => {
           "The ideal candidate is seeking a role and wants to join us.",
       ),
     ).toEqual(["analyst", "data"]);
+  });
+
+  it("drops hiring boilerplate without dropping real keywords", () => {
+    expect(
+      extractJobKeywords("We are hiring a Rust developer."),
+    ).toEqual(["developer", "rust"]);
   });
 });
 
@@ -68,6 +77,42 @@ describe("matchJobKeywords", () => {
 
     expect(result.matched).toEqual([]);
     expect(result.missing).toEqual(["react"]);
+    expect(result.coverage).toBe(0);
+  });
+
+  it("does not treat a keyword as a substring of another word", () => {
+    const result = matchJobKeywords(
+      "Rust and React",
+      "I trust reactive programming and hiring managers.",
+    );
+
+    expect(result.matched).toEqual([]);
+    expect(result.missing).toEqual(["react", "rust"]);
+    expect(result.coverage).toBe(0);
+  });
+
+  it("matches dotted tech tokens and product-name suffixes", () => {
+    const result = matchJobKeywords(
+      ".NET, C++, C#, Node.js",
+      "Built ASP.NET services with C++ and C# on Node.js.",
+    );
+
+    expect(result.matched).toHaveLength(4);
+    expect(result.matched).toEqual(
+      expect.arrayContaining([".net", "c#", "c++", "node.js"]),
+    );
+    expect(result.missing).toEqual([]);
+    expect(result.coverage).toBe(1);
+  });
+
+  it("does not match .NET against a bare net word", () => {
+    const result = matchJobKeywords(
+      ".NET experience",
+      "Net income reporting",
+    );
+
+    expect(result.matched).toEqual([]);
+    expect(result.missing).toEqual([".net"]);
     expect(result.coverage).toBe(0);
   });
 

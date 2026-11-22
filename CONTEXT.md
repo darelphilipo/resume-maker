@@ -941,11 +941,25 @@ rediscover.
       mode: a trailing page containing only pinned sidebar blocks is still folded
       into Page 1, while any unpinned main overflow keeps its own page.
 
+  72. **Empty list items are stripped at render time, and JD matching is
+      whole-token.** TipTap leaves an empty `<li><p></p></li>` when Enter ends a
+      bullet list. Do **not** strip it in `sanitizeRichText`: the editor
+      sanitizes every transaction, so removing the empty item would stop the
+      next bullet from being typed. The pure `stripEmptyListItems`
+      (`src/lib/richtext/stripEmptyListItems.ts`) removes innermost empty items
+      (including whitespace/`&nbsp;`/`<br>`-only ones) without mutating the
+      saved document, and runs in `SectionRenderer` (Visual Preview and
+      `PrintPortal`, which renders the same templates) plus
+      `richTextToPlainText` (ATS text and lint). `jdMatch.ts` tokenizes both
+      sides and compares complete tokens, never `String.includes`; leading-dot
+      tech names stay `.net`, match the `asp.net` suffix, and never match a bare
+      `net` word. `hiring` joins the boilerplate stoplist.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~735 tests
+npm test               # vitest, ~750 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1001,6 +1015,34 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — Whole-token Match JD and no stray bullet dots
+- Task: top P1 Queue item. The matcher could report noisy/incorrect keywords,
+  and an empty trailing list item printed a stray `•` in Preview/PDF/ATS.
+- Match JD: `jdMatch.ts` already compared token sets rather than raw
+  substrings, so the remaining gaps were tech-token handling and boilerplate.
+  Tokens now preserve leading-dot names (`.NET`), a dotted keyword also matches
+  the dotted suffix in product names (`ASP.NET`) but never a bare `net` word,
+  and `hiring` is filtered as posting boilerplate. Added regressions for
+  `rust`/`trust`, `react`/`reactive`, `.NET`/`net`, and the C++/C#/Node.js
+  forms.
+- Bullets: new pure `stripEmptyListItems` removes `<li><p></p></li>`,
+  whitespace-only, and `<br>`-only items from the inside out, without mutating
+  the saved document. It runs in `SectionRenderer` (Visual Preview and
+  `PrintPortal`) and in `richTextToPlainText` for ATS text. It deliberately
+  does **not** live in `sanitizeRichText`, because the editor sanitizes every
+  transaction and would delete the empty item the user is about to type into.
+  Decision #72.
+- Tests: 6 helper cases, preview summary/entry bullet stripping, print portal
+  bullet stripping, ATS empty-bullet output, plus 4 new JD matching cases.
+  748 pass (was 735).
+- Files: `src/lib/keywords/jdMatch.ts` (+ test),
+  `src/lib/richtext/stripEmptyListItems.ts` (+ test, new),
+  `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `src/lib/ats/atsText.ts` (+ test),
+  `src/components/preview/PrintPortal.test.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (748 pass), `npm run lint`.
 
 ### 2026-11-22 — Studio Sidebar + Compact pagination measured in real columns
 - Task: top P0 Queue item. A Studio Sidebar resume switched to **Compact**
@@ -1247,38 +1289,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (660 pass, was 654), `npm run lint`.
   The new Playwright one-click dismiss assertion is typechecked but was not run
   here.
-
-### 2026-11-21 — Studio Sidebar blank Page 2 and ATS banner overlap
-- Task: top P1 Queue item. Two regressions: a Studio Sidebar resume could show
-  a blank Page 2 with a "2 pages" count, and the ATS text tab's spill banner
-  (sticky at `lg`) could cover the Copy all row while the preview panel
-  scrolled.
-- Pagination: `computePages` gained `pinnedToFirstPage`. A trailing run of
-  pages containing only those sections is folded into Page 1 in canonical order
-  (not deleted, because `StudioSidebarTemplate` reads its sidebar blocks from
-  `pages.flat()`); `usePageLayout` passes `STUDIO_SIDEBAR_SECTION_IDS` for the
-  `gengar` template only. Page count, canvas frame, print, and the overflow
-  banner all follow the corrected `pages`. Decision #62.
-- ATS: `PreviewChrome` takes `sticky` (default true) and `LiveCanvasViewport`
-  passes `sticky={mode === "canvas"}`. In ATS mode the banner stays in normal
-  flow above `[data-canvas-scroll]`, so it scrolls with the panel instead of
-  overlaying the ATS copy controls.
-- Moved `STUDIO_SIDEBAR_SECTION_IDS` into
-  `src/templates/studio/sidebarSections.ts` so pagination can import it without
-  pulling in the template component.
-- Tests: computePages (single/multiple folded pages, split entry blocks,
-  main-content tails kept), usePageLayout (gengar folds; onyx keeps Page 2), and
-  LiveCanvasViewport (ATS banner not sticky, in flow above the ATS view). 654
-  pass (was 647).
-- Files: `src/lib/pagination/computePages.ts` (+ test),
-  `src/lib/pagination/usePageLayout.ts` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/templates/studio/StudioSidebarTemplate.tsx`,
-  `src/templates/studio/sidebarSections.ts` (new), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (654 pass), `npm run lint`.
-  Playwright remains blocked here, so the visual check at `390x844` /
-  `1280x800` is still browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

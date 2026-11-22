@@ -24,10 +24,6 @@ _empty
 
 ### P0 / P1 — Newly Uncovered Regression Bugs
 
-- [ ] P1: Fix `Match JD` false-positive substring matches and empty trailing `•` bullets in Preview/PDF (`src/lib/keywords/jdMatch.ts`, `src/templates/shared/RichTextDisplay.tsx` or `SectionRenderer.tsx`).
-  1. **Word-boundary matching (`jdMatch.ts`):** Match JD keywords on whole-word boundaries (handling tech tokens like `C++`, `C#`, `Node.js`, `.NET`) instead of raw substring includes so words like `"rust"` or `"hiring"` never falsely match unrelated words.
-  2. **Strip empty trailing bullets:** Filter out empty `<li><p></p></li>` / whitespace-only list items before rendering in Visual Preview, `PrintPortal`, and `atsText.ts` so pressing `Enter` at the end of a bullet list never prints a stray `•` dot.
-
 - [ ] P1: Fix `Enter` key in `MonthSelect` year input jumping the Content panel to the top, and fix Launcher Paste button blur delay (`src/components/editor/SectionFormControls.tsx`, `src/components/launcher/Launcher.tsx`).
   1. **`MonthSelect` year `Enter` key:** Handle `onKeyDown` (`Enter`) in the year input so it commits the entered year cleanly without triggering an unintended form submit or scrolling the Content sidebar to the top.
   2. **Launcher Paste enablement:** Ensure `"Create resume from text"` enables immediately on `onChange` / `onPaste` without requiring a blur event first.
@@ -71,6 +67,24 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Fixed `Match JD` whole-word matching and stray empty bullets.
+  JD keywords are compared as complete tokens (never `String.includes`), so
+  `rust` cannot match `trust` and `react` cannot match `reactive`; leading-dot
+  tech names stay `.net`, match the `asp.net` suffix without matching bare
+  `net`, and `hiring` is filtered as boilerplate. A new pure
+  `stripEmptyListItems` removes `<li><p></p></li>` / whitespace-only / `<br>`-only
+  items from the inside out and runs in `SectionRenderer` (Visual Preview and
+  `PrintPortal`) plus `richTextToPlainText` for ATS text, without mutating the
+  saved document. Added JD boundary/tech-token cases, helper cases, preview
+  summary/entry coverage, print portal coverage, and an ATS empty-bullet case.
+  Verified `npm run typecheck`, `npm test` (748 pass), `npm run lint`. Files:
+  `src/lib/keywords/jdMatch.ts` (+ test),
+  `src/lib/richtext/stripEmptyListItems.ts` (+ test, new),
+  `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `src/lib/ats/atsText.ts` (+ test),
+  `src/components/preview/PrintPortal.test.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-22 — Fixed Studio Sidebar + Compact pagination clipping the main
   column. `MeasureLayer` now renders the active template's real root class and

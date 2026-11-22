@@ -245,6 +245,35 @@ Python`);
     expect(screen.getByText("SQL, Excel, Python")).toBeInTheDocument();
   });
 
+  it("drops empty trailing bullet items from the preview", () => {
+    const doc = createEmptyResume();
+    doc.summary.content = "<ul><li>Impact</li><li><p></p></li></ul>";
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+        summary: "<ul><li>Shipped</li><li>   </li></ul>",
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={["summary", "experience"]}
+      />,
+    );
+
+    const items = Array.from(
+      container.querySelectorAll<HTMLLIElement>(".resume-rich-text li"),
+    );
+
+    expect(items.map((item) => item.textContent?.trim())).toEqual([
+      "Impact",
+      "Shipped",
+    ]);
+  });
+
   it("renders skill keywords as pills or as an inline comma list", () => {
     const doc = createEmptyResume();
     doc.sections.skills.items = [

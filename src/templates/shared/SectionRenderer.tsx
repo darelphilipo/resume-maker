@@ -5,6 +5,7 @@ import {
   websiteLabelFromUrl,
 } from "@/lib/links/contactLinks";
 import { decodeBlock } from "@/lib/pagination/blockIds";
+import { stripEmptyListItems } from "@/lib/richtext/stripEmptyListItems";
 import type { ResumeDocument, SectionId } from "@/lib/schema/resume.schema";
 
 import { DateRange } from "./DateRange";
@@ -94,7 +95,7 @@ function EntryShell({
       {summary && summary.trim() !== "" ? (
         <div
           className="resume-rich-text"
-          dangerouslySetInnerHTML={{ __html: summary }}
+          dangerouslySetInnerHTML={{ __html: stripEmptyListItems(summary) }}
         />
       ) : null}
     </article>
@@ -468,7 +469,9 @@ export function SectionRenderer({
             {resolved.kind === "summary" ? (
               <div
                 className="resume-rich-text"
-                dangerouslySetInnerHTML={{ __html: doc.summary.content }}
+                dangerouslySetInnerHTML={{
+                  __html: stripEmptyListItems(doc.summary.content),
+                }}
               />
             ) : (
               <div

@@ -1,4 +1,6 @@
-const TOKEN_PATTERN = /[a-z0-9][a-z0-9+#.]*/g;
+// Tech tokens keep their meaningful punctuation (`C++`, `C#`, `Node.js`) and
+// leading-dot names (`.NET`) stay distinct from the bare word `net`.
+const TOKEN_PATTERN = /[a-z0-9][a-z0-9+#.]*|\.[a-z][a-z0-9+#.]*/g;
 const TRAILING_DOTS = /\.+$/;
 
 const STOPWORDS = new Set([
@@ -56,6 +58,7 @@ const STOPWORDS = new Set([
   "having",
   "help",
   "helping",
+  "hiring",
   "how",
   "ideal",
   "ideally",
@@ -187,7 +190,7 @@ function rawTokens(text: string): string[] {
 }
 
 function baseToken(token: string): string {
-  return token.replace(/\./g, "");
+  return token.replace(/^\./, "").replace(/\./g, "");
 }
 
 function isStopword(token: string): boolean {
@@ -196,14 +199,45 @@ function isStopword(token: string): boolean {
 
 function variants(token: string): string[] {
   const base = baseToken(token);
-  const values = new Set<string>([token, base]);
+  const values = new Set<string>([token]);
 
-  if (base.length > 3 && base.endsWith("s") && !base.endsWith("ss")) {
-    values.add(base.slice(0, -1));
-    values.add(token.slice(0, -1));
+  // A leading-dot token is a specific technology (`.NET`), so never widen it
+  // to the bare word (`net`) or it would match unrelated prose.
+  if (!token.startsWith(".")) {
+    values.add(base);
+
+    if (base.length > 3 && base.endsWith("s") && !base.endsWith("ss")) {
+      values.add(base.slice(0, -1));
+      values.add(token.slice(0, -1));
+    }
   }
 
   return [...values];
+}
+
+/**
+ * Keywords are compared against complete resume tokens, never with
+ * `String.includes`, so `rust` cannot match `trust` and `react` cannot match
+ * `reactive`. A dotted technology name (`.NET`) also matches the dotted suffix
+ * used in product names (`ASP.NET`) without matching a bare `net` word.
+ */
+function hasKeywordMatch(
+  keyword: string,
+  resumeTokens: ReadonlySet<string>,
+): boolean {
+  const keywordVariants = variants(keyword);
+
+  for (const token of resumeTokens) {
+    if (keywordVariants.includes(token)) {
+      return true;
+    }
+
+    if (keyword.startsWith(".") && token.endsWith(keyword)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function extractJobKeywords(
@@ -247,9 +281,7 @@ export function matchJobKeywords(
   const missing: string[] = [];
 
   for (const keyword of keywords) {
-    const found = variants(keyword).some((variant) =>
-      resumeTokens.has(variant),
-    );
+    const found = hasKeywordMatch(keyword, resumeTokens);
 
     (found ? matched : missing).push(keyword);
   }

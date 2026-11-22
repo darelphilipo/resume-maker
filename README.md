@@ -95,7 +95,9 @@ in control of every line, and your data stays on your device.
   and an `[Action] + [What] + [Result by X%]` prompt; tap **Writing helpers** to
   tuck that row away so your bullets stay in view. Achievements start with impact
   and end with a number. The verb lands cleanly after the existing sentence and
-  gets a leading space when needed, so words never run together.
+  gets a leading space when needed, so words never run together. A blank bullet
+  left at the end of a list is ignored in the preview, PDF, and ATS text, so it
+  never prints as a stray dot.
 - Skills grouped by an optional category with comma-separated keywords (for
   example `Languages: Python, SQL`), with no self-ratings to maintain. A
   keyword-only row stays visible without a blank category line, so pasted lists
@@ -224,9 +226,11 @@ in control of every line, and your data stays on your device.
 - **Job description keyword matcher**: tap **Match JD** in the Content panel
   header to open the matcher on any device, then paste a posting to see which
   of its keywords already appear in your resume and which are missing. Common
-  filler words such as “for” and “looking” are ignored, and one tap on the
-  drawer's **X** closes it. Matching runs locally with simple word heuristics,
-  not AI.
+  filler words such as “for”, “looking”, and “hiring” are ignored, and keywords
+  match whole words only — so “rust” never counts just because “trust” appears.
+  Tech names such as C++, C#, Node.js, and .NET are recognised, including
+  product forms like ASP.NET. One tap on the drawer's **X** closes it. Matching
+  runs locally with simple word heuristics, not AI.
 - The **Visual / ATS text** switch, page-count pill, fit/zoom reset pills, and
   overflow warning stay pinned above the paper while you scroll, so they never
   cover your name or header — and the paper stops cleanly below that header

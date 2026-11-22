@@ -1,4 +1,5 @@
 import { formatMonth } from "@/lib/date/month";
+import { stripEmptyListItems } from "@/lib/richtext/stripEmptyListItems";
 import {
   DEFAULT_SECTION_ORDER,
   SECTION_IDS,
@@ -119,7 +120,7 @@ export function richTextToPlainText(html: string): string {
     return "";
   }
 
-  const withBreaks = html
+  const withBreaks = stripEmptyListItems(html)
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<\s*br\s*\/?>/gi, "\n")
     .replace(/<\s*li[^>]*>/gi, "- ")

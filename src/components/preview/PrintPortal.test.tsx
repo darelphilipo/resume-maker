@@ -22,6 +22,20 @@ describe("PrintPortal", () => {
     view.unmount();
   });
 
+  it("omits empty trailing bullet items from the printed pages", () => {
+    const doc = createEmptyResume();
+    doc.summary.content = "<ul><li>Safe</li><li><p></p></li></ul>";
+
+    const view = render(<PrintPortal doc={doc} pages={[["summary"]]} />);
+    const portal = document.getElementById("print-portal");
+    const items = portal?.querySelectorAll(".resume-rich-text li");
+
+    expect(items).toHaveLength(1);
+    expect(items?.[0]?.textContent).toBe("Safe");
+
+    view.unmount();
+  });
+
   it("sanitizes rich text before rendering the portal", () => {
     const doc = createEmptyResume();
     doc.summary.content =
