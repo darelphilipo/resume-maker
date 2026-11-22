@@ -378,9 +378,20 @@ describe("all editable fields wiring", () => {
         name: "example.com/SENTINEL_BASICS_WEBSITE",
       }),
     ).toHaveAttribute("href", `https://${SENTINEL.basics.websiteUrl}`);
-    expect(
-      screen.getByRole("link", { name: "example.com/SENTINEL_PROFILE_URL" }),
-    ).toHaveAttribute("href", `https://${SENTINEL.profiles.url}`);
+    // Profiles are promoted into the header as well as the Profiles section,
+    // so the same cleaned link appears once in each renderer.
+    const profileLinks = screen.getAllByRole("link", {
+      name: "example.com/SENTINEL_PROFILE_URL",
+    });
+    expect(profileLinks).toHaveLength(2);
+
+    for (const link of profileLinks) {
+      expect(link).toHaveAttribute(
+        "href",
+        `https://${SENTINEL.profiles.url}`,
+      );
+    }
+
     expect(
       screen.getByRole("link", {
         name: "example.com/SENTINEL_CERTIFICATION_URL",

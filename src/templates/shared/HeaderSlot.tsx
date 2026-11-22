@@ -2,21 +2,35 @@
 
 import { Fragment, useState } from "react";
 import {
+  BehanceLogo,
+  DevToLogo,
+  DribbbleLogo,
   EnvelopeSimple,
+  GithubLogo,
+  GitlabLogo,
   Globe,
+  LinkedinLogo,
   LinkSimple,
   MapPin,
+  MediumLogo,
   Phone,
   SealCheck,
+  StackOverflowLogo,
+  TwitterLogo,
+  XLogo,
+  type Icon,
 } from "@phosphor-icons/react";
 
 import {
   externalLinkHref,
+  profileHeaderLink,
   websiteLabelFromUrl,
+  type HeaderProfileIcon,
 } from "@/lib/links/contactLinks";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 
 import { AvatarSlot, shouldShowAvatar } from "./AvatarSlot";
+import { resolveSection } from "./sectionData";
 
 type ContactKind =
   | "email"
@@ -24,6 +38,7 @@ type ContactKind =
   | "location"
   | "website"
   | "workAuth"
+  | "profile"
   | "custom";
 
 type ContactEntry = {
@@ -31,21 +46,45 @@ type ContactEntry = {
   kind: ContactKind;
   text: string;
   href?: string;
+  icon?: HeaderProfileIcon;
 };
 
-function ContactIcon({ kind }: { kind: ContactKind }) {
+/** Only resume-relevant networks get a brand mark; everything else is a globe. */
+const PROFILE_ICON_COMPONENTS: Record<HeaderProfileIcon, Icon> = {
+  github: GithubLogo,
+  gitlab: GitlabLogo,
+  linkedin: LinkedinLogo,
+  "stack-overflow": StackOverflowLogo,
+  twitter: TwitterLogo,
+  x: XLogo,
+  dribbble: DribbbleLogo,
+  behance: BehanceLogo,
+  medium: MediumLogo,
+  dev: DevToLogo,
+  globe: Globe,
+};
+
+function ContactIcon({
+  kind,
+  icon,
+}: {
+  kind: ContactKind;
+  icon?: HeaderProfileIcon;
+}) {
   const Icon =
-    kind === "email"
-      ? EnvelopeSimple
-      : kind === "phone"
-        ? Phone
-        : kind === "location"
-          ? MapPin
-          : kind === "website"
-            ? Globe
-            : kind === "workAuth"
-              ? SealCheck
-              : LinkSimple;
+    kind === "profile"
+      ? PROFILE_ICON_COMPONENTS[icon ?? "globe"]
+      : kind === "email"
+        ? EnvelopeSimple
+        : kind === "phone"
+          ? Phone
+          : kind === "location"
+            ? MapPin
+            : kind === "website"
+              ? Globe
+              : kind === "workAuth"
+                ? SealCheck
+                : LinkSimple;
 
   return (
     <Icon
@@ -94,6 +133,27 @@ function buildContactEntries(doc: ResumeDocument): ContactEntry[] {
       kind: "website",
       text: websiteLabel || websiteLabelFromUrl(websiteUrl) || websiteUrl,
       href: externalLinkHref(websiteUrl) || undefined,
+    });
+  }
+
+  // Profiles are promoted into the contact line from the existing Profiles
+  // section — there is no second `basics.links` array. The section renderer and
+  // ATS text still own the full list, so only usable URLs become header links.
+  const profiles = resolveSection(doc, "profiles");
+
+  if (profiles?.kind === "profiles") {
+    profiles.items.forEach((item, index) => {
+      const link = profileHeaderLink(item, index);
+
+      if (link) {
+        entries.push({
+          id: `profile-${link.id}`,
+          kind: "profile",
+          text: link.label,
+          href: link.href,
+          icon: link.icon,
+        });
+      }
     });
   }
 
@@ -195,13 +255,18 @@ export function HeaderSlot({ doc }: { doc: ResumeDocument }) {
                       ? "resume-contact-item resume-work-auth"
                       : "resume-contact-item"
                   }
+                  data-profile-icon={
+                    entry.kind === "profile" ? entry.icon : undefined
+                  }
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "3pt",
                   }}
                 >
-                  {hideIcons ? null : <ContactIcon kind={entry.kind} />}
+                  {hideIcons ? null : (
+                    <ContactIcon kind={entry.kind} icon={entry.icon} />
+                  )}
                   {entry.href ? (
                     <a
                       className="resume-link"

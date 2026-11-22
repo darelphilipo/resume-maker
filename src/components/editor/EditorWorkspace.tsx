@@ -388,7 +388,15 @@ export function EditorWorkspace() {
               >
                 Basics
               </h3>
-              <BasicsForm onLiveNameChange={publishLiveName} />
+              <BasicsForm
+                onLiveNameChange={publishLiveName}
+                onManageProfiles={() =>
+                  setDrawerSection({
+                    id: "profiles",
+                    title: doc.sections.profiles.title || "Profiles",
+                  })
+                }
+              />
             </section>
             <SectionList
               onOpenSection={setDrawerSection}

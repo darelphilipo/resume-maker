@@ -171,4 +171,129 @@ describe("HeaderSlot", () => {
 
     expect(container.querySelectorAll("svg").length).toBeGreaterThan(0);
   });
+
+  it("promotes visible profiles into the header with clean links and icons", () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Ada Lovelace";
+    doc.sections.profiles.items = [
+      {
+        id: "github",
+        hidden: false,
+        network: "GitHub",
+        username: "ada",
+        url: "https://www.github.com/ada/",
+        icon: "github",
+      },
+      {
+        id: "linkedin",
+        hidden: false,
+        network: "LinkedIn",
+        username: "ada",
+        url: "https://linkedin.com/in/ada",
+        icon: "",
+      },
+      {
+        id: "portfolio",
+        hidden: false,
+        network: "",
+        username: "",
+        url: "ada.dev/portfolio",
+        icon: "",
+      },
+    ];
+
+    render(<HeaderSlot doc={doc} />);
+
+    const github = screen.getByRole("link", { name: "github.com/ada" });
+    const linkedin = screen.getByRole("link", { name: "linkedin.com/in/ada" });
+    const portfolio = screen.getByRole("link", { name: "ada.dev/portfolio" });
+
+    expect(github).toHaveAttribute("href", "https://www.github.com/ada/");
+    expect(linkedin).toHaveAttribute("href", "https://linkedin.com/in/ada");
+    expect(portfolio).toHaveAttribute("href", "https://ada.dev/portfolio");
+
+    expect(github.closest("[data-profile-icon]")).toHaveAttribute(
+      "data-profile-icon",
+      "github",
+    );
+    expect(linkedin.closest("[data-profile-icon]")).toHaveAttribute(
+      "data-profile-icon",
+      "linkedin",
+    );
+    expect(portfolio.closest("[data-profile-icon]")).toHaveAttribute(
+      "data-profile-icon",
+      "globe",
+    );
+    expect(
+      github.closest(".resume-contact-item")?.querySelector("svg"),
+    ).not.toBeNull();
+  });
+
+  it("keeps hidden profiles, hidden sections, and URL-less rows out of the header", () => {
+    const doc = createEmptyResume();
+    doc.sections.profiles.items = [
+      {
+        id: "hidden-row",
+        hidden: true,
+        network: "GitHub",
+        username: "ada",
+        url: "github.com/ada",
+        icon: "github",
+      },
+      {
+        id: "no-url",
+        hidden: false,
+        network: "LinkedIn",
+        username: "ada",
+        url: "",
+        icon: "linkedin",
+      },
+      {
+        id: "visible",
+        hidden: false,
+        network: "GitLab",
+        username: "ada",
+        url: "gitlab.com/ada",
+        icon: "gitlab",
+      },
+    ];
+
+    const { rerender } = render(<HeaderSlot doc={doc} />);
+
+    expect(
+      screen.getByRole("link", { name: "gitlab.com/ada" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "github.com/ada" })).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "linkedin.com/in/ada" }),
+    ).toBeNull();
+
+    doc.sections.profiles.hidden = true;
+    rerender(<HeaderSlot doc={doc} />);
+
+    expect(screen.queryByRole("link", { name: "gitlab.com/ada" })).toBeNull();
+  });
+
+  it("keeps promoted profile links when header icons are hidden", () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Ada";
+    doc.metadata.page.hideIcons = true;
+    doc.sections.profiles.items = [
+      {
+        id: "github",
+        hidden: false,
+        network: "GitHub",
+        username: "ada",
+        url: "github.com/ada",
+        icon: "github",
+      },
+    ];
+
+    const { container } = render(<HeaderSlot doc={doc} />);
+
+    expect(
+      screen.getByRole("link", { name: "github.com/ada" }),
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll("svg")).toHaveLength(0);
+  });
 });

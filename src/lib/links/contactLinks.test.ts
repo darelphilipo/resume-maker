@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { detectProfileLink, externalLinkHref, websiteLabelFromUrl } from "./contactLinks";
+import {
+  detectProfileLink,
+  externalLinkHref,
+  headerProfileIcon,
+  profileHeaderLink,
+  websiteLabelFromUrl,
+} from "./contactLinks";
 
 describe("detectProfileLink", () => {
   it("detects the network, icon, and username from a bare host", () => {
@@ -58,6 +64,69 @@ describe("detectProfileLink", () => {
     expect(detectProfileLink("")).toBeNull();
     expect(detectProfileLink("   ")).toBeNull();
     expect(detectProfileLink("not a url")).toBeNull();
+  });
+});
+
+describe("profileHeaderLink", () => {
+  it("builds a clean link with the derived icon", () => {
+    expect(
+      profileHeaderLink({
+        id: "profile-1",
+        url: "https://www.linkedin.com/in/ada/",
+        icon: "",
+      }),
+    ).toEqual({
+      id: "profile-1",
+      label: "linkedin.com/in/ada",
+      href: "https://www.linkedin.com/in/ada/",
+      icon: "linkedin",
+    });
+  });
+
+  it("upgrades a bare host and keeps a saved icon", () => {
+    expect(
+      profileHeaderLink({ url: "github.com/ada", icon: "github" }, 3),
+    ).toEqual({
+      id: "profile-3",
+      label: "github.com/ada",
+      href: "https://github.com/ada",
+      icon: "github",
+    });
+  });
+
+  it("falls back to a globe for unknown and non-resume hosts", () => {
+    expect(
+      profileHeaderLink({ url: "https://ada.dev/portfolio", icon: "" }),
+    ).toMatchObject({ label: "ada.dev/portfolio", icon: "globe" });
+    expect(
+      profileHeaderLink({ url: "https://facebook.com/ada", icon: "" }),
+    ).toMatchObject({ icon: "globe" });
+    expect(
+      profileHeaderLink({ url: "https://example.com", icon: "facebook" }),
+    ).toMatchObject({ icon: "globe" });
+  });
+
+  it("drops rows without a usable http(s) URL", () => {
+    expect(profileHeaderLink({ url: "" })).toBeNull();
+    expect(profileHeaderLink({ url: "   " })).toBeNull();
+    expect(profileHeaderLink({ url: "javascript:alert(1)" })).toBeNull();
+    expect(profileHeaderLink({ url: "data:text/html,hello" })).toBeNull();
+  });
+});
+
+describe("headerProfileIcon", () => {
+  it("prefers a supported stored icon over the URL heuristic", () => {
+    expect(headerProfileIcon("stack-overflow", "https://github.com/ada")).toBe(
+      "stack-overflow",
+    );
+    expect(headerProfileIcon(" GitHub ", "")).toBe("github");
+  });
+
+  it("derives the icon from the URL and defaults to globe", () => {
+    expect(headerProfileIcon("", "https://x.com/ada")).toBe("x");
+    expect(headerProfileIcon("", "https://gitlab.com/ada")).toBe("gitlab");
+    expect(headerProfileIcon("", "https://ada.dev")).toBe("globe");
+    expect(headerProfileIcon(undefined, undefined)).toBe("globe");
   });
 });
 

@@ -146,6 +146,104 @@ export function detectProfileLink(input: string): DetectedProfileLink | null {
 }
 
 /**
+ * The profile logos the resume header can draw. Only resume-relevant networks
+ * get their own mark; every other profile (and a personal portfolio) falls back
+ * to a globe so we never invent a brand icon.
+ */
+export type HeaderProfileIcon =
+  | "github"
+  | "gitlab"
+  | "linkedin"
+  | "stack-overflow"
+  | "twitter"
+  | "x"
+  | "dribbble"
+  | "behance"
+  | "medium"
+  | "dev"
+  | "globe";
+
+const HEADER_PROFILE_ICONS = new Set<HeaderProfileIcon>([
+  "github",
+  "gitlab",
+  "linkedin",
+  "stack-overflow",
+  "twitter",
+  "x",
+  "dribbble",
+  "behance",
+  "medium",
+  "dev",
+  "globe",
+]);
+
+export type HeaderProfileLink = {
+  id: string;
+  label: string;
+  href: string;
+  icon: HeaderProfileIcon;
+};
+
+type HeaderProfileSource = {
+  id?: unknown;
+  url?: unknown;
+  icon?: unknown;
+};
+
+function stringField(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function isHeaderProfileIcon(value: string): value is HeaderProfileIcon {
+  return HEADER_PROFILE_ICONS.has(value as HeaderProfileIcon);
+}
+
+/**
+ * Pick the header icon for a saved profile. A known stored icon wins (imported
+ * rows keep it), then the host heuristic, then the globe fallback.
+ */
+export function headerProfileIcon(
+  icon: unknown,
+  url: unknown,
+): HeaderProfileIcon {
+  const saved = stringField(icon).trim().toLowerCase();
+
+  if (isHeaderProfileIcon(saved)) {
+    return saved;
+  }
+
+  const detected = detectProfileLink(stringField(url));
+  const derived = detected?.icon ?? "";
+
+  return isHeaderProfileIcon(derived) ? derived : "globe";
+}
+
+/**
+ * Turn a saved Profiles row into one inline header link. Rows without a usable
+ * http(s) URL stay out of the header (they still render in the Profiles
+ * section), and the visible label is the cleaned URL so `https://` / `www.`
+ * never clutter the contact line.
+ */
+export function profileHeaderLink(
+  item: HeaderProfileSource,
+  index = 0,
+): HeaderProfileLink | null {
+  const url = stringField(item.url);
+  const href = externalLinkHref(url);
+
+  if (href === "") {
+    return null;
+  }
+
+  return {
+    id: stringField(item.id) || `profile-${index}`,
+    label: websiteLabelFromUrl(url) || url.trim(),
+    href,
+    icon: headerProfileIcon(item.icon, url),
+  };
+}
+
+/**
  * Absolute href for a user-entered resume link. Bare hosts get `https://`, and
  * anything with a non-http scheme (for example `javascript:`) is rejected so a
  * pasted value can never become an executable link in the preview.

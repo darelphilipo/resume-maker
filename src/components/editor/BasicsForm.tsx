@@ -108,9 +108,14 @@ export type BasicsFormProps = {
    * the header and preview canvas only follow the name once typing pauses.
    */
   onLiveNameChange?: (name: string) => void;
+  /** Opens the existing Profiles editor; the header link list is derived there. */
+  onManageProfiles?: () => void;
 };
 
-export function BasicsForm({ onLiveNameChange }: BasicsFormProps) {
+export function BasicsForm({
+  onLiveNameChange,
+  onManageProfiles,
+}: BasicsFormProps) {
   const basics = useResumeStore((state) => state.doc.basics);
   const picture = useResumeStore((state) => state.doc.picture);
   const patchDoc = useResumeStore((state) => state.patchDoc);
@@ -265,6 +270,23 @@ export function BasicsForm({ onLiveNameChange }: BasicsFormProps) {
           websitePreview !== "" ? `Shown as ${websitePreview}` : undefined
         }
       />
+      {onManageProfiles ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface-muted px-3 py-2">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Profile links</p>
+            <p className="text-xs text-muted">
+              GitHub, LinkedIn, or portfolio — shown in the header.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onManageProfiles}
+            className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-black/10 bg-surface px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            Manage profiles
+          </button>
+        </div>
+      ) : null}
       <TextInput
         id="basics-picture-url"
         label="Picture URL"

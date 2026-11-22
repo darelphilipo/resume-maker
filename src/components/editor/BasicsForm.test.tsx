@@ -189,6 +189,18 @@ describe("BasicsForm", () => {
     expect(screen.getByText("Shown as example.com")).toBeInTheDocument();
   });
 
+  it("offers a shortcut to manage the profile links shown in the header", () => {
+    const onManageProfiles = vi.fn();
+
+    render(<BasicsForm onManageProfiles={onManageProfiles} />);
+
+    expect(screen.getByText("Profile links")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Manage profiles" }));
+
+    expect(onManageProfiles).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps an imported website label until the URL changes", () => {
     const doc = createEmptyResume();
     doc.basics.website = { url: "https://ada.dev", label: "Ada's portfolio" };

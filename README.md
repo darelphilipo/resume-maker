@@ -77,8 +77,12 @@ in control of every line, and your data stays on your device.
   is shown without `https://` or `www.` — there is no separate label to
   maintain.
 - Profiles: paste a profile URL such as `github.com/you` and the network,
-  username, and icon are filled in automatically. A row with only a URL still
-  counts, so pasted links are never silently dropped.
+  username, and icon are filled in automatically. Visible profiles also appear
+  inline in the resume header beside your website, as clean clickable links with
+  GitHub, LinkedIn, and other common resume-network marks (a globe for anything
+  else), so recruiters can reach them without scrolling. Tap **Manage profiles**
+  in Basics to edit the same list. A row with only a URL still counts, so pasted
+  links are never silently dropped.
 - **Everything you type makes it into the resume.** Your website, profile links,
   certification links, and publication links appear as clickable links in the
   preview and PDF — even if you pasted a bare address such as `github.com/you` —

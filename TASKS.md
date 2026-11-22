@@ -26,10 +26,6 @@ _empty
 
 ### P2 — High-Value Reddit-Inspired Features
 
-- [ ] P2: Promote existing **`Profiles` links** (`LinkedIn`, `GitHub`, `Portfolio`) cleanly into the resume header (`src/components/editor/BasicsForm.tsx`, `src/lib/links/contactLinks.ts`, `src/templates/shared/HeaderSlot.tsx`).
-  1. Reuse the existing `Profiles` data (`contactLinks.ts`)—do not create a duplicate `basics.links` array—and render visible profile links inline in the top contact header across all 6 templates as clean clickable `<a href>` links (stripping `https://` / `www.`), with a quick shortcut in `BasicsForm` to manage them.
-  2. Include the icons for most common websites like github ,LinkedIn .only high value websites for resumes .else default to globe icon 
-
 - [ ] P2: Add lightweight **Application Status & Target Company tags** to Recent Resumes on `/` (`src/types/`, `src/lib/store/db.ts`, `src/components/launcher/Launcher.tsx`).
   1. Add optional `targetCompany?: string` and `status?: "master" | "draft" | "applied" | "interview" | "offer"` fields to saved resume records with safe defaults for existing Dexie rows.
   2. Display an inline status badge and target company tag on each **Recent resumes** card with a quick edit selector (stopping row click propagation), plus a compact status filter bar when 2+ resumes exist.
@@ -43,6 +39,29 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Promoted **Profiles links into the resume header**. The new
+  pure `profileHeaderLink` / `headerProfileIcon` helpers in `contactLinks.ts`
+  reuse the existing `sections.profiles` rows (no `basics.links` duplicate),
+  build a cleaned `label` from `websiteLabelFromUrl` (`https://` / `www.`
+  stripped), an absolute `href` from `externalLinkHref`, and a curated icon:
+  GitHub, GitLab, LinkedIn, Stack Overflow, X/Twitter, Dribbble, Behance, Medium,
+  or DEV when the host or saved icon matches, otherwise a globe. `HeaderSlot`
+  renders those visible, non-hidden links inline in the contact line after the
+  website, with the existing separators and `hideIcons` still respected; the
+  Profiles section and ATS text stay unchanged, so ATS output is not duplicated.
+  `BasicsForm` gained a compact **Profile links** row whose **Manage profiles**
+  button opens the existing Profiles drawer through `EditorWorkspace`, so there
+  is still one editor and one data source. Updated `allFieldsWiring` for the
+  second (header) profile link and added helper, HeaderSlot, BasicsForm, and
+  drawer-shortcut regressions. Verified `npm run typecheck`, `npm test`
+  (819 pass), `npm run lint`. Files: `src/lib/links/contactLinks.ts` (+ test),
+  `src/templates/shared/HeaderSlot.tsx`, `AvatarSlot.test.tsx`,
+  `src/components/editor/BasicsForm.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx`,
+  `src/components/editor/sectionEditorDrawer.test.tsx`,
+  `src/templates/shared/allFieldsWiring.test.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-22 — Added **Grouped Promotions** to Experience. A section-level
   **Group promotions at the same company** checkbox writes

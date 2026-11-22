@@ -118,6 +118,21 @@ describe("section editor drawer", () => {
     expect(document.querySelectorAll(".tiptap")).toHaveLength(2);
   });
 
+  it("opens the profiles editor from the Basics shortcut", async () => {
+    const user = userEvent.setup();
+
+    render(<EditorWorkspace />);
+    await screen.findByRole("heading", { name: "Untitled resume" });
+    await user.click(screen.getByRole("button", { name: "Manage profiles" }));
+
+    const dialog = await screen.findByRole("dialog");
+
+    expect(
+      within(dialog).getByRole("form", { name: "profiles" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("form", { name: "profiles" })).toHaveLength(1);
+  });
+
   it("restores the inline form when the drawer closes", async () => {
     const { dialog } = await openSectionEditor(/^Summary/);
 

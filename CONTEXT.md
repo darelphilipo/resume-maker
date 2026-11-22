@@ -1038,6 +1038,22 @@ rediscover.
       untouched: it stays one linear entry per role with the company repeated,
       and a regression asserts that. Do not move grouping into `atsText.ts`.
 
+  78. **Profiles are promoted into the header from the section, not a new field.**
+      `profileHeaderLink` / `headerProfileIcon`
+      (`src/lib/links/contactLinks.ts`) turn visible `sections.profiles` rows
+      into header links: a cleaned label from `websiteLabelFromUrl`, an absolute
+      `href` from `externalLinkHref`, and a curated brand icon (GitHub, GitLab,
+      LinkedIn, Stack Overflow, X/Twitter, Dribbble, Behance, Medium, DEV) with
+      a globe fallback for personal sites and lower-value hosts. `HeaderSlot`
+      reads them through `resolveSection(doc, "profiles")`, so a hidden section,
+      a hidden row, or a URL-less row stays out, and `hideIcons` suppresses the
+      logos without dropping the links. There is no `basics.links` array: edit
+      the existing Profiles section, and the **Manage profiles** shortcut in
+      Basics opens that same drawer. The Profiles section renderer and
+      `atsText.ts` are deliberately untouched, so ATS output is not duplicated;
+      `allFieldsWiring` expects the profile link twice in Visual/PDF (header plus
+      section).
+
 ## Verification and tooling
 
 ```powershell
@@ -1098,6 +1114,38 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — Profiles promoted into the resume header
+- Task: top P2 Queue item. Visible `Profiles` rows now appear as clickable links
+  in the resume header across all six templates, with brand marks and a Basics
+  shortcut.
+- Helper: `profileHeaderLink` / `headerProfileIcon` in `contactLinks.ts` reuse
+  the existing `sections.profiles` data. They clean the label with
+  `websiteLabelFromUrl` (no `https://` / `www.`), build an absolute href with
+  `externalLinkHref` (non-http schemes dropped), and map only resume-relevant
+  hosts (GitHub, GitLab, LinkedIn, Stack Overflow, X/Twitter, Dribbble, Behance,
+  Medium, DEV) to logos, with a globe fallback. A known saved `icon` wins over
+  the URL heuristic.
+- Header: `HeaderSlot` reads profiles through `resolveSection(doc, "profiles")`
+  and appends the links after the website. Hidden sections/rows and URL-less
+  rows are excluded; `hideIcons` hides the logos but keeps the links. The
+  Profiles section renderer and ATS text were not changed, so ATS output is not
+  duplicated. `allFieldsWiring` now expects the profile link in both the header
+  and the section.
+- Editor: `BasicsForm` has a compact **Profile links** row; **Manage profiles**
+  calls a new `onManageProfiles` prop wired in `EditorWorkspace` to open the
+  existing Profiles drawer, so there is no duplicate form or state.
+- Tests: 6 helper cases, 3 HeaderSlot cases (clean links/icons, hidden rows and
+  section, icon suppression), the BasicsForm shortcut callback, and the
+  EditorWorkspace drawer opening. 819 pass (was 808). Decision #78.
+- Files: `src/lib/links/contactLinks.ts` (+ test),
+  `src/templates/shared/HeaderSlot.tsx`, `AvatarSlot.test.tsx`,
+  `src/components/editor/BasicsForm.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx`,
+  `src/components/editor/sectionEditorDrawer.test.tsx`,
+  `src/templates/shared/allFieldsWiring.test.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (819 pass), `npm run lint`.
 
 ### 2026-11-22 — Grouped promotions at one company
 - Task: top P2 Queue item. Added the **Group promotions at the same company**
@@ -1330,35 +1378,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (727 pass), `npm run lint`.
-
-### 2026-11-21 — Zero-AI resume lint and one-click bullet periods
-- Task: top P2 Queue item. Added a compact **Check** popover beside **Match JD**
-  in the Content header and a deterministic lint pass over visible bullets.
-- Lint: new pure `src/lib/lint/resumeLint.ts`. `collectResumeBullets` walks the
-  layout order through `resolveSection` (hidden sections/entries excluded),
-  extracts top-level `<li>` spans with a depth-aware scanner, and reuses
-  `richTextToPlainText` for bullet text. `analyzeResumeLint` reports mixed
-  trailing periods, first-person pronouns, filler adverbs, and repeated opening
-  verbs per role (articles/pronouns are not treated as verbs).
-- Fix: `standardizeBulletPeriods(doc, "add" | "remove")` clones the document,
-  edits only visible list items, keeps inline markup, leaves `? ! ; :` alone,
-  and returns a new doc. The popover commits it with one `setDoc`, so a single
-  undo restores the original prose and autosave sees a normal edit.
-- UI: the trigger shows `Check (N)` in amber when findings exist and a quiet
-  `Check` when clean; the popover lists plain-language findings plus up to three
-  opening-word snippets, enables only the applicable period action, announces
-  the result, and closes on outside tap or Escape. Decision #68.
-- Tests: 11 pure cases (visibility, nested lists, mixed/consistent periods,
-  pronouns, filler/truncated snippets, repeated verbs per role, stoplist,
-  remove/add transformations, hidden entries, immutability) and 6 popover cases
-  (clean badge, counts/findings, remove + undo through the store, add,
-  disabled-with-no-bullets, Escape). 713 pass (was 696). No new layout shell, so
-  no Playwright case was added.
-- Files: `src/lib/lint/resumeLint.ts` (+ test, new),
-  `src/components/editor/ResumeLintPopover.tsx` (+ test, new),
-  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (713 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit
