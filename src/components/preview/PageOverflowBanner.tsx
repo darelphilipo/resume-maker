@@ -143,7 +143,7 @@ export function BulletTrimTips({
         onClick={() => {
           setOpen((current) => !current);
         }}
-        className="flex min-h-11 shrink-0 items-center gap-1 rounded-full border border-line/70 bg-surface/95 px-2.5 text-xs font-semibold text-primary shadow-sm transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:min-h-8"
+        className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-line/70 bg-surface/95 px-2.5 text-xs font-semibold text-primary shadow-sm transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
       >
         Trim tips ({report.issues.length})
       </button>

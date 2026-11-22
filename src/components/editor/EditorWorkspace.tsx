@@ -433,16 +433,18 @@ export function EditorWorkspace() {
           <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-none">
             <div
               data-preview-mode-header=""
-              className="editor-chrome z-10 flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-line/70 bg-background/95 px-1 backdrop-blur lg:sticky lg:top-0 lg:z-20"
+              className="editor-chrome z-10 flex min-h-10 shrink-0 flex-nowrap items-center justify-between gap-2 overflow-x-auto no-scrollbar border-b border-line/70 bg-background/95 px-1 backdrop-blur lg:sticky lg:top-0 lg:z-20 lg:min-h-14 lg:flex-wrap lg:overflow-visible"
             >
-              <h2 className="font-serif text-xl font-semibold tracking-tight">
+              {/* The active bottom tab already names the Preview panel, so the
+                  heading only earns its space on desktop. */}
+              <h2 className="hidden font-serif text-xl font-semibold tracking-tight lg:block">
                 Preview
               </h2>
-              <div className="ml-auto flex flex-wrap items-center justify-end gap-1.5">
+              <div className="ml-auto flex shrink-0 items-center justify-end gap-1.5">
                 <div
                   role="group"
                   aria-label="Preview mode"
-                  className="flex items-center gap-1 rounded-lg border border-line bg-surface p-0.5"
+                  className="flex shrink-0 items-center gap-0.5 rounded-lg border border-line bg-surface p-0.5"
                 >
                   <button
                     type="button"
@@ -450,7 +452,7 @@ export function EditorWorkspace() {
                     onClick={() => {
                       setPreviewMode("canvas");
                     }}
-                    className="min-h-11 rounded-md px-3 text-sm font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    className="h-8 rounded-md px-2.5 text-xs font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   >
                     Visual
                   </button>
@@ -460,7 +462,7 @@ export function EditorWorkspace() {
                     onClick={() => {
                       setPreviewMode("ats");
                     }}
-                    className="min-h-11 rounded-md px-3 text-sm font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    className="h-8 rounded-md px-2.5 text-xs font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   >
                     ATS text
                   </button>
@@ -474,7 +476,7 @@ export function EditorWorkspace() {
                   onClick={() => {
                     setScanPreview((enabled) => !enabled);
                   }}
-                  className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-xs font-semibold text-text transition-colors hover:border-primary/40 hover:bg-primary/5 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 text-xs font-semibold text-text transition-colors hover:border-primary/40 hover:bg-primary/5 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   <MagnifyingGlass size={15} aria-hidden />
                   6s Scan
@@ -486,7 +488,7 @@ export function EditorWorkspace() {
                   onClick={() => {
                     setAnonymizePreview((enabled) => !enabled);
                   }}
-                  className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-xs font-semibold text-text transition-colors hover:border-primary/40 hover:bg-primary/5 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 text-xs font-semibold text-text transition-colors hover:border-primary/40 hover:bg-primary/5 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   {anonymizePreview ? (
                     <EyeSlash size={15} aria-hidden />

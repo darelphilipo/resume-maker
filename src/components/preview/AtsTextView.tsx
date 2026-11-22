@@ -125,7 +125,7 @@ export function AtsTextView({ doc }: { doc: ResumeDocument }) {
 
       <div
         aria-label="ATS plain text preview"
-        className="max-h-[70vh] overflow-auto rounded-xl border border-line bg-surface"
+        className="overflow-hidden rounded-xl border border-line bg-surface"
       >
         {blocks.text === "" ? (
           <p className="p-4 font-mono text-xs leading-relaxed text-text">

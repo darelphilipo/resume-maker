@@ -24,10 +24,6 @@ _empty
 
 ### P1 — Final Pre-Launch Polish
 
-- [ ] P1: Compact mobile Preview chrome to maximize resume size & fix `ATS text` double-scrolling (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/AtsTextView.tsx`).
-  1. **Maximize Preview area on mobile:** Hide the redundant `"Preview"` heading on `< lg` (the active bottom tab already says Preview), tighten `Visual | ATS text`, `6s Scan`, `Anonymize`, `1 page`, `Trim tips`, and `Reset fit` into compact `h-8 text-xs px-2.5` pills arranged in at most 1–2 tight single-line rows (with `overflow-x-auto no-scrollbar` if needed so pills never wrap into 4 tall stacked rows), and trim outer horizontal/vertical canvas padding on mobile (`px-2 py-2`) so the resume page dominates the screen.
-  2. **Single scroll container for `ATS text`:** Remove the nested inner `overflow-y-auto` / `max-h` wrapper inside `AtsTextView.tsx` so the `"Copy all"` bar and all plain-text sections scroll together as one smooth, unified scroll area inside the Preview panel with zero double-scroll friction.
-
 - [ ] P1: Fix `Profiles` deduplication, `Manage profiles` shortcut, year-only dates, Impact Formula chip spacing, and Homepage Recent Resumes pagination (`src/components/editor/BasicsForm.tsx`, `src/templates/shared/SectionRenderer.tsx`, `src/lib/ats/atsText.ts`, `src/lib/date/month.ts`, `src/components/editor/RichTextField.tsx`, `src/components/launcher/Launcher.tsx`).
   1. **`Profiles` deduplication & shortcut:** Omit the redundant `PROFILES` body section when profile links are rendered inline in the top contact header, mirror those inline profile links in `ATS text`'s `CONTACT DETAILS`, and wire `Manage profiles` in `BasicsForm` so clicking it expands and smoothly scrolls to the `Profiles` card.
   2. **Year-only dates & chip spacing:** Support 4-digit year-only values (`"2018"` → `2018 — 2019`) in `MonthSelect` + `DateRange` when no month is chosen, and add a space between the bold verb and placeholder in Impact Formula chip labels (`Reduced [metric]`, `Built [feature/system]`, `Led [team/project]`, `Automated [workflow]`).
@@ -40,6 +36,25 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Compacted the mobile Preview chrome and made `ATS text` a
+  single scroll area. The redundant `Preview` heading is hidden below `lg`, and
+  `Visual | ATS text`, `6s Scan`, and `Anonymize` now share one compact
+  `h-8 text-xs px-2.5` row that scrolls sideways without a visible scrollbar
+  (new `.no-scrollbar` utility) instead of wrapping into stacked rows. The canvas
+  root trims to `px-2 py-2` on phones (`lg:p-4`), `PreviewChrome` mirrors that
+  bleed, and the page-count, `Trim tips`, `Reset fit`, and `Reset` pills form
+  one compact `h-8` toolbar row. `AtsTextView` drops its inner
+  `max-h-[70vh] overflow-auto` box, so the `Copy all` bar and every section
+  scroll together in the Preview panel's single scroller. Added compact-row,
+  padding, pill, and ATS no-nested-scroller regressions. Verified
+  `npm run typecheck`, `npm test` (874 pass), `npm run lint`. Files:
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test),
+  `src/components/preview/PageOverflowBanner.tsx`,
+  `src/components/preview/CanvasResetButton.tsx` (+ test),
+  `src/app/globals.css`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-22 — Added **open JSON Resume import/export** so resumes are
   portable outside Resume Maker. New pure `src/lib/schema/jsonResume.ts` detects

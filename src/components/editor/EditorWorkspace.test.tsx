@@ -466,14 +466,42 @@ describe("EditorWorkspace", () => {
 
     const visual = screen.getByRole("button", { name: "Visual" });
     const header = visual.closest("[data-preview-mode-header]");
+    const heading = screen.getByRole("heading", { name: "Preview" });
 
     expect(header).not.toBeNull();
-    // Fixed on phones; sticky only while the desktop panel scrolls.
-    expect(header).toHaveClass("shrink-0", "z-10", "min-h-14");
+    // Compact on phones; sticky only while the desktop panel scrolls.
+    expect(header).toHaveClass("shrink-0", "z-10", "min-h-10", "lg:min-h-14");
     expect(header).toHaveClass("lg:sticky", "lg:top-0", "lg:z-20");
     expect(header).not.toHaveClass("sticky");
+    // The active bottom tab already says Preview, so the heading is desktop-only.
+    expect(heading).toHaveClass("hidden", "lg:block");
     expect(header).toContainElement(visual);
     expect(header).toContainElement(screen.getByRole("button", { name: "ATS text" }));
+  });
+
+  it("keeps the mobile preview controls in one compact, scrollable pill row", async () => {
+    await renderReadyWorkspace();
+
+    const visual = screen.getByRole("button", { name: "Visual" });
+    const header = visual.closest<HTMLElement>("[data-preview-mode-header]")!;
+    const controls = [visual, screen.getByRole("button", { name: "ATS text" })];
+    const scan = screen.getByRole("button", {
+      name: "6-second recruiter scan",
+    });
+    const anonymize = screen.getByRole("button", { name: "Anonymize" });
+
+    // One tight row that scrolls sideways instead of wrapping into several
+    // stacked rows that would eat the resume preview height.
+    expect(header).toHaveClass(
+      "flex-nowrap",
+      "overflow-x-auto",
+      "no-scrollbar",
+    );
+    expect(header).toHaveClass("lg:flex-wrap", "lg:overflow-visible");
+
+    for (const control of [...controls, scan, anonymize]) {
+      expect(control).toHaveClass("h-8", "text-xs", "px-2.5");
+    }
   });
 
   it("makes the mobile preview a fixed-height column above a scrolling canvas", async () => {

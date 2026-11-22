@@ -470,12 +470,47 @@ describe("LiveCanvasViewport", () => {
     expect(header).toHaveClass("shrink-0", "z-10");
     expect(header).toHaveClass("lg:sticky", "lg:top-14");
     expect(header).not.toHaveClass("sticky");
+    // The chrome bleeds to the trimmed mobile padding, and restores the
+    // desktop padding from `lg`.
+    expect(header).toHaveClass("-mx-2", "-mt-2", "px-2", "pt-2");
+    expect(header).toHaveClass("lg:-mx-4", "lg:-mt-4", "lg:px-4", "lg:pt-3");
     expect(header).toContainElement(badge);
     expect(wrapper.contains(header)).toBe(false);
     expect(
       header!.compareDocumentPosition(wrapper) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("gives the resume the screen on mobile by trimming the canvas padding", async () => {
+    const { view } = await renderCanvas(2);
+    const root = view.container.firstElementChild as HTMLElement;
+
+    expect(root).toHaveClass("px-2", "py-2", "gap-2");
+    expect(root).toHaveClass("lg:p-4", "lg:gap-4");
+  });
+
+  it("keeps the page count and trim pills in one compact, scrollable row", async () => {
+    const doc = createEmptyResume();
+    doc.metadata.page.fitScale = 0.85;
+
+    await renderCanvas(2, { doc, onFit: vi.fn() });
+
+    const badge = screen.getByText("2 pages");
+    const toolbar = badge.closest("[data-canvas-toolbar]")!;
+    const trim = screen.getByRole("button", { name: "Trim tips (1)" });
+    const reset = screen.getByRole("button", { name: "Reset fit to 100%" });
+
+    // Pills stay on one line and scroll sideways on a very narrow phone rather
+    // than wrapping into several tall rows inside the fixed preview chrome.
+    expect(toolbar).toHaveClass(
+      "flex-nowrap",
+      "overflow-x-auto",
+      "no-scrollbar",
+    );
+    expect(badge).toHaveClass("h-8", "text-xs", "px-2.5");
+    expect(trim).toHaveClass("h-8", "text-xs");
+    expect(reset).toHaveClass("h-8", "text-xs");
   });
 
   it("keeps the overflow banner in normal flow above the ATS text view", () => {
@@ -493,6 +528,9 @@ describe("LiveCanvasViewport", () => {
       '[aria-label="ATS plain text preview"]',
     );
     const scroll = container.querySelector("[data-canvas-scroll]");
+    const copyAll = screen.getByRole("button", {
+      name: "Copy all plain text",
+    });
 
     expect(header).not.toBeNull();
     expect(ats).not.toBeNull();
@@ -507,6 +545,12 @@ describe("LiveCanvasViewport", () => {
     expect(header).not.toHaveClass("lg:top-14");
     expect(header).not.toContainElement(ats as HTMLElement);
     expect(scroll).not.toContainElement(header as HTMLElement);
+    // One scroll region for the whole ATS view: the copy bar and every section
+    // move together instead of a nested box scrolling inside the panel.
+    expect(scroll).toContainElement(copyAll);
+    expect(scroll).toContainElement(ats as HTMLElement);
+    expect(ats).not.toHaveClass("overflow-auto");
+    expect((ats as HTMLElement).className).not.toContain("max-h");
     expect(
       header!.compareDocumentPosition(ats as HTMLElement) &
         Node.DOCUMENT_POSITION_FOLLOWING,

@@ -58,6 +58,27 @@ describe("AtsTextView", () => {
     ).toBeDisabled();
   });
 
+  it("leaves scrolling to the Preview panel instead of nesting its own", () => {
+    const doc = createEmptyResume();
+
+    doc.basics.name = "Ada Lovelace";
+
+    render(<AtsTextView doc={doc} />);
+
+    const preview = screen.getByLabelText("ATS plain text preview");
+
+    // The copy bar and every section share the Preview panel's single scroller;
+    // a `max-h`/`overflow-auto` box here caused the old double scroll.
+    expect(preview).toHaveClass("overflow-hidden");
+    expect(preview).not.toHaveClass("overflow-auto", "overflow-y-auto");
+    expect(preview.className).not.toContain("max-h");
+    expect(
+      preview.compareDocumentPosition(
+        screen.getByRole("button", { name: "Copy all plain text" }),
+      ) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
+
   it("copies the full plain text and resets the Copied label after 1.5s", async () => {
     vi.useFakeTimers();
 

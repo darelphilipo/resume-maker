@@ -184,9 +184,9 @@ function PreviewChrome({
 }: {
   banner: ReactNode;
   /**
-   * Sticky only over the canvas. The ATS text view is a separate scroll region
-   * with copy controls at the top, so its banner must stay in normal flow or it
-   * would cover the "Copy all" button while the panel scrolls.
+   * Sticky only over the canvas. The ATS text view shares the preview panel's
+   * single scroll region, so its banner must stay in normal flow or it would
+   * cover the "Copy all" button while the panel scrolls.
    */
   sticky?: boolean;
   children?: ReactNode;
@@ -194,7 +194,7 @@ function PreviewChrome({
   return (
     <div
       data-preview-header=""
-      className={`z-10 -mx-4 -mt-4 flex shrink-0 flex-col gap-2 border-b border-line/70 bg-background/95 px-4 pb-2 pt-3 backdrop-blur${
+      className={`z-10 -mx-2 -mt-2 flex shrink-0 flex-col gap-2 border-b border-line/70 bg-background/95 px-2 pb-2 pt-2 backdrop-blur lg:-mx-4 lg:-mt-4 lg:px-4 lg:pt-3${
         sticky ? " lg:sticky lg:top-14" : ""
       }`}
     >
@@ -231,22 +231,22 @@ function CanvasToolbar({
   return (
     <div
       data-canvas-toolbar=""
-      className="flex min-h-8 flex-wrap items-center justify-between gap-2"
+      className="flex min-h-8 flex-nowrap items-center justify-between gap-2 overflow-x-auto no-scrollbar"
     >
       <span
         aria-live="polite"
-        className="rounded-full border border-line/70 bg-surface px-2 py-0.5 text-[11px] font-medium text-muted shadow-sm"
+        className="inline-flex h-8 shrink-0 items-center rounded-full border border-line/70 bg-surface px-2.5 text-xs font-medium text-muted shadow-sm"
       >
         {pageCount} {pageCount === 1 ? "page" : "pages"}
       </span>
-      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+      <div className="ml-auto flex shrink-0 items-center justify-end gap-1.5">
         <BulletTrimTips report={bulletReport} />
         {canResetFit ? (
           <button
             type="button"
             onClick={onResetFit}
             aria-label="Reset fit to 100%"
-            className="pointer-events-auto flex h-11 items-center gap-1.5 rounded-full border border-line bg-surface/95 px-3 text-xs font-semibold text-primary shadow-sm backdrop-blur-sm transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:h-8 sm:px-2.5"
+            className="pointer-events-auto flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface/95 px-2.5 text-xs font-semibold text-primary shadow-sm backdrop-blur-sm transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
           >
             Reset fit
           </button>
@@ -585,7 +585,7 @@ export function LiveCanvasViewport({
   return (
     <div
       ref={containerRef}
-      className="relative flex min-h-0 w-full flex-1 flex-col gap-4 overflow-clip rounded-xl p-4 lg:flex-none"
+      className="relative flex min-h-0 w-full flex-1 flex-col gap-2 overflow-clip rounded-xl px-2 py-2 lg:flex-none lg:gap-4 lg:p-4"
     >
       {layout.measureLayer}
       {(mode === "canvas" || showOverflowBanner) ? (

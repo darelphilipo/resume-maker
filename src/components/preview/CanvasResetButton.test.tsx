@@ -13,6 +13,8 @@ describe("CanvasResetButton", () => {
     expect(button).toHaveTextContent("Reset");
     expect(button.className).toContain("rounded-full");
     expect(button.className).toContain("pointer-events-auto");
+    // Compact pill so it fits the one-line mobile preview toolbar.
+    expect(button).toHaveClass("h-8", "text-xs", "px-2.5");
   });
 
   it("calls the reset handler", () => {

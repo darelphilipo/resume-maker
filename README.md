@@ -199,7 +199,10 @@ in control of every line, and your data stays on your device.
   one-tab-at-a-time layout, and the tab you are on gets a filled highlight plus a
   top indicator, so Content, Design, and Preview are never ambiguous. The bottom
   bar stays flush with the screen edge while you switch tabs or try a new accent,
-  template, or paper size. On tall tablets and phones showing the desktop site,
+  template, or paper size. On a phone, the Preview controls collapse into one
+  tight, sideways-scrollable row and the panel's extra padding is trimmed, so the
+  resume itself fills as much of the screen as possible. On tall tablets and
+  phones showing the desktop site,
   the fitted page sits centred with even side margins, the gray preview desk ends
   with the last page instead of trailing into empty space, and short Content or
   Design cards stay vertically balanced above the bar.
@@ -243,7 +246,8 @@ in control of every line, and your data stays on your device.
   the current template, so you can check section order and wording before you
   apply. **Copy all plain text** grabs the whole resume for Workday, Greenhouse,
   or Lever in one tap, and compact **Copy** buttons let you paste just one
-  section or one role.
+  section or one role. The copy bar and every section scroll together as one
+  smooth page, with no nested box to fight against on a phone.
 - **Anonymize for review**: tap the **Anonymize** pill in the preview header to
   replace your name, contact details, website, profile links, photo, and company
   or school names with neutral placeholders. Each role's, school's, volunteer

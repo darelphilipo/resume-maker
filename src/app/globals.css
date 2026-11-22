@@ -77,3 +77,12 @@ body {
   height: 0;
   pointer-events: none;
 }
+
+/* Horizontal pill rows can scroll on narrow phones without showing a bar. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

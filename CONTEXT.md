@@ -346,17 +346,25 @@ rediscover.
     limitation until the measure layer is template-aware.
 
 33. **Preview chrome is sticky, and hand-off scroll eases in.** The
-    `Visual`/`ATS text` row in `EditorWorkspace` is `sticky top-0 z-20
-    min-h-14`, and the overflow banner + page-count/Reset toolbar are grouped
-    in `PreviewChrome` (`[data-preview-header]`, `sticky top-14 z-10`) inside
-    `LiveCanvasViewport`. `top-14` (56px) is the mode row height — keep the two
-    offsets in sync. The viewport root uses `overflow-clip`, **not**
-    `overflow-hidden`: `hidden` creates a scroll container, which would pin the
-    sticky child to that non-scrolling box and break stickiness. `CanvasToolbar`
-    (with `CanvasResetButton`) lives inside `TransformWrapper` so it keeps
-    transform context; the wrapper is a context-only provider with no DOM node,
-    so wrapping extra siblings is safe. Both headers stay in normal flow, so
-    Page 1 starts below them instead of being covered at rest. The vertical
+    `Visual`/`ATS text` row in `EditorWorkspace` is `lg:sticky lg:top-0 lg:z-20
+    lg:min-h-14`; on phones it is a static `min-h-10` single row (the redundant
+    `Preview` heading is `hidden lg:block`) whose controls are `h-8 text-xs
+    px-2.5` pills in a `flex-nowrap overflow-x-auto no-scrollbar` strip, so they
+    never wrap into stacked rows that eat the resume height. The overflow banner
+    + page-count/Reset toolbar are grouped in `PreviewChrome`
+    (`[data-preview-header]`, `lg:sticky lg:top-14`) inside
+    `LiveCanvasViewport`. `top-14` (56px) is the **desktop** mode row height —
+    keep the two `lg:` offsets in sync. The viewport root uses `overflow-clip`,
+    **not** `overflow-hidden`: `hidden` creates a scroll container, which would
+    pin the sticky child to that non-scrolling box and break stickiness.
+    `CanvasToolbar` (with `CanvasResetButton`) lives inside `TransformWrapper`
+    so it keeps transform context; the wrapper is a context-only provider with
+    no DOM node, so wrapping extra siblings is safe. Both headers stay in normal
+    flow, so Page 1 starts below them instead of being covered at rest. The
+    mobile root is `px-2 py-2` (`lg:p-4`), and `PreviewChrome` mirrors it with
+    `-mx-2 -mt-2 px-2 pt-2` (`lg:-mx-4 lg:-mt-4 lg:px-4 lg:pt-3`); the toolbar
+    is one `h-8` row (`page count`, `Trim tips`, `Reset fit`, `Reset`) that
+    scrolls sideways on very narrow phones instead of wrapping. The vertical
     pan-to-scroll hand-off now calls `dampHandoffScroll` (`HANDOFF_RAMP_MOVES =
     4`): the page-scroller contribution ramps in over the first four at-bound
     touches instead of snapping by the full leftover delta on contact; any
@@ -421,7 +429,11 @@ rediscover.
     `[data-canvas-scroll]` inside `LiveCanvasViewport` scrolls
     (`min-h-0 flex-1 overflow-y-auto overscroll-contain`). The paper is
     therefore clipped at the chrome's bottom edge and can never slide behind or
-    above it, and the toolbar can never scroll off-screen. Everything is
+    above it, and the toolbar can never scroll off-screen. `AtsTextView` must
+    **not** add its own `max-h`/`overflow-auto` wrapper: its copy bar and every
+    section live directly in `[data-canvas-scroll]`, so the whole ATS view
+    scrolls as one smooth area on phones (and in the desktop panel) instead of
+    trapping a second scrollbar inside the first. Everything is
     mobile-only: `lg:block` on the panel, `lg:flex-none` on the stage/root, and
     the chrome's `lg:sticky lg:top-0` / `lg:sticky lg:top-14` restore the desktop
     behaviour from #51 (an independently scrolling column whose chrome rows
@@ -1112,7 +1124,7 @@ rediscover.
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~870 tests
+npm test               # vitest, ~874 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1168,6 +1180,35 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — Compact mobile Preview chrome and one-scroll ATS text
+- Task: top P1 Queue item. The mobile Preview chrome stacked four tall rows and
+  the ATS tab had a scrollbar inside the panel's scrollbar.
+- Chrome: `EditorWorkspace` hides the redundant `Preview` heading below `lg`
+  (`hidden lg:block`) and puts `Visual`/`ATS text`, `6s Scan`, and `Anonymize`
+  into one `h-8 text-xs px-2.5` pill row that is `flex-nowrap
+  overflow-x-auto no-scrollbar` on phones (desktop restores `lg:flex-wrap` and
+  `lg:min-h-14`). A new `.no-scrollbar` utility in `globals.css` hides the bar.
+  Decision #33 updated.
+- Canvas: the viewport root is `px-2 py-2` on phones (`lg:p-4`), with
+  `PreviewChrome` mirroring that bleed (`-mx-2 -mt-2`, `lg:-mx-4 lg:-mt-4`).
+  `CanvasToolbar` is one `h-8` row: page-count, `Trim tips`, `Reset fit`, and
+  `Reset` pills all use `h-8 text-xs px-2.5` and scroll sideways rather than
+  wrapping. Decision #33.
+- ATS: removed the inner `max-h-[70vh] overflow-auto` box from
+  `AtsTextView` (now `overflow-hidden`), so the `Copy all` bar and every section
+  live directly in `[data-canvas-scroll]` / the desktop panel and scroll as one
+  area. Decision #37 updated.
+- Tests: 874 pass (was 870). Added the compact mode-row contract, mobile canvas
+  padding, the one-line toolbar/pill classes, and the ATS no-nested-scroller
+  case (unit + viewport integration).
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test),
+  `src/components/preview/PageOverflowBanner.tsx`,
+  `src/components/preview/CanvasResetButton.tsx` (+ test),
+  `src/app/globals.css`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (874 pass), `npm run lint`.
 
 ### 2026-11-22 — Open JSON Resume import/export
 - Task: the only P2 Queue item. Resumes can now be read from and written to the
@@ -1405,58 +1446,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/components/editor/SectionFormControls.tsx` (+ test),
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (750 pass).
-
-### 2026-11-22 — Whole-token Match JD and no stray bullet dots
-- Task: top P1 Queue item. The matcher could report noisy/incorrect keywords,
-  and an empty trailing list item printed a stray `•` in Preview/PDF/ATS.
-- Match JD: `jdMatch.ts` already compared token sets rather than raw
-  substrings, so the remaining gaps were tech-token handling and boilerplate.
-  Tokens now preserve leading-dot names (`.NET`), a dotted keyword also matches
-  the dotted suffix in product names (`ASP.NET`) but never a bare `net` word,
-  and `hiring` is filtered as posting boilerplate. Added regressions for
-  `rust`/`trust`, `react`/`reactive`, `.NET`/`net`, and the C++/C#/Node.js
-  forms.
-- Bullets: new pure `stripEmptyListItems` removes `<li><p></p></li>`,
-  whitespace-only, and `<br>`-only items from the inside out, without mutating
-  the saved document. It runs in `SectionRenderer` (Visual Preview and
-  `PrintPortal`) and in `richTextToPlainText` for ATS text. It deliberately
-  does **not** live in `sanitizeRichText`, because the editor sanitizes every
-  transaction and would delete the empty item the user is about to type into.
-  Decision #72.
-- Tests: 6 helper cases, preview summary/entry bullet stripping, print portal
-  bullet stripping, ATS empty-bullet output, plus 4 new JD matching cases.
-  748 pass (was 735).
-- Files: `src/lib/keywords/jdMatch.ts` (+ test),
-  `src/lib/richtext/stripEmptyListItems.ts` (+ test, new),
-  `src/templates/shared/SectionRenderer.tsx` (+ test),
-  `src/lib/ats/atsText.ts` (+ test),
-  `src/components/preview/PrintPortal.test.tsx`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (748 pass), `npm run lint`.
-
-### 2026-11-22 — Studio Sidebar + Compact pagination measured in real columns
-- Task: top P0 Queue item. A Studio Sidebar resume switched to **Compact**
-  density could report one page while clipping the bottom of the main column
-  (Projects/Education).
-- Root cause: `MeasureLayer` rendered a plain `.onyx` at the full content width.
-  It missed template/variant CSS and measured the Studio main column at 100% of
-  the page instead of the real 1.7fr column, so line wraps were under-reported.
-- Fix: the inner measuring column now applies the active template root class and
-  `buildTemplateThemeStyle`, and `gengar` blocks render inside the same
-  `.studio-layout` grid (main/sidebar) as the real template. Empty sidebar plans
-  still report 0, and the grid falls back to `studio-layout--full` when no
-  sidebar section has visible content. Shared `templateRootClassName`,
-  `studioSectionIdOf`, and `isStudioSidebarBlock` helpers keep measurement and
-  rendering in sync. Decision #71.
-- Tests: MeasureLayer variant root/theme variables, Studio main/sidebar routing,
-  and full-width fallback; a registry case renders all six templates against the
-  root-class map. 735 pass (was 731).
-- Files: `src/components/preview/MeasureLayer.tsx` (+ test),
-  `src/templates/shared/templateRoot.ts` (new), `src/templates/registry.test.tsx`,
-  `src/templates/studio/sidebarSections.ts`,
-  `src/templates/studio/StudioSidebarTemplate.tsx`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (735 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit
