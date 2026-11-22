@@ -22,9 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-### P2 — Lightweight High-Value UX Additions
-
-### P2 — High-Value Reddit-Inspired Features
 
 ### P2 — Larger work
 
