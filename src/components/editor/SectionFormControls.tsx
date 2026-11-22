@@ -12,6 +12,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type KeyboardEvent,
   type ReactNode,
 } from "react";
 
@@ -172,6 +173,27 @@ export function MonthSelect({
     commit(nextYear, monthDraft);
   }
 
+  function handleYearKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
+    if (event.key !== "Enter") {
+      return;
+    }
+
+    // The year field lives inside the section <form>. Without this, Enter can
+    // trigger implicit submission (and the browser's submit handling resets
+    // the Content column's scroll to the top).
+    event.preventDefault();
+
+    if (YEAR_PATTERN.test(yearDraft)) {
+      commit(yearDraft, monthDraft);
+    } else {
+      setYearDraft(storedYear);
+    }
+
+    // Blur mirrors the compact MonthInput: Enter confirms and dismisses the
+    // field instead of leaving the keyboard open.
+    event.currentTarget.blur();
+  }
+
   return (
     <div className="flex w-full min-w-0 max-w-full flex-col gap-1.5">
       <span id={labelId} className="text-sm font-medium">
@@ -208,6 +230,7 @@ export function MonthSelect({
           value={yearDraft}
           disabled={isPresent}
           onChange={(event) => changeYear(event.currentTarget.value)}
+          onKeyDown={handleYearKeyDown}
           onBlur={() => {
             if (!YEAR_PATTERN.test(yearDraft)) {
               setYearDraft(storedYear);

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { FormEvent } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -433,6 +434,48 @@ describe("MonthSelect", () => {
     fireEvent.change(month, { target: { value: "03" } });
 
     expect(onChange).toHaveBeenCalledWith("2024-03");
+  });
+
+  it("commits a complete year on Enter without submitting the section form", () => {
+    const onChange = vi.fn();
+    const onSubmit = vi.fn((event: FormEvent<HTMLFormElement>) =>
+      event.preventDefault(),
+    );
+
+    render(
+      <form onSubmit={onSubmit}>
+        <MonthSelect
+          id="start-date"
+          label="Start date"
+          value="2023-10"
+          onChange={onChange}
+        />
+        <button type="submit">Save</button>
+      </form>,
+    );
+
+    const year = screen.getByLabelText("Start date year") as HTMLInputElement;
+
+    fireEvent.change(year, { target: { value: "2024" } });
+    onChange.mockClear();
+
+    const defaultPrevented = !fireEvent.keyDown(year, { key: "Enter" });
+
+    expect(defaultPrevented).toBe(true);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(onChange).toHaveBeenCalledWith("2024-10");
+  });
+
+  it("restores the stored year on Enter when the draft is incomplete", () => {
+    const { year, onChange } = renderSelect("2023-10");
+
+    fireEvent.change(year, { target: { value: "20" } });
+
+    const defaultPrevented = !fireEvent.keyDown(year, { key: "Enter" });
+
+    expect(defaultPrevented).toBe(true);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(year).toHaveValue("2023");
   });
 
   it("clears the date when the month is reset", () => {

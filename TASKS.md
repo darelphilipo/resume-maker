@@ -24,10 +24,6 @@ _empty
 
 ### P0 / P1 — Newly Uncovered Regression Bugs
 
-- [ ] P1: Fix `Enter` key in `MonthSelect` year input jumping the Content panel to the top, and fix Launcher Paste button blur delay (`src/components/editor/SectionFormControls.tsx`, `src/components/launcher/Launcher.tsx`).
-  1. **`MonthSelect` year `Enter` key:** Handle `onKeyDown` (`Enter`) in the year input so it commits the entered year cleanly without triggering an unintended form submit or scrolling the Content sidebar to the top.
-  2. **Launcher Paste enablement:** Ensure `"Create resume from text"` enables immediately on `onChange` / `onPaste` without requiring a blur event first.
-
 - [ ] P1: Fix `Match JD` two-click `X` close, desktop Preview right-edge date clipping, and `Anonymize` entry locations (`src/components/editor/JdMatchDrawer.tsx`, `src/components/editor/EntryDrawer.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/lib/privacy/anonymizeDoc.ts`).
   1. **`Match JD` single-click close:** Fix why clicking `X` once in `JdMatchDrawer` / `EntryDrawer` only collapses Vaul to a minimized bottom bar instead of unmounting/closing on the first click (ensure controlled `open={false}` fully closes Vaul with no residual snap point).
   2. **Preview right-edge date clipping:** Subtract a small horizontal safety margin (e.g., `8–12px` or scrollbar width via `clientWidth`) when computing `fitScale` in `LiveCanvasViewport.tsx` so right-aligned dates (`Aug 2025`, `Nov 2023`) never clip by a few pixels on initial load or after drawer transitions.
@@ -67,6 +63,19 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Stopped `Enter` in the `MonthSelect` year field from
+  resetting the Content column. The year input now handles Enter, calls
+  `preventDefault()` so the surrounding section `<form>` cannot implicitly
+  submit (the cause of the scroll-to-top jump), commits a complete `YYYY-MM`
+  value, and restores the stored year for an incomplete draft before blurring.
+  The Launcher Paste half was already delivered on 2026-11-20; its existing
+  change/paste enablement test was re-run instead of duplicating the fix. Added
+  two `MonthSelect` regressions (valid Enter prevents submit and commits;
+  incomplete Enter restores the stored year). Verified `npm run typecheck`,
+  `npm test` (750 pass). Files:
+  `src/components/editor/SectionFormControls.tsx` (+ test), `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-22 — Fixed `Match JD` whole-word matching and stray empty bullets.
   JD keywords are compared as complete tokens (never `String.includes`), so

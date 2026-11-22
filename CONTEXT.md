@@ -955,6 +955,16 @@ rediscover.
       tech names stay `.net`, match the `asp.net` suffix, and never match a bare
       `net` word. `hiring` joins the boilerplate stoplist.
 
+  73. **`MonthSelect` owns Enter, because its parent is a `<form>`.** The year
+      input sits inside each section's `<form onSubmit={preventDefault}>`; an
+      unhandled Enter could trigger implicit submission, and the browser's
+      submit handling reset the Content column's scroll to the top. The input
+      now calls `preventDefault()` on Enter, commits a complete `YYYY-MM`
+      through the existing `commit(yearDraft, monthDraft)` path, restores
+      `storedYear` for an incomplete draft, and blurs like `MonthInput`. Keep
+      the handler on the year field rather than the whole form so Enter in
+      other fields keeps normal behavior.
+
 ## Verification and tooling
 
 ```powershell
@@ -1015,6 +1025,21 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — MonthSelect Enter no longer resets Content scroll
+- Task: top P1 Queue item (bundled with the Launcher paste enablement).
+- Fix: `MonthSelect`'s year input now handles Enter: `preventDefault()` blocks
+  the section form's implicit submit (the scroll-to-top jump), a complete year
+  commits through the existing `commit` path, and an incomplete draft is
+  restored from `storedYear` before the field blurs. The Launcher paste CTA was
+  already fixed on 2026-11-20 (`onChange`/`onPaste` enable it immediately), so
+  this run re-ran its existing test instead of duplicating the logic.
+- Tests: two `MonthSelect` regressions — Enter with a valid year prevents the
+  form submit and emits `YYYY-MM`; Enter with an incomplete year restores the
+  stored year without emitting. 750 pass (was 748). Decision #73.
+- Files: `src/components/editor/SectionFormControls.tsx` (+ test),
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (750 pass).
 
 ### 2026-11-22 — Whole-token Match JD and no stray bullet dots
 - Task: top P1 Queue item. The matcher could report noisy/incorrect keywords,
@@ -1264,31 +1289,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (665 pass), `npm run lint`.
   Playwright remains blocked here, so the new geometry/indicator assertions are
   typechecked but browser-unverified.
-
-### 2026-11-21 — Anonymize URL leaks, Match JD close, and stopwords
-- Task: top P1 Queue item (three small regressions bundled together).
-- Anonymize: `anonymizeResumeDoc` now redacts `url` on projects,
-  certifications, publications, and custom-section items with
-  `ANONYMIZED_ENTRY_URL`, not just profiles/basics. Blank project URLs stay
-  blank and an absent optional custom URL stays absent. Decision #63.
-- Match JD close: the shared `EntryDrawer` X gained `data-vaul-no-drag` plus a
-  `pointerdown` stopPropagation, so a tap on X is a plain close click instead of
-  a drag start that vaul snaps to a shorter point. The compact JD sheet already
-  opted out of snap points (#50). Added unit coverage in `EntryDrawer` and
-  `JdMatchDrawer`, plus a one-click dismiss assertion in the existing Playwright
-  JD case.
-- Stopwords: `jdMatch.ts` now drops filler/boilerplate such as `for`,
-  `looking`, `seek`/`seeking`, `want`, `ideal`, `prefer`, `join`, `opportunity`,
-  `within`/`without`, `per`/`via`, and month/week units, with extraction and
-  matched/missing tests.
-- Files: `src/lib/privacy/anonymizeDoc.ts` (+ test),
-  `src/components/editor/EntryDrawer.tsx` (+ test),
-  `src/components/editor/JdMatchDrawer.test.tsx`,
-  `src/lib/keywords/jdMatch.ts` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (660 pass, was 654), `npm run lint`.
-  The new Playwright one-click dismiss assertion is typechecked but was not run
-  here.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit
