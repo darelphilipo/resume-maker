@@ -116,14 +116,24 @@ describe("JdMatchDrawer", () => {
 
     expect(close).toHaveAttribute("data-vaul-no-drag");
 
-    // One click must close the sheet outright. Before the pointer isolation a
-    // tap on X could be consumed by vaul's drag handler and only snap the
-    // drawer shorter, so users had to tap twice.
+    // One click must close the sheet outright. The X goes through Vaul's own
+    // Drawer.Close, so the internal close path also resets the active snap
+    // point instead of leaving the sheet at a minimized bar.
     fireEvent.click(close);
 
     await waitFor(() => {
       expect(trigger).toHaveAttribute("aria-expanded", "false");
     });
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    await user.click(trigger);
+
+    const reopened = await screen.findByRole("dialog");
+
+    expect(reopened).toHaveAttribute("data-vaul-snap-points", "false");
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
   });
 
   it("splits pasted job keywords into matched and missing chips", async () => {

@@ -11,6 +11,49 @@ export const MIN_FIT_SCALE = 0.78;
 // on the next page after a fit.
 const FIT_HEADROOM = 0.98;
 
+/** Breathing room between the paper and the preview panel edges. */
+export const FIT_VIEWPORT_PADDING_PX = 32;
+
+/**
+ * Extra horizontal room kept clear inside the preview. Right-aligned dates and
+ * other edge-hugging text are laid out at the page's full width, so a fit that
+ * uses every available pixel can clip them by a few pixels after rounding or a
+ * scrollbar transition.
+ */
+export const FIT_SAFETY_MARGIN_PX = 12;
+
+/**
+ * The scale that makes a page fit the observed preview width.
+ *
+ * The paper is laid out at its real width and then scaled, so the fit budget is
+ * the container minus the usual preview padding **and** a small safety margin.
+ * Without the margin a right-aligned date can sit exactly on the page edge and
+ * lose its last pixels.
+ */
+export function computeWidthFitScale({
+  containerWidthPx,
+  pageWidthPx,
+  minScale = 0.2,
+  maxScale = 1,
+}: {
+  containerWidthPx: number;
+  pageWidthPx: number;
+  minScale?: number;
+  maxScale?: number;
+}): number {
+  const usableWidthPx = Math.max(
+    0,
+    containerWidthPx - FIT_VIEWPORT_PADDING_PX - FIT_SAFETY_MARGIN_PX,
+  );
+  const rawScale = usableWidthPx / pageWidthPx;
+
+  if (!Number.isFinite(rawScale)) {
+    return maxScale;
+  }
+
+  return Math.min(maxScale, Math.max(minScale, rawScale));
+}
+
 export function computeFitScale({
   totalHeightPx,
   contentHeightPx,

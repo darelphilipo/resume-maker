@@ -70,21 +70,29 @@ export function EntryDrawer({
             <Drawer.Title className="min-w-0 flex-1 font-serif text-lg font-semibold tracking-tight">
               {title}
             </Drawer.Title>
-            <button
-              type="button"
-              aria-label="Close drawer"
-              data-vaul-no-drag
-              onPointerDown={(event) => {
-                // Keep vaul's drag/snap handler from claiming a tap on X: a
-                // pointer-down here must be a plain close click, not the first
-                // step of a drag that snaps to a shorter snap point instead.
-                event.stopPropagation();
-              }}
-              onClick={() => onOpenChange(false)}
-              className="-mr-2 -mt-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-black/5 active:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            >
-              <X size={20} aria-hidden />
-            </button>
+            {/*
+             * Use Vaul's own close primitive instead of calling onOpenChange
+             * directly. That runs the internal close path (`closeDrawer`), which
+             * resets the active snap point after the exit animation; a bare
+             * controlled `open={false}` left the old snap point behind and the
+             * next open could start at the minimized bar.
+             */}
+            <Drawer.Close asChild>
+              <button
+                type="button"
+                aria-label="Close drawer"
+                data-vaul-no-drag
+                onPointerDown={(event) => {
+                  // Keep vaul's drag/snap handler from claiming a tap on X: a
+                  // pointer-down here must be a plain close click, not the first
+                  // step of a drag that snaps to a shorter snap point instead.
+                  event.stopPropagation();
+                }}
+                className="-mr-2 -mt-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-black/5 active:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                <X size={20} aria-hidden />
+              </button>
+            </Drawer.Close>
           </div>
           <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain px-5 pb-8 pt-2">
             <Drawer.Description

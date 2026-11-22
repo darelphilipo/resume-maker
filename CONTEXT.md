@@ -786,18 +786,23 @@ rediscover.
       template keeps its canonical trailing page. The page count, canvas frame,
       print, and overflow banner all derive from the corrected `pages`.
 
-  63. **Review mode redacts every rendered URL, and the drawer X bypasses vaul's
-      drag handler.** `anonymizeResumeDoc` replaces entry `url` fields on
-      projects, certifications, publications, and custom-section items with
-      `ANONYMIZED_ENTRY_URL` as well as the basics/profiles URLs from #58. Blank
-      URLs stay blank, and an absent optional custom `url` stays absent. Add any
-      new URL-bearing section to that clone or review mode will leak a username
-      through the Visual/PDF/ATS link. Separately, the shared `EntryDrawer` X
-      carries `data-vaul-no-drag` and stops `pointerdown` propagation: without
-      that, vaul can claim the tap as a drag start and snap a snap-point sheet
-      shorter instead of closing, so users need two taps. Keep the isolation if
-      the drawer header changes; the compact Match JD sheet also opts out of
-      snap points (#50).
+  63. **Review mode redacts every rendered URL and location, and the drawer X
+      uses vaul's close primitive.** `anonymizeResumeDoc` replaces entry `url`
+      fields on projects, certifications, publications, and custom-section items
+      with `ANONYMIZED_ENTRY_URL` as well as the basics/profiles URLs from #58.
+      It also replaces non-blank `location` fields on experience, education,
+      volunteer, and custom-section items with `ANONYMIZED_ENTRY_LOCATION`
+      (`"City, ST"`). Blank values stay blank, and an absent optional custom
+      `url`/`location` stays absent. Add any new URL- or location-bearing
+      section to that clone or review mode will leak it through the
+      Visual/PDF/ATS output. Separately, the shared `EntryDrawer` X is rendered
+      inside `Drawer.Close`, carries `data-vaul-no-drag`, and stops `pointerdown`
+      propagation. The pointer isolation keeps vaul from claiming the tap as a
+      drag start; `Drawer.Close` (rather than calling `onOpenChange(false)`
+      directly) runs vaul's internal `closeDrawer`, which resets the active snap
+      point after closing so the next open cannot start on the minimized bar.
+      Keep both if the drawer header changes; the compact Match JD sheet also
+      opts out of snap points (#50).
 
  64. **Section actions use two columns, and the active mobile tab is filled.**
      The expanded section footer is `grid-cols-2` at every width: the 22rem
@@ -965,11 +970,22 @@ rediscover.
       the handler on the year field rather than the whole form so Enter in
       other fields keeps normal behavior.
 
+  74. **Fit-to-width reserves a right-edge safety margin.** Right-aligned dates
+      are laid out at the paper's full width, so a fit that consumes every
+      available pixel can clip their last glyphs after rounding or a scrollbar
+      transition. `computeWidthFitScale` (`src/lib/pagination/fitScale.ts`)
+      subtracts both `FIT_VIEWPORT_PADDING_PX` (32) and
+      `FIT_SAFETY_MARGIN_PX` (12) from the observed container width before
+      dividing by the paper width; `LiveCanvasViewport` uses that helper for
+      `fitScale` and keeps the 32px padding alone for the centring offset, so
+      the margin becomes symmetric breathing room. Change the helper rather
+      than copying the formula into a component or test.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~750 tests
+npm test               # vitest, ~760 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1025,6 +1041,30 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — One-click drawer close, safe fit width, anonymized entry locations
+- Task: top P1 Queue item (three bundled regressions).
+- Drawer: the shared X is now inside `Drawer.Close`, so a click runs vaul's
+  internal `closeDrawer` and resets the active snap point instead of only
+  flipping the controlled `open` flag. Kept `data-vaul-no-drag` and the
+  `pointerdown` stop that keeps the tap out of vaul's drag handler. Added
+  EntryDrawer close/reopen and JdMatchDrawer close/reopen regressions.
+- Preview: new pure `computeWidthFitScale` subtracts the 32px preview padding
+  plus a 12px safety margin, so a right-aligned date cannot clip at fit.
+  `LiveCanvasViewport` uses the helper; viewport tests derive their expected
+  scale from it. Decision #74.
+- Anonymize: `ANONYMIZED_ENTRY_LOCATION` replaces non-blank locations on
+  experience, education, volunteer, and optional custom-section items; blanks
+  and absent optional values stay as-is. Added redaction, ATS, and
+  immutability cases. Decision #63 updated.
+- Tests: 758 pass (was 750). Files:
+  `src/components/editor/EntryDrawer.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.test.tsx`,
+  `src/lib/pagination/fitScale.ts` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/lib/privacy/anonymizeDoc.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (758 pass), `npm run lint`.
 
 ### 2026-11-22 — MonthSelect Enter no longer resets Content scroll
 - Task: top P1 Queue item (bundled with the Launcher paste enablement).
@@ -1257,38 +1297,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/preview/MeasureLayer.tsx` (+ test),
   `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (667 pass), `npm run lint`.
-
-### 2026-11-21 — Section footer clipping, six presets, and mobile tab highlight
-- Task: top P1 Queue item (four small visual/UX fixes bundled together).
-- Section footer: the expanded action row is now `grid-cols-2` at every width
-  (with `min-w-0` on the grid and buttons). Three ~90px cells in the 22rem
-  desktop column could not fit `↑ Move up` + `Move down`, so both clipped at
-  the card border; custom delete/confirm rows now span both columns
-  (`col-span-2`, no `lg:col-span-3`). Decision #64.
-- Launcher: added a sixth **Data Analyst** archetype before **Fresh Graduate**,
-  so the two-column role grid has three full rows and no empty slot. The paste
-  textarea carries `aria-describedby="resume-paste-hint"` with a one-line hint
-  that a name or role alone is enough.
-- Header: disabled Undo/Redo now use `disabled:text-text/80` instead of
-  `disabled:text-muted`, keeping the icons clearly legible before the first
-  edit (updates Decision #52).
-- Tabs: the active mobile tab gets `bg-primary/10 text-primary` plus an
-  `aria-hidden` `[data-active-indicator]` top bar; `aria-selected` stays the
-  accessibility contract.
-- Tests: SectionList two-column grid/spans, Launcher six presets + paste hint,
-  Data Analyst archetype loops (schema, skills, quantified bullets), disabled
-  header class, MobileBottomNav active indicator. 665 pass (was 660). Added a
-  both-viewport Playwright action-row geometry case and mobile indicator checks.
-- Files: `src/components/editor/SectionList.tsx` (+ test),
-  `src/components/launcher/Launcher.tsx` (+ test),
-  `src/lib/presets/archetypes.ts` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/MobileBottomNav.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `e2e/mobile.spec.ts`, `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (665 pass), `npm run lint`.
-  Playwright remains blocked here, so the new geometry/indicator assertions are
-  typechecked but browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

@@ -10,10 +10,12 @@ import {
   ProfileItemSchema,
   ProjectItemSchema,
   PublicationItemSchema,
+  VolunteerItemSchema,
 } from "@/lib/schema/resume.schema";
 
 import {
   ANONYMIZED_EMAIL,
+  ANONYMIZED_ENTRY_LOCATION,
   ANONYMIZED_ENTRY_URL,
   ANONYMIZED_LOCATION,
   ANONYMIZED_NAME,
@@ -205,6 +207,100 @@ describe("anonymizeResumeDoc", () => {
     expect(atsText).not.toContain("mayachen");
   });
 
+  it("redacts entry locations so personal geography cannot leak", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "experience-1",
+        company: "Acme",
+        position: "Engineer",
+        location: "Oakland, CA",
+      }),
+      ExperienceItemSchema.parse({
+        id: "experience-2",
+        company: "Globex",
+        position: "Manager",
+        location: "  ",
+      }),
+    ];
+    doc.sections.education.items = [
+      EducationItemSchema.parse({
+        id: "education-1",
+        school: "State University",
+        location: "Berkeley, CA",
+      }),
+    ];
+    doc.sections.volunteer.items = [
+      VolunteerItemSchema.parse({
+        id: "volunteer-1",
+        organization: "Food Bank",
+        location: "San Jose, CA",
+      }),
+    ];
+    doc.customSections = [
+      CustomSectionSchema.parse({
+        id: "custom-1",
+        title: "Speaking",
+        items: [
+          {
+            id: "custom-item-1",
+            name: "Browser-only tools",
+            location: "Portland, OR",
+          },
+          { id: "custom-item-2", name: "No location" },
+        ],
+      }),
+    ];
+
+    const anonymized = anonymizeResumeDoc(doc);
+
+    expect(
+      anonymized.sections.experience.items.map((item) => item.location),
+    ).toEqual([ANONYMIZED_ENTRY_LOCATION, "  "]);
+    expect(anonymized.sections.education.items[0].location).toBe(
+      ANONYMIZED_ENTRY_LOCATION,
+    );
+    expect(anonymized.sections.volunteer.items[0].location).toBe(
+      ANONYMIZED_ENTRY_LOCATION,
+    );
+    expect(anonymized.customSections[0].items[0].location).toBe(
+      ANONYMIZED_ENTRY_LOCATION,
+    );
+    // An absent optional location stays absent instead of growing fake content.
+    expect(anonymized.customSections[0].items[1].location).toBeUndefined();
+    expect(JSON.stringify(anonymized)).not.toContain("Oakland");
+    expect(JSON.stringify(anonymized)).not.toContain("Berkeley");
+    expect(JSON.stringify(anonymized)).not.toContain("San Jose");
+    expect(JSON.stringify(anonymized)).not.toContain("Portland");
+  });
+
+  it("keeps redacted entry locations out of the ATS text", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "experience-1",
+        company: "Acme",
+        position: "Engineer",
+        location: "Oakland, CA",
+      }),
+    ];
+    doc.sections.education.items = [
+      EducationItemSchema.parse({
+        id: "education-1",
+        school: "State University",
+        location: "Berkeley, CA",
+      }),
+    ];
+
+    const atsText = buildAtsText(anonymizeResumeDoc(doc));
+
+    expect(atsText).toContain(ANONYMIZED_ENTRY_LOCATION);
+    expect(atsText).not.toContain("Oakland");
+    expect(atsText).not.toContain("Berkeley");
+  });
+
   it("does not mutate the saved document", () => {
     const doc = createEmptyResume();
 
@@ -220,12 +316,14 @@ describe("anonymizeResumeDoc", () => {
         id: "experience-1",
         company: "Acme",
         position: "Engineer",
+        location: "Oakland, CA",
       }),
     ];
     doc.sections.education.items = [
       EducationItemSchema.parse({
         id: "education-1",
         school: "State University",
+        location: "Berkeley, CA",
       }),
     ];
     doc.sections.projects.items = [
@@ -242,7 +340,9 @@ describe("anonymizeResumeDoc", () => {
     expect(doc.basics.email).toBe("jordan@acme.com");
     expect(doc.picture.hidden).toBe(false);
     expect(doc.sections.experience.items[0].company).toBe("Acme");
+    expect(doc.sections.experience.items[0].location).toBe("Oakland, CA");
     expect(doc.sections.education.items[0].school).toBe("State University");
+    expect(doc.sections.education.items[0].location).toBe("Berkeley, CA");
     expect(doc.sections.projects.items[0].url).toBe(
       "https://github.com/jordan/resume-maker",
     );

@@ -6,6 +6,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { EntryDrawer } from "./EntryDrawer";
@@ -79,6 +80,55 @@ describe("EntryDrawer", () => {
     fireEvent.click(close);
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("fully closes a snap-point drawer on one click and reopens it", async () => {
+    const user = userEvent.setup();
+
+    function Harness() {
+      const [open, setOpen] = useState(false);
+
+      return (
+        <EntryDrawer
+          open={open}
+          onOpenChange={setOpen}
+          title="Experience"
+          trigger={<button type="button">Open experience</button>}
+        >
+          <p>Drawer body</p>
+        </EntryDrawer>
+      );
+    }
+
+    render(<Harness />);
+
+    const trigger = screen.getByRole("button", { name: "Open experience" });
+
+    await user.click(trigger);
+
+    const dialog = await screen.findByRole("dialog");
+
+    expect(dialog).toHaveAttribute("data-vaul-snap-points", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Close drawer" }));
+
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+    });
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    await user.click(trigger);
+
+    const reopened = await screen.findByRole("dialog");
+
+    // Reopening starts from the drawer's default snap point instead of the
+    // stale one left behind by a bare controlled `open={false}`.
+    expect(reopened).toHaveAttribute("data-vaul-snap-points", "true");
+    expect(reopened.style.getPropertyValue("--snap-point-height")).not.toBe(
+      "",
+    );
   });
 
   it("keeps a tap on the X out of vaul's drag and snap handler", async () => {

@@ -6,6 +6,10 @@ import {
   centeredCanvasOffsetX,
   computeCanvasFrame,
 } from "@/lib/pagination/canvasFrame";
+import {
+  FIT_VIEWPORT_PADDING_PX,
+  computeWidthFitScale,
+} from "@/lib/pagination/fitScale";
 import type { PageLayout } from "@/lib/pagination/usePageLayout";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
@@ -175,7 +179,10 @@ async function renderCanvas(
     doc.metadata.page.marginX,
     doc.metadata.page.marginY,
   );
-  const fitScale = Math.min(1, (containerWidth - 32) / geometry.widthPx);
+  const fitScale = computeWidthFitScale({
+    containerWidthPx: containerWidth,
+    pageWidthPx: geometry.widthPx,
+  });
 
   return { geometry, fitScale, view, wrapper, doc };
 }
@@ -212,7 +219,7 @@ describe("LiveCanvasViewport", () => {
       ".react-transform-component",
     );
     const expectedOffset = centeredCanvasOffsetX(
-      containerWidth - 32,
+      containerWidth - FIT_VIEWPORT_PADDING_PX,
       geometry.widthPx,
     );
 
@@ -590,7 +597,10 @@ describe("LiveCanvasViewport", () => {
       doc.metadata.page.marginX,
       doc.metadata.page.marginY,
     );
-    const narrowFit = Math.min(1, (narrow - 32) / geometry.widthPx);
+    const narrowFit = computeWidthFitScale({
+      containerWidthPx: narrow,
+      pageWidthPx: geometry.widthPx,
+    });
     const settledHeight = computeCanvasFrame({
       pageCount: 1,
       pageWidthPx: geometry.widthPx,

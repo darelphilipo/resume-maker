@@ -22,13 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-### P0 / P1 — Newly Uncovered Regression Bugs
-
-- [ ] P1: Fix `Match JD` two-click `X` close, desktop Preview right-edge date clipping, and `Anonymize` entry locations (`src/components/editor/JdMatchDrawer.tsx`, `src/components/editor/EntryDrawer.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/lib/privacy/anonymizeDoc.ts`).
-  1. **`Match JD` single-click close:** Fix why clicking `X` once in `JdMatchDrawer` / `EntryDrawer` only collapses Vaul to a minimized bottom bar instead of unmounting/closing on the first click (ensure controlled `open={false}` fully closes Vaul with no residual snap point).
-  2. **Preview right-edge date clipping:** Subtract a small horizontal safety margin (e.g., `8–12px` or scrollbar width via `clientWidth`) when computing `fitScale` in `LiveCanvasViewport.tsx` so right-aligned dates (`Aug 2025`, `Nov 2023`) never clip by a few pixels on initial load or after drawer transitions.
-  3. **Redact entry locations in `anonymizeResumeDoc`:** Replace `location` fields on `experience`, `education`, `volunteer`, and `customSections` entries (e.g., `"City, ST"`) so personal geography isn't leaked in Anonymize mode.
-
 ### P2 — Lightweight High-Value UX Additions
 
 - [ ] P2: Add a **"6-Second Recruiter Scan"** preview toggle (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/ScanHighlightOverlay.tsx` or CSS class on `PageStack.tsx`).
@@ -63,6 +56,26 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Fixed one-click drawer close, right-edge date clipping, and
+  entry-location leaks in Anonymize. The shared drawer X now renders inside
+  Vaul's `Drawer.Close`, so a single tap runs the internal close path and resets
+  the active snap point instead of leaving the sheet on a minimized bar; the
+  compact Match JD sheet still opts out of snap points. Fit-to-width now uses
+  the pure `computeWidthFitScale` helper, reserving the usual 32px preview
+  padding plus a 12px right-edge safety margin, so right-aligned dates never
+  clip after rounding or a scrollbar transition. `anonymizeResumeDoc` replaces
+  non-blank experience/education/volunteer/custom-item locations with
+  `ANONYMIZED_ENTRY_LOCATION` while blanks and absent optional values stay
+  unchanged. Added drawer close/reopen regressions, fit-margin cases, viewport
+  expected-scale wiring, and location redaction/ATS/immutability tests. Verified
+  `npm run typecheck`, `npm test` (758 pass), `npm run lint`. Files:
+  `src/components/editor/EntryDrawer.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.test.tsx`,
+  `src/lib/pagination/fitScale.ts` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/lib/privacy/anonymizeDoc.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-22 — Stopped `Enter` in the `MonthSelect` year field from
   resetting the Content column. The year input now handles Enter, calls

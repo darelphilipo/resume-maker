@@ -193,8 +193,10 @@ in control of every line, and your data stays on your device.
   own.
 - **Fit to 1 Page** when a resume spills just past one page. Fitting never
   shrinks the page below a readable size — if one page would need microscopic
-  type, the preview says so instead. Whenever a reduced fit is active, a
-  **Reset fit** pill in the preview header returns the page to 100%.
+  type, the preview says so instead. The fitted width keeps a little breathing
+  room at the right edge, so right-aligned dates never lose their last pixels.
+  Whenever a reduced fit is active, a **Reset fit** pill in the preview header
+  returns the page to 100%.
 - **Trim tips** find the bullets that quietly cost you a line. When a bullet
   wraps and leaves only a word or two on its last line, or grows into a long
   block, the preview counts it. Tap **Trim tips** in the preview header to open a
@@ -218,11 +220,13 @@ in control of every line, and your data stays on your device.
   section or one role.
 - **Anonymize for review**: tap the **Anonymize** pill in the preview header to
   replace your name, contact details, website, profile links, photo, and company
-  or school names with neutral placeholders. Project, certification,
-  publication, and custom-section links are replaced too, so a username inside a
-  URL cannot give you away. The banner makes review mode obvious, the Visual and
-  ATS views and the PDF all use the hidden version, and your saved resume is
-  never changed — tap the pill again to return to the real details.
+  or school names with neutral placeholders. Each role's, school's, volunteer
+  entry's, and custom entry's location is replaced too, so personal geography
+  cannot give you away. Project, certification, publication, and custom-section
+  links are replaced as well, so a username inside a URL cannot leak. The banner
+  makes review mode obvious, the Visual and ATS views and the PDF all use the
+  hidden version, and your saved resume is never changed — tap the pill again to
+  return to the real details.
 - **Job description keyword matcher**: tap **Match JD** in the Content panel
   header to open the matcher on any device, then paste a posting to see which
   of its keywords already appear in your resume and which are missing. Common

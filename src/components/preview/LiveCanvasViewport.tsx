@@ -20,6 +20,10 @@ import {
   centeredCanvasOffsetX,
   computeCanvasFrame,
 } from "@/lib/pagination/canvasFrame";
+import {
+  FIT_VIEWPORT_PADDING_PX,
+  computeWidthFitScale,
+} from "@/lib/pagination/fitScale";
 import type { PageLayout } from "@/lib/pagination/usePageLayout";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
@@ -53,15 +57,10 @@ export type PreviewMode = "canvas" | "ats";
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 2;
 const FIT_MAX_SCALE = 1;
-const VIEWPORT_PADDING_PX = 32;
 const SCALE_EPSILON = 0.001;
 
 const useIsomorphicLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
 function FitTransform({
   fitScale,
@@ -431,11 +430,12 @@ export function LiveCanvasViewport({
   const fitScale =
     containerWidth === null
       ? null
-      : clamp(
-          (containerWidth - VIEWPORT_PADDING_PX) / geometry.widthPx,
-          MIN_SCALE,
-          FIT_MAX_SCALE,
-        );
+      : computeWidthFitScale({
+          containerWidthPx: containerWidth,
+          pageWidthPx: geometry.widthPx,
+          minScale: MIN_SCALE,
+          maxScale: FIT_MAX_SCALE,
+        });
 
   const frame =
     fitScale === null
@@ -453,7 +453,7 @@ export function LiveCanvasViewport({
   const canvasViewportWidth =
     containerWidth === null
       ? null
-      : Math.max(0, containerWidth - VIEWPORT_PADDING_PX);
+      : Math.max(0, containerWidth - FIT_VIEWPORT_PADDING_PX);
   const fitOffsetX =
     frame === null || canvasViewportWidth === null
       ? 0

@@ -9,6 +9,7 @@ export const ANONYMIZED_WEBSITE_LABEL = "example.com";
 export const ANONYMIZED_PROFILE_USERNAME = "alex-taylor";
 export const ANONYMIZED_PROFILE_URL = "https://example.com/alex-taylor";
 export const ANONYMIZED_ENTRY_URL = "https://example.com/alex-taylor";
+export const ANONYMIZED_ENTRY_LOCATION = "City, ST";
 
 function replaceWhenPresent(value: string, replacement: string): string {
   return value.trim() === "" ? value : replacement;
@@ -110,6 +111,10 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
         items: doc.sections.experience.items.map((item) => ({
           ...item,
           company: companyLabel(item.company),
+          location: replaceWhenPresent(
+            item.location,
+            ANONYMIZED_ENTRY_LOCATION,
+          ),
         })),
       },
       education: {
@@ -117,6 +122,20 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
         items: doc.sections.education.items.map((item) => ({
           ...item,
           school: schoolLabel(item.school),
+          location: replaceWhenPresent(
+            item.location,
+            ANONYMIZED_ENTRY_LOCATION,
+          ),
+        })),
+      },
+      volunteer: {
+        ...doc.sections.volunteer,
+        items: doc.sections.volunteer.items.map((item) => ({
+          ...item,
+          location: replaceWhenPresent(
+            item.location,
+            ANONYMIZED_ENTRY_LOCATION,
+          ),
         })),
       },
       projects: {
@@ -145,6 +164,10 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
       ...section,
       items: section.items.map((item) => ({
         ...item,
+        location: replaceOptionalWhenPresent(
+          item.location,
+          ANONYMIZED_ENTRY_LOCATION,
+        ),
         url: replaceOptionalWhenPresent(item.url, ANONYMIZED_ENTRY_URL),
       })),
     })),
