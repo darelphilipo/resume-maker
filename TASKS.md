@@ -22,7 +22,21 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+### P1 — Final Pre-Launch Polish
+
+- [ ] P1: Compact mobile Preview chrome to maximize resume size & fix `ATS text` double-scrolling (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/AtsTextView.tsx`).
+  1. **Maximize Preview area on mobile:** Hide the redundant `"Preview"` heading on `< lg` (the active bottom tab already says Preview), tighten `Visual | ATS text`, `6s Scan`, `Anonymize`, `1 page`, `Trim tips`, and `Reset fit` into compact `h-8 text-xs px-2.5` pills arranged in at most 1–2 tight single-line rows (with `overflow-x-auto no-scrollbar` if needed so pills never wrap into 4 tall stacked rows), and trim outer horizontal/vertical canvas padding on mobile (`px-2 py-2`) so the resume page dominates the screen.
+  2. **Single scroll container for `ATS text`:** Remove the nested inner `overflow-y-auto` / `max-h` wrapper inside `AtsTextView.tsx` so the `"Copy all"` bar and all plain-text sections scroll together as one smooth, unified scroll area inside the Preview panel with zero double-scroll friction.
+
+- [ ] P1: Fix `Profiles` deduplication, `Manage profiles` shortcut, year-only dates, Impact Formula chip spacing, and Homepage Recent Resumes pagination (`src/components/editor/BasicsForm.tsx`, `src/templates/shared/SectionRenderer.tsx`, `src/lib/ats/atsText.ts`, `src/lib/date/month.ts`, `src/components/editor/RichTextField.tsx`, `src/components/launcher/Launcher.tsx`).
+  1. **`Profiles` deduplication & shortcut:** Omit the redundant `PROFILES` body section when profile links are rendered inline in the top contact header, mirror those inline profile links in `ATS text`'s `CONTACT DETAILS`, and wire `Manage profiles` in `BasicsForm` so clicking it expands and smoothly scrolls to the `Profiles` card.
+  2. **Year-only dates & chip spacing:** Support 4-digit year-only values (`"2018"` → `2018 — 2019`) in `MonthSelect` + `DateRange` when no month is chosen, and add a space between the bold verb and placeholder in Impact Formula chip labels (`Reduced [metric]`, `Built [feature/system]`, `Led [team/project]`, `Automated [workflow]`).
+  3. **Homepage Recent Resumes pagination:** Replace `"Show all (N)"` in `Launcher.tsx` with a compact footer pagination bar (`Prev` · `Page 1 of N` · `Next`, 5 resumes per page, resetting to page 1 when switching status filters) whenever more than 5 resumes exist.
+
+- [ ] P1: Fix `Bullet polish` left-edge clipping and `Match JD` two-click `X` close (`src/components/editor/ResumeLintPopover.tsx`, `src/components/editor/JdMatchDrawer.tsx`, `src/components/editor/EntryDrawer.tsx`).
+  1. **`Bullet polish`:** Render `ResumeLintPopover` inside a centered modal overlay (matching `Trim tips`) instead of an `absolute right-0` popover anchored inside the left Content column so it never clips off the left viewport edge.
+  2. **`Match JD` single-click `X` close:** Fix the Vaul drawer state/snap-point handling (or use a centered modal on desktop + non-snapped drawer on mobile) so a single click on `X` immediately closes the drawer without collapsing to a bottom-peek bar.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
