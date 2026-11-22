@@ -163,7 +163,7 @@ describe("Launcher", () => {
 
     expect(backupToggle()).toHaveAttribute("aria-expanded", "true");
     expect(
-      screen.getByText(/Download JSON backup/),
+      screen.getByText(/Export JSON/),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Resume backup file")).toHaveAttribute(
       "accept",
@@ -697,6 +697,56 @@ describe("Launcher", () => {
     const state = useResumeStore.getState();
     expect(state.doc.basics.name).toBe("Grace Hopper");
     expect(state.resumeId).not.toBeNull();
+  });
+
+  it("imports an open JSON Resume file through the same restore picker", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    await openBackupMenu(user);
+    await user.upload(
+      screen.getByLabelText("Resume backup file"),
+      jsonFile(
+        JSON.stringify({
+          $schema:
+            "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",
+          basics: {
+            name: "Grace Hopper",
+            label: "Computer Scientist",
+          },
+          work: [
+            {
+              name: "US Navy",
+              position: "Rear Admiral",
+              startDate: "1944-01-01",
+              endDate: "1986-01-01",
+              highlights: ["Built the first compiler"],
+            },
+          ],
+          skills: [{ name: "Languages", keywords: ["COBOL"] }],
+        }),
+      ),
+    );
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/editor\?id=/),
+      );
+    });
+
+    const state = useResumeStore.getState();
+    expect(state.doc.basics.name).toBe("Grace Hopper");
+    expect(state.doc.basics.headline).toBe("Computer Scientist");
+    expect(state.doc.sections.experience.items[0]).toMatchObject({
+      company: "US Navy",
+      position: "Rear Admiral",
+      startDate: "1944-01",
+      endDate: "1986-01",
+    });
+    expect(state.doc.sections.experience.items[0].summary).toContain(
+      "Built the first compiler",
+    );
+    expect(state.doc.sections.skills.items[0].keywords).toEqual(["COBOL"]);
   });
 
   it("reads a PDF locally, parses it, and navigates to the editor", async () => {

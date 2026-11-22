@@ -1166,9 +1166,10 @@ export function Launcher() {
             className="mt-4 flex flex-col gap-3 border-t border-[#e6e0d6] pt-4"
           >
             <p className="text-sm text-[#5b6a7a]">
-              Restore a JSON backup you exported earlier. To make a new backup,
-              open a resume and choose <strong>Download JSON backup</strong> in
-              the editor.
+              Restore a JSON backup you exported earlier, or a resume file from
+              another tool in the open JSON Resume format. To make a new backup,
+              open a resume and choose <strong>Export JSON</strong> in the
+              editor.
             </p>
 
             <label
@@ -1180,7 +1181,7 @@ export function Launcher() {
             >
               <BoxArrowDown size={24} aria-hidden />
               <span className="text-sm font-medium">
-                {isRestoring ? "Restoring..." : "Choose a JSON backup"}
+                {isRestoring ? "Restoring..." : "Choose a JSON file"}
               </span>
               <span className="text-xs text-[#6a7683]">
                 Drop it here or tap to browse

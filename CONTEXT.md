@@ -1083,11 +1083,36 @@ rediscover.
       one tag change is one Dexie write. The filter bar appears only when 2+
       rows are saved and lists **All** plus statuses with a non-zero count.
 
+  80. **JSON Resume is the portable exchange path, not the storage format.**
+      `src/lib/schema/jsonResume.ts` maps between the open JSON Resume schema
+      (https://jsonresume.org/schema/) and `ResumeDocument`. Import is
+      automatic: `parseResumeJson` detects a JSON Resume file before the native
+      Zod schema, so the existing **Backup & Restore** picker handles both with
+      no new UI. Detection requires `$schema` containing `jsonresume`, a
+      standard section array (`work`, `volunteer`, `education`, `awards`,
+      `certificates`, `publications`, `skills`, `languages`, `interests`,
+      `references`, `projects`), or JSON Resume-only basics fields (`label`,
+      `summary`, `image`, `url`, `profiles`, object `location`), and rejects any
+      object carrying `metadata`, `sections`, or `customSections`. Keep that
+      order: a native parse of `{ work: [...] }` succeeds with an empty
+      experience section, silently dropping the file. Import normalizes ISO
+      timestamps to `YYYY-MM`, treats a missing work end date as current, and
+      turns `highlights`/`courses` into `<ul>` bullets. Export writes standard
+      keys, exports months as `YYYY-MM-01` dates, and includes only visible
+      sections/entries (the PDF/ATS view), splitting rich text into `summary`
+      prose plus `highlights`. Design, layout, custom sections, work
+      authorization, profile icons, and URLs with no standard home stay in the
+      Resume Maker backup. The header JSON control is now a two-item menu
+      (**Resume Maker backup** / **JSON Resume**) so the header keeps one
+      compact action (#25); the menu closes on outside tap or Escape and moves
+      with Arrow keys. `toJsonResume` is pure and date-free — do not add a
+      `Date.now()` `meta` block or exports/tests stop being deterministic.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~843 tests
+npm test               # vitest, ~870 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1143,6 +1168,33 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — Open JSON Resume import/export
+- Task: the only P2 Queue item. Resumes can now be read from and written to the
+  open JSON Resume schema, so they are portable outside Resume Maker.
+- Adapter: new pure `src/lib/schema/jsonResume.ts` owns detection, import
+  mapping, export mapping, and serialization. Import accepts `$schema`,
+  standard section arrays, or JSON Resume-only basics fields; dates normalize to
+  `YYYY-MM`; `highlights`/`courses` become bullet lists; a missing work end date
+  is current. Export emits standard keys with `YYYY-MM-01` dates, prose + bullets
+  split into `summary`/`highlights`, and only visible sections/entries. Custom
+  sections, layout, and design stay in the Resume Maker backup.
+- Import: `parseResumeJson` detects JSON Resume before the native schema, so the
+  existing Backup & Restore picker works with no new UI. The launcher copy names
+  both formats.
+- Export: the editor's JSON header control opens a compact two-item menu
+  (**Resume Maker backup** / **JSON Resume**), keeping one 44px header action
+  (Decision #25); the menu supports Arrow keys, Escape, outside-tap close, and
+  returns focus to the trigger.
+- Tests: detection, every import section, export mapping, hidden filtering,
+  current-role handling, round-trip, serialization, launcher JSON Resume import,
+  and export-menu interactions. 870 pass (was 850). Decision #80.
+- Files: `src/lib/schema/jsonResume.ts` (+ test, new),
+  `src/lib/schema/serialize.ts` (+ test),
+  `src/components/shared/ExportJsonButton.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (870 pass), `npm run lint`.
 
 ### 2026-11-22 — Tappable impact-bullet formulas in RichTextField
 - Task: top P2 Queue item. The writing-helper strip now opens with four tappable

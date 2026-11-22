@@ -71,4 +71,65 @@ describe("parseResumeJson", () => {
       expect(second.doc.metadata.layout.pages).toEqual(pages);
     }
   });
+
+  it("imports an open JSON Resume file through the same parser", () => {
+    const result = parseResumeJson(
+      JSON.stringify({
+        $schema:
+          "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",
+        basics: { name: "Grace Hopper", label: "Computer Scientist" },
+        work: [
+          {
+            name: "US Navy",
+            position: "Rear Admiral",
+            startDate: "1944-01-01",
+            endDate: "1986-01-01",
+            highlights: ["Built the first compiler"],
+          },
+        ],
+        skills: [{ name: "Languages", keywords: ["COBOL"] }],
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.doc.basics.name).toBe("Grace Hopper");
+      expect(result.doc.basics.headline).toBe("Computer Scientist");
+      expect(result.doc.sections.experience.items[0]).toMatchObject({
+        company: "US Navy",
+        position: "Rear Admiral",
+        startDate: "1944-01",
+        endDate: "1986-01",
+      });
+      expect(result.doc.sections.skills.items[0].keywords).toEqual(["COBOL"]);
+    }
+  });
+
+  it("keeps a Resume Maker backup on the native schema path", () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Ada Lovelace";
+    doc.sections.experience.items = [
+      {
+        id: "e1",
+        hidden: false,
+        company: "Analytical Engines",
+        position: "Mathematician",
+        location: "",
+        startDate: "1842-06",
+        endDate: "1843-09",
+        current: false,
+        summary: "",
+      },
+    ];
+
+    const result = parseResumeJson(serializeResume(doc));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.doc.sections.experience.items[0].company).toBe(
+        "Analytical Engines",
+      );
+      expect(result.doc.metadata.template).toBe("onyx");
+    }
+  });
 });

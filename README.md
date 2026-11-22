@@ -18,7 +18,7 @@ in control of every line, and your data stays on your device.
   has no backend, accounts, or analytics on your resume content.
 - **Fast on a phone.** The editor is mobile-first, with large touch targets and
   a layout that works at phone width instead of a desktop screen squeezed down.
-  The resume name, undo/redo, JSON backup, and a solid **Save PDF** button share
+  The resume name, undo/redo, JSON export, and a solid **Save PDF** button share
   one compact header row, so the preview keeps the height.
 - **Honest PDF output.** Preview the exact pages before printing, then use your
   browser's print dialog to save a sharp PDF.
@@ -65,9 +65,13 @@ in control of every line, and your data stays on your device.
   editable sample including categorized skills you can adapt. The six cards fill
   the two-column grid evenly, so no role sits beside an empty slot.
 - **Backup & Restore** lives at the bottom of the home page as a secondary
-  option: restore a JSON backup you exported earlier, without treating JSON as
-  the main way to start.
-- **JSON backup export** in the editor at any time so you are never locked in.
+  option: restore a JSON backup you exported earlier, or a resume file from
+  another tool in the open **JSON Resume** format, without treating JSON as the
+  main way to start.
+- **JSON export** in the editor at any time so you are never locked in: keep a
+  full **Resume Maker backup** (layout, design, and hidden entries) or download
+  the same resume as a portable **JSON Resume** file that other resume tools and
+  sites can read.
 
 ### Write and organize
 
@@ -276,7 +280,12 @@ in control of every line, and your data stays on your device.
 
 - Automatic local saves while you edit.
 - Undo and redo from the header or with `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`.
-- Download a JSON backup whenever you want a portable copy.
+- Export from the header whenever you want a portable copy. Choose **Resume
+  Maker backup** for a complete file that reopens here with your layout, design,
+  and hidden entries intact, or **JSON Resume** for the open standard format
+  used by other resume tools. JSON Resume exports include the resume you see
+  (hidden sections and entries stay out), and importing either format works
+  through the same **Backup & Restore** picker on the home page.
 
 ## Save a PDF
 

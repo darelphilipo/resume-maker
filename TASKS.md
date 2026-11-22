@@ -22,13 +22,28 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-
-### P2 — Larger work
-
-- [ ] P2: Support the open JSON Resume schema for import/export to avoid vendor lock-in.
+_empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Added **open JSON Resume import/export** so resumes are
+  portable outside Resume Maker. New pure `src/lib/schema/jsonResume.ts` detects
+  JSON Resume files, maps every standard section into `ResumeDocument`
+  (`highlights`/`courses` → bullets, ISO dates → `YYYY-MM`, missing end date →
+  current), and maps a document back out with `YYYY-MM-01` dates, prose +
+  `highlights`, and only visible sections/entries. `parseResumeJson` detects the
+  standard format first, so the existing **Backup & Restore** picker imports it
+  with no new UI. The editor's JSON header control is now a compact two-item menu
+  (**Resume Maker backup** / **JSON Resume**) with Arrow-key, Escape, and
+  outside-tap support, keeping one 44px action. Design, layout, custom sections,
+  and other non-standard fields stay in the full backup. Verified
+  `npm run typecheck`, `npm test` (870 pass), `npm run lint`. Files:
+  `src/lib/schema/jsonResume.ts` (+ test, new),
+  `src/lib/schema/serialize.ts` (+ test),
+  `src/components/shared/ExportJsonButton.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-22 — Turned the `RichTextField` writing hint into **tappable
   Zero-AI XYZ/STAR impact-bullet formulas**. The collapsible **Writing helpers**

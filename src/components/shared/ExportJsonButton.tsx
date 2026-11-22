@@ -1,7 +1,14 @@
 "use client";
 
-import { DownloadSimple } from "@phosphor-icons/react";
+import { CaretDown, DownloadSimple } from "@phosphor-icons/react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 
+import { serializeJsonResume } from "@/lib/schema/jsonResume";
 import { serializeResume } from "@/lib/schema/serialize";
 import { useResumeStore } from "@/lib/store/useResumeStore";
 
@@ -14,35 +21,156 @@ export function slugFileName(name: string): string {
   return slug || "resume";
 }
 
+function downloadJson(text: string, fileName: string) {
+  const blob = new Blob([text], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function ExportJsonButton() {
   const doc = useResumeStore((state) => state.doc);
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
-  function handleDownload() {
-    const blob = new Blob([serializeResume(doc)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
 
-    link.href = url;
-    link.download = `${slugFileName(doc.basics.name)}-resume.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    menuRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  function handleExport(format: "backup" | "jsonresume") {
+    const fileName = `${slugFileName(doc.basics.name)}-resume.json`;
+
+    if (format === "jsonresume") {
+      downloadJson(
+        serializeJsonResume(doc),
+        `${slugFileName(doc.basics.name)}-json-resume.json`,
+      );
+    } else {
+      downloadJson(serializeResume(doc), fileName);
+    }
+
+    setOpen(false);
+    triggerRef.current?.focus();
+  }
+
+  function handleMenuKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
+      return;
+    }
+
+    const buttons = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>("button"),
+    );
+
+    if (buttons.length === 0) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const current = buttons.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
+    const step = event.key === "ArrowDown" ? 1 : -1;
+    const next = (current + step + buttons.length) % buttons.length;
+
+    buttons[next]?.focus();
   }
 
   return (
-    <button
-      type="button"
-      aria-label="Download JSON backup"
-      title="Download JSON backup"
-      onClick={handleDownload}
-      className="inline-flex min-h-11 min-w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-line bg-surface px-2 py-2 text-sm font-medium transition-colors hover:border-black/30 hover:bg-black/5 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-w-11 sm:px-3"
-    >
-      <DownloadSimple size={16} aria-hidden />
-      <span className="hidden sm:inline lg:hidden">JSON</span>
-      <span className="hidden lg:inline">Download JSON backup</span>
-    </button>
+    <div ref={rootRef} className="relative shrink-0">
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-label="Export JSON"
+        title="Export JSON"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? "export-json-menu" : undefined}
+        onClick={() => setOpen((value) => !value)}
+        className="inline-flex min-h-11 min-w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-line bg-surface px-2 py-2 text-sm font-medium transition-colors hover:border-black/30 hover:bg-black/5 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-w-11 sm:px-3"
+      >
+        <DownloadSimple size={16} aria-hidden />
+        <span className="hidden sm:inline lg:hidden">JSON</span>
+        <span className="hidden lg:inline">Export JSON</span>
+        <CaretDown
+          size={12}
+          aria-hidden
+          className={`hidden shrink-0 transition-transform sm:block ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open ? (
+        <div
+          ref={menuRef}
+          id="export-json-menu"
+          role="menu"
+          aria-label="Export JSON"
+          onKeyDown={handleMenuKeyDown}
+          className="absolute right-0 top-full z-30 mt-1 flex w-64 max-w-[calc(100vw-1rem)] flex-col gap-0.5 rounded-xl border border-line bg-surface p-1 shadow-lg"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => handleExport("backup")}
+            className="flex w-full flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:bg-black/5 focus-visible:outline-none"
+          >
+            <span className="text-sm font-medium text-text">
+              Resume Maker backup
+            </span>
+            <span className="text-xs leading-snug text-muted">
+              Everything: layout, design, and hidden entries.
+            </span>
+          </button>
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => handleExport("jsonresume")}
+            className="flex w-full flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:bg-black/5 focus-visible:outline-none"
+          >
+            <span className="text-sm font-medium text-text">JSON Resume</span>
+            <span className="text-xs leading-snug text-muted">
+              Portable standard format for other resume tools.
+            </span>
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }

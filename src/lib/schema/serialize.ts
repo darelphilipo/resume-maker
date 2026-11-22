@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import {
+  isJsonResumeDocument,
+  resumeFromJsonResume,
+} from "./jsonResume";
 import { ResumeDocumentSchema, type ResumeDocument } from "./resume.schema";
 
 export type ParseResult =
@@ -15,6 +19,21 @@ export function parseResumeJson(input: unknown): ParseResult {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return { ok: false, error: `Invalid JSON: ${message}` };
+    }
+  }
+
+  if (isJsonResumeDocument(raw)) {
+    try {
+      const result = ResumeDocumentSchema.safeParse(resumeFromJsonResume(raw));
+
+      if (!result.success) {
+        return { ok: false, error: z.prettifyError(result.error) };
+      }
+
+      return { ok: true, doc: result.data };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { ok: false, error: `Invalid JSON Resume file: ${message}` };
     }
   }
 
