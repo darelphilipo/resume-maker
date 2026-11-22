@@ -1,7 +1,8 @@
+import { groupExperienceItems } from "@/lib/experience/groupExperience";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { resolveSection } from "@/templates/shared/sectionData";
 
-import { encodeEntryBlock } from "./blockIds";
+import { encodeEntryGroup } from "./blockIds";
 import type { PackBlock } from "./packPages";
 
 /**
@@ -15,6 +16,12 @@ export type SectionPlan = {
   hasHeading: boolean;
   startOnNewPage: boolean;
   entryIds: string[];
+  /**
+   * Optional packing groups. Each inner list is measured and packed as one
+   * block; grouped Experience promotions use this so one company header never
+   * separates from its roles.
+   */
+  blocks?: string[][];
 };
 
 export function getSectionPlans(
@@ -42,6 +49,10 @@ export function getSectionPlans(
       !config.keepTogether &&
       config.columns === 1 &&
       resolved.items.length > 1;
+    const groupedExperience =
+      splittable &&
+      resolved.kind === "experience" &&
+      doc.sections.experience.groupSameCompany === true;
 
     return {
       sectionId,
@@ -53,24 +64,33 @@ export function getSectionPlans(
             typeof item.id === "string" ? item.id : `item-${index}`,
           )
         : [],
+      blocks: groupedExperience
+        ? groupExperienceItems(resolved.items).map((group) => group.entryIds)
+        : undefined,
     };
   });
 }
 
 /**
- * Measurement keys for a plan. The first entry block of a split section also
- * carries the heading, so the heading and its first entry are one indivisible
- * packing unit (keep-with-next) and no separate gap arithmetic is needed.
+ * Measurement keys for a plan. The first block of a split section also
+ * carries the heading, so the heading and its first entry (or first company
+ * group) are one indivisible packing unit (keep-with-next) and no separate gap
+ * arithmetic is needed.
  */
 export function planBlockKeys(plan: SectionPlan): string[] {
   if (plan.atomic || plan.entryIds.length === 0) {
     return [plan.sectionId];
   }
 
-  return plan.entryIds.map((entryId, index) =>
-    encodeEntryBlock(
+  const blocks =
+    plan.blocks && plan.blocks.length > 0
+      ? plan.blocks
+      : plan.entryIds.map((entryId) => [entryId]);
+
+  return blocks.map((entryIds, index) =>
+    encodeEntryGroup(
       plan.sectionId,
-      entryId,
+      entryIds,
       index === 0 && plan.hasHeading,
     ),
   );

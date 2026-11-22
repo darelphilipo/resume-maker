@@ -56,6 +56,40 @@ describe("getSectionPlans", () => {
     });
   });
 
+  it("groups consecutive same-company roles into one packing block", () => {
+    const doc = createEmptyResume();
+    doc.sections.experience.groupSameCompany = true;
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({ id: "e1", company: "Acme" }),
+      ExperienceItemSchema.parse({ id: "e2", company: "Acme" }),
+      ExperienceItemSchema.parse({ id: "e3", company: "Globex" }),
+    ];
+
+    const [plan] = getSectionPlans(doc, ["experience"]);
+
+    expect(plan.atomic).toBe(false);
+    expect(plan.blocks).toEqual([["e1", "e2"], ["e3"]]);
+
+    const keys = planBlockKeys(plan);
+
+    expect(keys).toHaveLength(2);
+    expect(decodeBlock(keys[0])).toMatchObject({
+      entryIds: ["e1", "e2"],
+      withHeading: true,
+    });
+    expect(decodeBlock(keys[1])).toMatchObject({
+      entryIds: ["e3"],
+      withHeading: false,
+    });
+  });
+
+  it("keeps one block per entry when company grouping is off", () => {
+    const [plan] = getSectionPlans(experienceDoc(3), ["experience"]);
+
+    expect(plan.blocks).toBeUndefined();
+    expect(planBlockKeys(plan)).toHaveLength(3);
+  });
+
   it("keeps headings attached to the first entry when headings are hidden", () => {
     const doc = experienceDoc(2);
     doc.sections.experience.showHeading = false;

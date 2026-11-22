@@ -323,6 +323,28 @@ describe("ExperienceForm", () => {
     ).toBeNull();
   });
 
+  it("saves the group-promotions option immediately", () => {
+    setup([
+      makeItem("exp-1", { company: "Acme", position: "Engineer" }),
+      makeItem("exp-2", { company: "Acme", position: "Senior Engineer" }),
+    ]);
+    render(<ExperienceForm />);
+
+    const toggle = screen.getByLabelText("Group promotions at the same company");
+
+    expect(toggle).not.toBeChecked();
+    expect(
+      useResumeStore.getState().doc.sections.experience.groupSameCompany,
+    ).toBe(false);
+
+    fireEvent.click(toggle);
+
+    expect(
+      useResumeStore.getState().doc.sections.experience.groupSameCompany,
+    ).toBe(true);
+    expect(toggle).toBeChecked();
+  });
+
   it("keeps drafts in the form but filters them from visible sections", () => {
     setup([makeItem("exp-1", { company: "", position: "Engineer" })]);
 

@@ -1,6 +1,10 @@
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 
 import {
+  groupExperienceItems,
+  type ExperienceGroup,
+} from "@/lib/experience/groupExperience";
+import {
   externalLinkHref,
   websiteLabelFromUrl,
 } from "@/lib/links/contactLinks";
@@ -144,6 +148,72 @@ function ExperienceEntry({ item }: { item: ItemRecord }) {
       summary={text(item, "summary")}
       keepTogether
     />
+  );
+}
+
+/**
+ * One promoted role under a shared company header. The company and combined
+ * dates live in the group header, so each role shows only its title, its own
+ * dates, and its bullets. `keepTogether` keeps a single role from splitting
+ * across pages.
+ */
+function ExperienceRole({ item }: { item: ItemRecord }) {
+  return (
+    <EntryShell
+      title={text(item, "position")}
+      date={dateNode(item)}
+      summary={text(item, "summary")}
+      keepTogether
+    />
+  );
+}
+
+function ExperienceCompanyGroup({ group }: { group: ExperienceGroup }) {
+  const { start, end, current } = group.dateSpan;
+  const showDate = start.trim() !== "" || end.trim() !== "";
+
+  return (
+    <article className="resume-company-group">
+      <div className="resume-entry resume-company-group-header">
+        <div className="resume-entry-header">
+          <div className="resume-entry-leading">
+            <h3 className="resume-entry-title">{group.company}</h3>
+            {group.location !== "" ? (
+              <p className="resume-entry-subtitle">{group.location}</p>
+            ) : null}
+          </div>
+          {showDate ? (
+            <div className="resume-entry-aside">
+              <DateRange start={start} end={end} current={current} />
+            </div>
+          ) : null}
+        </div>
+      </div>
+      <div className="resume-company-roles">
+        {group.items.map((item, index) => (
+          <Fragment key={itemId(item, index)}>
+            <ExperienceRole item={item} />
+          </Fragment>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+/**
+ * Grouped rendering for the Experience section. Consecutive roles at the same
+ * company share one header; every other entry keeps the normal layout. The ATS
+ * text renderer is intentionally separate and stays a linear list.
+ */
+function renderExperienceItems(items: ItemRecord[]): ReactNode[] {
+  return groupExperienceItems(items).map((group) =>
+    group.grouped ? (
+      <ExperienceCompanyGroup key={group.key} group={group} />
+    ) : (
+      <Fragment key={group.key}>
+        <ExperienceEntry item={group.items[0]} />
+      </Fragment>
+    ),
   );
 }
 
@@ -497,9 +567,12 @@ export function SectionRenderer({
                   { "--section-columns": config.columns } as CSSProperties
                 }
               >
-                {items.map((item, index) =>
-                  renderItem(doc, resolved.kind, item, index),
-                )}
+                {resolved.kind === "experience" &&
+                doc.sections.experience.groupSameCompany === true
+                  ? renderExperienceItems(items)
+                  : items.map((item, index) =>
+                      renderItem(doc, resolved.kind, item, index),
+                    )}
               </div>
             )}
           </section>

@@ -1014,6 +1014,30 @@ rediscover.
        month/year group with `aria-describedby`; do not reimplement either rule
        in a form.
 
+  77. **Grouped promotions are one render unit and one packing block.**
+      `sections.experience.groupSameCompany` is opt-in (default false). Old
+      Dexie rows load as-is, so check `=== true` rather than truthiness of the
+      field's type. `groupExperienceItems`
+      (`src/lib/experience/groupExperience.ts`) groups only **consecutive
+      visible** entries whose `normalizeCompanyName` matches (trim, collapse
+      whitespace, lowercase); a blank company never joins a neighbour, and a
+      company that reappears after another employer starts a new group. It owns
+      the unique-location join and the combined span: earliest non-blank
+      `startDate`, latest non-blank `endDate`, and `current: true` whenever any
+      role is current (which forces the header to read **Present**). A single
+      role keeps the normal `ExperienceEntry` layout; 2+ roles render one
+      `.resume-company-group` header (company, location, combined dates) with
+      each role as an `EntryShell` (`keepTogether`, so `break-inside: avoid`)
+      under `.resume-company-roles`. All six templates share `SectionRenderer`,
+      so there is no per-template work. `getSectionPlans` emits
+      `SectionPlan.blocks` (one id list per company group) and `planBlockKeys`
+      encodes each block with `encodeEntryGroup`; `decodeBlock` splits the
+      comma-separated, URI-escaped entry ids. This keeps measurement and
+      packing equal to the grouped render, so a company header can never be
+      stranded on a page without its roles. The ATS renderer is deliberately
+      untouched: it stays one linear entry per role with the company repeated,
+      and a regression asserts that. Do not move grouping into `atsText.ts`.
+
 ## Verification and tooling
 
 ```powershell
@@ -1074,6 +1098,41 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — Grouped promotions at one company
+- Task: top P2 Queue item. Added the **Group promotions at the same company**
+  checkbox to Experience and a shared grouped renderer.
+- Model: `sections.experience.groupSameCompany` (Zod default false). The
+  checkbox writes it through `patchDoc` immediately, so one Zundo undo restores
+  the flat layout. Old saved rows have no field at runtime; all reads compare
+  `=== true` (Decision #77).
+- Grouping: new pure `groupExperienceItems` / `experienceDateSpan` /
+  `normalizeCompanyName`. Only consecutive visible roles with the same
+  normalized company join; blanks never join; unique locations are joined with
+  `" · "`; the combined span uses the earliest start, latest end, and Present
+  when any role is current.
+- Render: `SectionRenderer` emits one `.resume-company-group` header plus a
+  `.resume-company-roles` stack. Each role keeps its own position, dates, and
+  bullets through `EntryShell`/`keepTogether`; single roles keep the old layout.
+  All six templates use this renderer. New Onyx CSS draws the role rail and
+  keeps the header with its first role.
+- Pagination: `getSectionPlans` now emits `SectionPlan.blocks` for grouped
+  Experience, `planBlockKeys` uses the new `encodeEntryGroup`, and
+  `decodeBlock` accepts comma-separated ids. Measurement and packing therefore
+  match the grouped render instead of over-counting a repeated header.
+- ATS: unchanged and linear; a regression asserts the company repeats once per
+  role. Tests: 10 helper cases, three grouped/ungrouped/hidden renderer cases,
+  the form toggle, planner group blocks, block-id groups/escaped commas, and the
+  ATS linear case. 808 pass (was 786).
+- Files: `src/lib/experience/groupExperience.ts` (+ test, new),
+  `src/lib/schema/resume.schema.ts`,
+  `src/components/editor/ExperienceForm.tsx` (+ test),
+  `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `src/templates/onyx/onyx.css`, `src/lib/pagination/blockIds.ts` (+ test),
+  `src/lib/pagination/sectionPlans.ts` (+ test),
+  `src/lib/pagination/index.ts`, `src/lib/ats/atsText.test.ts`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (808 pass), `npm run lint`.
 
 ### 2026-11-22 — One-tap newest-first sorting and date sanity warnings
 - Task: top P2 Queue item. Added the **Sort newest first** button to the
@@ -1301,35 +1360,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (713 pass), `npm run lint`.
 
-### 2026-11-21 — Orphan-line and bullet-length trim hints
-- Task: top P2 Queue item. Added a zero-AI **Trim tips** catcher for bullets
-  that waste a line in the live preview.
-- Metrics: new pure `src/lib/lint/bulletMetrics.ts`. `measureBulletLines`
-  measures each preview `li` word by word with `Range.getClientRects()` and
-  groups rects by vertical position, so inline formatting does not hide a word.
-  `analyzeBulletLines` flags a wrapped bullet whose final line has 1–3 words
-  (one reclaimable line) and bullets with 240+ characters or more than three
-  rendered lines. `summarizeBulletIssues` owns the plain-language summary and
-  counts. `scanBulletLint` skips parent `<li>`s of nested lists and the trim
-  panel itself.
-- Wiring: `LiveCanvasViewport` scans the active page stack in a layout effect
-  after document/layout changes and passes the report to the Preview chrome.
-  `PageOverflowBanner` shows the concise summary when the resume spills, and
-  `BulletTrimTips` (exported from the same file) renders a collapsible toolbar
-  popover listing the first five bullets with a reason badge and opening words.
-  Everything is read-only and client-side; no AI, network, or store writes.
-  Decision #67 records the effect dependencies and the jsdom fallback.
-- Tests: pure orphan/long classification, long-wins precedence, summary copy
-  (mixed + singular), snippet truncation, Range-based line grouping, no-layout
-  fallback, nested-list/trim-panel skipping, banner summary, trim-list rendering
-  and 5-item cap, plus a LiveCanvasViewport scan-and-render case. 696 pass
-  (was 675). No new layout shell, so no Playwright case was added.
-- Files: `src/lib/lint/bulletMetrics.ts` (+ test, new),
-  `src/components/preview/PageOverflowBanner.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (696 pass), `npm run lint`.
-
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit
      guard (Decision #39), Playwright
@@ -1340,4 +1370,5 @@ npx playwright test    # e2e; needs a dev server on :3000
      autopilot diagnosis, categorized-skills, custom-section, contact-network
      detection, and work-auth tag details are captured in Decisions & Gotchas
      (#21, #18, #10, #9, #16, #17, #11) and Autopilot failure modes above. -->
+
 

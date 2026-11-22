@@ -110,6 +110,11 @@ in control of every line, and your data stays on your device.
 - **Sort newest first** appears above Experience, Education, or Projects when
   two or more entries are out of order, so one tap puts current roles and the
   latest dates at the top (undo still works).
+- **Group promotions at the same company**: turn on the Experience option and
+  consecutive roles at one employer share a single company, location, and
+  combined date header, with each promotion's title, own dates, and bullets
+  stacked cleanly beneath it. The ATS text view stays a simple linear list, so
+  parsers still read every role in order.
 - Add, delete, hide, and reorder entries inside each section. The eye button on
   an entry hides it from the preview, ATS text, and PDF without deleting it: the
   card stays in the editor with a dimmed look and a **Show** eye button until

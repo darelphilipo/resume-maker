@@ -173,6 +173,36 @@ describe("buildAtsText", () => {
     expect(text).not.toContain("Hidden Co");
   });
 
+  it("stays linear when company grouping is on", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.experience.groupSameCompany = true;
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "exp-1",
+        company: "Acme",
+        position: "Engineer",
+        startDate: "2020-01",
+        endDate: "2021-12",
+      }),
+      ExperienceItemSchema.parse({
+        id: "exp-2",
+        company: "Acme",
+        position: "Senior Engineer",
+        startDate: "2022-01",
+        endDate: "2023-06",
+      }),
+    ];
+
+    const text = buildAtsText(doc);
+
+    expect(text).toContain("Engineer\nAcme\nJan 2020 — Dec 2021");
+    expect(text).toContain("Senior Engineer\nAcme\nJan 2022 — Jun 2023");
+    // ATS text keeps one linear entry per role; the company is not hoisted
+    // into a shared group header.
+    expect(text.match(/Acme/g)).toHaveLength(2);
+  });
+
   it("expands date ranges, current roles, keywords, and rich summaries", () => {
     const doc = createEmptyResume();
 

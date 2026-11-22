@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { decodeBlock, encodeEntryBlock } from "./blockIds";
+import { decodeBlock, encodeEntryBlock, encodeEntryGroup } from "./blockIds";
 import { HEADER_BLOCK_ID } from "./constants";
 
 describe("entry block ids", () => {
@@ -11,6 +11,28 @@ describe("entry block ids", () => {
       kind: "section",
       sectionId: "experience",
       entryIds: ["exp-1"],
+      withHeading: true,
+    });
+  });
+
+  it("round-trips several entries that must stay in one packing block", () => {
+    const id = encodeEntryGroup("experience", ["exp-1", "exp-2"], false);
+
+    expect(decodeBlock(id)).toEqual({
+      kind: "section",
+      sectionId: "experience",
+      entryIds: ["exp-1", "exp-2"],
+      withHeading: false,
+    });
+  });
+
+  it("escapes commas inside grouped entry ids", () => {
+    const id = encodeEntryGroup("experience", ["role,1", "role,2"], true);
+
+    expect(decodeBlock(id)).toEqual({
+      kind: "section",
+      sectionId: "experience",
+      entryIds: ["role,1", "role,2"],
       withHeading: true,
     });
   });

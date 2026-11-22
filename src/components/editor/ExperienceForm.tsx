@@ -17,6 +17,7 @@ import { useResumeStore } from "@/lib/store/useResumeStore";
 import { RichTextField } from "./RichTextField";
 import {
   AddEntryButton,
+  BooleanInput,
   ClearSectionButton,
   EntryActions,
   EntryCard,
@@ -68,6 +69,9 @@ function toFormValues(items: ExperienceItem[]): ExperienceFormValues {
 
 export function ExperienceForm() {
   const items = useResumeStore((state) => state.doc.sections.experience.items);
+  const groupSameCompany = useResumeStore(
+    (state) => state.doc.sections.experience.groupSameCompany === true,
+  );
   const patchDoc = useResumeStore((state) => state.patchDoc);
   const values = useMemo(() => toFormValues(items), [items]);
 
@@ -143,6 +147,16 @@ export function ExperienceForm() {
     });
   }
 
+  function setGroupSameCompany(next: boolean): void {
+    patchDoc({
+      sections: {
+        experience: {
+          groupSameCompany: next,
+        },
+      },
+    });
+  }
+
   const showSortButton =
     watched.items.length > 1 && !isNewestFirst(watched.items);
 
@@ -152,6 +166,18 @@ export function ExperienceForm() {
       onSubmit={(event) => event.preventDefault()}
       className="flex flex-col gap-3"
     >
+      <div className="rounded-xl border border-line bg-surface p-3">
+        <BooleanInput
+          id="experience-group-same-company"
+          label="Group promotions at the same company"
+          checked={groupSameCompany}
+          onChange={setGroupSameCompany}
+        />
+        <p className="pl-7 text-xs text-muted">
+          Consecutive roles at one employer share a company and combined date
+          header.
+        </p>
+      </div>
       {showSortButton ? (
         <div className="flex justify-end">
           <SortNewestFirstButton onClick={sortNewestFirst} />

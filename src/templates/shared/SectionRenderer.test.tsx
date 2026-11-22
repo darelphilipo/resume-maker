@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { parsePastedResume } from "@/lib/import/pasteResume";
-import { encodeEntryBlock } from "@/lib/pagination/blockIds";
+import { encodeEntryBlock, encodeEntryGroup } from "@/lib/pagination/blockIds";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
   ExperienceItemSchema,
@@ -305,6 +305,172 @@ Python`);
       listRender.container.querySelectorAll(".resume-skill-pill"),
     ).toHaveLength(0);
     expect(screen.getByText("React, Node")).toBeInTheDocument();
+  });
+
+  it("keeps experience entries separate when grouping is off", () => {
+    const doc = createEmptyResume();
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+      }),
+      ExperienceItemSchema.parse({
+        id: "e2",
+        company: "Acme",
+        position: "Senior Engineer",
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer doc={doc} pageSectionIds={["experience"]} />,
+    );
+
+    expect(container.querySelector(".resume-company-group")).toBeNull();
+    expect(screen.getAllByText("Acme")).toHaveLength(2);
+  });
+
+  it("groups consecutive roles at one company under one header", () => {
+    const doc = createEmptyResume();
+    doc.sections.experience.groupSameCompany = true;
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+        location: "Remote",
+        startDate: "2020-01",
+        endDate: "2021-12",
+        summary: "<ul><li>Shipped the first release</li></ul>",
+      }),
+      ExperienceItemSchema.parse({
+        id: "e2",
+        company: "Acme",
+        position: "Senior Engineer",
+        location: "Remote",
+        startDate: "2022-01",
+        endDate: "2023-06",
+        summary: "<ul><li>Led the platform team</li></ul>",
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer doc={doc} pageSectionIds={["experience"]} />,
+    );
+
+    expect(container.querySelectorAll(".resume-company-group")).toHaveLength(1);
+    expect(
+      container.querySelectorAll(".resume-company-group-header"),
+    ).toHaveLength(1);
+    // Company and location print once in the shared header.
+    expect(screen.getAllByText("Acme")).toHaveLength(1);
+    expect(screen.getAllByText("Remote")).toHaveLength(1);
+    // The header carries the combined span; each role keeps its own dates.
+    expect(screen.getByText("Jan 2020 — Jun 2023")).toBeInTheDocument();
+    expect(screen.getByText("Jan 2020 — Dec 2021")).toBeInTheDocument();
+    expect(screen.getByText("Jan 2022 — Jun 2023")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Engineer" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Senior Engineer" }),
+    ).toBeInTheDocument();
+    // Each promoted role still avoids splitting across pages.
+    expect(
+      container.querySelectorAll(
+        ".resume-company-roles .resume-entry-keep-together",
+      ),
+    ).toHaveLength(2);
+  });
+
+  it("renders one measured company block from an encoded group id", () => {
+    const doc = createEmptyResume();
+    doc.sections.experience.groupSameCompany = true;
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+      }),
+      ExperienceItemSchema.parse({
+        id: "e2",
+        company: "Acme",
+        position: "Senior Engineer",
+      }),
+      ExperienceItemSchema.parse({
+        id: "e3",
+        company: "Globex",
+        position: "Manager",
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={[encodeEntryGroup("experience", ["e1", "e2"], true)]}
+      />,
+    );
+
+    expect(container.querySelectorAll(".resume-company-group")).toHaveLength(1);
+    expect(screen.getByText("Engineer")).toBeInTheDocument();
+    expect(screen.getByText("Senior Engineer")).toBeInTheDocument();
+    // The next company belongs to a different packing block.
+    expect(screen.queryByText("Manager")).toBeNull();
+  });
+
+  it("does not group roles at different companies", () => {
+    const doc = createEmptyResume();
+    doc.sections.experience.groupSameCompany = true;
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+      }),
+      ExperienceItemSchema.parse({
+        id: "e2",
+        company: "Globex",
+        position: "Manager",
+      }),
+      ExperienceItemSchema.parse({
+        id: "e3",
+        company: "Acme",
+        position: "Director",
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer doc={doc} pageSectionIds={["experience"]} />,
+    );
+
+    expect(container.querySelector(".resume-company-group")).toBeNull();
+    expect(screen.getAllByText("Acme")).toHaveLength(2);
+  });
+
+  it("does not group a hidden role", () => {
+    const doc = createEmptyResume();
+    doc.sections.experience.groupSameCompany = true;
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+      }),
+      ExperienceItemSchema.parse({
+        id: "e2",
+        company: "Acme",
+        position: "Senior Engineer",
+        hidden: true,
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer doc={doc} pageSectionIds={["experience"]} />,
+    );
+
+    expect(container.querySelector(".resume-company-group")).toBeNull();
+    expect(screen.queryByText("Senior Engineer")).toBeNull();
+    expect(screen.getByText("Engineer")).toBeInTheDocument();
   });
 
   it("wraps numeric metrics only when the recruiter scan is active", () => {

@@ -123,6 +123,31 @@
   page-break-inside: avoid;
 }
 
+/* Grouped promotions at one company: one shared header, roles stacked below. */
+.onyx .resume-company-group {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3pt;
+}
+
+.onyx .resume-company-group-header {
+  break-after: avoid;
+  page-break-after: avoid;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.onyx .resume-company-roles {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--item-gap, 6pt);
+  padding-left: 9pt;
+  border-left: 1.5pt solid
+    color-mix(in srgb, var(--brand-primary, #1f2937) 20%, transparent);
+}
+
 .onyx .resume-entry-header {
   display: flex;
   justify-content: space-between;

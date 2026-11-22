@@ -26,10 +26,6 @@ _empty
 
 ### P2 — High-Value Reddit-Inspired Features
 
-- [ ] P2: Add **Grouped Promotions (multiple roles at the same company)** in Experience (`src/types/`, `src/components/editor/ExperienceForm.tsx`, `src/templates/`, `src/components/preview/AtsTextView.tsx`).
-  1. Add a section-level `groupSameCompany?: boolean` toggle in `ExperienceForm.tsx` that groups consecutive visible entries sharing the same normalized `company` name.
-  2. Render the company, location, and combined date span once as the group header across all 6 templates with each promoted `position`, dates, and bullets stacked cleanly underneath (keeping per-role `break-inside: avoid`), while keeping `AtsTextView` linear.
-
 - [ ] P2: Promote existing **`Profiles` links** (`LinkedIn`, `GitHub`, `Portfolio`) cleanly into the resume header (`src/components/editor/BasicsForm.tsx`, `src/lib/links/contactLinks.ts`, `src/templates/shared/HeaderSlot.tsx`).
   1. Reuse the existing `Profiles` data (`contactLinks.ts`)—do not create a duplicate `basics.links` array—and render visible profile links inline in the top contact header across all 6 templates as clean clickable `<a href>` links (stripping `https://` / `www.`), with a quick shortcut in `BasicsForm` to manage them.
   2. Include the icons for most common websites like github ,LinkedIn .only high value websites for resumes .else default to globe icon 
@@ -47,6 +43,32 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Added **Grouped Promotions** to Experience. A section-level
+  **Group promotions at the same company** checkbox writes
+  `sections.experience.groupSameCompany` (default false, so existing saved rows
+  stay flat) through one undoable `patchDoc`. A new pure
+  `groupExperienceItems` groups only *consecutive* visible roles whose
+  normalized company matches (trim/collapse/lowercase; blanks never join),
+  unions unique locations, and builds the combined span from the earliest start,
+  latest end, and any current role. `SectionRenderer` renders one
+  `.resume-company-group` header (company + location + combined dates) with each
+  promoted role keeping its own title, dates, bullets, and
+  `resume-entry-keep-together`; a single role keeps the normal entry layout. All
+  six templates share that renderer. Pagination now plans one measured/packed
+  block per company group through `SectionPlan.blocks` and
+  `encodeEntryGroup`, so a header can never separate from its roles;
+  `decodeBlock` still accepts single-entry ids. ATS text is unchanged and
+  linear. Added helper, renderer, form, planner, block-id, and ATS regressions.
+  Verified `npm run typecheck`, `npm test` (808 pass), `npm run lint`. Files:
+  `src/lib/experience/groupExperience.ts` (+ test, new),
+  `src/lib/schema/resume.schema.ts`,
+  `src/components/editor/ExperienceForm.tsx` (+ test),
+  `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `src/templates/onyx/onyx.css`, `src/lib/pagination/blockIds.ts` (+ test),
+  `src/lib/pagination/sectionPlans.ts` (+ test),
+  `src/lib/pagination/index.ts`, `src/lib/ats/atsText.test.ts`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-22 — Added **one-click "Sort newest first"** and inline **date
   sanity warnings** to the dated sections. The pure

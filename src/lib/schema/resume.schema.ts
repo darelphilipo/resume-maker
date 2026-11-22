@@ -227,11 +227,16 @@ const ProfilesSectionSchema = listSectionSchema(
   "user-circle",
   ProfileItemSchema,
 );
-const ExperienceSectionSchema = listSectionSchema(
-  "Experience",
-  "briefcase",
-  ExperienceItemSchema,
-);
+const ExperienceSectionSchema = z.object({
+  ...sectionFields("Experience", "briefcase"),
+  items: z.array(ExperienceItemSchema).default(() => []),
+  /**
+   * When true, consecutive visible roles at the same company share one company
+   * / location / combined-date header in the visual preview and PDF. The ATS
+   * text renderer stays linear either way.
+   */
+  groupSameCompany: z.boolean().default(false),
+});
 const EducationSectionSchema = listSectionSchema(
   "Education",
   "graduation-cap",

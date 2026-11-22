@@ -30,7 +30,23 @@ export function encodeEntryBlock(
   entryId: string,
   withHeading: boolean,
 ): string {
-  return `${ENTRY_BLOCK_PREFIX}${encodeURIComponent(sectionId)}:${encodeURIComponent(entryId)}:${withHeading ? "1" : "0"}`;
+  return encodeEntryGroup(sectionId, [entryId], withHeading);
+}
+
+/**
+ * Several entries that must stay in one packing block (a grouped promotion at
+ * one company). `encodeURIComponent` escapes commas inside ids, so the comma is
+ * a safe separator. A single-entry group produces the same string as
+ * `encodeEntryBlock` did before grouping existed.
+ */
+export function encodeEntryGroup(
+  sectionId: string,
+  entryIds: readonly string[],
+  withHeading: boolean,
+): string {
+  const encodedIds = entryIds.map((entryId) => encodeURIComponent(entryId));
+
+  return `${ENTRY_BLOCK_PREFIX}${encodeURIComponent(sectionId)}:${encodedIds.join(",")}:${withHeading ? "1" : "0"}`;
 }
 
 export function decodeBlock(id: string): DecodedBlock {
@@ -59,10 +75,19 @@ export function decodeBlock(id: string): DecodedBlock {
   }
 
   try {
+    const entryIds = parts[1]
+      .split(",")
+      .filter((entryId) => entryId !== "")
+      .map((entryId) => decodeURIComponent(entryId));
+
+    if (entryIds.length === 0) {
+      return { kind: "unknown" };
+    }
+
     return {
       kind: "section",
       sectionId: decodeURIComponent(parts[0]),
-      entryIds: [decodeURIComponent(parts[1])],
+      entryIds,
       withHeading: parts[2] === "1",
     };
   } catch {
