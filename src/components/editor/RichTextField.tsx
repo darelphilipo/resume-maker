@@ -328,7 +328,7 @@ export function RichTextField({
                     aria-label={`Insert impact formula ${formula.template}`}
                     disabled={!editor}
                     onClick={() => insertBulletFormula(formula)}
-                    className="inline-flex min-h-9 max-w-full items-start whitespace-normal rounded-md border border-line bg-surface px-2 py-1 text-left text-xs leading-snug text-muted transition-colors hover:border-black/30 hover:text-text active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line pointer-coarse:min-h-11"
+                    className="inline-flex min-h-9 max-w-full items-start gap-1 whitespace-normal rounded-md border border-line bg-surface px-2 py-1 text-left text-xs leading-snug text-muted transition-colors hover:border-black/30 hover:text-text active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line pointer-coarse:min-h-11"
                   >
                     <span className="font-medium text-text">
                       {formula.verb}

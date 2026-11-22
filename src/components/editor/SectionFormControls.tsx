@@ -110,7 +110,8 @@ export type MonthSelectProps = {
  * `<input type="month">` opens a browser-dependent year scroller (often a
  * modal wheel on phones), so this pairs a Jan–Dec select with a four-digit
  * year field instead. Both controls keep the shared white `min-h-11` surface
- * and the stored value stays canonical `YYYY-MM`.
+ * and the stored value stays canonical `YYYY-MM`, or a bare `YYYY` when the
+ * user only knows the year.
  */
 export function MonthSelect({
   id,
@@ -123,7 +124,8 @@ export function MonthSelect({
   onPresentChange,
 }: MonthSelectProps) {
   const monthValue = toMonthValue(value);
-  const storedYear = monthValue === "" ? "" : monthValue.slice(0, 4);
+  const yearOnly = /^\d{4}$/.test(value.trim()) ? value.trim() : "";
+  const storedYear = monthValue === "" ? yearOnly : monthValue.slice(0, 4);
   const storedMonth = monthValue === "" ? "" : monthValue.slice(5, 7);
   const [monthDraft, setMonthDraft] = useState(storedMonth);
   const [yearDraft, setYearDraft] = useState(storedYear);
@@ -141,13 +143,17 @@ export function MonthSelect({
   const yearId = `${id}-year`;
 
   function commit(nextYear: string, nextMonth: string): void {
-    if (nextMonth === "" || !YEAR_PATTERN.test(nextYear)) {
+    if (!YEAR_PATTERN.test(nextYear)) {
       return;
     }
 
-    const next = `${nextYear}-${nextMonth}`;
+    // A year without a month is a valid stored value ("2018"), which prints as
+    // "2018 — 2019" in DateRange.
+    const next =
+      nextMonth === "" ? nextYear : `${nextYear}-${nextMonth}`;
+    const current = monthValue === "" ? yearOnly : monthValue;
 
-    if (next !== monthValue) {
+    if (next !== current) {
       onChange(next);
     }
   }

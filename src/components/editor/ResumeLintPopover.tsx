@@ -1,8 +1,9 @@
 "use client";
 
 import { CheckCircle, WarningCircle, X } from "@phosphor-icons/react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useState } from "react";
 
+import { CenteredModal } from "@/components/shared/CenteredModal";
 import {
   analyzeResumeLint,
   standardizeBulletPeriods,
@@ -19,39 +20,20 @@ const PERIOD_ACTION_CLASS =
  *
  * The trigger is a quiet text button, not a second primary CTA: the badge stays
  * muted when the bullets are clean and turns amber when any deterministic check
- * fires. The panel opens as a viewport-clamped overlay on phones (where an
- * anchored popover clipped off the left edge) and as a right-aligned popover at
- * `lg`, with an explicit close button in both. The popover lists plain-language
- * findings and offers the only automatic edit in this feature: standardizing
- * trailing periods. That edit goes through `setDoc`, so it is one undoable
- * change in the existing Zundo history and autosaves like any other edit.
+ * fires. The panel is a centred modal portalled to `document.body`, so it is
+ * never clipped by the narrow left Content column at any viewport width (an
+ * `absolute right-0` popover there extended past the left edge on desktop).
+ * The modal lists plain-language findings and offers the only automatic edit:
+ * standardizing trailing periods. That edit goes through `setDoc`, so it is one
+ * undoable change in the existing Zundo history and autosaves like any edit.
  */
 export function ResumeLintPopover({ doc }: { doc: ResumeDocument }) {
   const setDoc = useResumeStore((state) => state.setDoc);
   const [open, setOpen] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const panelId = useId();
   const report = useMemo(() => analyzeResumeLint(doc), [doc]);
   const issueCount = report.issueCount;
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    function handlePointerDown(event: PointerEvent): void {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-    };
-  }, [open]);
 
   function applyPeriods(style: BulletPeriodStyle): void {
     setDoc(standardizeBulletPeriods(doc, style));
@@ -63,23 +45,7 @@ export function ResumeLintPopover({ doc }: { doc: ResumeDocument }) {
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="relative flex items-center"
-      onBlur={(event) => {
-        const next = event.relatedTarget;
-
-        if (!(next instanceof Node) || !event.currentTarget.contains(next)) {
-          setOpen(false);
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape" && open) {
-          event.stopPropagation();
-          setOpen(false);
-        }
-      }}
-    >
+    <div className="flex items-center">
       <button
         type="button"
         data-resume-lint-trigger=""
@@ -112,27 +78,29 @@ export function ResumeLintPopover({ doc }: { doc: ResumeDocument }) {
         </span>
       </button>
 
-      <div
-        id={panelId}
-        role="region"
-        aria-label="Bullet polish"
-        hidden={!open}
-        className="fixed inset-x-4 top-20 z-40 max-h-[70vh] overflow-y-auto rounded-lg border border-line bg-surface p-3 text-left text-xs text-text shadow-lg lg:absolute lg:left-auto lg:right-0 lg:top-full lg:mt-1 lg:w-80"
+      <CenteredModal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+        }}
+        titleId={panelId}
       >
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <h2 className="text-sm font-semibold">Bullet polish</h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 id={panelId} className="text-sm font-semibold">
+            Bullet polish
+          </h2>
           <button
             type="button"
             aria-label="Close bullet polish"
             onClick={() => {
               setOpen(false);
             }}
-            className="-mr-1 -mt-1 flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-black/5 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+            className="-mr-1 -mt-1 flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-black/5 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
           >
             <X size={16} aria-hidden />
           </button>
         </div>
-        <p className="text-[11px] leading-snug text-muted">
+        <p className="mt-1 text-[11px] leading-snug text-muted">
           A deterministic check of the bullets in your visible sections. No AI,
           no network, no changes until you tap a fix.
         </p>
@@ -208,7 +176,7 @@ export function ResumeLintPopover({ doc }: { doc: ResumeDocument }) {
             </p>
           ) : null}
         </div>
-      </div>
+      </CenteredModal>
     </div>
   );
 }

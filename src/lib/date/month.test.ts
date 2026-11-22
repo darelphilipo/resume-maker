@@ -46,12 +46,13 @@ describe("parseMonthInput", () => {
     ["October 2023", "2023-10"],
     ["sept 2023", "2023-09"],
     ["Oct. 2023", "2023-10"],
+    ["2023", "2023"],
     ["", ""],
   ])("parses %j as %j", (input, expected) => {
     expect(parseMonthInput(input)).toBe(expected);
   });
 
-  it.each(["Spring 2023", "2023", "13/2023", "Junk 2023"])(
+  it.each(["Spring 2023", "13/2023", "Junk 2023"])(
     "returns null for %j",
     (input) => {
       expect(parseMonthInput(input)).toBeNull();

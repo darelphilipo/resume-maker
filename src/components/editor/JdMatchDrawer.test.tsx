@@ -1,11 +1,30 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
 import { SkillItemSchema } from "@/lib/schema/resume.schema";
 
 import { JdMatchDrawer } from "./JdMatchDrawer";
+
+const originalMatchMedia = window.matchMedia;
+
+afterEach(() => {
+  window.matchMedia = originalMatchMedia;
+});
+
+function installDesktopViewport(): void {
+  window.matchMedia = ((query: string) => ({
+    matches: query === "(min-width: 1024px)",
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })) as typeof window.matchMedia;
+}
 
 function buildDoc() {
   const doc = createEmptyResume();
@@ -134,6 +153,40 @@ describe("JdMatchDrawer", () => {
 
     expect(reopened).toHaveAttribute("data-vaul-snap-points", "false");
     expect(trigger).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("uses a centred modal on desktop so one tap on X closes it outright", async () => {
+    installDesktopViewport();
+    const user = userEvent.setup();
+
+    render(<JdMatchDrawer doc={buildDoc()} compact />);
+
+    const trigger = screen.getByRole("button", {
+      name: "Match to a job description",
+    });
+
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(trigger);
+
+    const dialog = await screen.findByRole("dialog");
+
+    // A centred, portalled modal has no Vaul snap point to collapse back to.
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog).not.toHaveAttribute("data-vaul-snap-points");
+    expect(dialog.parentElement).toHaveAttribute("data-centered-modal");
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByLabelText("Job description")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close drawer" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(trigger);
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 
   it("splits pasted job keywords into matched and missing chips", async () => {

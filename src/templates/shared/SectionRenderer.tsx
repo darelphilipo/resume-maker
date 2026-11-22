@@ -6,6 +6,7 @@ import {
 } from "@/lib/experience/groupExperience";
 import {
   externalLinkHref,
+  profilesPromotedToHeader,
   websiteLabelFromUrl,
 } from "@/lib/links/contactLinks";
 import { decodeBlock } from "@/lib/pagination/blockIds";
@@ -530,6 +531,18 @@ export function SectionRenderer({
       {groupBlocks(doc, pageSectionIds).map((group, sectionIndex) => {
         const { resolved } = group;
         const { config } = resolved;
+
+        // Every visible profile already appears as a clickable link in the
+        // header (and the ATS contact line), so the body section would only
+        // repeat it. A URL-less row keeps the section so nothing disappears.
+        if (
+          group.sectionId === "profiles" &&
+          resolved.kind === "profiles" &&
+          profilesPromotedToHeader(resolved.items)
+        ) {
+          return null;
+        }
+
         const hasHeading =
           group.withHeading && config.showHeading && config.title.trim() !== "";
         const items =

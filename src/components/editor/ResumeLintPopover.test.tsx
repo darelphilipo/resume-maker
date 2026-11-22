@@ -39,7 +39,7 @@ describe("ResumeLintPopover", () => {
     fireEvent.click(trigger);
 
     expect(
-      screen.getByRole("region", { name: "Bullet polish" }),
+      screen.getByRole("dialog", { name: "Bullet polish" }),
     ).toHaveTextContent("No bullet issues found.");
   });
 
@@ -60,7 +60,7 @@ describe("ResumeLintPopover", () => {
 
     fireEvent.click(trigger);
 
-    const panel = screen.getByRole("region", { name: "Bullet polish" });
+    const panel = screen.getByRole("dialog", { name: "Bullet polish" });
 
     expect(panel).toHaveTextContent("First-person pronouns");
     expect(panel).toHaveTextContent("Filler adverbs");
@@ -124,7 +124,7 @@ describe("ResumeLintPopover", () => {
       screen.getByRole("button", { name: "Add periods to all bullets" }),
     ).toBeDisabled();
     expect(
-      screen.getByRole("region", { name: "Bullet polish" }),
+      screen.getByRole("dialog", { name: "Bullet polish" }),
     ).toHaveTextContent("Add a bullet to a section first.");
   });
 
@@ -138,7 +138,7 @@ describe("ResumeLintPopover", () => {
     openCheck();
 
     expect(
-      screen.getByRole("region", { name: "Bullet polish" }),
+      screen.getByRole("dialog", { name: "Bullet polish" }),
     ).toBeVisible();
 
     fireEvent.keyDown(screen.getByRole("button", { name: /Bullet polish:/ }), {
@@ -146,11 +146,11 @@ describe("ResumeLintPopover", () => {
     });
 
     expect(
-      screen.queryByRole("region", { name: "Bullet polish" }),
+      screen.queryByRole("dialog", { name: "Bullet polish" }),
     ).not.toBeInTheDocument();
   });
 
-  it("de-emphasizes the trigger and clamps the panel to the viewport", () => {
+  it("keeps the trigger quiet and opens a centred, portalled modal", () => {
     const doc = createEmptyResume();
 
     doc.summary.content = "<ul><li>Built APIs.</li></ul>";
@@ -166,20 +166,52 @@ describe("ResumeLintPopover", () => {
 
     fireEvent.click(trigger);
 
-    const panel = screen.getByRole("region", { name: "Bullet polish" });
+    const panel = screen.getByRole("dialog", { name: "Bullet polish" });
+    const overlay = panel.parentElement;
 
-    // Fixed with inset gutters on phones, then a right-aligned popover at lg.
-    expect(panel.className).toContain("fixed");
-    expect(panel.className).toContain("inset-x-4");
-    expect(panel.className).toContain("lg:absolute");
-    expect(panel.className).toContain("lg:right-0");
+    // Centred modal portalled to the body, never an anchored popover in the
+    // narrow left column that can extend past the left viewport edge.
+    expect(panel).toHaveAttribute("aria-modal", "true");
+    expect(overlay).toHaveAttribute("data-centered-modal");
+    expect(overlay?.parentElement).toBe(document.body);
+    expect(overlay?.className).toContain("items-center");
+    expect(overlay?.className).toContain("justify-center");
+    expect(panel.className).toContain("max-w-md");
+    expect(panel.className).not.toContain("lg:absolute");
+    expect(panel.className).not.toContain("lg:right-0");
+    expect(overlay?.className).not.toContain("inset-x-4");
 
     fireEvent.click(
       screen.getByRole("button", { name: "Close bullet polish" }),
     );
 
     expect(
-      screen.queryByRole("region", { name: "Bullet polish" }),
+      screen.queryByRole("dialog", { name: "Bullet polish" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("closes from a tap on the backdrop", () => {
+    const doc = createEmptyResume();
+
+    doc.summary.content = "<ul><li>Built APIs.</li></ul>";
+    useResumeStore.getState().setDoc(doc);
+
+    render(<ResumeLintPopover doc={doc} />);
+    openCheck();
+
+    const panel = screen.getByRole("dialog", { name: "Bullet polish" });
+
+    fireEvent.click(panel);
+
+    // A tap inside the dialog must not dismiss it.
+    expect(
+      screen.getByRole("dialog", { name: "Bullet polish" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(panel.parentElement as HTMLElement);
+
+    expect(
+      screen.queryByRole("dialog", { name: "Bullet polish" }),
     ).not.toBeInTheDocument();
   });
 });

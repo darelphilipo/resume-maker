@@ -76,13 +76,23 @@ export function toMonthValue(value: string): string {
   return `${match[1]}-${padMonth(month)}`;
 }
 
-/** Formats `YYYY-MM` (or an ISO date) as `Oct 2023` for compact display. */
+/**
+ * Formats `YYYY-MM` (or an ISO date) as `Oct 2023` for compact display. A bare
+ * four-digit year is a valid stored value, so it prints as `2023` rather than
+ * being treated as unparseable text.
+ */
 export function formatMonth(value: string): string {
-  if (value.trim() === "") {
+  const trimmed = value.trim();
+
+  if (trimmed === "") {
     return "";
   }
 
-  const monthValue = toMonthValue(value);
+  if (/^\d{4}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  const monthValue = toMonthValue(trimmed);
 
   if (monthValue === "") {
     return value;
@@ -94,15 +104,20 @@ export function formatMonth(value: string): string {
 }
 
 /**
- * Parses human input into `YYYY-MM`. Accepts `2023-10`, `2023/10`, `10/2023`,
- * `10-2023`, `Oct 2023`, and `October 2023`. Returns `null` for input that
- * cannot be interpreted, so callers can decide how to handle invalid text.
+ * Parses human input into `YYYY-MM`, or a bare `YYYY` when only a year is
+ * given. Accepts `2023-10`, `2023/10`, `10/2023`, `10-2023`, `Oct 2023`,
+ * `October 2023`, and `2023`. Returns `null` for input that cannot be
+ * interpreted, so callers can decide how to handle invalid text.
  */
 export function parseMonthInput(value: string): string | null {
   const trimmed = value.trim();
 
   if (trimmed === "") {
     return "";
+  }
+
+  if (/^\d{4}$/.test(trimmed)) {
+    return trimmed;
   }
 
   const isoValue = toMonthValue(trimmed);

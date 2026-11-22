@@ -426,16 +426,27 @@ describe("MonthSelect", () => {
     expect(onChange).toHaveBeenCalledWith("2024-10");
   });
 
-  it("waits for both parts before storing a new date", () => {
-    const { month, year, onChange } = renderSelect("");
+  it("stores a year-only value when only the year is known", () => {
+    const { year, onChange } = renderSelect("");
 
-    fireEvent.change(year, { target: { value: "2024" } });
+    fireEvent.change(year, { target: { value: "2018" } });
 
-    expect(onChange).not.toHaveBeenCalled();
+    expect(onChange).toHaveBeenCalledWith("2018");
+  });
+
+  it("shows a stored year-only value with an empty month", () => {
+    const { month, year } = renderSelect("2018");
+
+    expect(month).toHaveValue("");
+    expect(year).toHaveValue("2018");
+  });
+
+  it("adds a month to a stored year-only value", () => {
+    const { month, onChange } = renderSelect("2018");
 
     fireEvent.change(month, { target: { value: "03" } });
 
-    expect(onChange).toHaveBeenCalledWith("2024-03");
+    expect(onChange).toHaveBeenCalledWith("2018-03");
   });
 
   it("commits a complete year on Enter without submitting the section form", () => {

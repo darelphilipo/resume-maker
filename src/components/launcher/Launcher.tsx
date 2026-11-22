@@ -46,6 +46,9 @@ import {
   type ResumeRow,
 } from "@/lib/store/db";
 import {
+  clampRecentPage,
+  recentPageCount,
+  recentPageRows,
   recentResumeEditedLabel,
   recentResumeName,
 } from "@/lib/store/recentResumes";
@@ -79,7 +82,6 @@ const RECENT_ERROR_MESSAGE =
 const RECENT_MISSING_MESSAGE =
   "That resume is no longer saved on this device. Pick another one or start a new resume.";
 const BLANK_ACTION_ID = "blank";
-const RECENT_INITIAL_COUNT = 5;
 const RECENT_LOAD_LIMIT = 50;
 const TRUST_POINTS = [
   { label: "100% Free", icon: CurrencyDollar },
@@ -264,7 +266,7 @@ export function Launcher() {
   const [renameDraft, setRenameDraft] = useState("");
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [showAllRecent, setShowAllRecent] = useState(false);
+  const [recentPage, setRecentPage] = useState(1);
   const [statusFilter, setStatusFilter] =
     useState<ResumeStatusFilter>("all");
   const [savingMetaId, setSavingMetaId] = useState<string | null>(null);
@@ -635,6 +637,9 @@ export function Launcher() {
     recentRows,
     activeStatusFilter,
   );
+  const recentPages = recentPageCount(filteredRecent.length);
+  const safeRecentPage = clampRecentPage(recentPage, filteredRecent.length);
+  const visibleRecent = recentPageRows(filteredRecent, safeRecentPage);
   const statusFilterOptions: ResumeStatusFilter[] = [
     "all",
     ...RESUME_STATUSES.filter((status) => statusCounts[status] > 0),
@@ -902,7 +907,10 @@ export function Launcher() {
                           key={filter}
                           type="button"
                           aria-pressed={isActive}
-                          onClick={() => setStatusFilter(filter)}
+                          onClick={() => {
+                            setStatusFilter(filter);
+                            setRecentPage(1);
+                          }}
                           className={`min-h-9 rounded-full border px-2.5 text-xs font-medium transition-colors pointer-coarse:min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/30 ${
                             isActive
                               ? "border-[#1b3a57] bg-[#1b3a57] text-white"
@@ -924,10 +932,7 @@ export function Launcher() {
                   aria-label="Recent resumes"
                   className="flex flex-col gap-2"
                 >
-                  {(showAllRecent
-                    ? filteredRecent
-                    : filteredRecent.slice(0, RECENT_INITIAL_COUNT)
-                  ).map((row) => {
+                  {visibleRecent.map((row) => {
                     const name = recentResumeName(row);
                     const isOpening = openingRecentId === row.id;
                     const isRenaming = renamingId === row.id;
@@ -1107,18 +1112,38 @@ export function Launcher() {
                   })}
                 </ul>
 
-                {filteredRecent.length > RECENT_INITIAL_COUNT ? (
-                  <button
-                    type="button"
-                    aria-expanded={showAllRecent}
-                    aria-controls="recent-resume-list"
-                    onClick={() => setShowAllRecent((open) => !open)}
-                    className="min-h-11 rounded-xl border border-[#e3ddd2] bg-white px-3 text-sm font-medium text-[#33465a] transition-colors hover:bg-[#fbfaf7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2"
+                {recentPages > 1 ? (
+                  <nav
+                    aria-label="Recent resumes pages"
+                    className="flex items-center justify-between gap-2 border-t border-[#e6e0d6] pt-2"
                   >
-                    {showAllRecent
-                      ? "Show fewer"
-                      : `Show all (${filteredRecent.length})`}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRecentPage(clampRecentPage(safeRecentPage - 1, filteredRecent.length))
+                      }
+                      disabled={safeRecentPage === 1}
+                      className="min-h-11 rounded-lg border border-[#e3ddd2] bg-white px-3 text-sm font-medium text-[#33465a] transition-colors hover:bg-[#fbfaf7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Prev
+                    </button>
+                    <span
+                      aria-live="polite"
+                      className="text-xs font-medium text-[#5b6a7a]"
+                    >
+                      Page {safeRecentPage} of {recentPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRecentPage(clampRecentPage(safeRecentPage + 1, filteredRecent.length))
+                      }
+                      disabled={safeRecentPage === recentPages}
+                      className="min-h-11 rounded-lg border border-[#e3ddd2] bg-white px-3 text-sm font-medium text-[#33465a] transition-colors hover:bg-[#fbfaf7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </nav>
                 ) : null}
               </div>
             )}

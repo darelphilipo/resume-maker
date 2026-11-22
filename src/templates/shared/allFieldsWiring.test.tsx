@@ -325,13 +325,19 @@ function buildWiringDocument(): ResumeDocument {
 function sentinelTextValues(): string[] {
   const values: string[] = [SENTINEL.summary];
 
-  for (const group of Object.values(SENTINEL)) {
+  for (const [groupName, group] of Object.entries(SENTINEL)) {
     if (typeof group === "string") {
       continue;
     }
 
-    for (const value of Object.values(group)) {
-      values.push(value);
+    // A promoted profile prints as its cleaned URL in the header/contact line;
+    // the network and username drive the link label and icon rather than
+    // appearing as separate body text.
+    const keys =
+      groupName === "profiles" ? ["url"] : Object.keys(group);
+
+    for (const key of keys) {
+      values.push((group as Record<string, string>)[key]);
     }
   }
 
@@ -378,12 +384,12 @@ describe("all editable fields wiring", () => {
         name: "example.com/SENTINEL_BASICS_WEBSITE",
       }),
     ).toHaveAttribute("href", `https://${SENTINEL.basics.websiteUrl}`);
-    // Profiles are promoted into the header as well as the Profiles section,
-    // so the same cleaned link appears once in each renderer.
+    // Profiles are promoted into the header, so the cleaned link appears once
+    // there instead of being repeated by a separate Profiles section.
     const profileLinks = screen.getAllByRole("link", {
       name: "example.com/SENTINEL_PROFILE_URL",
     });
-    expect(profileLinks).toHaveLength(2);
+    expect(profileLinks).toHaveLength(1);
 
     for (const link of profileLinks) {
       expect(link).toHaveAttribute(
@@ -416,7 +422,7 @@ describe("all editable fields wiring", () => {
     }
   });
 
-  it("keeps a URL-only profile visible in both renderers", () => {
+  it("promotes a URL-only profile into the header and ATS contact line", () => {
     const urlOnly = createEmptyResume();
 
     urlOnly.metadata.layout.pages = [
@@ -433,13 +439,18 @@ describe("all editable fields wiring", () => {
       },
     ];
 
-    const { container } = render(
-      <SectionRenderer doc={urlOnly} pageSectionIds={["profiles"]} />,
+    render(
+      <>
+        <HeaderSlot doc={urlOnly} />
+        <SectionRenderer doc={urlOnly} pageSectionIds={["profiles"]} />
+      </>,
     );
 
-    expect(container.textContent).toContain(
-      "example.com/SENTINEL_URL_ONLY_PROFILE",
-    );
+    expect(
+      screen.getAllByRole("link", {
+        name: "example.com/SENTINEL_URL_ONLY_PROFILE",
+      }),
+    ).toHaveLength(1);
     expect(
       screen.getByRole("link", {
         name: "example.com/SENTINEL_URL_ONLY_PROFILE",

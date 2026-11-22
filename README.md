@@ -37,12 +37,12 @@ in control of every line, and your data stays on your device.
   complete editable example. Either way you land in the same editor with every
   field yours to change.
 - **Recent resumes** on the home page list what you already saved in this
-  browser, newest first. The five most recent show first, with a **Show all**
-  toggle for the rest; tap anywhere on a row to reopen it, or use its buttons to
-  rename, duplicate, or delete it. Each row carries a status pill — **Master**,
-  **Draft**, **Applied**, **Interview**, or **Offer** — and an optional target
-  company tag, so you can see at a glance where each copy stands. Change a
-  status from the pill or type a company name right in the row without opening
+  browser, newest first. Five show at a time, with a compact **Prev** / **Page 1
+  of N** / **Next** bar when there are more; tap anywhere on a row to reopen it,
+  or use its buttons to rename, duplicate, or delete it. Each row carries a
+  status pill — **Master**, **Draft**, **Applied**, **Interview**, or **Offer** —
+  and an optional target company tag, so you can see at a glance where each copy
+  stands. Change a status from the pill or type a company name right in the row without opening
   the resume; when you have more than one saved, a compact filter line narrows
   the list to a single status. A duplicate is saved as a separate copy labelled
   **(Copy)**, keeping the same tracking tags, so you can tailor one version for
@@ -89,9 +89,11 @@ in control of every line, and your data stays on your device.
   username, and icon are filled in automatically. Visible profiles also appear
   inline in the resume header beside your website, as clean clickable links with
   GitHub, LinkedIn, and other common resume-network marks (a globe for anything
-  else), so recruiters can reach them without scrolling. Tap **Manage profiles**
-  in Basics to edit the same list. A row with only a URL still counts, so pasted
-  links are never silently dropped.
+  else), so recruiters can reach them without scrolling. When every profile has
+  a link, that header line is the only place they print — no repeated Profiles
+  section. Tap **Manage profiles** in Basics to expand and jump straight to the
+  same list. A row with only a URL still counts, so pasted links are never
+  silently dropped.
 - **Everything you type makes it into the resume.** Your website, profile links,
   certification links, and publication links appear as clickable links in the
   preview and PDF — even if you pasted a bare address such as `github.com/you` —
@@ -122,8 +124,9 @@ in control of every line, and your data stays on your device.
   and interests use the same comma-separated tags.
 - One Month + Year picker for every date field (month list plus a four-digit
   year), so `2023-10` stays consistent and no browser opens a slow year
-  scroller. End dates for current roles have a **Present** toggle, and a quiet
-  note appears under the End date when it sits before the Start date.
+  scroller. A year on its own is enough when that is all you know, and prints as
+  `2018 — 2019`. End dates for current roles have a **Present** toggle, and a
+  quiet note appears under the End date when it sits before the Start date.
 - **Sort newest first** appears above Experience, Education, or Projects when
   two or more entries are out of order, so one tap puts current roles and the
   latest dates at the top (undo still works).
@@ -236,8 +239,9 @@ in control of every line, and your data stays on your device.
 - **Bullet polish** in the Content panel header flags the small consistency
   problems a recruiter notices first: bullets that mix ending periods,
   first-person pronouns, filler adverbs, and repeated opening verbs within one
-  role. It is a quiet text button beside **Match JD**; tapping it opens a compact
-  panel that stays inside the screen and closes with its own X or Escape. Each
+  role. It is a quiet text button beside **Match JD**; tapping it opens a centred
+  modal that always stays inside the screen and closes with its own X, a tap on
+  the dimmed background, or Escape. Each
   finding shows the opening words so you can find the bullet, and
   **Standardize bullet periods** can remove every trailing period or add one to
   every bare bullet in a single undoable tap. The check runs locally with plain
@@ -270,8 +274,10 @@ in control of every line, and your data stays on your device.
   filler words such as “for”, “looking”, and “hiring” are ignored, and keywords
   match whole words only — so “rust” never counts just because “trust” appears.
   Tech names such as C++, C#, Node.js, and .NET are recognised, including
-  product forms like ASP.NET. One tap on the drawer's **X** closes it. Matching
-  runs locally with simple word heuristics, not AI.
+  product forms like ASP.NET. On phones it opens as a bottom sheet; on desktop
+  it opens as a centred modal. Either way one tap on the **X** (or the dimmed
+  background) closes it outright, with no half-collapsed bar left behind.
+  Matching runs locally with simple word heuristics, not AI.
 - The **Visual / ATS text** switch, page-count pill, fit/zoom reset pills, and
   overflow warning stay pinned above the paper while you scroll, so they never
   cover your name or header — and the paper stops cleanly below that header

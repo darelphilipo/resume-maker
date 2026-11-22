@@ -118,19 +118,34 @@ describe("section editor drawer", () => {
     expect(document.querySelectorAll(".tiptap")).toHaveLength(2);
   });
 
-  it("opens the profiles editor from the Basics shortcut", async () => {
+  it("expands and focuses the profiles card from the Basics shortcut", async () => {
     const user = userEvent.setup();
+    const scrollIntoView = vi.fn();
 
-    render(<EditorWorkspace />);
-    await screen.findByRole("heading", { name: "Untitled resume" });
-    await user.click(screen.getByRole("button", { name: "Manage profiles" }));
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
 
-    const dialog = await screen.findByRole("dialog");
+    try {
+      render(<EditorWorkspace />);
+      await screen.findByRole("heading", { name: "Untitled resume" });
+      await user.click(screen.getByRole("button", { name: "Manage profiles" }));
 
-    expect(
-      within(dialog).getByRole("form", { name: "profiles" }),
-    ).toBeInTheDocument();
-    expect(screen.getAllByRole("form", { name: "profiles" })).toHaveLength(1);
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      const card = document.getElementById("section-row-profiles");
+
+      expect(card).not.toBeNull();
+      expect(
+        within(card as HTMLElement).getByRole("form", { name: "profiles" }),
+      ).toBeInTheDocument();
+      expect(scrollIntoView).toHaveBeenCalledWith({
+        behavior: "smooth",
+        block: "start",
+      });
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
   });
 
   it("restores the inline form when the drawer closes", async () => {

@@ -28,6 +28,12 @@ describe("DateRange", () => {
     expect(screen.getByText("Mar 2021 — Aug 2023")).toBeInTheDocument();
   });
 
+  it("renders year-only ranges without inventing a month", () => {
+    render(<DateRange start="2018" end="2019" current={false} />);
+
+    expect(screen.getByText("2018 — 2019")).toBeInTheDocument();
+  });
+
   it("renders nothing when both ends are empty", () => {
     const { container } = render(
       <DateRange start="" end="" current={false} />,

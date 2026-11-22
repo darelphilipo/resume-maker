@@ -6,6 +6,7 @@ import { encodeEntryBlock, encodeEntryGroup } from "@/lib/pagination/blockIds";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
   ExperienceItemSchema,
+  ProfileItemSchema,
   ProjectItemSchema,
   SkillItemSchema,
 } from "@/lib/schema/resume.schema";
@@ -44,6 +45,54 @@ describe("SectionRenderer", () => {
 
     expect(container).toBeEmptyDOMElement();
     expect(screen.queryByText("Experience")).toBeNull();
+  });
+
+  it("omits a Profiles section when every row is promoted into the header", () => {
+    const doc = createEmptyResume();
+    doc.sections.profiles.items = [
+      ProfileItemSchema.parse({
+        id: "p1",
+        network: "GitHub",
+        username: "ada",
+        url: "https://github.com/ada",
+      }),
+      ProfileItemSchema.parse({
+        id: "p2",
+        network: "LinkedIn",
+        username: "ada",
+        url: "https://linkedin.com/in/ada",
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer doc={doc} pageSectionIds={["profiles"]} />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByText("Profiles")).toBeNull();
+  });
+
+  it("keeps a URL-less Profiles row visible in the body", () => {
+    const doc = createEmptyResume();
+    doc.sections.profiles.items = [
+      ProfileItemSchema.parse({
+        id: "p1",
+        network: "GitHub",
+        username: "ada",
+        url: "https://github.com/ada",
+      }),
+      ProfileItemSchema.parse({
+        id: "p2",
+        network: "Portfolio",
+        username: "ada",
+        url: "",
+      }),
+    ];
+
+    render(<SectionRenderer doc={doc} pageSectionIds={["profiles"]} />);
+
+    expect(screen.getByText("Profiles")).toBeInTheDocument();
+    expect(screen.getByText("Portfolio")).toBeInTheDocument();
   });
 
   it("skips hidden individual items", () => {

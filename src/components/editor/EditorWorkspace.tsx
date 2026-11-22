@@ -117,6 +117,14 @@ export function EditorWorkspace() {
   const [drawerSection, setDrawerSection] =
     useState<SectionListEntry | null>(null);
   /**
+   * A one-shot request from Basics to reveal the Profiles card in the section
+   * list. The nonce makes repeat taps work after the card was collapsed.
+   */
+  const [sectionFocus, setSectionFocus] = useState<{
+    id: string;
+    nonce: number;
+  } | null>(null);
+  /**
    * Latest Name keystroke, published before the debounced store commit. It
    * records the committed value it was based on, so once the debounce lands
    * (or undo/load replaces the doc) the override invalidates itself without an
@@ -391,16 +399,17 @@ export function EditorWorkspace() {
               <BasicsForm
                 onLiveNameChange={publishLiveName}
                 onManageProfiles={() =>
-                  setDrawerSection({
+                  setSectionFocus((current) => ({
                     id: "profiles",
-                    title: doc.sections.profiles.title || "Profiles",
-                  })
+                    nonce: (current?.nonce ?? 0) + 1,
+                  }))
                 }
               />
             </section>
             <SectionList
               onOpenSection={setDrawerSection}
               openSectionId={drawerSection?.id ?? null}
+              focusSection={sectionFocus}
             />
           </div>
         </section>

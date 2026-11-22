@@ -514,7 +514,7 @@ describe("Launcher", () => {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
-  it("shows five recent resumes first and reveals the rest on demand", async () => {
+  it("paginates recent resumes five at a time", async () => {
     for (let index = 0; index < 7; index += 1) {
       await seedRecent(
         `recent-${index}`,
@@ -530,15 +530,61 @@ describe("Launcher", () => {
     expect(
       screen.getAllByRole("button", { name: /^Open / }),
     ).toHaveLength(5);
+    expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Show all (7)" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
 
     expect(
       screen.getAllByRole("button", { name: /^Open / }),
-    ).toHaveLength(7);
+    ).toHaveLength(2);
     expect(
-      screen.getByRole("button", { name: "Show fewer" }),
+      screen.getByRole("button", { name: "Open Person 1" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Open Person 0" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Prev" }));
+
+    expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: /^Open / }),
+    ).toHaveLength(5);
+  });
+
+  it("resets to the first page when the status filter changes", async () => {
+    for (let index = 0; index < 7; index += 1) {
+      await seedRecent(
+        `applied-${index}`,
+        `Applied ${index}`,
+        Date.UTC(2026, 10, 18, 12, index),
+        { status: "applied" },
+      );
+    }
+    await seedRecent(
+      "offer-1",
+      "Offer Person",
+      Date.UTC(2026, 10, 18, 13),
+      { status: "offer" },
+    );
+
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    await screen.findByText("Page 1 of 2");
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Applied (7)" }));
+
+    expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Open Applied 6" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Open Offer Person" }),
+    ).not.toBeInTheDocument();
   });
 
   it("wraps the Backup & Restore disclosure in a solid border", () => {

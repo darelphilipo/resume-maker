@@ -10,7 +10,7 @@ import {
   Plus,
   Trash,
 } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { newId } from "@/lib/schema/defaults";
 import {
@@ -83,6 +83,12 @@ export type SectionListProps = {
   onOpenSection?: (entry: SectionListEntry) => void;
   /** Section currently edited in the drawer; its inline form is unmounted. */
   openSectionId?: string | null;
+  /**
+   * A one-shot request to expand a section and scroll it into view. The nonce
+   * lets the same section be focused again after the user collapses it (for
+   * example by tapping "Manage profiles" twice).
+   */
+  focusSection?: { id: string; nonce: number } | null;
 };
 
 function countLabel(count: number): string {
@@ -181,6 +187,7 @@ function SectionHeadingInput({
 export function SectionList({
   onOpenSection,
   openSectionId,
+  focusSection,
 }: SectionListProps) {
   const doc = useResumeStore((state) => state.doc);
   const patchDoc = useResumeStore((state) => state.patchDoc);
@@ -190,7 +197,27 @@ export function SectionList({
   const [customFormOpen, setCustomFormOpen] = useState(false);
   const [customTitle, setCustomTitle] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [lastFocusNonce, setLastFocusNonce] = useState<number | null>(null);
   const rows = buildRows(doc);
+
+  // "Manage profiles" in Basics asks this list to reveal its Profiles card.
+  // Adjust state during render (the same pattern as a controlled input) so the
+  // card is open before the scroll effect below runs, and so tapping the
+  // shortcut again after collapsing the card still works.
+  if (focusSection && focusSection.nonce !== lastFocusNonce) {
+    setLastFocusNonce(focusSection.nonce);
+    setExpandedId(focusSection.id);
+  }
+
+  useEffect(() => {
+    if (!focusSection) {
+      return;
+    }
+
+    document
+      .getElementById(`section-row-${focusSection.id}`)
+      ?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  }, [focusSection]);
 
   function isOptionalTucked(row: SectionRow): boolean {
     return (
@@ -353,6 +380,7 @@ export function SectionList({
           return (
             <li
               key={row.id}
+              id={`section-row-${row.id}`}
               className="min-w-0 overflow-hidden rounded-xl border border-black/10 bg-background"
             >
               <button

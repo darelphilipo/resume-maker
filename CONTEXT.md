@@ -1120,6 +1120,29 @@ rediscover.
       with Arrow keys. `toJsonResume` is pure and date-free — do not add a
       `Date.now()` `meta` block or exports/tests stop being deterministic.
 
+   81. **Short editor dialogs are centred modals, not anchored popovers.**
+       `CenteredModal` (`src/components/shared/CenteredModal.tsx`) is the shared
+       shell for the short read-mostly dialogs: it portals to `document.body`,
+       uses a `fixed inset-0 flex items-center justify-center bg-black/40 p-4`
+       backdrop and a `max-h-[70vh] w-full max-w-md` `role="dialog"
+       aria-modal="true"` panel, and closes on backdrop tap, the caller's X, or
+       Escape. `Trim tips` uses the same shape; `ResumeLintPopover` was moved
+       off `fixed inset-x-4 … lg:absolute lg:right-0 lg:w-80` because a 320px
+       panel anchored to a trigger at x≈220 in the 22rem left Content column
+       clipped ~100px off the **left** viewport edge on desktop — centring in
+       the viewport removes the anchor entirely. Keep these dialogs out of the
+       narrow column and do not reintroduce `lg:absolute`/`lg:right-0`. The
+       `JdMatchDrawer` picks its primitive with `useIsDesktop`
+       (`src/lib/responsive/useIsDesktop.ts`, `(min-width: 1024px)`, mobile-first
+       `false` default so SSR/hydration agree): a centred modal on desktop (one
+       tap on X closes with no snap point to collapse back to) and the existing
+       non-snapped Vaul sheet on phones (keyboard-lift handling, Decision #38).
+       Both share one `JdMatchBody`; tall entry/section forms keep Vaul snap
+       points. The global jsdom `matchMedia` stub reports `false`, so existing
+       drawer tests stay on the mobile path; a desktop test overrides it before
+       render. Portalled dialogs are outside `scanBulletLint`'s scanned page
+       stack, so their own `<li>`s are never measured as resume bullets.
+
 ## Verification and tooling
 
 ```powershell
@@ -1180,6 +1203,28 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — Centred Bullet polish and desktop Match JD dialogs
+- Task: top P1 Queue item. `Bullet polish` clipped off the left viewport edge
+  on desktop, and the Match JD `X` needed a second tap to close.
+- Modal: new `CenteredModal` (`src/components/shared/CenteredModal.tsx`) portals
+  to `document.body`, centres a `max-w-md` `role="dialog" aria-modal="true"`
+  panel in the viewport, and closes on backdrop/X/Escape. `ResumeLintPopover`
+  now uses it at every width instead of an `absolute right-0` popover in the
+  left Content column. Decision #81.
+- Match JD: `useIsDesktop` (`src/lib/responsive/useIsDesktop.ts`) picks a
+  centred modal on `lg+` and keeps the non-snapped Vaul sheet on phones; both
+  render one shared `JdMatchBody`. The desktop X closes outright with no snap
+  point to collapse to. Decision #81.
+- Tests: new CenteredModal and useIsDesktop cases, Bullet polish role/class/
+  backdrop regressions, and a desktop JdMatchDrawer one-tap-close case. 892
+  pass (was 883).
+- Files: `src/components/shared/CenteredModal.tsx` (+ test, new),
+  `src/lib/responsive/useIsDesktop.ts` (+ test, new),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (892 pass), `npm run lint`.
 
 ### 2026-11-22 — Compact mobile Preview chrome and one-scroll ATS text
 - Task: top P1 Queue item. The mobile Preview chrome stacked four tall rows and
@@ -1431,21 +1476,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/lib/privacy/anonymizeDoc.ts` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (758 pass), `npm run lint`.
-
-### 2026-11-22 — MonthSelect Enter no longer resets Content scroll
-- Task: top P1 Queue item (bundled with the Launcher paste enablement).
-- Fix: `MonthSelect`'s year input now handles Enter: `preventDefault()` blocks
-  the section form's implicit submit (the scroll-to-top jump), a complete year
-  commits through the existing `commit` path, and an incomplete draft is
-  restored from `storedYear` before the field blurs. The Launcher paste CTA was
-  already fixed on 2026-11-20 (`onChange`/`onPaste` enable it immediately), so
-  this run re-ran its existing test instead of duplicating the logic.
-- Tests: two `MonthSelect` regressions — Enter with a valid year prevents the
-  form submit and emits `YYYY-MM`; Enter with an incomplete year restores the
-  stored year without emitting. 750 pass (was 748). Decision #73.
-- Files: `src/components/editor/SectionFormControls.tsx` (+ test),
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (750 pass).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

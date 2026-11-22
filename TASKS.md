@@ -22,19 +22,52 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-
-- [ ] P1: Fix `Profiles` deduplication, `Manage profiles` shortcut, year-only dates, Impact Formula chip spacing, and Homepage Recent Resumes pagination (`src/components/editor/BasicsForm.tsx`, `src/templates/shared/SectionRenderer.tsx`, `src/lib/ats/atsText.ts`, `src/lib/date/month.ts`, `src/components/editor/RichTextField.tsx`, `src/components/launcher/Launcher.tsx`).
-  1. **`Profiles` deduplication & shortcut:** Omit the redundant `PROFILES` body section when profile links are rendered inline in the top contact header, mirror those inline profile links in `ATS text`'s `CONTACT DETAILS`, and wire `Manage profiles` in `BasicsForm` so clicking it expands and smoothly scrolls to the `Profiles` card.
-  2. **Year-only dates & chip spacing:** Support 4-digit year-only values (`"2018"` → `2018 — 2019`) in `MonthSelect` + `DateRange` when no month is chosen, and add a space between the bold verb and placeholder in Impact Formula chip labels (`Reduced [metric]`, `Built [feature/system]`, `Led [team/project]`, `Automated [workflow]`).
-  3. **Homepage Recent Resumes pagination:** Replace `"Show all (N)"` in `Launcher.tsx` with a compact footer pagination bar (`Prev` · `Page 1 of N` · `Next`, 5 resumes per page, resetting to page 1 when switching status filters) whenever more than 5 resumes exist.
-
-- [ ] P1: Fix `Bullet polish` left-edge clipping and `Match JD` two-click `X` close (`src/components/editor/ResumeLintPopover.tsx`, `src/components/editor/JdMatchDrawer.tsx`, `src/components/editor/EntryDrawer.tsx`).
-  1. **`Bullet polish`:** Render `ResumeLintPopover` inside a centered modal overlay (matching `Trim tips`) instead of an `absolute right-0` popover anchored inside the left Content column so it never clips off the left viewport edge.
-  2. **`Match JD` single-click `X` close:** Fix the Vaul drawer state/snap-point handling (or use a centered modal on desktop + non-snapped drawer on mobile) so a single click on `X` immediately closes the drawer without collapsing to a bottom-peek bar.
+_empty
 
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Fixed `Bullet polish` left-edge clipping and the `Match JD`
+  two-click `X` close. A new shared `CenteredModal` portals short dialogs to the
+  body and centres a `max-w-md` `role="dialog"` panel that closes on backdrop,
+  X, or Escape; `ResumeLintPopover` now uses it at every width instead of the
+  `absolute right-0` popover that clipped off the left edge of the narrow Content
+  column on desktop. `JdMatchDrawer` keeps its non-snapped Vaul bottom sheet on
+  phones but switches to a centred modal at `lg` via a mobile-first
+  `useIsDesktop` hook, so one tap on X closes outright with no snap point to
+  collapse back to; both paths share one `JdMatchBody`. Added modal, hook,
+  clipping-contract, backdrop, and one-tap-close regressions. Verified
+  `npm run typecheck`, `npm test` (892 pass), `npm run lint`. Files:
+  `src/components/shared/CenteredModal.tsx` (+ test, new),
+  `src/lib/responsive/useIsDesktop.ts` (+ test, new),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+
+- [x] 2026-11-22 — Deduplicated promoted profile links and paginated Recent
+  resumes. When every visible profile has a usable URL, the header contact line
+  is now the only place it prints (visual preview and ATS text both skip the
+  redundant Profiles section and add those links to the ATS contact line);
+  **Manage profiles** in Basics now expands and smooth-scrolls to the Profiles
+  card instead of opening a drawer. Dates accept a bare four-digit year
+  (`2018` → `2018 — 2019`) in the Month + Year picker and DateRange, and Impact
+  Formula chips get a real gap between the bold verb and placeholder. Recent
+  resumes now page five at a time with **Prev** / **Page 1 of N** / **Next**,
+  resetting to page 1 when the status filter changes. Added regressions for
+  promoted/URL-less profiles, year-only dates, and pagination helpers. Verified
+  `npm run typecheck`, `npm test` (883 pass), `npm run lint`. Files:
+  `src/lib/links/contactLinks.ts`, `src/templates/shared/HeaderSlot.tsx`,
+  `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `src/lib/ats/atsText.ts` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/SectionList.tsx`,
+  `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/RichTextField.tsx`, `src/lib/date/month.ts` (+ test),
+  `src/templates/shared/DateRange.test.tsx`,
+  `src/lib/store/recentResumes.ts` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-22 — Compacted the mobile Preview chrome and made `ATS text` a
   single scroll area. The redundant `Preview` heading is hidden below `lg`, and

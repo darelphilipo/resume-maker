@@ -1,4 +1,8 @@
 import { formatMonth } from "@/lib/date/month";
+import {
+  headerProfileLinks,
+  profilesPromotedToHeader,
+} from "@/lib/links/contactLinks";
 import { stripEmptyListItems } from "@/lib/richtext/stripEmptyListItems";
 import {
   DEFAULT_SECTION_ORDER,
@@ -198,6 +202,20 @@ function contactLine(doc: ResumeDocument): string[] {
     entries,
     doc.basics.website.label.trim() || doc.basics.website.url,
   );
+
+  // Promoted profile links belong in the contact line, exactly where the
+  // visual header shows them (after the website, before custom fields).
+  const profiles = doc.sections.profiles;
+
+  if (!profiles.hidden) {
+    const profileItems = visibleItems(profiles.items, "network", {
+      anyOfFields: ["username", "url"],
+    });
+
+    for (const link of headerProfileLinks(profileItems)) {
+      pushText(entries, link.label);
+    }
+  }
 
   for (const field of doc.basics.customFields) {
     pushText(entries, field.text);
@@ -451,6 +469,12 @@ function knownCopySection(
   );
 
   if (items.length === 0) {
+    return null;
+  }
+
+  // A fully promoted Profiles section is already in the contact header, so
+  // repeating it as its own section would duplicate every link in ATS output.
+  if (sectionId === "profiles" && profilesPromotedToHeader(items)) {
     return null;
   }
 

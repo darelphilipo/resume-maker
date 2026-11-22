@@ -288,7 +288,8 @@ describe("buildAtsText", () => {
     const text = buildAtsText(doc);
 
     expect(text).toContain("https://example.com/portfolio");
-    expect(text).toContain("https://example.com/ada");
+    // The promoted profile uses the same cleaned label as the visual header.
+    expect(text).toContain("example.com/ada");
   });
 
   it("prints education grades and certification/publication URLs", () => {

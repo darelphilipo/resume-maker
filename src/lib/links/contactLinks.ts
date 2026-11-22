@@ -244,6 +244,36 @@ export function profileHeaderLink(
 }
 
 /**
+ * Every usable header link for a list of visible Profiles rows. The header, the
+ * section renderer, and ATS text all read this one list so a promoted profile
+ * cannot appear in the body while missing from the contact line (or vice versa).
+ */
+export function headerProfileLinks(
+  items: readonly HeaderProfileSource[],
+): HeaderProfileLink[] {
+  return items.flatMap((item, index) => {
+    const link = profileHeaderLink(item, index);
+
+    return link ? [link] : [];
+  });
+}
+
+/**
+ * True when every visible profile is represented by a header link, so the
+ * separate Profiles section would only repeat the contact line. A row without
+ * a usable URL keeps the section (and its remaining rows) visible.
+ */
+export function profilesPromotedToHeader(
+  items: readonly HeaderProfileSource[],
+): boolean {
+  if (items.length === 0) {
+    return false;
+  }
+
+  return headerProfileLinks(items).length === items.length;
+}
+
+/**
  * Absolute href for a user-entered resume link. Bare hosts get `https://`, and
  * anything with a non-http scheme (for example `javascript:`) is rejected so a
  * pasted value can never become an executable link in the preview.

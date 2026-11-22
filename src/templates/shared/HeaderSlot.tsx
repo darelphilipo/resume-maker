@@ -23,7 +23,7 @@ import {
 
 import {
   externalLinkHref,
-  profileHeaderLink,
+  headerProfileLinks,
   websiteLabelFromUrl,
   type HeaderProfileIcon,
 } from "@/lib/links/contactLinks";
@@ -138,23 +138,20 @@ function buildContactEntries(doc: ResumeDocument): ContactEntry[] {
 
   // Profiles are promoted into the contact line from the existing Profiles
   // section — there is no second `basics.links` array. The section renderer and
-  // ATS text still own the full list, so only usable URLs become header links.
+  // ATS text read the same `headerProfileLinks` list, so only usable URLs become
+  // header links and the body section is omitted when every row is promoted.
   const profiles = resolveSection(doc, "profiles");
 
   if (profiles?.kind === "profiles") {
-    profiles.items.forEach((item, index) => {
-      const link = profileHeaderLink(item, index);
-
-      if (link) {
-        entries.push({
-          id: `profile-${link.id}`,
-          kind: "profile",
-          text: link.label,
-          href: link.href,
-          icon: link.icon,
-        });
-      }
-    });
+    for (const link of headerProfileLinks(profiles.items)) {
+      entries.push({
+        id: `profile-${link.id}`,
+        kind: "profile",
+        text: link.label,
+        href: link.href,
+        icon: link.icon,
+      });
+    }
   }
 
   doc.basics.customFields.forEach((field, index) => {
