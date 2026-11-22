@@ -26,4 +26,21 @@ describe("PageStack", () => {
     ]);
     expect(container.querySelector(".resume-print-root")).not.toBeNull();
   });
+
+  it("adds the recruiter-scan class only when scanHighlight is on", () => {
+    const doc = createEmptyResume();
+
+    const { container, rerender } = render(
+      <PageStack doc={doc} pages={[["__header"]]} />,
+    );
+    const root = container.querySelector(".resume-print-root");
+
+    expect(root).not.toHaveClass("resume-scan");
+    expect(root).not.toHaveAttribute("data-scan-highlight");
+
+    rerender(<PageStack doc={doc} pages={[["__header"]]} scanHighlight />);
+
+    expect(root).toHaveClass("resume-scan");
+    expect(root).toHaveAttribute("data-scan-highlight", "true");
+  });
 });

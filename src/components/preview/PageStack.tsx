@@ -9,9 +9,12 @@ import "./preview.css";
 export function PageStack({
   doc,
   pages,
+  scanHighlight = false,
 }: {
   doc: ResumeDocument;
   pages: string[][];
+  /** Preview-only 6-Second Recruiter Scan; print never enables it. */
+  scanHighlight?: boolean;
 }) {
   const Template = getTemplate(doc.metadata.template).Component;
   const geometry = pageGeometry(
@@ -29,7 +32,10 @@ export function PageStack({
 
   return (
     <div
-      className="resume-print-root resume-pages"
+      className={`resume-print-root resume-pages${
+        scanHighlight ? " resume-scan" : ""
+      }`}
+      data-scan-highlight={scanHighlight ? "true" : undefined}
       style={pageVariables}
     >
       {pages.map((_, index) => (
@@ -38,7 +44,12 @@ export function PageStack({
           className="resume-page"
           data-page={index + 1}
         >
-          <Template doc={doc} pages={pages} pageIndex={index} />
+          <Template
+            doc={doc}
+            pages={pages}
+            pageIndex={index}
+            scanHighlight={scanHighlight}
+          />
         </div>
       ))}
     </div>

@@ -5,10 +5,15 @@ import {
   websiteLabelFromUrl,
 } from "@/lib/links/contactLinks";
 import { decodeBlock } from "@/lib/pagination/blockIds";
+import { highlightScanMetrics } from "@/lib/preview/scanMetrics";
 import { stripEmptyListItems } from "@/lib/richtext/stripEmptyListItems";
 import type { ResumeDocument, SectionId } from "@/lib/schema/resume.schema";
 
 import { DateRange } from "./DateRange";
+import {
+  ScanHighlightContext,
+  useScanHighlight,
+} from "./scanHighlightContext";
 import {
   itemId,
   keywordList,
@@ -46,6 +51,12 @@ function ResumeLink({ url }: { url: string }) {
   );
 }
 
+function richTextHtml(html: string, scanHighlight: boolean): string {
+  const cleaned = stripEmptyListItems(html);
+
+  return scanHighlight ? highlightScanMetrics(cleaned) : cleaned;
+}
+
 function EntryShell({
   title,
   subtitle,
@@ -72,6 +83,7 @@ function EntryShell({
   ]
     .filter(Boolean)
     .join(" ");
+  const scanHighlight = useScanHighlight();
 
   return (
     <article className={className}>
@@ -95,7 +107,9 @@ function EntryShell({
       {summary && summary.trim() !== "" ? (
         <div
           className="resume-rich-text"
-          dangerouslySetInnerHTML={{ __html: stripEmptyListItems(summary) }}
+          dangerouslySetInnerHTML={{
+            __html: richTextHtml(summary, scanHighlight),
+          }}
         />
       ) : null}
     </article>
@@ -434,12 +448,15 @@ function groupBlocks(
 export function SectionRenderer({
   doc,
   pageSectionIds,
+  scanHighlight = false,
 }: {
   doc: ResumeDocument;
   pageSectionIds: string[];
+  /** Preview-only 6-Second Scan: wraps numeric metrics at full contrast. */
+  scanHighlight?: boolean;
 }) {
   return (
-    <>
+    <ScanHighlightContext.Provider value={scanHighlight}>
       {groupBlocks(doc, pageSectionIds).map((group, sectionIndex) => {
         const { resolved } = group;
         const { config } = resolved;
@@ -470,7 +487,7 @@ export function SectionRenderer({
               <div
                 className="resume-rich-text"
                 dangerouslySetInnerHTML={{
-                  __html: stripEmptyListItems(doc.summary.content),
+                  __html: richTextHtml(doc.summary.content, scanHighlight),
                 }}
               />
             ) : (
@@ -488,6 +505,6 @@ export function SectionRenderer({
           </section>
         );
       })}
-    </>
+    </ScanHighlightContext.Provider>
   );
 }

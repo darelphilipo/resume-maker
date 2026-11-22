@@ -19,6 +19,31 @@
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
 }
 
+/* 6-Second Recruiter Scan (screen preview only; PrintPortal never adds the
+   class). Body prose fades to ~28% ink while the anchors a recruiter skims —
+   name, headline, section headings, job titles, companies, dates, bold spans
+   and numeric metrics — stay at full contrast. Nested `opacity` cannot be
+   restored on a bold span inside a dimmed paragraph, so dimming uses a
+   colour mix instead. */
+.resume-scan .resume-rich-text,
+.resume-scan .resume-rich-text p,
+.resume-scan .resume-rich-text li {
+  color: color-mix(in srgb, var(--resume-text, #111827) 28%, transparent);
+}
+
+.resume-scan .resume-name,
+.resume-scan .resume-headline,
+.resume-scan .resume-section-heading,
+.resume-scan .resume-entry-title,
+.resume-scan .resume-entry-subtitle,
+.resume-scan .resume-entry-extra,
+.resume-scan .resume-date-range,
+.resume-scan .resume-rich-text strong,
+.resume-scan .resume-rich-text b,
+.resume-scan .scan-metric {
+  color: var(--resume-text, #111827);
+}
+
 @media print {
   .resume-pages {
     display: block;

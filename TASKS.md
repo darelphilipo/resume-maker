@@ -24,10 +24,6 @@ _empty
 
 ### P2 — Lightweight High-Value UX Additions
 
-- [ ] P2: Add a **"6-Second Recruiter Scan"** preview toggle (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/ScanHighlightOverlay.tsx` or CSS class on `PageStack.tsx`).
-  1. Add a session-only **6s Scan** toggle pill in the Preview toolbar (next to **Anonymize**; never applied to `PrintPortal` / exported PDF).
-  2. When active, dim regular body prose (`opacity: 0.28`) while keeping high-signal scan anchors at full contrast (`Name`, `Headline`, section titles, job titles, companies, dates, `<strong>` bold spans, and numeric metrics like `%`, `$`, `x`, or digit counts) so users immediately see whether their key impact pops out in a quick skim.
-
 - [ ] P2: Add **One-Click "Sort newest first"** and **Date Sanity Warnings** on dated sections (`src/lib/date/sortEntries.ts`, `src/components/editor/ExperienceForm.tsx`, `src/components/editor/EducationForm.tsx`, `src/components/editor/ProjectsForm.tsx`).
   1. Add a pure helper `sortEntriesNewestFirst(items)` that orders entries in reverse chronological order (`current: true` / `"Present"` first, then latest `endDate`, then latest `startDate`, keeping undated entries last) and wire a compact **"Sort newest first"** button in the `Experience`, `Education`, and `Projects` section headers (only shown when 2+ entries exist and are out of order, committed via Zustand/Zundo so it's undoable).
   2. Show a subtle inline warning caption under `End date` whenever a non-current entry has `endDate < startDate` (e.g. `"End date is earlier than start date"`).
@@ -56,6 +52,30 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Added the **6-Second Recruiter Scan** preview lens. A
+  session-only **6s Scan** pill beside **Anonymize** dims body prose to a 28%
+  colour mix while keeping the name, headline, section headings, job titles,
+  companies, dates, `<strong>` spans, and numeric metrics (`$1.2M`, `40%`, `3x`,
+  plain counts) at full contrast. The pure `highlightScanMetrics` helper wraps
+  metric runs in `.scan-metric` spans without touching tags, attributes,
+  entities, or digits inside words. The flag threads from `EditorWorkspace`
+  through `LiveCanvasViewport` → `PageStack` → templates → `SectionRenderer`
+  via `ScanHighlightContext`; `PrintPortal` and `MeasureLayer` never set it, so
+  the PDF and measurements are unchanged. Added helper, renderer, page-stack,
+  viewport-forwarding, toolbar-toggle, and print-safety tests. Verified
+  `npm run typecheck`, `npm test` (768 pass), `npm run lint`. Files:
+  `src/lib/preview/scanMetrics.ts` (+ test, new),
+  `src/templates/shared/scanHighlightContext.tsx` (new),
+  `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `src/templates/onyx/OnyxTemplate.tsx`,
+  `src/templates/studio/StudioSidebarTemplate.tsx`,
+  `src/templates/registry.ts`, `src/components/preview/PageStack.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/preview.css`,
+  `src/components/preview/PrintPortal.test.tsx`,
+  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-22 — Fixed one-click drawer close, right-edge date clipping, and
   entry-location leaks in Anonymize. The shared drawer X now renders inside

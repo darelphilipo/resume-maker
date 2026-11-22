@@ -15,6 +15,8 @@ export type OnyxTemplateProps = {
   pageIndex: number;
   /** Appended as `onyx--<variant>` so a layout can restyle the shared DOM. */
   variant?: string;
+  /** Preview-only 6-Second Recruiter Scan. Never set by print or measurement. */
+  scanHighlight?: boolean;
 };
 
 export function OnyxTemplate({
@@ -22,6 +24,7 @@ export function OnyxTemplate({
   pages,
   pageIndex,
   variant,
+  scanHighlight = false,
 }: OnyxTemplateProps) {
   const ids = pages[pageIndex] ?? [...DEFAULT_SECTION_ORDER];
   const hasHeader = ids.includes(HEADER_BLOCK_ID);
@@ -33,7 +36,11 @@ export function OnyxTemplate({
     <div className={rootClass} style={themeStyle}>
       {hasHeader ? <HeaderSlot doc={doc} /> : null}
       <main className="page-stack">
-        <SectionRenderer doc={doc} pageSectionIds={sectionIds} />
+        <SectionRenderer
+          doc={doc}
+          pageSectionIds={sectionIds}
+          scanHighlight={scanHighlight}
+        />
       </main>
     </div>
   );

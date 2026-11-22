@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Eye,
   EyeSlash,
+  MagnifyingGlass,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -112,6 +113,7 @@ export function EditorWorkspace() {
   const [activeTab, setActiveTab] = useState<EditorTab>("content");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("canvas");
   const [anonymizePreview, setAnonymizePreview] = useState(false);
+  const [scanPreview, setScanPreview] = useState(false);
   const [drawerSection, setDrawerSection] =
     useState<SectionListEntry | null>(null);
   /**
@@ -457,6 +459,20 @@ export function EditorWorkspace() {
                 </div>
                 <button
                   type="button"
+                  data-scan-toggle=""
+                  aria-label="6-second recruiter scan"
+                  aria-pressed={scanPreview}
+                  title="Dim body prose and keep names, titles, dates, bold text, and numbers at full contrast."
+                  onClick={() => {
+                    setScanPreview((enabled) => !enabled);
+                  }}
+                  className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-xs font-semibold text-text transition-colors hover:border-primary/40 hover:bg-primary/5 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  <MagnifyingGlass size={15} aria-hidden />
+                  6s Scan
+                </button>
+                <button
+                  type="button"
                   data-anonymize-toggle=""
                   aria-pressed={anonymizePreview}
                   onClick={() => {
@@ -490,6 +506,7 @@ export function EditorWorkspace() {
               doc={previewDoc}
               layout={layout}
               mode={previewMode}
+              scanHighlight={scanPreview}
               onFit={(scale) => {
                 patchDoc({ metadata: { page: { fitScale: scale } } });
               }}

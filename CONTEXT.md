@@ -981,6 +981,23 @@ rediscover.
       the margin becomes symmetric breathing room. Change the helper rather
       than copying the formula into a component or test.
 
+  75. **The 6-Second Recruiter Scan is a preview-only render lens.**
+      `EditorWorkspace` owns a session-only `scanPreview` bit and passes
+      `scanHighlight` to `LiveCanvasViewport`, which forwards it through
+      `PageStack` → template → `SectionRenderer`. `PageStack` adds `.resume-scan`
+      to the preview root; `PrintPortal` and `MeasureLayer` never pass the flag,
+      so the printed PDF and the measured layout are unchanged. Dimming uses
+      `color-mix(in srgb, var(--resume-text) 28%, transparent)` on body prose
+      rather than `opacity`, because a nested bold span or metric cannot restore
+      its contrast inside an opacity-dimmed paragraph. `highlightScanMetrics`
+      (`src/lib/preview/scanMetrics.ts`) wraps `$1.2M`, `40%`, `3x`, and plain
+      counts in `.scan-metric` spans while leaving tags, attributes, entities,
+      and digits embedded in words (`v2`, `H2O`) untouched. `SectionRenderer`
+      exposes the switch through `ScanHighlightContext` so `EntryShell` does not
+      need the prop drilled through every entry type. Keep name, headline,
+      section headings, entry titles/subtitles, dates, bold spans, and
+      `.scan-metric` at full colour; add any new scan anchor to that CSS list.
+
 ## Verification and tooling
 
 ```powershell
@@ -1041,6 +1058,36 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — 6-Second Recruiter Scan preview lens
+- Task: top P2 Queue item. Added a session-only **6s Scan** pill beside
+  **Anonymize** in the Preview header.
+- Render path: `EditorWorkspace` → `LiveCanvasViewport` → `PageStack` →
+  templates → `SectionRenderer`. `PageStack` adds `.resume-scan` and
+  `data-scan-highlight`; `PrintPortal`/`MeasureLayer` never set the flag, so the
+  PDF and page measurements are untouched. Decision #75.
+- Highlight: new pure `highlightScanMetrics` wraps `$1.2M`, `40%`, `3x`, and
+  plain counts in `.scan-metric` spans while preserving tags, attributes,
+  entities, and digits embedded in words. Body prose dims to a 28% colour mix
+  (not `opacity`, which cannot be restored on nested bold/metric spans); name,
+  headline, section headings, entry titles/subtitles, dates, bold spans, and
+  metrics stay at full contrast.
+- Tests: 5 pure helper cases, scan on/off in `SectionRenderer`, the `PageStack`
+  class contract, `LiveCanvasViewport` prop forwarding, the `EditorWorkspace`
+  pill toggle, and a `PrintPortal` case proving the printed output has no scan
+  class or metric spans. 768 pass (was 758).
+- Files: `src/lib/preview/scanMetrics.ts` (+ test, new),
+  `src/templates/shared/scanHighlightContext.tsx` (new),
+  `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `src/templates/onyx/OnyxTemplate.tsx`,
+  `src/templates/studio/StudioSidebarTemplate.tsx`,
+  `src/templates/registry.ts`, `src/components/preview/PageStack.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/preview.css`,
+  `src/components/preview/PrintPortal.test.tsx`,
+  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (768 pass), `npm run lint`.
 
 ### 2026-11-22 — One-click drawer close, safe fit width, anonymized entry locations
 - Task: top P1 Queue item (three bundled regressions).
@@ -1269,34 +1316,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/lib/pagination/canvasFrame.ts` (+ test),
   `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (675 pass), `npm run lint`.
-
-### 2026-11-21 — Mobile shell lock, anchored sr-only controls, and a 0×0 measure layer
-- Task: top P0 Queue item. Tapping a Design accent swatch (for example **Rose**)
-  could scroll the document and slide the normal-flow `MobileBottomNav` into
-  mid-screen.
-- Shell: the editor root is now `fixed inset-0 h-dvh flex flex-col
-  overflow-hidden lg:static lg:h-dvh`, so the document has no scroll range on
-  phones and `<main>` stays the only scroller. Desktop keeps the viewport-tall
-  three-column shell (Decision #51) via `lg:static lg:h-dvh`.
-- Hidden controls: the shared `DesignPanel` `cardClass` and both Launcher file
-  dropzones are `relative`, anchoring their `sr-only` inputs to their own card
-  so browser focus cannot scroll an ancestor.
-- Measure layer: the root is a fixed `0×0 overflow-hidden pointer-events-none`
-  shell; the inner `.onyx` column carries `contentWidthPx` and Onyx typography,
-  and the zero-width guard now checks that inner column. Measurements keep real
-  widths, but a re-measure can never add document height (Decision #65).
-- Tests: EditorWorkspace shell classes, DesignPanel every-radio `relative`,
-  Launcher PDF/backup labels, MeasureLayer 0×0 shell + inner width, and a
-  mobile-only Playwright case that taps **Rose** and asserts `scrollY === 0`,
-  no document overflow, and nav bottom flush with `innerHeight`. 667 pass
-  (was 665). Playwright remains blocked here, so the e2e case is typechecked
-  but browser-unverified.
-- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/DesignPanel.tsx` (+ test),
-  `src/components/launcher/Launcher.tsx` (+ test),
-  `src/components/preview/MeasureLayer.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (667 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

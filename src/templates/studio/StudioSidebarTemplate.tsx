@@ -14,12 +14,15 @@ export type StudioSidebarTemplateProps = {
   doc: ResumeDocument;
   pages: string[][];
   pageIndex: number;
+  /** Preview-only 6-Second Recruiter Scan. Never set by print or measurement. */
+  scanHighlight?: boolean;
 };
 
 export function StudioSidebarTemplate({
   doc,
   pages,
   pageIndex,
+  scanHighlight = false,
 }: StudioSidebarTemplateProps) {
   const firstPage = pages[0] ?? [...DEFAULT_SECTION_ORDER];
   const pageIds = pages[pageIndex] ?? firstPage;
@@ -45,11 +48,19 @@ export function StudioSidebarTemplate({
         className={`studio-layout${showSidebar ? "" : " studio-layout--full"}`}
       >
         <main className="page-stack studio-main">
-          <SectionRenderer doc={doc} pageSectionIds={mainIds} />
+          <SectionRenderer
+            doc={doc}
+            pageSectionIds={mainIds}
+            scanHighlight={scanHighlight}
+          />
         </main>
         {showSidebar ? (
           <aside className="studio-sidebar" aria-label="At a glance">
-            <SectionRenderer doc={doc} pageSectionIds={sidebarIds} />
+            <SectionRenderer
+              doc={doc}
+              pageSectionIds={sidebarIds}
+              scanHighlight={scanHighlight}
+            />
           </aside>
         ) : null}
       </div>

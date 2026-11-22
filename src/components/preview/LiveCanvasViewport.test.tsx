@@ -19,8 +19,11 @@ import { LiveCanvasViewport } from "./LiveCanvasViewport";
 import { usePreservedScroll } from "./usePreservedScroll";
 
 vi.mock("./PageStack", () => ({
-  PageStack: () => (
-    <div data-testid="page-stack">
+  PageStack: ({ scanHighlight }: { scanHighlight?: boolean }) => (
+    <div
+      data-testid="page-stack"
+      data-scan-highlight={scanHighlight ? "true" : "false"}
+    >
       <ul>
         <li>{Array.from({ length: 60 }, () => "Built").join(" ")}</li>
       </ul>
@@ -144,6 +147,7 @@ async function renderCanvas(
     doc?: ResumeDocument;
     onFit?: (scale: number) => void;
     containerWidth?: number;
+    scanHighlight?: boolean;
   } = {},
 ) {
   const doc = options.doc ?? createEmptyResume();
@@ -161,6 +165,7 @@ async function renderCanvas(
       doc={doc}
       layout={createLayout(pageCount)}
       onFit={options.onFit}
+      scanHighlight={options.scanHighlight}
     />,
   );
 
@@ -209,6 +214,23 @@ describe("LiveCanvasViewport", () => {
     expect(wrapper).toHaveAttribute(
       "data-canvas-height",
       String(frame.height),
+    );
+  });
+
+  it("passes the recruiter-scan switch through to the page stack", async () => {
+    const off = await renderCanvas(1);
+
+    expect(off.view.getByTestId("page-stack")).toHaveAttribute(
+      "data-scan-highlight",
+      "false",
+    );
+    off.view.unmount();
+
+    const on = await renderCanvas(1, { scanHighlight: true });
+
+    expect(on.view.getByTestId("page-stack")).toHaveAttribute(
+      "data-scan-highlight",
+      "true",
     );
   });
 

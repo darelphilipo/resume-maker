@@ -227,6 +227,13 @@ in control of every line, and your data stays on your device.
   makes review mode obvious, the Visual and ATS views and the PDF all use the
   hidden version, and your saved resume is never changed — tap the pill again to
   return to the real details.
+- **6-Second recruiter scan**: tap the **6s Scan** pill beside **Anonymize** to
+  see your resume the way a hurried recruiter does. Body prose fades back while
+  your name, headline, section headings, job titles, companies, dates, bold
+  phrases, and numbers such as `40%`, `$1.2M`, or `3x` stay at full contrast, so
+  you can tell at a glance whether your impact pops out. It is a preview lens
+  only: the scan is never added to the printed PDF or your saved resume, and one
+  more tap turns it off.
 - **Job description keyword matcher**: tap **Match JD** in the Content panel
   header to open the matcher on any device, then paste a posting to see which
   of its keywords already appear in your resume and which are missing. Common

@@ -50,4 +50,18 @@ describe("PrintPortal", () => {
 
     view.unmount();
   });
+
+  it("never applies the 6-second recruiter scan to the printed resume", () => {
+    const doc = createEmptyResume();
+    doc.summary.content = "<p>Shipped 3x faster and saved $1.2M in 2024.</p>";
+
+    const view = render(<PrintPortal doc={doc} pages={[["summary"]]} />);
+    const portal = document.getElementById("print-portal");
+
+    expect(portal?.querySelector(".resume-scan")).toBeNull();
+    expect(portal?.querySelector(".scan-metric")).toBeNull();
+    expect(portal?.textContent).toContain("Shipped 3x faster and saved $1.2M");
+
+    view.unmount();
+  });
 });

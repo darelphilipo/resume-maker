@@ -319,11 +319,14 @@ export function LiveCanvasViewport({
   layout,
   onFit,
   mode = "canvas",
+  scanHighlight = false,
 }: {
   doc: ResumeDocument;
   layout: PageLayout;
   onFit?: (scale: number) => void;
   mode?: PreviewMode;
+  /** Session-only 6-Second Recruiter Scan; never reaches print or export. */
+  scanHighlight?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -643,7 +646,11 @@ export function LiveCanvasViewport({
               isCoarsePointer={isCoarsePointer}
               hostRef={containerRef}
             >
-              <PageStack doc={doc} pages={layout.pages} />
+              <PageStack
+                doc={doc}
+                pages={layout.pages}
+                scanHighlight={scanHighlight}
+              />
             </CanvasSurface>
           </TransformWrapper>
         ) : null}

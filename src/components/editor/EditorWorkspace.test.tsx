@@ -47,11 +47,17 @@ vi.mock("@/components/preview/LiveCanvasViewport", () => ({
   LiveCanvasViewport: ({
     mode,
     doc,
+    scanHighlight,
   }: {
     mode?: string;
     doc: ResumeDocument;
+    scanHighlight?: boolean;
   }) => (
-    <div data-testid="preview-canvas" data-mode={mode}>
+    <div
+      data-testid="preview-canvas"
+      data-mode={mode}
+      data-scan-highlight={scanHighlight ? "true" : "false"}
+    >
       <span data-testid="canvas-name">{doc.basics.name}</span>
     </div>
   ),
@@ -173,6 +179,30 @@ describe("EditorWorkspace", () => {
     expect(toggle).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByTestId("canvas-name")).toHaveTextContent("Grace Hopper");
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("toggles the session-only 6-second recruiter scan in the preview", async () => {
+    await renderReadyWorkspace();
+
+    const toggle = screen.getByRole("button", {
+      name: "6-second recruiter scan",
+    });
+    const canvas = screen.getByTestId("preview-canvas");
+
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(canvas).toHaveAttribute("data-scan-highlight", "false");
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(canvas).toHaveAttribute("data-scan-highlight", "true");
+    // Session-only: the scan is a preview lens, never a document edit.
+    expect(useResumeStore.getState().doc.metadata.template).toBe("onyx");
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(canvas).toHaveAttribute("data-scan-highlight", "false");
   });
 
   it("uses the anonymized name in the captured print filename", async () => {

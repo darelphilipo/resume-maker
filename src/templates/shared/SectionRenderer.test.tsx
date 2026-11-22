@@ -306,4 +306,43 @@ Python`);
     ).toHaveLength(0);
     expect(screen.getByText("React, Node")).toBeInTheDocument();
   });
+
+  it("wraps numeric metrics only when the recruiter scan is active", () => {
+    const doc = createEmptyResume();
+    doc.summary.content =
+      "<p>Cut costs by 40% and shipped <strong>3x</strong> faster.</p>";
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+        summary: "<ul><li>Saved $1.2M in 2024</li></ul>",
+      }),
+    ];
+
+    const { container, rerender } = render(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={["summary", "experience"]}
+      />,
+    );
+
+    expect(container.querySelector(".scan-metric")).toBeNull();
+    expect(screen.getByText("Saved $1.2M in 2024")).toBeInTheDocument();
+
+    rerender(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={["summary", "experience"]}
+        scanHighlight
+      />,
+    );
+
+    const metrics = Array.from(
+      container.querySelectorAll(".scan-metric"),
+    ).map((node) => node.textContent);
+
+    expect(metrics).toEqual(["40%", "3x", "$1.2M", "2024"]);
+    expect(container.querySelectorAll("strong")).toHaveLength(1);
+  });
 });

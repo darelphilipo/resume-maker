@@ -15,6 +15,8 @@ export type TemplateProps = {
   doc: ResumeDocument;
   pages: string[][];
   pageIndex: number;
+  /** Preview-only 6-Second Recruiter Scan; print/measure never set it. */
+  scanHighlight?: boolean;
 };
 
 export type TemplateDefinition = {
