@@ -22,8 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] p0 - the fit to 1 page seems to have been deleted . Restore it
-### P1 — Final Pre-Launch Polish
 
 - [ ] P1: Fix `Profiles` deduplication, `Manage profiles` shortcut, year-only dates, Impact Formula chip spacing, and Homepage Recent Resumes pagination (`src/components/editor/BasicsForm.tsx`, `src/templates/shared/SectionRenderer.tsx`, `src/lib/ats/atsText.ts`, `src/lib/date/month.ts`, `src/components/editor/RichTextField.tsx`, `src/components/launcher/Launcher.tsx`).
   1. **`Profiles` deduplication & shortcut:** Omit the redundant `PROFILES` body section when profile links are rendered inline in the top contact header, mirror those inline profile links in `ATS text`'s `CONTACT DETAILS`, and wire `Manage profiles` in `BasicsForm` so clicking it expands and smoothly scrolls to the `Profiles` card.
