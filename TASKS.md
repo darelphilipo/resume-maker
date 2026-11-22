@@ -24,11 +24,6 @@ _empty
 
 ### P2 — Lightweight High-Value UX Additions
 
-- [ ] P2: Add **One-Click "Sort newest first"** and **Date Sanity Warnings** on dated sections (`src/lib/date/sortEntries.ts`, `src/components/editor/ExperienceForm.tsx`, `src/components/editor/EducationForm.tsx`, `src/components/editor/ProjectsForm.tsx`).
-  1. Add a pure helper `sortEntriesNewestFirst(items)` that orders entries in reverse chronological order (`current: true` / `"Present"` first, then latest `endDate`, then latest `startDate`, keeping undated entries last) and wire a compact **"Sort newest first"** button in the `Experience`, `Education`, and `Projects` section headers (only shown when 2+ entries exist and are out of order, committed via Zustand/Zundo so it's undoable).
-  2. Show a subtle inline warning caption under `End date` whenever a non-current entry has `endDate < startDate` (e.g. `"End date is earlier than start date"`).
-
-
 ### P2 — High-Value Reddit-Inspired Features
 
 - [ ] P2: Add **Grouped Promotions (multiple roles at the same company)** in Experience (`src/types/`, `src/components/editor/ExperienceForm.tsx`, `src/templates/`, `src/components/preview/AtsTextView.tsx`).
@@ -52,6 +47,27 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-22 — Added **one-click "Sort newest first"** and inline **date
+  sanity warnings** to the dated sections. The pure
+  `sortEntriesNewestFirst(items)` orders current/Present roles first, then by
+  the latest effective end month (`endDate`, falling back to `startDate`), then
+  by `startDate`, keeping completely undated entries last and preserving ties.
+  `isNewestFirst` hides the compact shared **Sort newest first** button unless
+  2+ entries are out of order; the Experience, Education, and Projects forms
+  commit the new order through the existing debounced `patchDoc`, so one Zundo
+  undo restores it. `MonthSelect` gained an amber, `aria-describedby`-linked
+  `warning` caption, and `dateRangeWarning` shows **"End date is earlier than
+  start date"** for non-current reversed ranges (blank, Present, and equal
+  ranges stay quiet). Added pure helper cases plus Experience, Education,
+  Projects, and MonthSelect regressions. Verified `npm run typecheck`,
+  `npm test` (786 pass), `npm run lint`. Files:
+  `src/lib/date/sortEntries.ts` (+ test, new),
+  `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/ExperienceForm.tsx` (+ test),
+  `src/components/editor/EducationForm.tsx` (+ new test),
+  `src/components/editor/ProjectsForm.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-22 — Added the **6-Second Recruiter Scan** preview lens. A
   session-only **6s Scan** pill beside **Anonymize** dims body prose to a 28%

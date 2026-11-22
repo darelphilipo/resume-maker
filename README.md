@@ -105,7 +105,11 @@ in control of every line, and your data stays on your device.
   and interests use the same comma-separated tags.
 - One Month + Year picker for every date field (month list plus a four-digit
   year), so `2023-10` stays consistent and no browser opens a slow year
-  scroller. End dates for current roles have a **Present** toggle.
+  scroller. End dates for current roles have a **Present** toggle, and a quiet
+  note appears under the End date when it sits before the Start date.
+- **Sort newest first** appears above Experience, Education, or Projects when
+  two or more entries are out of order, so one tap puts current roles and the
+  latest dates at the top (undo still works).
 - Add, delete, hide, and reorder entries inside each section. The eye button on
   an entry hides it from the preview, ATS text, and PDF without deleting it: the
   card stays in the editor with a dimmed look and a **Show** eye button until

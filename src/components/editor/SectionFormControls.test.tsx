@@ -355,6 +355,7 @@ describe("MonthSelect", () => {
       present?: boolean;
       onPresentChange?: (present: boolean) => void;
       onChange?: (value: string) => void;
+      warning?: string;
     } = {},
   ) {
     const onChange = extra.onChange ?? vi.fn();
@@ -365,6 +366,7 @@ describe("MonthSelect", () => {
         label="Start date"
         value={value}
         onChange={onChange}
+        warning={extra.warning}
         present={extra.present}
         onPresentChange={extra.onPresentChange}
       />,
@@ -510,5 +512,20 @@ describe("MonthSelect", () => {
     renderSelect("2023-10");
 
     expect(screen.queryByLabelText("Present")).not.toBeInTheDocument();
+  });
+
+  it("renders an inline warning caption when a range is reversed", () => {
+    renderSelect("2023-10", {
+      warning: "End date is earlier than start date",
+    });
+
+    const warning = screen.getByText("End date is earlier than start date");
+
+    expect(warning).toHaveClass("text-xs", "font-medium", "text-amber-700");
+    expect(warning).toHaveAttribute("id", "start-date-warning");
+    expect(screen.getByRole("group", { name: "Start date" })).toHaveAttribute(
+      "aria-describedby",
+      "start-date-warning",
+    );
   });
 });

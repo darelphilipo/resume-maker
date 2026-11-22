@@ -998,6 +998,22 @@ rediscover.
       section headings, entry titles/subtitles, dates, bold spans, and
       `.scan-metric` at full colour; add any new scan anchor to that CSS list.
 
+  76. **Chronology helpers live in `src/lib/date/sortEntries.ts`.**
+       `sortEntriesNewestFirst` ranks current/Present entries first, then by the
+       latest **effective** end month (`endDate`, falling back to `startDate`
+       when no end is recorded), then by `startDate`, with completely undated
+       entries last and original order preserved for ties. The fallback matters:
+       a role that started in 2024 with no end must outrank one that ended in
+       2020. `isNewestFirst` compares references against the stable sorted
+       result, so the **Sort newest first** button only appears for 2+
+       out-of-order entries. The Experience/Education/Projects forms call
+       `form.setValue` and let the existing debounced `patchDoc` commit, so the
+       reorder is one Zundo undo step and one normal autosave. Date warnings come
+       from `dateRangeWarning` (current/Present/blank/equal ranges stay quiet)
+       and render through `MonthSelect`'s amber `warning` prop, linked to the
+       month/year group with `aria-describedby`; do not reimplement either rule
+       in a form.
+
 ## Verification and tooling
 
 ```powershell
@@ -1058,6 +1074,32 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-22 — One-tap newest-first sorting and date sanity warnings
+- Task: top P2 Queue item. Added the **Sort newest first** button to the
+  Experience, Education, and Projects forms, plus an inline reversed-range
+  warning under **End date**.
+- Helpers: new pure `src/lib/date/sortEntries.ts`. `sortEntriesNewestFirst`
+  ranks current/Present first, then the latest effective end month (`endDate`,
+  falling back to `startDate`), then `startDate`, with undated entries last and
+  ties stable. The first implementation compared a blank `endDate` literally,
+  which ranked a 2024 start-only role below a role that ended in 2020; the
+  fallback fixed that. `isNewestFirst` decides whether the button is shown.
+- Wiring: the shared `SortNewestFirstButton` lives in `SectionFormControls`;
+  each form sorts its local RHF values and lets the normal 50 ms debounced
+  `patchDoc` commit, so one Zundo undo restores the order. `MonthSelect` gained
+  an amber `warning` caption linked with `aria-describedby`; Experience and
+  Education suppress it for current roles, Projects has no current flag.
+- Tests: 9 pure helper cases, Experience sort + warning + current suppression,
+  Education sort/warning/single-entry, Projects sort/warning, and the MonthSelect
+  warning contract. 786 pass (was 768). Decision #76.
+- Files: `src/lib/date/sortEntries.ts` (+ test, new),
+  `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/ExperienceForm.tsx` (+ test),
+  `src/components/editor/EducationForm.tsx` (+ new test),
+  `src/components/editor/ProjectsForm.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (786 pass), `npm run lint`.
 
 ### 2026-11-22 — 6-Second Recruiter Scan preview lens
 - Task: top P2 Queue item. Added a session-only **6s Scan** pill beside
@@ -1287,35 +1329,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (696 pass), `npm run lint`.
-
-### 2026-11-21 — Centred tablet preview and a page-height canvas desk
-- Task: top P1 Queue item (mobile/tablet layout polish).
-- Nav: `MobileBottomNav` caps its safe-area padding with
-  `pb-[min(env(safe-area-inset-bottom),20px)]`, so the active fill reaches the
-  screen edge without a blank strip below the labels; the fixed `h-dvh` shell
-  from #65 is unchanged.
-- Preview: added pure `centeredCanvasOffsetX` (`canvasFrame.ts`). The fitted
-  canvas is nudged right by half the leftover space through
-  `useFitTransform(fitScale, offsetX)` and `initialPositionX`, and `resetZoom`
-  restores that same X. The fit key includes the offset, so a width change that
-  keeps the scale still re-centres (Decision #66).
-- Backdrop: the preview root is transparent; an absolute `[data-canvas-desk]`
-  inside `[data-canvas-scroll]` is exactly `frame.height` tall, so a 1-page
-  resume no longer sits above an oversized gray void. ATS mode has no desk.
-- Content/Design: short cards are `my-auto max-w-3xl self-center` on `< lg`
-  (reset at `lg`) for balanced space above/below instead of one empty band.
-- Tests: nav padding, panel classes, `centeredCanvasOffsetX` cases, fit-offset
-  refits, LiveCanvasViewport centring + desk height + no ATS desk, and a
-  `1023×1600` Playwright case for equal side gaps, desk bottom = paper bottom,
-  no document scroll, and nav flush. 675 pass (was 667). Playwright remains
-  blocked here, so the e2e case is typechecked but browser-unverified.
-- Files: `src/components/editor/MobileBottomNav.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/preview/useFitTransform.ts` (+ test),
-  `src/lib/pagination/canvasFrame.ts` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (675 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

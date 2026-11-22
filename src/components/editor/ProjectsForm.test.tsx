@@ -114,4 +114,49 @@ describe("ProjectsForm", () => {
     expect(item.startDate).toBe("2024-03");
     expect(item.endDate).toBe("2024-08");
   });
+
+  it("sorts projects newest first and commits the order", () => {
+    setup([
+      makeItem("project-1", {
+        name: "Older",
+        startDate: "2019-01",
+        endDate: "2020-01",
+      }),
+      makeItem("project-2", {
+        name: "Newer",
+        startDate: "2022-01",
+        endDate: "2023-01",
+      }),
+    ]);
+    render(<ProjectsForm />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Sort newest first" }),
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    expect(
+      useResumeStore
+        .getState()
+        .doc.sections.projects.items.map((item) => item.name),
+    ).toEqual(["Newer", "Older"]);
+  });
+
+  it("warns under End date when the range is reversed", () => {
+    setup([
+      makeItem("project-1", {
+        name: "Ledger API",
+        startDate: "2024-06",
+        endDate: "2024-02",
+      }),
+    ]);
+    render(<ProjectsForm />);
+
+    expect(
+      screen.getByText("End date is earlier than start date"),
+    ).toBeInTheDocument();
+  });
 });

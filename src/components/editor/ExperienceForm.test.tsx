@@ -253,6 +253,76 @@ describe("ExperienceForm", () => {
     ).toContain("experience");
   });
 
+  it("sorts entries newest first and hides the button once ordered", () => {
+    setup([
+      makeItem("exp-1", {
+        company: "Older",
+        startDate: "2018-01",
+        endDate: "2020-01",
+      }),
+      makeItem("exp-2", {
+        company: "Current",
+        startDate: "2023-01",
+        endDate: "",
+        current: true,
+      }),
+      makeItem("exp-3", {
+        company: "Newer",
+        startDate: "2021-01",
+        endDate: "2022-01",
+      }),
+    ]);
+    render(<ExperienceForm />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Sort newest first" }),
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    const companies = useResumeStore
+      .getState()
+      .doc.sections.experience.items.map((item) => item.company);
+
+    expect(companies).toEqual(["Current", "Newer", "Older"]);
+    expect(
+      screen.queryByRole("button", { name: "Sort newest first" }),
+    ).toBeNull();
+  });
+
+  it("shows a date sanity warning when the end date precedes the start", () => {
+    setup([
+      makeItem("exp-1", {
+        company: "Acme",
+        startDate: "2024-06",
+        endDate: "2024-05",
+      }),
+    ]);
+    render(<ExperienceForm />);
+
+    const warning = screen.getByText("End date is earlier than start date");
+
+    expect(warning).toHaveClass("text-amber-700");
+  });
+
+  it("suppresses the date warning for a current role", () => {
+    setup([
+      makeItem("exp-1", {
+        company: "Acme",
+        startDate: "2024-06",
+        endDate: "2024-05",
+        current: true,
+      }),
+    ]);
+    render(<ExperienceForm />);
+
+    expect(
+      screen.queryByText("End date is earlier than start date"),
+    ).toBeNull();
+  });
+
   it("keeps drafts in the form but filters them from visible sections", () => {
     setup([makeItem("exp-1", { company: "", position: "Engineer" })]);
 

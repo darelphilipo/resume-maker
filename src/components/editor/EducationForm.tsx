@@ -5,6 +5,11 @@ import { useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
+import {
+  dateRangeWarning,
+  isNewestFirst,
+  sortEntriesNewestFirst,
+} from "@/lib/date/sortEntries";
 import { newId } from "@/lib/schema/defaults";
 import type { EducationItem } from "@/lib/schema/resume.schema";
 import { useResumeStore } from "@/lib/store/useResumeStore";
@@ -17,6 +22,7 @@ import {
   EntryCard,
   FormActions,
   MonthSelect,
+  SortNewestFirstButton,
   TextInput,
 } from "./SectionFormControls";
 import { useDebouncedCommit } from "./useDebouncedCommit";
@@ -135,12 +141,26 @@ export function EducationForm() {
     form.setValue("items", [], { shouldDirty: true });
   }
 
+  function sortNewestFirst(): void {
+    form.setValue("items", sortEntriesNewestFirst(form.getValues("items")), {
+      shouldDirty: true,
+    });
+  }
+
+  const showSortButton =
+    watched.items.length > 1 && !isNewestFirst(watched.items);
+
   return (
     <form
       aria-label="Education"
       onSubmit={(event) => event.preventDefault()}
       className="flex flex-col gap-3"
     >
+      {showSortButton ? (
+        <div className="flex justify-end">
+          <SortNewestFirstButton onClick={sortNewestFirst} />
+        </div>
+      ) : null}
       {watched.items.map((item, index) => (
         <EntryCard key={item.id} index={index} hidden={item.hidden}>
           <TextInput
@@ -185,6 +205,10 @@ export function EducationForm() {
               label="End date"
               value={item.endDate}
               onChange={(value) => updateItem(index, "endDate", value)}
+              warning={
+                dateRangeWarning(item.startDate, item.endDate, item.current) ??
+                undefined
+              }
               present={item.current}
               onPresentChange={(checked) =>
                 updateItem(index, "current", checked)

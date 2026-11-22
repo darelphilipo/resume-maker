@@ -3,6 +3,7 @@
 import {
   ArrowDown,
   ArrowUp,
+  ArrowsDownUp,
   Eye,
   EyeSlash,
   Plus,
@@ -97,6 +98,8 @@ export type MonthSelectProps = {
   value: string;
   onChange: (value: string) => void;
   hint?: string;
+  /** Inline sanity note (for example a reversed range), kept above the hint. */
+  warning?: string;
   /** End-date only: show a Present toggle and disable the picker while on. */
   present?: boolean;
   onPresentChange?: (present: boolean) => void;
@@ -115,6 +118,7 @@ export function MonthSelect({
   value,
   onChange,
   hint,
+  warning,
   present,
   onPresentChange,
 }: MonthSelectProps) {
@@ -202,6 +206,7 @@ export function MonthSelect({
       <div
         role="group"
         aria-labelledby={labelId}
+        aria-describedby={warning ? `${id}-warning` : undefined}
         className="grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)_minmax(0,6rem)] gap-2"
       >
         <select
@@ -239,6 +244,14 @@ export function MonthSelect({
           className={INPUT_CLASS}
         />
       </div>
+      {warning ? (
+        <p
+          id={`${id}-warning`}
+          className="text-xs font-medium text-amber-700"
+        >
+          {warning}
+        </p>
+      ) : null}
       {hint ? <p className="text-xs text-muted">{hint}</p> : null}
       {onPresentChange ? (
         <BooleanInput
@@ -619,6 +632,19 @@ export function EntryActions({
         <span>Delete</span>
       </button>
     </div>
+  );
+}
+
+export function SortNewestFirstButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:border-black/30 hover:text-primary active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:min-h-11 pointer-coarse:px-3"
+    >
+      <ArrowsDownUp size={14} aria-hidden />
+      <span>Sort newest first</span>
+    </button>
   );
 }
 
