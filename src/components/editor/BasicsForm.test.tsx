@@ -14,6 +14,13 @@ function setup(): void {
   useResumeStore.setState({ doc: createEmptyResume() });
 }
 
+/** Optional fields (work auth, website, profiles) sit behind one disclosure. */
+function openContactDetails(): void {
+  fireEvent.click(
+    screen.getByRole("button", { name: "More contact details" }),
+  );
+}
+
 describe("BasicsForm", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -45,7 +52,9 @@ describe("BasicsForm", () => {
   it("replaces a picture that cannot load with a readable fallback", () => {
     render(<BasicsForm />);
 
-    fireEvent.click(screen.getByLabelText("Hide picture"));
+    // A new resume hides the picture, so the URL field only appears once the
+    // picture is switched back on.
+    fireEvent.click(screen.getByRole("checkbox", { name: "Hide picture" }));
     fireEvent.change(screen.getByLabelText("Picture URL"), {
       target: { value: "https://example.com/missing.jpg" },
     });
@@ -62,6 +71,44 @@ describe("BasicsForm", () => {
     act(() => {
       vi.advanceTimersByTime(50);
     });
+  });
+
+  it("tucks optional contact fields behind one disclosure", () => {
+    render(<BasicsForm />);
+
+    const toggle = screen.getByRole("button", {
+      name: "More contact details",
+    });
+    const body = document.getElementById("basics-contact-details");
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(body).toHaveAttribute("hidden");
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(body).not.toHaveAttribute("hidden");
+    expect(screen.getByLabelText("Work auth / notice period")).toBeVisible();
+  });
+
+  it("hides the picture URL whenever the picture is hidden", () => {
+    render(<BasicsForm />);
+
+    const hidePicture = screen.getByRole("checkbox", {
+      name: "Hide picture",
+    });
+
+    // New resumes start with the picture hidden and no URL field to fill in.
+    expect(hidePicture).toBeChecked();
+    expect(screen.queryByLabelText("Picture URL")).toBeNull();
+
+    fireEvent.click(hidePicture);
+
+    expect(screen.getByLabelText("Picture URL")).toBeInTheDocument();
+
+    fireEvent.click(hidePicture);
+
+    expect(screen.queryByLabelText("Picture URL")).toBeNull();
   });
 
   it("commits typed values after 50ms with one patchDoc call", () => {
@@ -103,10 +150,18 @@ describe("BasicsForm", () => {
   it("commits picture visibility and url in the same patch", () => {
     render(<BasicsForm />);
 
+    const hidePicture = screen.getByRole("checkbox", { name: "Hide picture" });
+
+    // Show the picture so its URL can be typed, then hide it again; both edits
+    // still land in one debounced patch.
+    fireEvent.click(hidePicture);
+
     fireEvent.change(screen.getByLabelText("Picture URL"), {
       target: { value: "https://example.com/photo.jpg" },
     });
-    fireEvent.click(screen.getByLabelText("Hide picture"));
+    fireEvent.click(hidePicture);
+
+    expect(hidePicture).toBeChecked();
 
     act(() => {
       vi.advanceTimersByTime(50);
@@ -115,7 +170,7 @@ describe("BasicsForm", () => {
     const picture = useResumeStore.getState().doc.picture;
 
     expect(picture.url).toBe("https://example.com/photo.jpg");
-    expect(picture.hidden).toBe(false);
+    expect(picture.hidden).toBe(true);
   });
 
   it("commits the optional work auth line with the rest of the basics", () => {
@@ -136,6 +191,8 @@ describe("BasicsForm", () => {
 
   it("fills and clears the work auth line from its preset chips", () => {
     render(<BasicsForm />);
+
+    openContactDetails();
 
     const preset = screen.getByRole("button", { name: "Immediate Joiner" });
 
@@ -193,6 +250,8 @@ describe("BasicsForm", () => {
     const onManageProfiles = vi.fn();
 
     render(<BasicsForm onManageProfiles={onManageProfiles} />);
+
+    openContactDetails();
 
     expect(screen.getByText("Profile links")).toBeInTheDocument();
 

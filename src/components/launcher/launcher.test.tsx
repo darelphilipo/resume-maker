@@ -163,7 +163,7 @@ describe("Launcher", () => {
 
     expect(backupToggle()).toHaveAttribute("aria-expanded", "true");
     expect(
-      screen.getByText(/Export JSON/),
+      screen.getByText(/open a resume and choose/),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Resume backup file")).toHaveAttribute(
       "accept",

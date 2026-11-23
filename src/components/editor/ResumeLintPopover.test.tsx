@@ -150,7 +150,7 @@ describe("ResumeLintPopover", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("keeps the trigger quiet and opens a centred, portalled modal", () => {
+  it("keeps the trigger a quiet pill and opens a centred, portalled modal", () => {
     const doc = createEmptyResume();
 
     doc.summary.content = "<ul><li>Built APIs.</li></ul>";
@@ -160,9 +160,12 @@ describe("ResumeLintPopover", () => {
 
     const trigger = screen.getByRole("button", { name: /Bullet polish:/ });
 
-    // A quiet text trigger must not look like a second primary CTA.
-    expect(trigger.className).not.toContain("border-line");
+    // A quiet pill must not look like a second primary CTA.
+    expect(trigger.className).toContain("rounded-full");
+    expect(trigger.className).toContain("border-line");
+    expect(trigger.className).toContain("bg-surface");
     expect(trigger.className).toContain("font-medium");
+    expect(trigger.className).not.toContain("bg-primary");
 
     fireEvent.click(trigger);
 

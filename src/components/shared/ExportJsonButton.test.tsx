@@ -41,10 +41,12 @@ describe("ExportJsonButton", () => {
 
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Export JSON" }));
+    await user.click(
+      screen.getByRole("button", { name: "Backup and export" }),
+    );
 
     expect(
-      screen.getByRole("menu", { name: "Export JSON" }),
+      screen.getByRole("menu", { name: "Backup and export" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("menuitem", { name: /Resume Maker backup/ }),
@@ -59,7 +61,9 @@ describe("ExportJsonButton", () => {
     let downloadName = "";
 
     render(<ExportJsonButton />);
-    await user.click(screen.getByRole("button", { name: "Export JSON" }));
+    await user.click(
+      screen.getByRole("button", { name: "Backup and export" }),
+    );
 
     vi.spyOn(HTMLElement.prototype, "click").mockImplementation(function (
       this: HTMLElement,
@@ -82,7 +86,9 @@ describe("ExportJsonButton", () => {
     let downloadName = "";
 
     render(<ExportJsonButton />);
-    await user.click(screen.getByRole("button", { name: "Export JSON" }));
+    await user.click(
+      screen.getByRole("button", { name: "Backup and export" }),
+    );
 
     vi.spyOn(HTMLElement.prototype, "click").mockImplementation(function (
       this: HTMLElement,
@@ -103,7 +109,9 @@ describe("ExportJsonButton", () => {
     const user = userEvent.setup();
     render(<ExportJsonButton />);
 
-    const trigger = screen.getByRole("button", { name: "Export JSON" });
+    const trigger = screen.getByRole("button", {
+      name: "Backup and export",
+    });
 
     await user.click(trigger);
     await user.keyboard("{Escape}");

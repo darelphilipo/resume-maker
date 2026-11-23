@@ -4,6 +4,8 @@ import {
   ArrowClockwise,
   ArrowCounterClockwise,
   ArrowLeft,
+  CaretDown,
+  CaretUp,
   Eye,
   EyeSlash,
   MagnifyingGlass,
@@ -112,6 +114,12 @@ export function EditorWorkspace() {
   const [loadResult, setLoadResult] = useState<LoadResult | null>(null);
   const [activeTab, setActiveTab] = useState<EditorTab>("content");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("canvas");
+  /**
+   * Basics starts collapsed so Summary, Experience, Projects, Education, and
+   * Skills are visible on first load. The form stays mounted behind a `hidden`
+   * body, so its values and live-name subscription survive a toggle.
+   */
+  const [basicsOpen, setBasicsOpen] = useState(false);
   const [anonymizePreview, setAnonymizePreview] = useState(false);
   const [scanPreview, setScanPreview] = useState(false);
   const [drawerSection, setDrawerSection] =
@@ -265,6 +273,8 @@ export function EditorWorkspace() {
   }
 
   const resumeName = resumeDisplayName(liveName ?? doc.basics.name);
+  const basicsSummary =
+    (liveName ?? doc.basics.name).trim() || "Add your name";
   const undoAvailable = canUndo();
   const redoAvailable = canRedo();
   const statusLabel = saveStatusLabel(saveState, lastSavedAt);
@@ -347,10 +357,12 @@ export function EditorWorkspace() {
             >
               <ArrowClockwise size={18} aria-hidden />
             </button>
-            <ExportJsonButton />
+            {/* Save PDF is the one primary CTA; backup/export is the quiet
+                secondary menu beside it, not a competing outlined button. */}
             <div data-print-slot className="flex items-center">
               <PrintTriggerButton doc={previewDoc} pages={layout.pages} />
             </div>
+            <ExportJsonButton />
           </div>
         </div>
       </header>
@@ -389,22 +401,59 @@ export function EditorWorkspace() {
                 Reorder, hide, or open a section to edit it.
               </p>
             </div>
-            <section aria-labelledby="basics-heading" className="flex flex-col gap-3">
-              <h3
-                id="basics-heading"
-                className="text-xs font-semibold uppercase tracking-wide text-muted"
-              >
-                Basics
+            <section
+              aria-labelledby="basics-heading"
+              className="overflow-hidden rounded-xl border border-black/10 bg-background"
+            >
+              <h3 id="basics-heading" className="m-0">
+                <button
+                  type="button"
+                  data-basics-toggle=""
+                  aria-expanded={basicsOpen}
+                  aria-controls="basics-body"
+                  onClick={() => {
+                    setBasicsOpen((open) => !open);
+                  }}
+                  className="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  {basicsOpen ? (
+                    <CaretUp
+                      size={16}
+                      aria-hidden
+                      data-basics-chevron="up"
+                      className="shrink-0 text-primary"
+                    />
+                  ) : (
+                    <CaretDown
+                      size={16}
+                      aria-hidden
+                      data-basics-chevron="down"
+                      className="shrink-0 opacity-60"
+                    />
+                  )}
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+                    Basics
+                  </span>
+                  <span className="ml-auto min-w-0 truncate text-xs font-normal text-muted">
+                    {basicsSummary}
+                  </span>
+                </button>
               </h3>
-              <BasicsForm
-                onLiveNameChange={publishLiveName}
-                onManageProfiles={() =>
-                  setSectionFocus((current) => ({
-                    id: "profiles",
-                    nonce: (current?.nonce ?? 0) + 1,
-                  }))
-                }
-              />
+              <div
+                id="basics-body"
+                hidden={!basicsOpen}
+                className="border-t border-black/10 px-3 py-3"
+              >
+                <BasicsForm
+                  onLiveNameChange={publishLiveName}
+                  onManageProfiles={() =>
+                    setSectionFocus((current) => ({
+                      id: "profiles",
+                      nonce: (current?.nonce ?? 0) + 1,
+                    }))
+                  }
+                />
+              </div>
             </section>
             <SectionList
               onOpenSection={setDrawerSection}
@@ -476,6 +525,12 @@ export function EditorWorkspace() {
                     ATS text
                   </button>
                 </div>
+                {/* Hairline split: view modes stay left of review tools. */}
+                <span
+                  aria-hidden
+                  data-preview-toolbar-divider=""
+                  className="h-5 w-px shrink-0 bg-line"
+                />
                 <button
                   type="button"
                   data-scan-toggle=""

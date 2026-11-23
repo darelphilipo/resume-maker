@@ -108,6 +108,21 @@ for (const viewport of VIEWPORTS) {
         page.getByRole("button", { name: "Save PDF" }),
       ).toBeVisible();
 
+      // Basics is collapsed by default so the section list is visible first.
+      // Open it from the keyboard before tabbing into its fields.
+      await pressTabUntil(page, () =>
+        page.evaluate(() => {
+          const active = document.activeElement;
+
+          return (
+            active instanceof HTMLElement &&
+            active.tagName === "BUTTON" &&
+            (active.textContent ?? "").startsWith("Basics")
+          );
+        }),
+      );
+      await page.keyboard.press("Enter");
+
       await pressTabUntil(page, () =>
         page.evaluate(() => document.activeElement?.id === "basics-name"),
       );

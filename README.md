@@ -70,23 +70,26 @@ in control of every line, and your data stays on your device.
   option: restore a JSON backup you exported earlier, or a resume file from
   another tool in the open **JSON Resume** format, without treating JSON as the
   main way to start.
-- **JSON export** in the editor at any time so you are never locked in: keep a
-  full **Resume Maker backup** (layout, design, and hidden entries) or download
-  the same resume as a portable **JSON Resume** file that other resume tools and
-  sites can read.
+- **JSON export** in the editor at any time so you are never locked in: the
+  quiet **⋮** backup menu beside **Save PDF** keeps a full **Resume Maker
+  backup** (layout, design, and hidden entries) or downloads the same resume as
+  a portable **JSON Resume** file that other resume tools and sites can read.
 
 ### Write and organize
 
-- Basics: name, headline, email, phone, location, website, optional photo, and
+- Basics: name, headline, email, phone, and location stay up front, with website,
   an optional one-line work authorization or notice period tag (for example
-  `Authorized to work in US` or `Immediate Joiner`). The top header title and
-  center resume preview follow every keystroke, so there is no second name
-  preview to scan past — no need to leave the field. Paste a photo
-  URL and a live thumbnail appears; if the image cannot
-  load, the editor says so instead of showing a broken picture, and the resume
-  header widens cleanly without an empty photo slot. Paste your website and it
-  is shown without `https://` or `www.` — there is no separate label to
-  maintain.
+  `Authorized to work in US` or `Immediate Joiner`), and profile links tucked
+  behind one **More contact details** disclosure. The **Basics** card starts
+  collapsed, so Summary, Experience, Projects, Education, and Skills are the
+  first sections you see. The top header title and center resume preview follow
+  every keystroke, so there is no second name preview to scan past — no need to
+  leave the field. Paste a photo URL and a live thumbnail appears; if the image
+  cannot load, the editor says so instead of showing a broken picture, and the
+  resume header widens cleanly without an empty photo slot. Checking **Hide
+  picture** removes the photo URL field as well, so there is nothing to fill in
+  for a picture that will not print. Paste your website and it is shown without
+  `https://` or `www.` — there is no separate label to maintain.
 - Profiles: paste a profile URL such as `github.com/you` and the network,
   username, and icon are filled in automatically. Visible profiles also appear
   inline in the resume header beside your website, as clean clickable links with

@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { CaretDown } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -164,6 +165,7 @@ export function BasicsForm({
   });
 
   const websitePreview = websiteLabelFromUrl(watched.websiteUrl);
+  const [contactDetailsOpen, setContactDetailsOpen] = useState(false);
 
   return (
     <form
@@ -222,82 +224,121 @@ export function BasicsForm({
         }
         placeholder="Berlin, Germany"
       />
-      <TextInput
-        id="basics-work-auth"
-        label="Work auth / notice period"
-        value={watched.workAuth}
-        onChange={(value) =>
-          form.setValue("workAuth", value, { shouldDirty: true })
-        }
-        placeholder="Authorized to work in US"
-        hint="Optional one-liner shown in the header. Keep it short."
-      />
-      <div className="flex flex-wrap gap-1.5">
-        {WORK_AUTH_PRESETS.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            aria-pressed={watched.workAuth === preset}
-            onClick={() =>
-              form.setValue(
-                "workAuth",
-                watched.workAuth === preset ? "" : preset,
-                { shouldDirty: true },
-              )
-            }
-            className={`inline-flex min-h-11 items-center rounded-full border px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-              watched.workAuth === preset
-                ? "border-primary bg-primary/5"
-                : "border-black/10 hover:border-black/30 active:bg-black/5"
+      {/*
+       * Name, headline, email, phone, and location are the fields most resumes
+       * need; everything else is optional and stays behind one compact
+       * disclosure so the Content panel does not bury the section list.
+       */}
+      <div className="flex flex-col gap-2">
+        <button
+          type="button"
+          aria-expanded={contactDetailsOpen}
+          aria-controls="basics-contact-details"
+          onClick={() => {
+            setContactDetailsOpen((open) => !open);
+          }}
+          className="inline-flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-1 text-left text-sm font-medium text-muted transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
+          <span>More contact details</span>
+          <CaretDown
+            size={16}
+            aria-hidden
+            data-contact-details-chevron=""
+            className={`shrink-0 opacity-70 transition-transform ${
+              contactDetailsOpen ? "rotate-180" : ""
             }`}
-          >
-            {preset}
-          </button>
-        ))}
-      </div>
-      <TextInput
-        id="basics-website-url"
-        label="Website URL"
-        type="url"
-        inputMode="url"
-        autoComplete="url"
-        value={watched.websiteUrl}
-        onChange={(value) =>
-          form.setValue("websiteUrl", value, { shouldDirty: true })
-        }
-        placeholder="https://example.com"
-        hint={
-          websitePreview !== "" ? `Shown as ${websitePreview}` : undefined
-        }
-      />
-      {onManageProfiles ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface-muted px-3 py-2">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">Profile links</p>
-            <p className="text-xs text-muted">
-              GitHub, LinkedIn, or portfolio — shown in the header.
-            </p>
+          />
+        </button>
+        <div
+          id="basics-contact-details"
+          hidden={!contactDetailsOpen}
+          className="flex flex-col gap-3"
+        >
+          <TextInput
+            id="basics-work-auth"
+            label="Work auth / notice period"
+            value={watched.workAuth}
+            onChange={(value) =>
+              form.setValue("workAuth", value, { shouldDirty: true })
+            }
+            placeholder="Authorized to work in US"
+            hint="Optional one-liner shown in the header. Keep it short."
+          />
+          <div className="flex flex-wrap gap-1.5">
+            {WORK_AUTH_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                aria-pressed={watched.workAuth === preset}
+                onClick={() =>
+                  form.setValue(
+                    "workAuth",
+                    watched.workAuth === preset ? "" : preset,
+                    { shouldDirty: true },
+                  )
+                }
+                className={`inline-flex min-h-11 items-center rounded-full border px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                  watched.workAuth === preset
+                    ? "border-primary bg-primary/5"
+                    : "border-black/10 hover:border-black/30 active:bg-black/5"
+                }`}
+              >
+                {preset}
+              </button>
+            ))}
           </div>
-          <button
-            type="button"
-            onClick={onManageProfiles}
-            className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-black/10 bg-surface px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-          >
-            Manage profiles
-          </button>
+          <TextInput
+            id="basics-website-url"
+            label="Website URL"
+            type="url"
+            inputMode="url"
+            autoComplete="url"
+            value={watched.websiteUrl}
+            onChange={(value) =>
+              form.setValue("websiteUrl", value, { shouldDirty: true })
+            }
+            placeholder="https://example.com"
+            hint={
+              websitePreview !== "" ? `Shown as ${websitePreview}` : undefined
+            }
+          />
+          {onManageProfiles ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line bg-surface-muted px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Profile links</p>
+                <p className="text-xs text-muted">
+                  GitHub, LinkedIn, or portfolio — shown in the header.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onManageProfiles}
+                className="inline-flex min-h-11 shrink-0 items-center rounded-lg border border-black/10 bg-surface px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                Manage profiles
+              </button>
+            </div>
+          ) : null}
         </div>
-      ) : null}
-      <TextInput
-        id="basics-picture-url"
-        label="Picture URL"
-        type="url"
-        inputMode="url"
-        value={watched.pictureUrl}
-        onChange={(value) =>
-          form.setValue("pictureUrl", value, { shouldDirty: true })
-        }
-        placeholder="https://example.com/photo.jpg"
-      />
+      </div>
+      {/*
+       * A hidden picture cannot be used, so its URL field is not shown at all
+       * while "Hide picture" is checked. The checkbox stays visible so the
+       * picture can be brought back in one tap.
+       */}
+      {watched.pictureHidden ? null : (
+        <TextInput
+          id="basics-picture-url"
+          label="Picture URL"
+          type="url"
+          inputMode="url"
+          value={watched.pictureUrl}
+          onChange={(value) =>
+            form.setValue("pictureUrl", value, { shouldDirty: true })
+          }
+          placeholder="https://example.com/photo.jpg"
+        />
+      )}
       <PicturePreview
         key={watched.pictureUrl.trim()}
         url={watched.pictureUrl}

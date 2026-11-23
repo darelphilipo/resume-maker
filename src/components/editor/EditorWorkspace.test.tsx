@@ -96,10 +96,16 @@ async function renderReadyWorkspace() {
   return view;
 }
 
+/** Basics starts collapsed; editing its fields requires opening the card. */
+function expandBasics(): void {
+  fireEvent.click(screen.getByRole("button", { name: /Basics/ }));
+}
+
 describe("EditorWorkspace", () => {
   it("updates the header name while typing, without waiting for a blur", async () => {
     const user = userEvent.setup();
     await renderReadyWorkspace();
+    expandBasics();
 
     await user.type(screen.getByLabelText("Name"), "Ada Lovelace");
 
@@ -113,6 +119,7 @@ describe("EditorWorkspace", () => {
   it("syncs live Name edits to the preview canvas and header without a blur", async () => {
     const user = userEvent.setup();
     await renderReadyWorkspace();
+    expandBasics();
 
     // Both surfaces render from the same committed doc, not a local draft, so
     // a keystroke reaches the center resume header and the top bar title.
@@ -282,6 +289,58 @@ describe("EditorWorkspace", () => {
     ]);
   });
 
+  it("starts with Basics collapsed so the section list is visible", async () => {
+    await renderReadyWorkspace();
+
+    const toggle = screen.getByRole("button", { name: /^Basics/ });
+    const body = document.getElementById("basics-body");
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(body).toHaveAttribute("hidden");
+    // Summary and the standard sections are the first thing in Content.
+    expect(
+      screen.getByRole("button", { name: /^Summary/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("expands Basics from its header and keeps the live name path working", async () => {
+    const user = userEvent.setup();
+
+    await renderReadyWorkspace();
+
+    const toggle = screen.getByRole("button", { name: /^Basics/ });
+    const body = document.getElementById("basics-body");
+
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(body).not.toHaveAttribute("hidden");
+    expect(screen.getByLabelText("Name")).toBeVisible();
+  });
+
+  it("gives Bullet polish and Match JD matching quiet pill styling", async () => {
+    await renderReadyWorkspace();
+
+    const bullet = screen.getByRole("button", { name: /Bullet polish:/ });
+    const match = screen.getByRole("button", {
+      name: "Match to a job description",
+    });
+
+    for (const trigger of [bullet, match]) {
+      expect(trigger).toHaveClass(
+        "rounded-full",
+        "border-line",
+        "bg-surface",
+        "min-h-9",
+        "text-xs",
+      );
+      expect(trigger).not.toHaveClass("bg-primary");
+    }
+
+    // The job-description trigger used to be the only white, semibold pill.
+    expect(match).not.toHaveClass("bg-white", "font-semibold");
+  });
+
   it("reserves the preview scrollbar gutter so the fit width cannot jitter", async () => {
     await renderReadyWorkspace();
 
@@ -427,10 +486,19 @@ describe("EditorWorkspace", () => {
       "shrink-0",
     );
     const redo = screen.getByRole("button", { name: "Redo" });
+    const backup = screen.getByRole("button", { name: "Backup and export" });
 
     expect(redo).toBeDisabled();
     expect(redo).toHaveClass("disabled:text-text/80", "disabled:opacity-100");
     expect(redo).not.toHaveClass("disabled:text-muted");
+    // The backup menu is a quiet secondary action after the primary CTA; it no
+    // longer shows an outlined "Export JSON" label competing with Save PDF.
+    expect(
+      printButton.compareDocumentPosition(backup) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(backup).toHaveClass("border-transparent", "text-muted");
+    expect(backup).not.toHaveTextContent("Export JSON");
     // The divider sits between Back and the title, not in the action group.
     const divider = row?.querySelector<HTMLElement>("[data-header-divider]");
 
@@ -502,6 +570,32 @@ describe("EditorWorkspace", () => {
     for (const control of [...controls, scan, anonymize]) {
       expect(control).toHaveClass("h-8", "text-xs", "px-2.5");
     }
+  });
+
+  it("separates view modes from review tools with a hairline divider", async () => {
+    await renderReadyWorkspace();
+
+    const header = screen
+      .getByRole("button", { name: "Visual" })
+      .closest<HTMLElement>("[data-preview-mode-header]")!;
+    const divider = header.querySelector<HTMLElement>(
+      "[data-preview-toolbar-divider]",
+    );
+    const modes = screen.getByRole("group", { name: "Preview mode" });
+    const scan = screen.getByRole("button", {
+      name: "6-second recruiter scan",
+    });
+
+    expect(divider).not.toBeNull();
+    expect(divider).toHaveClass("h-5", "w-px", "bg-line");
+    expect(
+      modes.compareDocumentPosition(divider!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      divider!.compareDocumentPosition(scan) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("makes the mobile preview a fixed-height column above a scrolling canvas", async () => {

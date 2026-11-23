@@ -19,7 +19,22 @@ export async function createPresetResume(
   await page.getByRole("button", { name: label }).click();
   await page.waitForURL(/\/editor\/?\?id=/);
   await expect(page.getByRole("button", { name: "Save PDF" })).toBeVisible();
+  await expandBasics(page);
   await expect(page.getByLabel("Name")).not.toHaveValue("");
+}
+
+/**
+ * Basics starts collapsed so the section list is visible on first load. Any
+ * test that edits a Basics field has to open the card first.
+ */
+export async function expandBasics(page: Page): Promise<void> {
+  const toggle = page.getByRole("button", { name: /^Basics/ });
+
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") {
+    await toggle.click();
+  }
+
+  await expect(page.getByLabel("Name")).toBeVisible();
 }
 
 export async function showTab(

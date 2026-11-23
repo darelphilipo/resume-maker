@@ -180,8 +180,10 @@ test("hiding the profile picture removes the avatar column", async ({
   const hidePicture = page.getByLabel("Hide picture");
 
   await expect(hidePicture).toBeChecked();
-  await pictureUrl.fill("https://example.com/avatar.png");
+  // The URL field is only shown while the picture is visible.
+  await expect(pictureUrl).toHaveCount(0);
   await hidePicture.uncheck();
+  await pictureUrl.fill("https://example.com/avatar.png");
 
   await showPreview(page);
 

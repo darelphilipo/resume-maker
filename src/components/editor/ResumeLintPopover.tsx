@@ -12,6 +12,8 @@ import {
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { useResumeStore } from "@/lib/store/useResumeStore";
 
+import { CONTENT_HEADER_ACTION_CLASS } from "./contentHeaderAction";
+
 const PERIOD_ACTION_CLASS =
   "inline-flex min-h-9 items-center justify-center rounded-md border border-line bg-surface px-2 py-1 text-[11px] font-semibold text-primary transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-muted disabled:text-muted disabled:opacity-100 pointer-coarse:min-h-11";
 
@@ -61,10 +63,10 @@ export function ResumeLintPopover({ doc }: { doc: ResumeDocument }) {
         onClick={() => {
           setOpen((current) => !current);
         }}
-        className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+        className={`${CONTENT_HEADER_ACTION_CLASS} ${
           issueCount === 0
-            ? "text-muted hover:bg-black/5 hover:text-text"
-            : "text-amber-800 hover:bg-amber-50 hover:text-amber-900"
+            ? "text-muted hover:text-text"
+            : "text-amber-800 hover:text-amber-900"
         }`}
       >
         {issueCount === 0 ? (

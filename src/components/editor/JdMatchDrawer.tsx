@@ -11,6 +11,7 @@ import { useIsDesktop } from "@/lib/responsive/useIsDesktop";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 
 import { EntryDrawer } from "./EntryDrawer";
+import { CONTENT_HEADER_ACTION_CLASS } from "./contentHeaderAction";
 
 type MatchResult = ReturnType<typeof matchJobKeywords>;
 
@@ -172,7 +173,7 @@ export function JdMatchDrawer({
         aria-label="Match to a job description"
         onClick={openDrawer}
         {...extra}
-        className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-line bg-white px-2.5 text-xs font-semibold text-primary transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        className={`${CONTENT_HEADER_ACTION_CLASS} text-muted hover:text-text`}
       >
         <Target size={16} aria-hidden />
         <span>Match JD</span>

@@ -1199,8 +1199,8 @@ export function Launcher() {
             <p className="text-sm text-[#5b6a7a]">
               Restore a JSON backup you exported earlier, or a resume file from
               another tool in the open JSON Resume format. To make a new backup,
-              open a resume and choose <strong>Export JSON</strong> in the
-              editor.
+              open a resume and choose <strong>Backup</strong> (the ⋮ menu) in
+              the editor header.
             </p>
 
             <label
