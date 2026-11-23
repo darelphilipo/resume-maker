@@ -22,7 +22,20 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+### P1 — First-Impression & Visual Calm Polish
+
+- [ ] P1: Make all 6 starter presets fit cleanly on 1 page out of the box and declutter the Homepage (`/`) (`src/lib/presets/archetypes.ts`, `src/components/launcher/Launcher.tsx`, `src/app/page.tsx`).
+  1. **Zero out-of-the-box overflow warnings:** Trim 1–2 lines from the `Product Manager` preset (and verify all 6 role presets in `archetypes.ts`) so opening any starter template lands cleanly on `1 page` on default `A4` / `Normal` density with no yellow `"Spills onto 2 pages"` warning.
+  2. **Separate `Recent resumes` & trim repeated copy:** Move **Recent resumes** out of the `"Start from scratch"` card into its own clean standalone section on `/` (shown only when saved resumes exist), and trim the triple-repeated privacy/free copy in the hero so the trust statement appears once cleanly above the fold.
+
+- [ ] P1: Make `Basics` collapsible (showing all resume sections immediately) and simplify Editor toolbars (`src/components/editor/BasicsForm.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
+  1. **Reveal sections on first load:** Make `Basics` a collapsible accordion (or collapse optional fields like `Work auth`, `Website URL`, and `Profile links` behind a compact `"More contact details"` disclosure) and hide the `Picture URL` input whenever `Hide picture` is checked, so `Summary`, `Experience`, `Projects`, `Education`, and `Skills` are visible above the fold in the Content panel.
+  2. **Cleaner toolbar hierarchy:** Move `Export JSON` into a subtle secondary `⋮` / `Backup` menu button next to `Save PDF` so `Save PDF` is the unmistakable primary CTA; give `Bullet polish` and `Match JD` matching subtle secondary pill styling in the Content header; and add a subtle vertical hairline divider in the Preview toolbar separating view modes (`Visual | ATS text`) from review tools (`6s Scan`, `Anonymize`).
+
+- [ ] P1: Compact the `Design` panel so Templates, Colors, Fonts, and Density are scannable without heavy scrolling (`src/components/editor/DesignPanel.tsx`).
+  1. Convert `Paper size` (`A4 | Letter`), `Font pairing` (`Sans | Serif | Classic`, styled in their actual typefaces), and `Density` (`Compact | Normal | Relaxed`) from tall full-width radio cards into compact segmented control rows.
+  2. Convert the 8 `Accent color` swatches from 8 tall rectangular cards into a single compact row (or 2×4 mini strip) of circular color swatches with accessible `aria-label` tooltips and a crisp ring + checkmark on the active color, keeping `relative` on any `sr-only` radio container so mobile focus never scrolls the viewport.
+
 
 
 ## Done
