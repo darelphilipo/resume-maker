@@ -1162,6 +1162,24 @@ rediscover.
        sample needs room, trim prose instead of raising `fitScale` or relaxing
        the budget.
 
+   83. **Basics starts collapsed, and secondary toolbar actions stay quiet.**
+       `EditorWorkspace` owns `basicsOpen` (default `false`) and renders the
+       **Basics** card as an accordion; `BasicsForm` stays mounted behind a
+       `hidden` body, so its live-name subscription and unsaved values survive a
+       toggle. Optional fields (`Work auth`, `Website URL`, `Profile links`) sit
+       behind one **More contact details** disclosure, and the `Picture URL`
+       input is not rendered while `Hide picture` is checked. Any test or e2e
+       helper that edits a Basics field must open both disclosures first
+       (`expandBasics` in `e2e/helpers.ts`). In the header, `Save PDF` is the only
+       filled CTA; `ExportJsonButton` is the quiet `⋮` **Backup and export** menu
+       after it. `Bullet polish` and `Match JD` share
+       `CONTENT_HEADER_ACTION_CLASS` (`contentHeaderAction.ts`), a
+       `rounded-full border-line bg-surface` pill with a `pointer-coarse:min-h-11`
+       target, so neither drifts into a competing CTA. The Preview toolbar keeps
+       a `[data-preview-toolbar-divider]` hairline between the
+       `Visual | ATS text` mode group and the `6s Scan` / **Anonymize** review
+       tools.
+
 ## Verification and tooling
 
 ```powershell
@@ -1222,6 +1240,31 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-23 — Collapsed Basics and quiet editor toolbars
+- Task: top P1 Queue item. The UI was already implemented in this checkpoint;
+  this run fixed the stale drawer test and recorded the work.
+- Basics: `EditorWorkspace` renders a collapsed accordion (`basicsOpen` false)
+  with the resume name as its summary; `BasicsForm` stays mounted behind
+  `hidden`. Optional work-auth/website/profile fields live behind **More contact
+  details**, and **Picture URL** is not rendered while **Hide picture** is
+  checked. Decision #83.
+- Toolbars: **Save PDF** is the only filled CTA, with the **⋮** backup menu after
+  it; **Bullet polish** and **Match JD** share one muted pill class; the Preview
+  toolbar gained a hairline divider between view modes and review tools.
+  Decision #83.
+- Tests: fixed `sectionEditorDrawer.test.tsx` to open the Basics accordion and
+  the contact-details disclosure before tapping **Manage profiles**. 906 pass.
+- Files: `src/components/editor/BasicsForm.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/contentHeaderAction.ts` (new),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.tsx`,
+  `src/components/editor/sectionEditorDrawer.test.tsx`,
+  `src/components/shared/ExportJsonButton.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `e2e/a11y.spec.ts`,
+  `e2e/flow.spec.ts`, `e2e/helpers.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (906 pass), `npm run lint`.
 
 ### 2026-11-23 — One-page starter presets and a standalone Recent resumes section
 - Task: top P1 Queue item. All six role presets should open on one page, and the
@@ -1466,36 +1509,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/ProjectsForm.tsx` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (786 pass), `npm run lint`.
-
-### 2026-11-22 — 6-Second Recruiter Scan preview lens
-- Task: top P2 Queue item. Added a session-only **6s Scan** pill beside
-  **Anonymize** in the Preview header.
-- Render path: `EditorWorkspace` → `LiveCanvasViewport` → `PageStack` →
-  templates → `SectionRenderer`. `PageStack` adds `.resume-scan` and
-  `data-scan-highlight`; `PrintPortal`/`MeasureLayer` never set the flag, so the
-  PDF and page measurements are untouched. Decision #75.
-- Highlight: new pure `highlightScanMetrics` wraps `$1.2M`, `40%`, `3x`, and
-  plain counts in `.scan-metric` spans while preserving tags, attributes,
-  entities, and digits embedded in words. Body prose dims to a 28% colour mix
-  (not `opacity`, which cannot be restored on nested bold/metric spans); name,
-  headline, section headings, entry titles/subtitles, dates, bold spans, and
-  metrics stay at full contrast.
-- Tests: 5 pure helper cases, scan on/off in `SectionRenderer`, the `PageStack`
-  class contract, `LiveCanvasViewport` prop forwarding, the `EditorWorkspace`
-  pill toggle, and a `PrintPortal` case proving the printed output has no scan
-  class or metric spans. 768 pass (was 758).
-- Files: `src/lib/preview/scanMetrics.ts` (+ test, new),
-  `src/templates/shared/scanHighlightContext.tsx` (new),
-  `src/templates/shared/SectionRenderer.tsx` (+ test),
-  `src/templates/onyx/OnyxTemplate.tsx`,
-  `src/templates/studio/StudioSidebarTemplate.tsx`,
-  `src/templates/registry.ts`, `src/components/preview/PageStack.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/preview/preview.css`,
-  `src/components/preview/PrintPortal.test.tsx`,
-  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (768 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

@@ -244,10 +244,10 @@ in control of every line, and your data stays on your device.
 - **Bullet polish** in the Content panel header flags the small consistency
   problems a recruiter notices first: bullets that mix ending periods,
   first-person pronouns, filler adverbs, and repeated opening verbs within one
-  role. It is a quiet text button beside **Match JD**; tapping it opens a centred
-  modal that always stays inside the screen and closes with its own X, a tap on
-  the dimmed background, or Escape. Each
-  finding shows the opening words so you can find the bullet, and
+  role. It is a quiet pill beside **Match JD**, so neither competes with
+  **Save PDF**; tapping it opens a centred modal that always stays inside the
+  screen and closes with its own X, a tap on the dimmed background, or Escape.
+  Each finding shows the opening words so you can find the bullet, and
   **Standardize bullet periods** can remove every trailing period or add one to
   every bare bullet in a single undoable tap. The check runs locally with plain
   rules — no AI and no network.

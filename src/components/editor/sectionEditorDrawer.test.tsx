@@ -130,6 +130,12 @@ describe("section editor drawer", () => {
     try {
       render(<EditorWorkspace />);
       await screen.findByRole("heading", { name: "Untitled resume" });
+      // Basics starts collapsed, and its optional fields sit behind one more
+      // disclosure, so open both before reaching the Profiles shortcut.
+      await user.click(screen.getByRole("button", { name: /^Basics/ }));
+      await user.click(
+        screen.getByRole("button", { name: "More contact details" }),
+      );
       await user.click(screen.getByRole("button", { name: "Manage profiles" }));
 
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

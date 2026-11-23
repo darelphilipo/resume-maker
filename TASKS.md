@@ -24,10 +24,6 @@ _empty
 
 ### P1 — First-Impression & Visual Calm Polish
 
-- [ ] P1: Make `Basics` collapsible (showing all resume sections immediately) and simplify Editor toolbars (`src/components/editor/BasicsForm.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
-  1. **Reveal sections on first load:** Make `Basics` a collapsible accordion (or collapse optional fields like `Work auth`, `Website URL`, and `Profile links` behind a compact `"More contact details"` disclosure) and hide the `Picture URL` input whenever `Hide picture` is checked, so `Summary`, `Experience`, `Projects`, `Education`, and `Skills` are visible above the fold in the Content panel.
-  2. **Cleaner toolbar hierarchy:** Move `Export JSON` into a subtle secondary `⋮` / `Backup` menu button next to `Save PDF` so `Save PDF` is the unmistakable primary CTA; give `Bullet polish` and `Match JD` matching subtle secondary pill styling in the Content header; and add a subtle vertical hairline divider in the Preview toolbar separating view modes (`Visual | ATS text`) from review tools (`6s Scan`, `Anonymize`).
-
 - [ ] P1: Compact the `Design` panel so Templates, Colors, Fonts, and Density are scannable without heavy scrolling (`src/components/editor/DesignPanel.tsx`).
   1. Convert `Paper size` (`A4 | Letter`), `Font pairing` (`Sans | Serif | Classic`, styled in their actual typefaces), and `Density` (`Compact | Normal | Relaxed`) from tall full-width radio cards into compact segmented control rows.
   2. Convert the 8 `Accent color` swatches from 8 tall rectangular cards into a single compact row (or 2×4 mini strip) of circular color swatches with accessible `aria-label` tooltips and a crisp ring + checkmark on the active color, keeping `relative` on any `sr-only` radio container so mobile focus never scrolls the viewport.
@@ -36,6 +32,28 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-23 — Collapsed **Basics** by default and quietened the editor
+  toolbars. The Content panel now opens with a compact **Basics** accordion
+  (collapsed, showing the resume name) whose optional work-auth, website, and
+  profile-link fields sit behind one **More contact details** disclosure; the
+  **Picture URL** input disappears whenever **Hide picture** is checked, so
+  Summary, Experience, Projects, Education, and Skills are visible immediately.
+  In the header, **Save PDF** is the only filled CTA and JSON export moved to a
+  quiet **⋮** backup menu beside it. **Bullet polish** and **Match JD** now share
+  one muted pill treatment (`contentHeaderAction.ts`), and a hairline divider in
+  the Preview toolbar separates `Visual | ATS text` from `6s Scan` and
+  **Anonymize**. Updated the Profiles shortcut drawer test and e2e helpers to
+  open the new disclosures. Verified `npm run typecheck`, `npm test` (906 pass),
+  `npm run lint`. Files: `src/components/editor/BasicsForm.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/contentHeaderAction.ts` (new),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.tsx`,
+  `src/components/editor/sectionEditorDrawer.test.tsx`,
+  `src/components/shared/ExportJsonButton.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `e2e/a11y.spec.ts`,
+  `e2e/flow.spec.ts`, `e2e/helpers.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-23 — Made all six starter presets fit one page and gave
   **Recent resumes** its own home-page section. Every sample now stays within a
