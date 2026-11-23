@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import type { HTMLAttributes, ReactNode, Ref, RefObject } from "react";
 import {
   TransformComponent,
@@ -398,26 +398,31 @@ export function LiveCanvasViewport({
    * The floating reset pill lives outside `<TransformWrapper>`, so it cannot
    * read the zoom level from the library context. `onTransform` mirrors that
    * one bit of state into React, and the wrapper ref performs the reset.
+   *
+   * These helpers are plain closures on purpose. Each one is consumed by an
+   * event handler (`onTransform`, the Reset pill) or the imperative handle, so
+   * an unstable identity costs nothing, while the manual `useCallback` wrappers
+   * made the hooks lint rule bail out of this component
+   * (`react-hooks/preserve-manual-memoization`). Reading `fitScale` /
+   * `fitOffsetX` from the current render is also what keeps a reset accurate
+   * after a resize changes the fit target.
    */
-  const handleTransform = useCallback(
-    (
-      _ref: ReactZoomPanPinchRef,
-      state: { scale: number; positionX: number; positionY: number },
-    ): void => {
-      if (fitScale === null) {
-        return;
-      }
+  const handleTransform = (
+    _ref: ReactZoomPanPinchRef,
+    state: { scale: number; positionX: number; positionY: number },
+  ): void => {
+    if (fitScale === null) {
+      return;
+    }
 
-      const zoomed = Math.abs(state.scale - fitScale) > SCALE_EPSILON;
+    const zoomed = Math.abs(state.scale - fitScale) > SCALE_EPSILON;
 
-      setZoomState((previous) =>
-        previous?.fitScale === fitScale && previous.zoomed === zoomed
-          ? previous
-          : { fitScale, zoomed },
-      );
-    },
-    [fitScale],
-  );
+    setZoomState((previous) =>
+      previous?.fitScale === fitScale && previous.zoomed === zoomed
+        ? previous
+        : { fitScale, zoomed },
+    );
+  };
 
   const isZoomed =
     mode === "canvas" &&
@@ -432,11 +437,11 @@ export function LiveCanvasViewport({
    * scroll container holding the pages back to the top (the inner box on
    * phones, the sticky panel at `lg` — see CONTEXT #28/#37).
    */
-  const resetScroll = useCallback((): void => {
+  const resetScroll = (): void => {
     scrollToResumeTop(scrollRef.current, containerRef.current);
-  }, []);
+  };
 
-  const resetZoom = useCallback((): void => {
+  const resetZoom = (): void => {
     if (fitScale === null) {
       return;
     }
@@ -448,20 +453,17 @@ export function LiveCanvasViewport({
       fitScale,
       RESET_ANIMATION_MS,
     );
-  }, [fitOffsetX, fitScale, resetScroll]);
+  };
 
-  const resetFit = useCallback((): void => {
+  const resetFit = (): void => {
     resetScroll();
     onFit?.(1);
-  }, [onFit, resetScroll]);
+  };
 
   // Review drives Reset fit through this ref, while the floating zoom pill
   // below calls `resetZoom` directly. The viewport now owns its zoom bit
   // locally instead of reporting it up to the mode bar (Decision #86).
-  useImperativeHandle(ref, () => ({ resetZoom, resetFit }), [
-    resetFit,
-    resetZoom,
-  ]);
+  useImperativeHandle(ref, () => ({ resetZoom, resetFit }));
 
   const gestures = canvasGestureConfig(isCoarsePointer);
 

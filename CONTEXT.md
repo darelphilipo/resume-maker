@@ -1322,7 +1322,7 @@ rediscover.
        `react-hooks/preserve-manual-memoization` errors on the `handleTransform`
        / `resetZoom` `useCallback`s in `LiveCanvasViewport`; they persist with
        the original `onZoomChange` code, so they are not caused by this change.
-       CI only runs typecheck/test/build.
+       CI only runs typecheck/test/build. (Fixed by #89.)
 
   88. **Printed pages are fixed-height and clipped.** `@media print .resume-page`
       now sets `height`/`max-height: var(--page-height)` plus
@@ -1334,6 +1334,20 @@ rediscover.
       `break-inside: avoid-page` to `.studio-layout` as an alternative: when the
       grid genuinely does not fit, `avoid-page` *creates* the blank first page
       instead of preventing it. Fix the packing (#62) instead.
+
+  89. **`LiveCanvasViewport`'s reset/transform closures stay plain functions.**
+      The React Hooks lint rule `react-hooks/preserve-manual-memoization` rejects
+      the manual `useCallback` wrappers there: it reports that
+      `fitScale`/`fitOffsetX` "may be modified later" and bails out, producing
+      five errors even though the dependency lists are correct.
+      `handleTransform`, `resetScroll`, `resetZoom`, and `resetFit` are
+      therefore plain per-render closures. They only feed `onTransform`, the
+      floating `Reset` pill, and `useImperativeHandle`, so no consumer needs a
+      stable identity; `useImperativeHandle` now uses its default
+      re-create-per-render behaviour. Reading the current `fitScale` /
+      `fitOffsetX` at call time is also what keeps a reset accurate after a
+      resize changes the fit target. Do not reintroduce `useCallback` unless the
+      lint rule changes.
 
 ## Verification and tooling
 
@@ -1395,6 +1409,23 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-23 — Lint debt cleared in the Preview viewport
+- Task: Inbox and Queue were both empty, so this run picked up the one clear
+  standing item from the Done notes — the five
+  `react-hooks/preserve-manual-memoization` errors in `LiveCanvasViewport` that
+  every recent run deferred.
+- Change: dropped the `useCallback` wrappers around `handleTransform`,
+  `resetScroll`, `resetZoom`, and `resetFit`. They are plain closures that read
+  the current `fitScale`/`fitOffsetX`, and `useImperativeHandle` uses its
+  default re-create-per-render behaviour. Every consumer is an event prop or
+  the imperative handle, so unstable identity is harmless. Promoted to #89.
+- Tests: the existing `LiveCanvasViewport` reset/imperative-handle cases and
+  the `EditorWorkspace` Review-ref path cover the changed closures; no new test
+  because no behaviour or markup changed. `npm run lint` now reports 0 errors.
+- Files: `src/components/preview/LiveCanvasViewport.tsx`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (947 pass), `npm run lint`.
 
 ### 2026-11-23 — Studio Sidebar caps Page 1's sidebar and prints exactly its pages
 - Task: Queue P0. A tall side column grew `.studio-layout` past one printable
@@ -1630,28 +1661,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/lib/import/pdfResume.ts` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (911 pass), `npm run lint`.
-
-### 2026-11-23 — Compact segmented Design panel and circular accent strip
-- Task: the P1 Queue item. The Design panel stacked six tall full-width radio
-  cards above the templates; Paper size, Font pairing, and Density now share
-  one-row segmented controls, and the eight accent cards became one circular
-  strip.
-- Layout: `DesignPanel` gained `SEGMENT_ROW_CLASS` / `segmentClass` (muted
-  track, flex-1 `min-h-9`, `pointer-coarse:min-h-11`, solid primary fill when
-  checked) and every choice radio is `sr-only` inside a `relative` label.
-  Descriptions moved to `title` tooltips. Font labels still render in their own
-  typeface.
-- Accents: a `grid-cols-4 sm:grid-cols-8` strip of 28px circles; the label
-  `title` plus the radio `aria-label` keep the color name accessible, and the
-  active circle gets `ring-2 ring-primary ring-offset-2` with a white check
-  inside. Decision #47 rewritten, #55 updated.
-- Tests: rewrote the DesignPanel segment, accent-strip, active-ring, and
-  density-fill cases; the mobile shell-lock e2e now taps
-  `label[for="accent-rose"]` because the swatch no longer has visible text.
-  That e2e case remains browser-unverified here.
-- Files: `src/components/editor/DesignPanel.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (906 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

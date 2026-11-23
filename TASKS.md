@@ -27,6 +27,19 @@ _empty
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-23 — Cleared the last standing lint debt in the Preview viewport.
+  Both Inbox and Queue were empty, so this run picked up the five
+  `react-hooks/preserve-manual-memoization` errors that earlier Done notes kept
+  deferring in `LiveCanvasViewport`. The four manual `useCallback` wrappers
+  (`handleTransform`, `resetScroll`, `resetZoom`, `resetFit`) are now plain
+  closures: they only feed `onTransform`, the Reset pill, or the imperative
+  handle, so identity churn costs nothing, while the current-render
+  `fitScale`/`fitOffsetX` reads keep a reset accurate after a resize. The
+  imperative handle now relies on its default re-create-per-render behaviour.
+  No behaviour or markup changed, so the existing reset/zoom/imperative-handle
+  regressions cover it. Verified `npm run typecheck`, `npm test` (947 pass), and
+  `npm run lint` (now clean, 0 errors). Files:
+  `src/components/preview/LiveCanvasViewport.tsx`, `CONTEXT.md`, `TASKS.md`.
 - [x] 2026-11-23 — Capped the Studio Sidebar's Page 1 side column and made
   `Save as PDF` print exactly the measured pages. `computePages` now splits
   pinned sidebar blocks and packs them against
