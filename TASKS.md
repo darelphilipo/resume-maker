@@ -22,14 +22,27 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P0: Fix `Studio Sidebar` stranding trailing sections (`Awards`, `Certifications`, etc.) on an extra page while Page 2 is half-empty (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/lib/pagination/computePages.ts`, `src/lib/pagination/usePageLayout.ts`).
-  1. **Exclude Page 1 sidebar blocks from Page 2+ height budgets:** When paginating the `studio-sidebar` template, pack the sidebar-routed blocks (`Skills`, `Certifications`, etc., up to Page 1's sidebar height) separately into Page 1's right column rather than counting their heights against the main/overflow pages, so main/overflow sections (`Education`, `Awards`, etc.) pack into the full height of Page 2 without being pushed onto an unnecessary Page 3.
-  2. **Unit test:** Add a multi-page `StudioSidebarTemplate` test with `Experience` + `Education` + `Skills` + `Certifications` + `Awards` verifying `Awards` stays on Page 2 when Page 2 has space rather than spilling to Page 3.
-
-
+_empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-23 — Stopped the Studio Sidebar stranding trailing main sections on
+  a nearly empty extra page. `computePages` no longer packs sidebar-routed
+  blocks in the shared main sequence: with `pinnedToFirstPage` set (gengar
+  only), `packWithPinnedBlocks` splits them out, packs the main column with the
+  full page budget, and appends every pinned block to Page 1 in canonical order
+  (keeping the ids in `pages` so the template still finds them via
+  `pages.flat()`). The interleaved default order no longer lets Skills and
+  Certifications eat Page 2's budget and push Awards to Page 3. Updated the
+  pinned-block `computePages` cases and added a gengar `usePageLayout`
+  regression plus a multi-page `StudioSidebarTemplate` render test (Experience,
+  Education, Skills, Certifications, Awards) asserting exactly two pages with
+  Awards on Page 2 and the sidebar only on Page 1. Verified `npm run typecheck`,
+  `npm test` (942 pass). Files: `src/lib/pagination/computePages.ts` (+ test),
+  `src/lib/pagination/usePageLayout.test.tsx`,
+  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-23 — Wrapped the resume in the gray Preview backdrop and floated
   the zoom **Reset** so the one-row Preview bar never crowds **Review**. The

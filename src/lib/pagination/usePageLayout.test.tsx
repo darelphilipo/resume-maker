@@ -9,6 +9,7 @@ import {
   ExperienceItemSchema,
   type ResumeDocument,
 } from "@/lib/schema/resume.schema";
+import { pageGeometry } from "@/lib/units/pageGeometry";
 
 import { getSectionPlans, planBlockKeys } from "./sectionPlans";
 import {
@@ -216,6 +217,37 @@ describe("usePageLayout", () => {
     expect(result.current.pages).toEqual([
       ["__header", "experience", "skills"],
     ]);
+  });
+
+  it("does not charge gengar sidebar sections to Page 2's main-column budget", () => {
+    // The default order interleaves skills/certifications between education
+    // and awards, which used to push Awards onto an almost empty Page 3.
+    const doc = createEmptyResume("gengar");
+    doc.metadata.page.gapY = 0;
+    const { contentHeightPx } = pageGeometry(
+      doc.metadata.page.format,
+      doc.metadata.page.marginX,
+      doc.metadata.page.marginY,
+    );
+    const headerHeightPx = 100;
+    const measure: MeasureFn = () => ({
+      headerHeightPx,
+      heights: {
+        experience: contentHeightPx - headerHeightPx - 1,
+        education: 500,
+        skills: 250,
+        certifications: 250,
+        awards: 200,
+      },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    expect(result.current.pages).toEqual([
+      ["__header", "experience", "skills", "certifications"],
+      ["education", "awards"],
+    ]);
+    expect(result.current.overflowPx).toBe(0);
   });
 
   it("keeps the trailing sidebar page for a single-column template", () => {

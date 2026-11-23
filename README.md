@@ -185,7 +185,10 @@ in control of every line, and your data stays on your device.
   size, and saves are unchanged, and the preview and PDF use the same layout.
   Its narrow side column (Skills, Certifications, Languages, Interests) stays
   anchored on Page 1; later pages give the main column the full page width
-  instead of leaving an empty sidebar beside it, and a resume whose main column
+  instead of leaving an empty sidebar beside it. Side-column sections use their
+  own Page 1 budget, so they never eat into the space that later main sections
+  need — trailing sections such as Awards stay on the page with room instead of
+  being pushed onto a nearly empty extra page, and a resume whose main column
   already fits on Page 1 never grows a blank second page. Page breaks are
   measured in the same two-column shape you see, so switching to **Compact**
   density or a tighter font can never report one page while the bottom of the

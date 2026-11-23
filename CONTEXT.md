@@ -865,19 +865,22 @@ rediscover.
       (`atsText.ts`); links for profiles, certifications, and publications plus
       Education `grade` now render in `SectionRenderer` too.
 
-  62. **A page that only holds Studio Sidebar blocks is folded into Page 1, not
-      deleted.** Packing is one shared main-then-sidebar sequence (#34/#46), so
-      a full main column can push `skills`/`certifications` onto a Page 2 whose
-      main side is empty; `StudioSidebarTemplate` then moves those blocks into
-      Page 1's `<aside>`, leaving a blank Page 2 and a misleading "2 pages"
-      count. `computePages` accepts `pinnedToFirstPage` and folds the trailing
-      run of pages that contain only those section ids back into Page 1 in
-      canonical order. Folding (rather than dropping the ids) is essential: the
-      template recovers its side column from `pages.flat()`, so deleted blocks
-      would vanish from the resume. `usePageLayout` passes
-      `STUDIO_SIDEBAR_SECTION_IDS` only for the `gengar` template; every other
-      template keeps its canonical trailing page. The page count, canvas frame,
-      print, and overflow banner all derive from the corrected `pages`.
+  62. **Studio Sidebar pinned blocks are packed apart from the main column.**
+      The sidebar renders in Page 1's `<aside>` whatever page packing assigned
+      it, so charging its height to the shared main-then-sidebar sequence
+      (#34/#46) does two kinds of damage: a full main column can leave a blank
+      Page 2 whose only content is sidebar blocks, and — because the canonical
+      order interleaves `skills`/`certifications` between `education` and
+      `awards` — those sidebar blocks can fill Page 2's main budget and strand
+      `Awards` on a nearly empty Page 3. `computePages` now accepts
+      `pinnedToFirstPage`: it splits those blocks out, packs the main column
+      (header + main sections) with the whole page budget, and appends **every**
+      pinned block to Page 1 in canonical order. Keep the ids in `pages` — the
+      template recovers its side column from `pages.flat()`, so dropping them
+      would delete content. `usePageLayout` passes
+      `STUDIO_SIDEBAR_SECTION_IDS` only for `gengar`; single-column templates
+      keep their canonical trailing page. Page count, canvas frame, print, and
+      the overflow banner all derive from the corrected `pages`.
 
   63. **Review mode redacts every rendered URL and location, and the drawer X
       uses vaul's close primitive.** `anonymizeResumeDoc` replaces entry `url`
@@ -1316,7 +1319,7 @@ rediscover.
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~874 tests
+npm test               # vitest, ~942 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1372,6 +1375,29 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-23 — Studio Sidebar no longer strands trailing main sections
+- Task: In Progress P0. With the canonical interleaved order, Page 1's sidebar
+  blocks were charged to Page 2's main-column budget and pushed `Awards` onto a
+  nearly empty Page 3.
+- Fix: `computePages` replaces trailing-page folding with
+  `packWithPinnedBlocks` — sidebar (pinned) blocks are split out, the main
+  column packs alone with the full page budget, and every pinned block is
+  appended to Page 1 in canonical order. `pages.flat()` still yields them for
+  `StudioSidebarTemplate`. Decision #62 rewritten; single-column templates are
+  untouched.
+- Tests: updated the two `computePages` pinned-page cases; new regressions in
+  `computePages`, `usePageLayout` (gengar wiring), and a multi-page
+  `StudioSidebarTemplate` render test (Experience/Education/Skills/
+  Certifications/Awards) asserting two pages with Awards on Page 2 and the
+  sidebar only on Page 1. 942 pass.
+- Files: `src/lib/pagination/computePages.ts` (+ test),
+  `src/lib/pagination/usePageLayout.test.tsx`,
+  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (942 pass). No e2e case added: the
+  regression is a pure packing + render test, and Playwright remains blocked
+  here.
 
 ### 2026-11-23 — Gray desk wraps the paper; zoom Reset floats
 - Task: the In Progress P0 item. The desk ended above the last page and the
@@ -1598,31 +1624,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/launcher/Launcher.tsx` (+ test), `e2e/a11y.spec.ts`,
   `e2e/flow.spec.ts`, `e2e/helpers.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (906 pass), `npm run lint`.
-
-### 2026-11-23 — One-page starter presets and a standalone Recent resumes section
-- Task: top P1 Queue item. All six role presets should open on one page, and the
-  home page should stop stacking recent resumes inside the scratch card and
-  repeating the free/private promises.
-- Presets: trimmed every sample to a one-page content budget (two-sentence
-  summaries, two bullets per project, three per experience role). Product
-  Manager also lost its third summary sentence and its two third project
-  bullets. Decision #82.
-- Launcher: **Recent resumes** moved out of the "Start from scratch" card into a
-  standalone `<section aria-labelledby="launcher-recent-heading">` that renders
-  only when saved rows or a list error exist. Before anything is saved the home
-  page still has exactly three primary regions; with a saved row it has four.
-  Decision #40 updated. The empty "Nothing saved yet" copy is gone.
-- Hero: removed the header "Private by default" pill and the repeated
-  "Everything is edited locally… No account, no AI, no cost" sentence, leaving
-  the single three-promise row as the only trust statement above the fold.
-  Decision #23 updated.
-- Tests: archetype budget cases, launcher standalone/hidden-recent cases, the
-  single-trust page assertion, and a Playwright loop that opens all six presets
-  and asserts the one-page pill (browser-unverified here).
-- Files: `src/lib/presets/archetypes.ts` (+ test),
-  `src/components/launcher/Launcher.tsx` (+ test), `src/app/page.tsx` (+ test),
-  `e2e/flow.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test`, `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

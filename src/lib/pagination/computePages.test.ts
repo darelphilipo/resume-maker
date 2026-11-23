@@ -91,7 +91,7 @@ describe("computePages", () => {
 });
 
 describe("computePages with sections pinned to Page 1", () => {
-  it("folds a trailing page holding only pinned sidebar blocks back into Page 1", () => {
+  it("anchors a trailing pinned sidebar block to Page 1", () => {
     const result = computePages(
       makeInput({
         sectionIds: ["experience", "skills"],
@@ -111,7 +111,7 @@ describe("computePages with sections pinned to Page 1", () => {
     expect(result.overflowPx).toBe(0);
   });
 
-  it("keeps a trailing page that still carries unpinned main content", () => {
+  it("anchors pinned blocks to Page 1 while main overflow keeps its own page", () => {
     const result = computePages(
       makeInput({
         sectionIds: ["experience", "projects", "skills"],
@@ -123,10 +123,45 @@ describe("computePages with sections pinned to Page 1", () => {
       }),
     );
 
+    // Skills render in Page 1's side column, so Page 2 carries only the main
+    // overflow and must not pay for the sidebar's height.
     expect(result.pages).toEqual([
-      ["__header", "experience"],
-      ["projects", "skills"],
+      ["__header", "experience", "skills"],
+      ["projects"],
     ]);
+  });
+
+  it("does not charge Page 1 sidebar blocks to Page 2's main-column budget", () => {
+    // The canonical order interleaves sidebar sections between main ones, so
+    // the old single-sequence packer pushed Awards onto an almost empty Page 3.
+    const result = computePages(
+      makeInput({
+        sectionIds: [
+          "experience",
+          "education",
+          "skills",
+          "certifications",
+          "awards",
+        ],
+        heights: {
+          experience: 900,
+          education: 500,
+          skills: 250,
+          certifications: 250,
+          awards: 200,
+        },
+        headerHeightPx: 100,
+        gapPx: 0,
+        contentHeightPx: 1000,
+        pinnedToFirstPage: new Set(["skills", "certifications"]),
+      }),
+    );
+
+    expect(result.pages).toEqual([
+      ["__header", "experience", "skills", "certifications"],
+      ["education", "awards"],
+    ]);
+    expect(result.overflowPx).toBe(0);
   });
 
   it("recognises split (entry-level) sidebar blocks", () => {
@@ -148,7 +183,7 @@ describe("computePages with sections pinned to Page 1", () => {
     ]);
   });
 
-  it("folds every trailing pinned-only page, not just the last one", () => {
+  it("anchors every pinned block to Page 1, not just the last one", () => {
     const result = computePages(
       makeInput({
         sectionIds: ["experience", "skills", "certifications"],

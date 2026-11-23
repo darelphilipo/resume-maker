@@ -1,17 +1,24 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { render, within } from "@testing-library/react";
+import { render, renderHook, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { encodeEntryBlock } from "@/lib/pagination/blockIds";
 import { HEADER_BLOCK_ID } from "@/lib/pagination/constants";
+import {
+  usePageLayout,
+  type MeasureFn,
+} from "@/lib/pagination/usePageLayout";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
+  AwardItemSchema,
   CertificationItemSchema,
+  EducationItemSchema,
   ExperienceItemSchema,
   SkillItemSchema,
 } from "@/lib/schema/resume.schema";
+import { pageGeometry } from "@/lib/units/pageGeometry";
 
 import { StudioSidebarTemplate } from "./StudioSidebarTemplate";
 
@@ -146,6 +153,130 @@ describe("StudioSidebarTemplate", () => {
         name: "Certifications",
       }),
     ).toBeNull();
+  });
+
+  it("keeps Awards on Page 2 when Page 1's sidebar holds Skills and Certifications", () => {
+    const doc = createEmptyResume("gengar");
+    // A single item per section keeps every plan atomic, so the injected
+    // heights are the exact packing blocks. The default order interleaves the
+    // sidebar sections between Education and Awards.
+    doc.metadata.page.gapY = 0;
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "exp-1",
+        company: "Analytical Engines",
+        position: "Engineer",
+      }),
+    ];
+    doc.sections.education.items = [
+      EducationItemSchema.parse({
+        id: "edu-1",
+        school: "Analytical University",
+        degree: "BSc",
+      }),
+    ];
+    doc.sections.skills.items = [
+      SkillItemSchema.parse({
+        id: "skill-1",
+        name: "Languages",
+        keywords: ["TypeScript"],
+      }),
+    ];
+    doc.sections.certifications.items = [
+      CertificationItemSchema.parse({
+        id: "cert-1",
+        name: "Cloud Architect",
+        issuer: "Example Institute",
+      }),
+    ];
+    doc.sections.awards.items = [
+      AwardItemSchema.parse({
+        id: "award-1",
+        title: "Best Paper",
+        awarder: "ACM",
+      }),
+    ];
+
+    const { contentHeightPx } = pageGeometry(
+      doc.metadata.page.format,
+      doc.metadata.page.marginX,
+      doc.metadata.page.marginY,
+    );
+    const headerHeightPx = 100;
+    const measure: MeasureFn = () => ({
+      headerHeightPx,
+      heights: {
+        experience: contentHeightPx - headerHeightPx - 1,
+        education: 500,
+        skills: 250,
+        certifications: 250,
+        awards: 200,
+      },
+    });
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+    const pages = result.current.pages;
+
+    // There is no Page 3: the sidebar sections belong to Page 1's side column
+    // and never consume Page 2's main-column budget.
+    expect(pages).toEqual([
+      ["__header", "experience", "skills", "certifications"],
+      ["education", "awards"],
+    ]);
+
+    const first = render(
+      <StudioSidebarTemplate doc={doc} pages={pages} pageIndex={0} />,
+    );
+    const firstMain = first.container.querySelector<HTMLElement>(".studio-main");
+    const firstSidebar =
+      first.container.querySelector<HTMLElement>(".studio-sidebar");
+
+    expect(firstSidebar).not.toBeNull();
+    expect(
+      within(firstSidebar as HTMLElement).getByRole("heading", {
+        name: "Skills",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(firstSidebar as HTMLElement).getByRole("heading", {
+        name: "Certifications",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(firstMain as HTMLElement).getByRole("heading", {
+        name: "Experience",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(firstMain as HTMLElement).queryByRole("heading", {
+        name: "Awards",
+      }),
+    ).toBeNull();
+
+    first.unmount();
+
+    const second = render(
+      <StudioSidebarTemplate doc={doc} pages={pages} pageIndex={1} />,
+    );
+    const secondMain =
+      second.container.querySelector<HTMLElement>(".studio-main");
+
+    expect(second.container.querySelector(".studio-layout")).toHaveClass(
+      "studio-layout--full",
+    );
+    expect(second.container.querySelector(".studio-sidebar")).toBeNull();
+    expect(secondMain).not.toBeNull();
+    expect(
+      within(secondMain as HTMLElement).getByRole("heading", {
+        name: "Education",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(secondMain as HTMLElement).getByRole("heading", {
+        name: "Awards",
+      }),
+    ).toBeInTheDocument();
+    expect(within(secondMain as HTMLElement).getByText("Best Paper")).toBeInTheDocument();
+    expect(second.queryByText("Cloud Architect")).toBeNull();
   });
 
   it("renders a single full-width column when there are no sidebar sections", () => {
