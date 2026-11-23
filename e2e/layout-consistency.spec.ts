@@ -606,35 +606,42 @@ for (const viewport of VIEWPORTS) {
         const modeHeader = document.querySelector<HTMLElement>(
           "[data-preview-mode-header]",
         );
-        const chrome = document.querySelector<HTMLElement>(
+        // A one-page resume has no status strip: the "1 page" count lives in
+        // the calm mode bar, so that bar is the relevant chrome in that case.
+        const strip = document.querySelector<HTMLElement>(
           "[data-preview-header]",
         );
         const name = document.querySelector<HTMLElement>(
           "#panel-preview .resume-page .resume-name",
         );
 
-        if (!modeHeader || !chrome || !name) {
+        if (!modeHeader || !name) {
           return null;
         }
 
         const mode = modeHeader.getBoundingClientRect();
-        const sticky = chrome.getBoundingClientRect();
+        const chrome = (strip ?? modeHeader).getBoundingClientRect();
 
         return {
           modeBottom: mode.bottom,
-          chromeTop: sticky.top,
-          chromeBottom: sticky.bottom,
+          chromeTop: chrome.top,
+          chromeBottom: chrome.bottom,
           nameTop: name.getBoundingClientRect().top,
           modePosition: getComputedStyle(modeHeader).position,
-          chromePosition: getComputedStyle(chrome).position,
+          chromePosition: strip ? getComputedStyle(strip).position : null,
+          hasStrip: strip !== null,
         };
       });
 
       expect(geometry).not.toBeNull();
       const result = geometry as NonNullable<typeof geometry>;
 
-      expect(result.modePosition).toBe("sticky");
-      expect(result.chromePosition).toBe("sticky");
+      if (viewport.name !== "mobile") {
+        expect(result.modePosition).toBe("sticky");
+      }
+      if (result.hasStrip) {
+        expect(result.chromePosition).toBe("sticky");
+      }
       // The chrome occupies normal flow above the paper, so Page 1 starts
       // below it instead of being covered at rest.
       expect(result.nameTop).toBeGreaterThanOrEqual(result.chromeBottom);

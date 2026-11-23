@@ -6,10 +6,7 @@ import {
   centeredCanvasOffsetX,
   computeCanvasFrame,
 } from "@/lib/pagination/canvasFrame";
-import {
-  FIT_VIEWPORT_PADDING_PX,
-  computeWidthFitScale,
-} from "@/lib/pagination/fitScale";
+import { computeWidthFitScale } from "@/lib/pagination/fitScale";
 import type { PageLayout } from "@/lib/pagination/usePageLayout";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
@@ -240,8 +237,10 @@ describe("LiveCanvasViewport", () => {
     const content = view.container.querySelector<HTMLElement>(
       ".react-transform-component",
     );
+    // The centre is derived from the scroller's real content width (stubbed to
+    // the same value here), not a padded guess that leaves uneven margins.
     const expectedOffset = centeredCanvasOffsetX(
-      containerWidth - FIT_VIEWPORT_PADDING_PX,
+      containerWidth,
       geometry.widthPx,
     );
 
@@ -337,6 +336,16 @@ describe("LiveCanvasViewport", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("renders no overflow strip for a one-page resume", async () => {
+    await renderCanvas(1);
+
+    // The "1 page" count lives in the mode bar on a single page, so the only
+    // chrome shown here is a trim/reset strip when those controls are active.
+    expect(
+      document.querySelector("[data-page-overflow]"),
+    ).not.toBeInTheDocument();
+  });
+
   it("scans rendered bullets and surfaces trim tips in the toolbar", async () => {
     await renderCanvas(1);
 
@@ -353,36 +362,39 @@ describe("LiveCanvasViewport", () => {
     ).toHaveTextContent(/long bullet/);
   });
 
-  it("renders the page count in a toolbar above the canvas, never over the page", async () => {
+  it("renders the page count in the slim strip above the canvas, never over the page", async () => {
     const { wrapper } = await renderCanvas(2);
 
     const badge = screen.getByText("2 pages");
-    const toolbar = badge.closest("[data-canvas-toolbar]");
+    const strip = badge.closest("[data-page-overflow]");
+    const header = badge.closest("[data-preview-header]");
 
-    expect(toolbar).not.toBeNull();
-    // The badge and the Reset control live outside the transform wrapper, so
-    // no zoom level or paper size can make them cover the resume header.
-    expect(wrapper.contains(toolbar)).toBe(false);
+    expect(strip).not.toBeNull();
+    expect(header).toContainElement(strip as HTMLElement);
+    // The strip lives outside the transform wrapper, so no zoom level or paper
+    // size can make it cover the resume header.
+    expect(wrapper.contains(header)).toBe(false);
     expect(wrapper.contains(badge)).toBe(false);
     expect(
-      toolbar!.compareDocumentPosition(wrapper) &
+      header!.compareDocumentPosition(wrapper) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
-  it("keeps the page-count bar outside the transform wrapper", async () => {
+  it("keeps the page-count strip outside the transform wrapper", async () => {
     const { wrapper } = await renderCanvas(2);
 
-    const toolbar = screen.getByText("2 pages").closest("[data-canvas-toolbar]");
-    const header = toolbar?.closest("[data-preview-header]");
+    const badge = screen.getByText("2 pages");
+    const header = badge.closest("[data-preview-header]");
 
-    expect(toolbar).not.toBeNull();
-    // The bar sits above `<TransformWrapper>`, so no scale or pan offset can
+    // The strip sits above `<TransformWrapper>`, so no scale or pan offset can
     // move it over the candidate's name.
     expect(header).not.toBeNull();
     expect(header).not.toContainElement(wrapper);
-    expect(toolbar!.compareDocumentPosition(wrapper) &
-      Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      header!.compareDocumentPosition(wrapper) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("offers an inline Reset fit pill whenever a reduced fit scale is applied", async () => {
@@ -459,7 +471,7 @@ describe("LiveCanvasViewport", () => {
     }
   });
 
-  it("groups the banner and page count in a header above Page 1", async () => {
+  it("groups the warning and page count in one slim strip above Page 1", async () => {
     const { wrapper } = await renderCanvas(2);
 
     const badge = screen.getByText("2 pages");
@@ -470,10 +482,11 @@ describe("LiveCanvasViewport", () => {
     expect(header).toHaveClass("shrink-0", "z-10");
     expect(header).toHaveClass("lg:sticky", "lg:top-14");
     expect(header).not.toHaveClass("sticky");
-    // The chrome bleeds to the trimmed mobile padding, and restores the
-    // desktop padding from `lg`.
-    expect(header).toHaveClass("-mx-2", "-mt-2", "px-2", "pt-2");
-    expect(header).toHaveClass("lg:-mx-4", "lg:-mt-4", "lg:px-4", "lg:pt-3");
+    // One compact row, bleeding to the trimmed mobile padding and restoring
+    // the desktop padding from `lg` — no tall yellow box or stacked toolbar.
+    expect(header).toHaveClass("-mx-2", "px-2", "py-1.5", "flex-nowrap");
+    expect(header).toHaveClass("lg:-mx-4", "lg:px-4");
+    expect(header).not.toHaveClass("flex-col", "gap-2", "bg-amber-50");
     expect(header).toContainElement(badge);
     expect(wrapper.contains(header)).toBe(false);
     expect(
@@ -490,27 +503,30 @@ describe("LiveCanvasViewport", () => {
     expect(root).toHaveClass("lg:p-4", "lg:gap-4");
   });
 
-  it("keeps the page count and trim pills in one compact, scrollable row", async () => {
+  it("keeps the count, trim and reset pills in one compact, scrollable row", async () => {
     const doc = createEmptyResume();
     doc.metadata.page.fitScale = 0.85;
 
     await renderCanvas(2, { doc, onFit: vi.fn() });
 
     const badge = screen.getByText("2 pages");
-    const toolbar = badge.closest("[data-canvas-toolbar]")!;
+    const header = badge.closest("[data-preview-header]")!;
+    const row = header.firstElementChild as HTMLElement;
+    const toolbar = header.querySelector<HTMLElement>("[data-canvas-toolbar]")!;
     const trim = screen.getByRole("button", { name: "Trim tips (1)" });
     const reset = screen.getByRole("button", { name: "Reset fit to 100%" });
 
-    // Pills stay on one line and scroll sideways on a very narrow phone rather
-    // than wrapping into several tall rows inside the fixed preview chrome.
-    expect(toolbar).toHaveClass(
+    // One line that scrolls sideways on a very narrow phone rather than
+    // wrapping into several tall rows inside the fixed preview chrome.
+    expect(row).toHaveClass(
       "flex-nowrap",
       "overflow-x-auto",
       "no-scrollbar",
     );
-    expect(badge).toHaveClass("h-8", "text-xs", "px-2.5");
+    expect(toolbar).toHaveClass("flex-nowrap", "gap-1.5");
     expect(trim).toHaveClass("h-8", "text-xs");
     expect(reset).toHaveClass("h-8", "text-xs");
+    expect(header.querySelectorAll("[data-page-overflow]")).toHaveLength(1);
   });
 
   it("keeps the overflow banner in normal flow above the ATS text view", () => {
@@ -522,7 +538,7 @@ describe("LiveCanvasViewport", () => {
       />,
     );
 
-    const banner = screen.getByText("Spills onto 2 pages");
+    const banner = screen.getByText("2 pages");
     const header = banner.closest("[data-preview-header]");
     const ats = container.querySelector(
       '[aria-label="ATS plain text preview"]',
@@ -616,14 +632,17 @@ describe("LiveCanvasViewport", () => {
     );
   });
 
-  it("reserves the scrollbar gutter on the mobile canvas scroller", async () => {
+  it("reserves the gutter only on desktop and pads the mobile scroller", async () => {
     const { view } = await renderCanvas(2);
     const scroll = view.container.querySelector("[data-canvas-scroll]");
 
     expect(scroll).not.toBeNull();
-    // The scrollbar space is always reserved, so showing or hiding it can no
-    // longer change the width the fit transform is derived from.
-    expect(scroll).toHaveClass("[scrollbar-gutter:stable]");
+    // Phones use overlay scrollbars, so a permanently reserved gutter left a
+    // phantom gap on the right; only the desktop panel needs a stable gutter.
+    expect(scroll).toHaveClass("lg:[scrollbar-gutter:stable]");
+    expect(scroll).not.toHaveClass("[scrollbar-gutter:stable]");
+    // Top/bottom breathing room keeps Page 1's edge and shadow from clipping.
+    expect(scroll).toHaveClass("py-3");
   });
 
   it("settles the fit transform when the observer alternates by a scrollbar width", async () => {

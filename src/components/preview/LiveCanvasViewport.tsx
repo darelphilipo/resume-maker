@@ -20,10 +20,7 @@ import {
   centeredCanvasOffsetX,
   computeCanvasFrame,
 } from "@/lib/pagination/canvasFrame";
-import {
-  FIT_VIEWPORT_PADDING_PX,
-  computeWidthFitScale,
-} from "@/lib/pagination/fitScale";
+import { computeWidthFitScale } from "@/lib/pagination/fitScale";
 import type { PageLayout } from "@/lib/pagination/usePageLayout";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
@@ -170,22 +167,22 @@ function WheelZoom({
 }
 
 /**
- * Preview chrome: the page overflow banner and the page count / Reset toolbar.
+ * The single slim Preview status strip.
  *
  * On phones this is a `shrink-0` row in the Preview column's flex stack, so it
  * sits *outside* the canvas scroller and pages can never bleed above or behind
- * it. At `lg` the preview panel itself scrolls, so the same block sticks below
+ * it. At `lg` the preview panel itself scrolls, so the same strip sticks below
  * the `Visual`/`ATS text` row instead (see CONTEXT Decisions #33 and #37).
+ * A one-page resume renders no strip at all: its "1 page" label lives in the
+ * mode bar, which reclaims the ~110px the old yellow banner + toolbar used.
  */
 function PreviewChrome({
-  banner,
   sticky = true,
   children,
 }: {
-  banner: ReactNode;
   /**
    * Sticky only over the canvas. The ATS text view shares the preview panel's
-   * single scroll region, so its banner must stay in normal flow or it would
+   * single scroll region, so its strip must stay in normal flow or it would
    * cover the "Copy all" button while the panel scrolls.
    */
   sticky?: boolean;
@@ -194,32 +191,38 @@ function PreviewChrome({
   return (
     <div
       data-preview-header=""
-      className={`z-10 -mx-2 -mt-2 flex shrink-0 flex-col gap-2 border-b border-line/70 bg-background/95 px-2 pb-2 pt-2 backdrop-blur lg:-mx-4 lg:-mt-4 lg:px-4 lg:pt-3${
+      className={`z-10 -mx-2 flex shrink-0 flex-nowrap items-center border-b border-line/70 bg-background/95 px-2 py-1.5 backdrop-blur lg:-mx-4 lg:px-4${
         sticky ? " lg:sticky lg:top-14" : ""
       }`}
     >
-      {banner}
       {children}
     </div>
   );
 }
 
+function StripSeparator() {
+  return (
+    <span aria-hidden className="shrink-0 text-line">
+      ·
+    </span>
+  );
+}
+
 /**
- * Page-count pill plus the two fit/zoom resets.
+ * Optional fit/zoom/trim actions, sharing one row with the overflow summary.
  *
- * This bar is rendered *above* `<TransformWrapper>`, in the sticky preview
- * header, so it can never overlap the candidate's name in the top-left corner
- * of Page 1 at any zoom level or paper size.
+ * Rendered *above* `<TransformWrapper>`, in the sticky preview strip, so no
+ * zoom level or paper size can make them overlap the candidate's name. The bar
+ * returns `null` when every control is idle, so a clean one-page resume owes
+ * no height to preview chrome at all.
  */
 function CanvasToolbar({
-  pageCount,
   appliedFitScale,
   isZoomed,
   bulletReport,
   onResetZoom,
   onResetFit,
 }: {
-  pageCount: number;
   appliedFitScale: number;
   isZoomed: boolean;
   bulletReport?: BulletLintReport | null;
@@ -227,32 +230,25 @@ function CanvasToolbar({
   onResetFit?: () => void;
 }) {
   const canResetFit = onResetFit !== undefined && appliedFitScale < 1;
+  const hasTrimTips = (bulletReport?.issues.length ?? 0) > 0;
 
   return (
     <div
       data-canvas-toolbar=""
-      className="flex min-h-8 flex-nowrap items-center justify-between gap-2 overflow-x-auto no-scrollbar"
+      className="ml-auto flex min-h-8 shrink-0 flex-nowrap items-center justify-end gap-1.5"
     >
-      <span
-        aria-live="polite"
-        className="inline-flex h-8 shrink-0 items-center rounded-full border border-line/70 bg-surface px-2.5 text-xs font-medium text-muted shadow-sm"
-      >
-        {pageCount} {pageCount === 1 ? "page" : "pages"}
-      </span>
-      <div className="ml-auto flex shrink-0 items-center justify-end gap-1.5">
-        <BulletTrimTips report={bulletReport} />
-        {canResetFit ? (
-          <button
-            type="button"
-            onClick={onResetFit}
-            aria-label="Reset fit to 100%"
-            className="pointer-events-auto flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface/95 px-2.5 text-xs font-semibold text-primary shadow-sm backdrop-blur-sm transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
-          >
-            Reset fit
-          </button>
-        ) : null}
-        {isZoomed ? <CanvasResetButton onReset={onResetZoom} /> : null}
-      </div>
+      {hasTrimTips ? <BulletTrimTips report={bulletReport} /> : null}
+      {canResetFit ? (
+        <button
+          type="button"
+          onClick={onResetFit}
+          aria-label="Reset fit to 100%"
+          className="pointer-events-auto flex h-8 shrink-0 items-center rounded-full border border-line bg-surface/95 px-2.5 text-xs font-semibold text-primary shadow-sm backdrop-blur-sm transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+        >
+          Reset fit
+        </button>
+      ) : null}
+      {isZoomed ? <CanvasResetButton onReset={onResetZoom} /> : null}
     </div>
   );
 }
@@ -338,7 +334,12 @@ export function LiveCanvasViewport({
    * the observer would alternate between the two widths forever (Decision #69).
    */
   const widthStateRef = useRef<StableWidthState>(initialStableWidthState);
-  const [containerWidth, setContainerWidth] = useState<number | null>(null);
+  const [viewportWidth, setViewportWidth] = useState<{
+    /** Root width, including its responsive padding (drives the fit scale). */
+    stage: number;
+    /** Scroller content width (drives the centring offset). */
+    scroller: number;
+  } | null>(null);
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
   /**
    * A re-measure blanks the paper stack for a frame. On desktop the Preview
@@ -407,7 +408,18 @@ export function LiveCanvasViewport({
       });
 
       widthStateRef.current = result.state;
-      setContainerWidth(result.width);
+
+      // Centring uses the scroller's content box (excluding the root's padding
+      // and the desktop-only gutter) for equal left/right margins. Derive it
+      // from the *stabilized* stage width so an A/B scrollbar oscillation
+      // cannot sneak back in through the offset and make the paper dance.
+      const scrollerWidth = scrollRef.current?.clientWidth ?? width;
+      const widthDelta = Math.max(0, width - scrollerWidth);
+
+      setViewportWidth({
+        stage: result.width,
+        scroller: Math.max(0, result.width - widthDelta),
+      });
     };
 
     updateWidth();
@@ -431,10 +443,10 @@ export function LiveCanvasViewport({
   );
 
   const fitScale =
-    containerWidth === null
+    viewportWidth === null
       ? null
       : computeWidthFitScale({
-          containerWidthPx: containerWidth,
+          containerWidthPx: viewportWidth.stage,
           pageWidthPx: geometry.widthPx,
           minScale: MIN_SCALE,
           maxScale: FIT_MAX_SCALE,
@@ -452,15 +464,12 @@ export function LiveCanvasViewport({
 
   // `fitScale` is capped at 1, so the paper can be narrower than the scroller on
   // a wide tablet or a phone showing the desktop site. Centre the fitted canvas
-  // instead of leaving the leftover space as a gray strip on the right.
-  const canvasViewportWidth =
-    containerWidth === null
-      ? null
-      : Math.max(0, containerWidth - FIT_VIEWPORT_PADDING_PX);
+  // in the scroller's real content box instead of a padded guess, so the left
+  // and right margins stay equal (Decision #85).
   const fitOffsetX =
-    frame === null || canvasViewportWidth === null
+    frame === null || viewportWidth === null
       ? 0
-      : centeredCanvasOffsetX(canvasViewportWidth, frame.width);
+      : centeredCanvasOffsetX(viewportWidth.scroller, frame.width);
 
   const lineHeightPx =
     doc.metadata.typography.body.fontSize *
@@ -529,18 +538,12 @@ export function LiveCanvasViewport({
 
   const gestures = canvasGestureConfig(isCoarsePointer);
 
-  const banner = (
-    <PageOverflowBanner
-      overflowPx={layout.overflowPx}
-      pageCount={layout.pages.length}
-      lineHeightPx={lineHeightPx}
-      fitScale={layout.fitScale}
-      fitBlockedReason={layout.fitBlockedReason ?? null}
-      onFit={onFit}
-    />
-  );
   const showOverflowBanner = layout.overflowPx > 0 || layout.pages.length > 1;
   const showCanvas = mode === "canvas" && frame !== null && !layout.isMeasuring;
+  const hasTrimTips = (bulletReport?.issues.length ?? 0) > 0;
+  const canResetFit = onFit !== undefined && appliedFitScale < 1;
+  const showToolbar = showCanvas && (hasTrimTips || canResetFit || isZoomed);
+  const showChrome = showOverflowBanner || showToolbar;
 
   useIsomorphicLayoutEffect(() => {
     if (
@@ -588,18 +591,28 @@ export function LiveCanvasViewport({
       className="relative flex min-h-0 w-full flex-1 flex-col gap-2 overflow-clip rounded-xl px-2 py-2 lg:flex-none lg:gap-4 lg:p-4"
     >
       {layout.measureLayer}
-      {(mode === "canvas" || showOverflowBanner) ? (
-        <PreviewChrome banner={banner} sticky={mode === "canvas"}>
-          {showCanvas ? (
-            <CanvasToolbar
+      {showChrome ? (
+        <PreviewChrome sticky={mode === "canvas"}>
+          <div className="flex min-h-8 w-full min-w-0 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
+            <PageOverflowBanner
+              overflowPx={layout.overflowPx}
               pageCount={layout.pages.length}
-              appliedFitScale={appliedFitScale}
-              isZoomed={isZoomed}
-              bulletReport={bulletReport}
-              onResetZoom={resetZoom}
-              onResetFit={onFit ? resetFit : undefined}
+              lineHeightPx={lineHeightPx}
+              fitScale={layout.fitScale}
+              fitBlockedReason={layout.fitBlockedReason ?? null}
+              onFit={onFit}
             />
-          ) : null}
+            {showOverflowBanner && showToolbar ? <StripSeparator /> : null}
+            {showToolbar ? (
+              <CanvasToolbar
+                appliedFitScale={appliedFitScale}
+                isZoomed={isZoomed}
+                bulletReport={bulletReport}
+                onResetZoom={resetZoom}
+                onResetFit={onFit ? resetFit : undefined}
+              />
+            ) : null}
+          </div>
         </PreviewChrome>
       ) : null}
       {/*
@@ -610,7 +623,7 @@ export function LiveCanvasViewport({
       <div
         ref={scrollRef}
         data-canvas-scroll=""
-        className="relative isolate min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] lg:flex-none lg:overflow-visible"
+        className="relative isolate min-h-0 flex-1 overflow-y-auto overscroll-contain py-3 lg:[scrollbar-gutter:stable] lg:flex-none lg:overflow-visible"
       >
         {showCanvas ? (
           // The gray desk stops at the bottom of the page stack instead of

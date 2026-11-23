@@ -125,6 +125,30 @@ describe("PageOverflowBanner", () => {
     expect(screen.getByRole("status")).toHaveTextContent("by ~1 lines");
   });
 
+  it("is a slim inline strip, not a tall yellow banner box", () => {
+    const { container } = render(
+      <PageOverflowBanner
+        overflowPx={42}
+        pageCount={2}
+        lineHeightPx={14}
+        fitScale={0.82}
+        onFit={() => undefined}
+      />,
+    );
+
+    const strip = container.querySelector("[data-page-overflow]");
+
+    expect(strip).not.toBeNull();
+    expect(strip).toHaveClass("flex-nowrap", "text-xs");
+    expect(strip).not.toHaveClass(
+      "page-overflow-warning",
+      "bg-amber-50",
+      "flex-wrap",
+      "px-3",
+      "py-2",
+    );
+  });
+
   it("keeps the trim summary in the Trim tips panel, not the spill banner", () => {
     render(
       <PageOverflowBanner overflowPx={0} pageCount={2} lineHeightPx={14} />,

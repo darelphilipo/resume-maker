@@ -220,11 +220,14 @@ in control of every line, and your data stays on your device.
   bar stays flush with the screen edge while you switch tabs or try a new accent,
   template, or paper size. On a phone, the Preview controls collapse into one
   tight, sideways-scrollable row and the panel's extra padding is trimmed, so the
-  resume itself fills as much of the screen as possible. On tall tablets and
-  phones showing the desktop site,
-  the fitted page sits centred with even side margins, the gray preview desk ends
-  with the last page instead of trailing into empty space, and short Content or
-  Design cards stay vertically balanced above the bar.
+  resume itself fills as much of the screen as possible. The top bar keeps just
+  the **Visual / ATS text** switch and one **Review** pill; the occasional review
+  tools live inside it instead of crowding the live resume. Page 1 keeps
+  breathing room above and below, so its top edge and shadow never clip. On tall
+  tablets and phones showing the desktop site, the fitted page sits centred with
+  even side margins, the gray preview desk ends with the last page instead of
+  trailing into empty space, and short Content or Design cards stay vertically
+  balanced above the bar.
 - **Scroll or zoom the preview naturally**: on a phone, two fingers zoom the
   resume and a one-finger drag moves freely in any direction across the zoomed
   page. At normal size a one-finger swipe scrolls a multi-page preview smoothly
@@ -245,9 +248,15 @@ in control of every line, and your data stays on your device.
   room at the right edge, so right-aligned dates never lose their last pixels.
   Whenever a reduced fit is active, a **Reset fit** pill in the preview header
   returns the page to 100%.
+- **A calm page count.** A resume that fits on one page just shows a quiet
+  **1 page** label in the top bar, with no extra row stealing height from the
+  paper. When it spills, one slim strip combines the count, **Fit to 1 Page**,
+  and **Trim tips** (with the number of culprits) instead of a tall warning box
+  plus a second toolbar — the duplicate count is gone and the live resume keeps
+  the reclaimed space.
 - **Trim tips** find the bullets that quietly cost you a line. When a bullet
   wraps and leaves only a word or two on its last line, or grows into a long
-  block, the preview counts it. Tap **Trim tips** in the preview header to open a
+  block, the preview counts it. Tap **Trim tips** in the slim strip to open a
   dismissible list with each bullet's opening words and a plain-language reason;
   it covers the preview only while open, so the resume stays fully readable on a
   phone. Trimming those bullets can reclaim whole lines before you shrink the
@@ -268,22 +277,23 @@ in control of every line, and your data stays on your device.
   or Lever in one tap, and compact **Copy** buttons let you paste just one
   section or one role. The copy bar and every section scroll together as one
   smooth page, with no nested box to fight against on a phone.
-- **Anonymize for review**: tap the **Anonymize** pill in the preview header to
-  replace your name, contact details, website, profile links, photo, and company
-  or school names with neutral placeholders. Each role's, school's, volunteer
-  entry's, and custom entry's location is replaced too, so personal geography
-  cannot give you away. Project, certification, publication, and custom-section
-  links are replaced as well, so a username inside a URL cannot leak. The banner
-  makes review mode obvious, the Visual and ATS views and the PDF all use the
-  hidden version, and your saved resume is never changed — tap the pill again to
-  return to the real details.
-- **6-Second recruiter scan**: tap the **6s Scan** pill beside **Anonymize** to
-  see your resume the way a hurried recruiter does. Body prose fades back while
-  your name, headline, section headings, job titles, companies, dates, bold
-  phrases, and numbers such as `40%`, `$1.2M`, or `3x` stay at full contrast, so
-  you can tell at a glance whether your impact pops out. It is a preview lens
-  only: the scan is never added to the printed PDF or your saved resume, and one
-  more tap turns it off.
+- **Anonymize for review**: open **Review** in the preview bar and switch on
+  **Anonymize** to replace your name, contact details, website, profile links,
+  photo, and company or school names with neutral placeholders. Each role's,
+  school's, volunteer entry's, and custom entry's location is replaced too, so
+  personal geography cannot give you away. Project, certification, publication,
+  and custom-section links are replaced as well, so a username inside a URL
+  cannot leak. A dot on the **Review** pill and a note in the menu make review
+  mode obvious, the Visual and ATS views and the PDF all use the hidden version,
+  and your saved resume is never changed — switch it off again to return to the
+  real details.
+- **6-Second recruiter scan**: in the same **Review** menu, switch on **6s Scan**
+  to see your resume the way a hurried recruiter does. Body prose fades back
+  while your name, headline, section headings, job titles, companies, dates,
+  bold phrases, and numbers such as `40%`, `$1.2M`, or `3x` stay at full
+  contrast, so you can tell at a glance whether your impact pops out. It is a
+  preview lens only: the scan is never added to the printed PDF or your saved
+  resume, and you switch it off the same way.
 - **Job description keyword matcher**: tap **Match JD** in the Content panel
   header to open the matcher on any device, then paste a posting to see which
   of its keywords already appear in your resume and which are missing. Common
@@ -294,10 +304,10 @@ in control of every line, and your data stays on your device.
   it opens as a centred modal. Either way one tap on the **X** (or the dimmed
   background) closes it outright, with no half-collapsed bar left behind.
   Matching runs locally with simple word heuristics, not AI.
-- The **Visual / ATS text** switch, page-count pill, fit/zoom reset pills, and
-  overflow warning stay pinned above the paper while you scroll, so they never
-  cover your name or header — and the paper stops cleanly below that header
-  instead of sliding underneath it.
+- The **Visual / ATS text** switch and **Review** pill stay pinned in one calm
+  top bar, and the slim count/fit/trim strip sits just above the paper when it
+  is needed, so none of them ever cover your name or header — and the paper
+  stops cleanly below that chrome instead of sliding underneath it.
 - Print/PDF filenames are generated from your name, headline, and date. While
   **Anonymize** is on, the filename uses the placeholder name too, so the file
   itself does not reveal who the resume belongs to.

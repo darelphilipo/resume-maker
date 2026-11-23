@@ -1232,10 +1232,43 @@ rediscover.
        after it. `Bullet polish` and `Match JD` share
        `CONTENT_HEADER_ACTION_CLASS` (`contentHeaderAction.ts`), a
        `rounded-full border-line bg-surface` pill with a `pointer-coarse:min-h-11`
-       target, so neither drifts into a competing CTA. The Preview toolbar keeps
-       a `[data-preview-toolbar-divider]` hairline between the
-       `Visual | ATS text` mode group and the `6s Scan` / **Anonymize** review
-       tools.
+       target, so neither drifts into a competing CTA. The Preview toolbar once
+       kept a hairline between the `Visual | ATS text` mode group and the review
+       tools; those tools now live behind one **Review** pill (#84).
+
+   84. **The Preview bar has two controls and a conditional slim strip.**
+      `EditorWorkspace` owns the calm `[data-preview-mode-header]`: only the
+      `Visual | ATS text` group plus `ReviewMenu`, a compact pill with an
+      `aria-hidden` dot while 6s Scan or Anonymize is on. `ReviewMenu` portals
+      a `CenteredModal` with `role="switch"` toggles for the two review lenses,
+      so no review control occupies the mode bar. A clean one-page resume adds
+      a quiet `[data-preview-page-label]` **"1 page"** inside that bar and
+      renders **no** `[data-preview-header]` row at all. Once the resume spills
+      (or a trim/reset control is active), `LiveCanvasViewport` renders a
+      single slim `[data-preview-header]` strip combining `PageOverflowBanner`
+      (an inline `[data-page-overflow]` with the count, optional `~N lines` and
+      Fit/blocked copy) and `CanvasToolbar` (trim, Reset fit, Reset zoom). The
+      yellow `page-overflow-warning` box and the duplicate page-count pill are
+      gone. Keep the count out of both places at once: the label lives in the
+      mode bar only for `pages.length <= 1`, the strip's count only for `> 1`.
+      `role="status"` on the strip and sr-only "Spills onto" / "Runs onto page
+      N by" prefixes preserve the old accessible text while the visible copy
+      stays short.
+
+   85. **Fit centring uses the scroller's content width; the gutter is desktop
+      only.** `[data-canvas-scroll]` gained `py-3` so Page 1's edge and shadow
+      never clip at the top of its scroller, and `[scrollbar-gutter:stable]`
+      became `lg:[scrollbar-gutter:stable]` because phones use overlay
+      scrollbars and a permanent gutter left a phantom right-side gap.
+      `LiveCanvasViewport` measures both a *stage* width (root `clientWidth`,
+      still fed to `computeWidthFitScale` with its 32px + 12px budgets) and a
+      *scroller* width for `centeredCanvasOffsetX`. The scroller width is
+      derived as
+      `stabilizedStageWidth - (rawStageWidth - rawScrollerWidth)`, not read raw:
+      otherwise an A/B scrollbar oscillation slipped back in through
+      `fitOffsetX` and made the transform dance even though the height guard
+      settled. The delta excludes the root's `px-2 lg:p-4` padding and the
+      desktop gutter, so margins stay equal at every width.
 
 ## Verification and tooling
 

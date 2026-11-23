@@ -101,6 +101,11 @@ function expandBasics(): void {
   fireEvent.click(screen.getByRole("button", { name: /Basics/ }));
 }
 
+/** The two review lenses now live behind the single Review pill in the bar. */
+function openReviewMenu(): void {
+  fireEvent.click(screen.getByRole("button", { name: "Review" }));
+}
+
 describe("EditorWorkspace", () => {
   it("updates the header name while typing, without waiting for a blur", async () => {
     const user = userEvent.setup();
@@ -160,55 +165,57 @@ describe("EditorWorkspace", () => {
     });
     expect(screen.getByTestId("canvas-name")).toHaveTextContent("Grace Hopper");
 
-    const toggle = screen.getByRole("button", { name: "Anonymize" });
+    openReviewMenu();
+    const toggle = screen.getByRole("switch", { name: "Anonymize" });
 
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).toHaveAttribute("aria-checked", "false");
     expect(
       document.querySelector("[data-anonymize-banner]"),
     ).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
 
-    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(toggle).toHaveAttribute("aria-checked", "true");
     // The center canvas switches to the alias, but the editor header keeps the
     // real resume name and the store still holds the unsaved draft.
     expect(screen.getByTestId("canvas-name")).toHaveTextContent(ANONYMIZED_NAME);
     expect(
       screen.getByRole("heading", { level: 1, name: "Grace Hopper" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(document.querySelector("[data-anonymize-banner]")).toHaveTextContent(
       "your saved resume is unchanged",
     );
     expect(useResumeStore.getState().doc.basics.name).toBe("");
 
     fireEvent.click(toggle);
 
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).toHaveAttribute("aria-checked", "false");
     expect(screen.getByTestId("canvas-name")).toHaveTextContent("Grace Hopper");
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(
+      document.querySelector("[data-anonymize-banner]"),
+    ).not.toBeInTheDocument();
   });
 
   it("toggles the session-only 6-second recruiter scan in the preview", async () => {
     await renderReadyWorkspace();
 
-    const toggle = screen.getByRole("button", {
-      name: "6-second recruiter scan",
-    });
+    openReviewMenu();
+    const toggle = screen.getByRole("switch", { name: "6s Scan" });
     const canvas = screen.getByTestId("preview-canvas");
 
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).toHaveAttribute("aria-checked", "false");
     expect(canvas).toHaveAttribute("data-scan-highlight", "false");
 
     fireEvent.click(toggle);
 
-    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(toggle).toHaveAttribute("aria-checked", "true");
     expect(canvas).toHaveAttribute("data-scan-highlight", "true");
     // Session-only: the scan is a preview lens, never a document edit.
     expect(useResumeStore.getState().doc.metadata.template).toBe("onyx");
 
     fireEvent.click(toggle);
 
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).toHaveAttribute("aria-checked", "false");
     expect(canvas).toHaveAttribute("data-scan-highlight", "false");
   });
 
@@ -232,7 +239,8 @@ describe("EditorWorkspace", () => {
         name: "Grace Hopper",
       });
 
-      fireEvent.click(screen.getByRole("button", { name: "Anonymize" }));
+      openReviewMenu();
+      fireEvent.click(screen.getByRole("switch", { name: "Anonymize" }));
       fireEvent.click(screen.getByRole("button", { name: "Save PDF" }));
 
       await waitFor(() => expect(print).toHaveBeenCalledTimes(1), {
@@ -553,13 +561,11 @@ describe("EditorWorkspace", () => {
     const visual = screen.getByRole("button", { name: "Visual" });
     const header = visual.closest<HTMLElement>("[data-preview-mode-header]")!;
     const controls = [visual, screen.getByRole("button", { name: "ATS text" })];
-    const scan = screen.getByRole("button", {
-      name: "6-second recruiter scan",
-    });
-    const anonymize = screen.getByRole("button", { name: "Anonymize" });
+    const review = screen.getByRole("button", { name: "Review" });
 
     // One tight row that scrolls sideways instead of wrapping into several
-    // stacked rows that would eat the resume preview height.
+    // stacked rows that would eat the resume preview height. The review lenses
+    // no longer crowd it: they live behind the single Review pill.
     expect(header).toHaveClass(
       "flex-nowrap",
       "overflow-x-auto",
@@ -567,35 +573,44 @@ describe("EditorWorkspace", () => {
     );
     expect(header).toHaveClass("lg:flex-wrap", "lg:overflow-visible");
 
-    for (const control of [...controls, scan, anonymize]) {
+    for (const control of [...controls, review]) {
       expect(control).toHaveClass("h-8", "text-xs", "px-2.5");
     }
+    expect(header.querySelector("[data-preview-toolbar-divider]")).toBeNull();
+    expect(
+      screen.queryByRole("switch", { name: "6s Scan" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("separates view modes from review tools with a hairline divider", async () => {
+  it("shows a subtle 1-page label in the top bar instead of an extra chrome row", async () => {
     await renderReadyWorkspace();
 
-    const header = screen
-      .getByRole("button", { name: "Visual" })
-      .closest<HTMLElement>("[data-preview-mode-header]")!;
-    const divider = header.querySelector<HTMLElement>(
-      "[data-preview-toolbar-divider]",
-    );
-    const modes = screen.getByRole("group", { name: "Preview mode" });
-    const scan = screen.getByRole("button", {
-      name: "6-second recruiter scan",
-    });
+    const visual = screen.getByRole("button", { name: "Visual" });
+    const header = visual.closest<HTMLElement>("[data-preview-mode-header]")!;
+    const label = header.querySelector<HTMLElement>("[data-preview-page-label]");
+    const review = screen.getByRole("button", { name: "Review" });
 
-    expect(divider).not.toBeNull();
-    expect(divider).toHaveClass("h-5", "w-px", "bg-line");
+    expect(label).toHaveTextContent("1 page");
+    expect(label).toHaveClass("text-xs", "text-muted");
+    expect(label!.compareDocumentPosition(review) &
+      Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("marks the Review pill when a review tool is active", async () => {
+    await renderReadyWorkspace();
+
+    const review = screen.getByRole("button", { name: "Review" });
+
+    expect(review).toHaveAttribute("aria-expanded", "false");
     expect(
-      modes.compareDocumentPosition(divider!) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      divider!.compareDocumentPosition(scan) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+      document.querySelector("[data-review-active-dot]"),
+    ).not.toBeInTheDocument();
+
+    openReviewMenu();
+    fireEvent.click(screen.getByRole("switch", { name: "6s Scan" }));
+
+    expect(screen.getByRole("button", { name: /Review, active/ })).toBeVisible();
+    expect(document.querySelector("[data-review-active-dot]")).toBeVisible();
   });
 
   it("makes the mobile preview a fixed-height column above a scrolling canvas", async () => {

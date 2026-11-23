@@ -193,20 +193,29 @@ export function PageOverflowBanner({
   return (
     <div
       role="status"
-      className="page-overflow-warning flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+      data-page-overflow=""
+      className="flex min-w-0 flex-nowrap items-center gap-1.5 text-xs text-amber-900"
     >
       {pageCount > 1 ? (
-        <span className="rounded-full bg-amber-200/70 px-2 py-0.5 text-xs font-semibold">
-          Spills onto {pageCount} pages
+        <span className="shrink-0 font-semibold text-text">
+          <span className="sr-only">Spills onto </span>
+          <span>
+            {pageCount} {pageCount === 1 ? "page" : "pages"}
+          </span>
         </span>
       ) : null}
       {overflowPx > 0 ? (
-        <span>
-          Runs onto page {pageCount} by ~{lines} lines
+        <span className="shrink-0 text-muted">
+          <span className="sr-only">Runs onto page {pageCount} by </span>
+          <span>
+            ~{lines} lines
+          </span>
         </span>
       ) : null}
       {blockedCopy ? (
-        <span className="text-xs font-medium">{BLOCKED_COPY[blockedCopy]}</span>
+        <span className="min-w-0 truncate text-muted" title={BLOCKED_COPY[blockedCopy]}>
+          {BLOCKED_COPY[blockedCopy]}
+        </span>
       ) : (
         <button
           type="button"
@@ -216,7 +225,7 @@ export function PageOverflowBanner({
               onFit(fitScale);
             }
           }}
-          className="rounded-md border border-amber-300 bg-white px-2 py-1 text-xs font-medium text-amber-900 transition-colors hover:bg-amber-100 disabled:opacity-60 disabled:hover:bg-white"
+          className="shrink-0 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:opacity-60 disabled:hover:bg-amber-50"
         >
           Fit to 1 Page
         </button>

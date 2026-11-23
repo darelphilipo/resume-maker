@@ -6,9 +6,7 @@ import {
   ArrowLeft,
   CaretDown,
   CaretUp,
-  Eye,
   EyeSlash,
-  MagnifyingGlass,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -41,6 +39,7 @@ import { EditorLoading } from "./EditorLoading";
 import { EntryDrawer } from "./EntryDrawer";
 import { JdMatchDrawer } from "./JdMatchDrawer";
 import { ResumeLintPopover } from "./ResumeLintPopover";
+import { ReviewMenu } from "./ReviewMenu";
 import { SectionForm } from "./SectionForm";
 import {
   MobileBottomNav,
@@ -498,7 +497,7 @@ export function EditorWorkspace() {
               <h2 className="hidden font-serif text-xl font-semibold tracking-tight lg:block">
                 Preview
               </h2>
-              <div className="ml-auto flex shrink-0 items-center justify-end gap-1.5">
+              <div className="ml-auto flex shrink-0 items-center justify-end gap-2">
                 <div
                   role="group"
                   aria-label="Preview mode"
@@ -525,42 +524,29 @@ export function EditorWorkspace() {
                     ATS text
                   </button>
                 </div>
-                {/* Hairline split: view modes stay left of review tools. */}
-                <span
-                  aria-hidden
-                  data-preview-toolbar-divider=""
-                  className="h-5 w-px shrink-0 bg-line"
-                />
-                <button
-                  type="button"
-                  data-scan-toggle=""
-                  aria-label="6-second recruiter scan"
-                  aria-pressed={scanPreview}
-                  title="Dim body prose and keep names, titles, dates, bold text, and numbers at full contrast."
-                  onClick={() => {
+                {/*
+                 * A one-page resume needs no chrome row at all: the count lives
+                 * here in the calm top bar. The slim strip below only appears
+                 * once the resume spills or a reset/trim control is needed.
+                 */}
+                {layout.pages.length <= 1 ? (
+                  <span
+                    data-preview-page-label=""
+                    className="shrink-0 text-xs font-medium text-muted"
+                  >
+                    1 page
+                  </span>
+                ) : null}
+                <ReviewMenu
+                  scan={scanPreview}
+                  anonymize={anonymizePreview}
+                  onToggleScan={() => {
                     setScanPreview((enabled) => !enabled);
                   }}
-                  className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 text-xs font-semibold text-text transition-colors hover:border-primary/40 hover:bg-primary/5 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  <MagnifyingGlass size={15} aria-hidden />
-                  6s Scan
-                </button>
-                <button
-                  type="button"
-                  data-anonymize-toggle=""
-                  aria-pressed={anonymizePreview}
-                  onClick={() => {
+                  onToggleAnonymize={() => {
                     setAnonymizePreview((enabled) => !enabled);
                   }}
-                  className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 text-xs font-semibold text-text transition-colors hover:border-primary/40 hover:bg-primary/5 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  {anonymizePreview ? (
-                    <EyeSlash size={15} aria-hidden />
-                  ) : (
-                    <Eye size={15} aria-hidden />
-                  )}
-                  Anonymize
-                </button>
+                />
               </div>
             </div>
             {anonymizePreview ? (
