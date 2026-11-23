@@ -1,7 +1,23 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { analyzeBulletLines, summarizeBulletIssues } from "@/lib/lint/bulletMetrics";
+import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
+import { MIN_FIT_LABEL } from "@/lib/pagination/fitCopy";
+import type { FitBlockedReason } from "@/lib/pagination/usePageLayout";
+
 import { ReviewMenu } from "./ReviewMenu";
+
+const TRIM_REPORT: BulletLintReport = summarizeBulletIssues([
+  analyzeBulletLines([
+    "Led the billing migration for the platform and",
+    "saved 3 hours",
+  ])!,
+  analyzeBulletLines([
+    "Shipped the onboarding flow for every new customer",
+    "weekly",
+  ])!,
+]);
 
 function renderMenu(
   overrides: {
@@ -9,6 +25,12 @@ function renderMenu(
     anonymize?: boolean;
     onToggleScan?: () => void;
     onToggleAnonymize?: () => void;
+    bulletReport?: BulletLintReport | null;
+    fitTarget?: number | null;
+    fitBlockedReason?: FitBlockedReason | null;
+    appliedFitScale?: number;
+    onFit?: (scale: number) => void;
+    onResetFit?: () => void;
   } = {},
 ) {
   const onToggleScan = overrides.onToggleScan ?? vi.fn();
@@ -20,6 +42,12 @@ function renderMenu(
       anonymize={overrides.anonymize ?? false}
       onToggleScan={onToggleScan}
       onToggleAnonymize={onToggleAnonymize}
+      bulletReport={overrides.bulletReport ?? null}
+      fitTarget={overrides.fitTarget ?? null}
+      fitBlockedReason={overrides.fitBlockedReason ?? null}
+      appliedFitScale={overrides.appliedFitScale ?? 1}
+      onFit={overrides.onFit}
+      onResetFit={overrides.onResetFit}
     />,
   );
 
@@ -117,6 +145,79 @@ describe("ReviewMenu", () => {
     expect(document.querySelector("[data-review-mode-note]")).toHaveTextContent(
       "your saved resume is unchanged",
     );
+  });
+
+  it("badges the pill and opens Trim tips from the dialog", () => {
+    renderMenu({ bulletReport: TRIM_REPORT });
+
+    const trigger = screen.getByRole("button", { name: /Review/ });
+
+    expect(document.querySelector("[data-review-trim-badge]")).toHaveTextContent(
+      "2",
+    );
+    expect(trigger).toHaveAccessibleName(/2 trim tips/);
+
+    openMenu();
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Trim tips \(2\)/ }),
+    );
+
+    // Review closes and the dedicated trim dialog takes over.
+    expect(
+      screen.queryByRole("dialog", { name: "Review tools" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Trim tips" })).toHaveTextContent(
+      /Led the billing migration/,
+    );
+  });
+
+  it("fits the resume to one page from the Review dialog", () => {
+    const onFit = vi.fn();
+
+    renderMenu({ fitTarget: 0.82, onFit });
+    openMenu();
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Fit to 1 Page/ }),
+    );
+
+    expect(onFit).toHaveBeenCalledWith(0.82);
+    expect(
+      screen.queryByRole("dialog", { name: "Review tools" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("resets a reduced fit and marks the pill while it is active", () => {
+    const onResetFit = vi.fn();
+
+    renderMenu({ appliedFitScale: 0.85, onResetFit });
+
+    expect(document.querySelector("[data-review-fit-dot]")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /Review, fit is reduced/ }),
+    ).toBeVisible();
+
+    openMenu();
+    fireEvent.click(screen.getByRole("button", { name: /^Reset fit/ }));
+
+    expect(onResetFit).toHaveBeenCalledTimes(1);
+  });
+
+  it("explains a blocked fit with the readable floor", () => {
+    renderMenu({
+      fitTarget: null,
+      fitBlockedReason: "too-tall",
+      onFit: vi.fn(),
+    });
+    openMenu();
+
+    const blocked = document.querySelector("[data-review-fit-blocked]");
+
+    expect(blocked).toHaveTextContent(MIN_FIT_LABEL);
+    expect(blocked).toHaveTextContent("trim a line or two");
+    expect(blocked).not.toHaveClass("truncate");
+    expect(
+      screen.queryByRole("button", { name: "Fit to 1 Page" }),
+    ).not.toBeInTheDocument();
   });
 
   it("closes on the X, the backdrop, and Escape", () => {

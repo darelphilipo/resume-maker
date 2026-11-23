@@ -18,14 +18,15 @@ _empty
 
 ## In Progress (OpenCode Updates This)
 
-_empty
+- [ ] P1: Eliminate the second Preview toolbar row by moving `Trim tips` and `Reset fit` into the `Review ▾` menu.
+  1. **Single-row Preview bar (`Visual | ATS` + page pill + `Review ▾`):** Shorten `ATS text` to `ATS` (keeping `aria-label="ATS text"`), drop the second `[data-preview-header]` row, and keep a conditional `Reset` pill in row 1 while the canvas is zoomed.
+  2. **Move `Trim tips` and `Fit / Reset fit` into `Review ▾`:** the Review dialog gains a `Trim tips (N)` row (opens the trim modal), `Fit to 1 Page` / `Reset fit` rows, and a small badge/dot on the pill when trim tips exist or `fitScale < 1`. `LiveCanvasViewport` lifts its bullet report and zoom state to `EditorWorkspace` through stable callbacks and a ref handle.
+  3. **Compact overflow cue:** `PageOverflowBanner` becomes one inline pill in the mode bar (`2 pages · Fit`, or `2 pages · Min 78%` with the full explanation in `title` + sr-only copy) instead of a truncating strip.
+  - Target files: `src/components/editor/EditorWorkspace.tsx`, `src/components/editor/ReviewMenu.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`, matching tests, `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`.
 
 ## Queue (Ready for Next Run)
 
-- [ ] P1: Eliminate the second Preview toolbar row by moving `Trim tips` and `Reset fit` into the `Review ▾` menu (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`).
-  1. **Single-row Preview bar (`Visual | ATS` + page pill + `Review ▾`):** Shorten `ATS text` label to `ATS` (keeping `aria-label="ATS text"`) so the top bar never crowds at `390px`, and remove the separate second row used for `Trim tips (N)` and `Reset fit`.
-  2. **Move `Trim tips` and `Fit / Reset fit` into `Review ▾`:** Inside the `Review` popover menu (alongside `6s Scan` and `Anonymize`), show `Trim tips (N)` (opening the Trim tips modal) and `Fit to 1 Page` / `Reset fit` (showing a subtle dot/badge on `Review ▾` when trim tips exist or `fitScale < 1`).
-  3. **Compact overflow cue:** When the resume spills onto 2+ pages, show a single compact inline pill right in Row 1 (e.g. `2 pages · Fit` button, or `2 pages` with a short non-truncated `"Min 78%"` tooltip/label when `fitBlockedReason` is active) instead of a full-width second banner row that truncates with `...`.
+_empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->

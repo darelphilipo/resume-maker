@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { HTMLAttributes, ReactNode, RefObject } from "react";
+import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import type { HTMLAttributes, ReactNode, Ref, RefObject } from "react";
 import {
   TransformComponent,
   TransformWrapper,
@@ -23,7 +23,7 @@ import {
 import { computeWidthFitScale } from "@/lib/pagination/fitScale";
 import type { PageLayout } from "@/lib/pagination/usePageLayout";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
-import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
+import { pageGeometry } from "@/lib/units/pageGeometry";
 import {
   canvasGestureConfig,
   canvasTouchAction,
@@ -42,8 +42,7 @@ import {
 } from "@/lib/zoom/wheelZoom";
 
 import { AtsTextView } from "./AtsTextView";
-import { CanvasResetButton, RESET_ANIMATION_MS } from "./CanvasResetButton";
-import { BulletTrimTips, PageOverflowBanner } from "./PageOverflowBanner";
+import { RESET_ANIMATION_MS } from "./CanvasResetButton";
 import { PageStack } from "./PageStack";
 import { TouchPanCanvas } from "./TouchPanCanvas";
 import { useFitTransform } from "./useFitTransform";
@@ -167,93 +166,6 @@ function WheelZoom({
 }
 
 /**
- * The single slim Preview status strip.
- *
- * On phones this is a `shrink-0` row in the Preview column's flex stack, so it
- * sits *outside* the canvas scroller and pages can never bleed above or behind
- * it. At `lg` the preview panel itself scrolls, so the same strip sticks below
- * the `Visual`/`ATS text` row instead (see CONTEXT Decisions #33 and #37).
- * A one-page resume renders no strip at all: its "1 page" label lives in the
- * mode bar, which reclaims the ~110px the old yellow banner + toolbar used.
- */
-function PreviewChrome({
-  sticky = true,
-  children,
-}: {
-  /**
-   * Sticky only over the canvas. The ATS text view shares the preview panel's
-   * single scroll region, so its strip must stay in normal flow or it would
-   * cover the "Copy all" button while the panel scrolls.
-   */
-  sticky?: boolean;
-  children?: ReactNode;
-}) {
-  return (
-    <div
-      data-preview-header=""
-      className={`z-10 -mx-2 flex shrink-0 flex-nowrap items-center border-b border-line/70 bg-background/95 px-2 py-1.5 backdrop-blur lg:-mx-4 lg:px-4${
-        sticky ? " lg:sticky lg:top-14" : ""
-      }`}
-    >
-      {children}
-    </div>
-  );
-}
-
-function StripSeparator() {
-  return (
-    <span aria-hidden className="shrink-0 text-line">
-      ·
-    </span>
-  );
-}
-
-/**
- * Optional fit/zoom/trim actions, sharing one row with the overflow summary.
- *
- * Rendered *above* `<TransformWrapper>`, in the sticky preview strip, so no
- * zoom level or paper size can make them overlap the candidate's name. The bar
- * returns `null` when every control is idle, so a clean one-page resume owes
- * no height to preview chrome at all.
- */
-function CanvasToolbar({
-  appliedFitScale,
-  isZoomed,
-  bulletReport,
-  onResetZoom,
-  onResetFit,
-}: {
-  appliedFitScale: number;
-  isZoomed: boolean;
-  bulletReport?: BulletLintReport | null;
-  onResetZoom: () => void;
-  onResetFit?: () => void;
-}) {
-  const canResetFit = onResetFit !== undefined && appliedFitScale < 1;
-  const hasTrimTips = (bulletReport?.issues.length ?? 0) > 0;
-
-  return (
-    <div
-      data-canvas-toolbar=""
-      className="ml-auto flex min-h-8 shrink-0 flex-nowrap items-center justify-end gap-1.5"
-    >
-      {hasTrimTips ? <BulletTrimTips report={bulletReport} /> : null}
-      {canResetFit ? (
-        <button
-          type="button"
-          onClick={onResetFit}
-          aria-label="Reset fit to 100%"
-          className="pointer-events-auto flex h-8 shrink-0 items-center rounded-full border border-line bg-surface/95 px-2.5 text-xs font-semibold text-primary shadow-sm backdrop-blur-sm transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
-        >
-          Reset fit
-        </button>
-      ) : null}
-      {isZoomed ? <CanvasResetButton onReset={onResetZoom} /> : null}
-    </div>
-  );
-}
-
-/**
  * The canvas only (no chrome), rendered inside `TransformWrapper`.
  *
  * The transform component subscribes to the zoom level so the touch action can
@@ -310,12 +222,21 @@ function CanvasSurface({
   );
 }
 
+/** Imperative escapes for the mode bar's conditional Reset pills. */
+export type LiveCanvasViewportHandle = {
+  resetZoom: () => void;
+  resetFit: () => void;
+};
+
 export function LiveCanvasViewport({
   doc,
   layout,
   onFit,
   mode = "canvas",
   scanHighlight = false,
+  onBulletReport,
+  onZoomChange,
+  ref,
 }: {
   doc: ResumeDocument;
   layout: PageLayout;
@@ -323,6 +244,15 @@ export function LiveCanvasViewport({
   mode?: PreviewMode;
   /** Session-only 6-Second Recruiter Scan; never reaches print or export. */
   scanHighlight?: boolean;
+  /**
+   * The rendered-bullet report is owned by the mode bar now, because Trim tips
+   * lives in the Review dialog. Called with `null` whenever the canvas is not
+   * mounted (ATS mode or a re-measure).
+   */
+  onBulletReport?: (report: BulletLintReport | null) => void;
+  /** Drives the conditional Reset pill in the mode bar. */
+  onZoomChange?: (zoomed: boolean) => void;
+  ref?: Ref<LiveCanvasViewportHandle>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -356,14 +286,6 @@ export function LiveCanvasViewport({
     fitScale: number;
     zoomed: boolean;
   } | null>(null);
-  /**
-   * Trim hints are measured from the rendered bullets, never guessed from the
-   * document model, so the count matches what the user sees on paper.
-   */
-  const [bulletReport, setBulletReport] = useState<BulletLintReport | null>(
-    null,
-  );
-  const appliedFitScale = doc.metadata.page.fitScale;
 
   useIsomorphicLayoutEffect(() => {
     if (
@@ -471,11 +393,6 @@ export function LiveCanvasViewport({
       ? 0
       : centeredCanvasOffsetX(viewportWidth.scroller, frame.width);
 
-  const lineHeightPx =
-    doc.metadata.typography.body.fontSize *
-    PT_TO_PX *
-    doc.metadata.typography.body.lineHeight;
-
   /**
    * The toolbar lives outside `<TransformWrapper>`, so it cannot read the zoom
    * level from the library context. `onTransform` mirrors that one bit of state
@@ -502,6 +419,7 @@ export function LiveCanvasViewport({
   );
 
   const isZoomed =
+    mode === "canvas" &&
     zoomState !== null &&
     fitScale !== null &&
     zoomState.fitScale === fitScale &&
@@ -536,14 +454,27 @@ export function LiveCanvasViewport({
     onFit?.(1);
   }, [onFit, resetScroll]);
 
+  // The mode bar owns the conditional Reset pills, so the viewport exposes the
+  // two reset paths instead of rendering a chrome row of its own (Decision #86).
+  useImperativeHandle(ref, () => ({ resetZoom, resetFit }), [
+    resetFit,
+    resetZoom,
+  ]);
+
+  useEffect(() => {
+    onZoomChange?.(isZoomed);
+  }, [isZoomed, onZoomChange]);
+
+  useEffect(
+    () => () => {
+      onZoomChange?.(false);
+    },
+    [onZoomChange],
+  );
+
   const gestures = canvasGestureConfig(isCoarsePointer);
 
-  const showOverflowBanner = layout.overflowPx > 0 || layout.pages.length > 1;
   const showCanvas = mode === "canvas" && frame !== null && !layout.isMeasuring;
-  const hasTrimTips = (bulletReport?.issues.length ?? 0) > 0;
-  const canResetFit = onFit !== undefined && appliedFitScale < 1;
-  const showToolbar = showCanvas && (hasTrimTips || canResetFit || isZoomed);
-  const showChrome = showOverflowBanner || showToolbar;
 
   useIsomorphicLayoutEffect(() => {
     if (
@@ -552,14 +483,14 @@ export function LiveCanvasViewport({
       fitScale === null ||
       doc.metadata.layout.pages.length === 0
     ) {
-      setBulletReport(null);
+      onBulletReport?.(null);
       return;
     }
 
     const root = scrollRef.current;
 
     if (!root) {
-      setBulletReport(null);
+      onBulletReport?.(null);
       return;
     }
 
@@ -567,7 +498,7 @@ export function LiveCanvasViewport({
 
     const update = (): void => {
       if (!cancelled) {
-        setBulletReport(scanBulletLint(root));
+        onBulletReport?.(scanBulletLint(root));
       }
     };
 
@@ -583,42 +514,19 @@ export function LiveCanvasViewport({
     return () => {
       cancelled = true;
     };
-  }, [doc, fitScale, layout.isMeasuring, mode]);
+  }, [doc, fitScale, layout.isMeasuring, mode, onBulletReport]);
 
   return (
     <div
       ref={containerRef}
-      className="relative flex min-h-0 w-full flex-1 flex-col gap-2 overflow-clip rounded-xl px-2 py-2 lg:flex-none lg:gap-4 lg:p-4"
+      className="relative flex min-h-0 w-full flex-1 flex-col overflow-clip rounded-xl px-2 py-2 lg:flex-none lg:p-4"
     >
       {layout.measureLayer}
-      {showChrome ? (
-        <PreviewChrome sticky={mode === "canvas"}>
-          <div className="flex min-h-8 w-full min-w-0 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
-            <PageOverflowBanner
-              overflowPx={layout.overflowPx}
-              pageCount={layout.pages.length}
-              lineHeightPx={lineHeightPx}
-              fitScale={layout.fitScale}
-              fitBlockedReason={layout.fitBlockedReason ?? null}
-              onFit={onFit}
-            />
-            {showOverflowBanner && showToolbar ? <StripSeparator /> : null}
-            {showToolbar ? (
-              <CanvasToolbar
-                appliedFitScale={appliedFitScale}
-                isZoomed={isZoomed}
-                bulletReport={bulletReport}
-                onResetZoom={resetZoom}
-                onResetFit={onFit ? resetFit : undefined}
-              />
-            ) : null}
-          </div>
-        </PreviewChrome>
-      ) : null}
       {/*
-       * The only mobile scroll container in the preview: the chrome above stays
-       * fixed, and pages are clipped at its bottom edge instead of scrolling
-       * under it. Desktop keeps the panel as the scroller.
+       * The only mobile scroll container in the preview. The page count, Fit,
+       * Trim tips, and every review lens now live in the Preview mode bar, so
+       * the paper owns this row and its scroller has no stacked chrome above it.
+       * Desktop keeps the panel as the scroller.
        */}
       <div
         ref={scrollRef}

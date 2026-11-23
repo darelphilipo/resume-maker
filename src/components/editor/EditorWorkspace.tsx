@@ -10,15 +10,19 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   LiveCanvasViewport,
+  type LiveCanvasViewportHandle,
   type PreviewMode,
 } from "@/components/preview/LiveCanvasViewport";
+import { CanvasResetButton } from "@/components/preview/CanvasResetButton";
 import { InAppBrowserNotice } from "@/components/preview/InAppBrowserNotice";
+import { PageOverflowBanner } from "@/components/preview/PageOverflowBanner";
 import { PrintTriggerButton } from "@/components/preview/PrintTriggerButton";
 import { ExportJsonButton } from "@/components/shared/ExportJsonButton";
+import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
 import { usePageLayout } from "@/lib/pagination/usePageLayout";
 import { anonymizeResumeDoc } from "@/lib/privacy/anonymizeDoc";
 import { resumeDocumentTitle } from "@/lib/print/printDocument";
@@ -122,6 +126,16 @@ export function EditorWorkspace() {
   const [basicsOpen, setBasicsOpen] = useState(false);
   const [anonymizePreview, setAnonymizePreview] = useState(false);
   const [scanPreview, setScanPreview] = useState(false);
+  /**
+   * Trim tips and Fit/Reset live in the Review dialog now, so their inputs are
+   * lifted here: the viewport reports the rendered-bullet scan and whether the
+   * canvas is zoomed, and exposes both reset paths through a ref.
+   */
+  const [bulletReport, setBulletReport] = useState<BulletLintReport | null>(
+    null,
+  );
+  const [canvasZoomed, setCanvasZoomed] = useState(false);
+  const canvasRef = useRef<LiveCanvasViewportHandle>(null);
   const [drawerSection, setDrawerSection] =
     useState<SectionListEntry | null>(null);
   /**
@@ -143,6 +157,11 @@ export function EditorWorkspace() {
     base: string;
   } | null>(null);
   const layout = usePageLayout(doc);
+
+  /** One owner for Fit/Reset fit, whether it starts in the pill or Review. */
+  function applyFitScale(scale: number): void {
+    patchDoc({ metadata: { page: { fitScale: scale } } });
+  }
 
   const liveName =
     liveEdit && liveEdit.base === doc.basics.name ? liveEdit.name : null;
@@ -535,27 +554,44 @@ export function EditorWorkspace() {
                   </button>
                   <button
                     type="button"
+                    aria-label="ATS text"
                     aria-pressed={previewMode === "ats"}
                     onClick={() => {
                       setPreviewMode("ats");
                     }}
                     className="h-8 rounded-md px-2.5 text-xs font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   >
-                    ATS text
+                    ATS
                   </button>
                 </div>
                 {/*
-                 * A one-page resume needs no chrome row at all: the count lives
-                 * here in the calm top bar. The slim strip below only appears
-                 * once the resume spills or a reset/trim control is needed.
+                 * One calm row carries the whole Preview status: a quiet
+                 * "1 page" label when the resume fits, or one compact spill
+                 * pill (`2 pages · Fit`) once it does not. Trim tips, Fit, and
+                 * Reset fit moved into Review, so there is no second strip.
                  */}
-                {layout.pages.length <= 1 ? (
+                {layout.pages.length > 1 || layout.overflowPx > 0 ? (
+                  <PageOverflowBanner
+                    overflowPx={layout.overflowPx}
+                    pageCount={layout.pages.length}
+                    fitScale={layout.fitScale}
+                    fitBlockedReason={layout.fitBlockedReason ?? null}
+                    onFit={applyFitScale}
+                  />
+                ) : (
                   <span
                     data-preview-page-label=""
                     className="shrink-0 text-xs font-medium text-muted"
                   >
                     1 page
                   </span>
+                )}
+                {previewMode === "canvas" && canvasZoomed ? (
+                  <CanvasResetButton
+                    onReset={() => {
+                      canvasRef.current?.resetZoom();
+                    }}
+                  />
                 ) : null}
                 <ReviewMenu
                   scan={scanPreview}
@@ -565,6 +601,14 @@ export function EditorWorkspace() {
                   }}
                   onToggleAnonymize={() => {
                     setAnonymizePreview((enabled) => !enabled);
+                  }}
+                  bulletReport={bulletReport}
+                  fitTarget={layout.fitScale}
+                  fitBlockedReason={layout.fitBlockedReason ?? null}
+                  appliedFitScale={doc.metadata.page.fitScale}
+                  onFit={applyFitScale}
+                  onResetFit={() => {
+                    canvasRef.current?.resetFit();
                   }}
                 />
               </div>
@@ -583,13 +627,14 @@ export function EditorWorkspace() {
               </p>
             ) : null}
             <LiveCanvasViewport
+              ref={canvasRef}
               doc={previewDoc}
               layout={layout}
               mode={previewMode}
               scanHighlight={scanPreview}
-              onFit={(scale) => {
-                patchDoc({ metadata: { page: { fitScale: scale } } });
-              }}
+              onBulletReport={setBulletReport}
+              onZoomChange={setCanvasZoomed}
+              onFit={applyFitScale}
             />
           </div>
         </section>

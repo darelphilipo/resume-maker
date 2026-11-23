@@ -463,13 +463,11 @@ for (const viewport of VIEWPORTS) {
       await showPreview(page);
 
       const overlaps = await page.evaluate(() => {
-        const toolbar = document.querySelector<HTMLElement>(
-          "[data-canvas-toolbar]",
+        const modeHeader = document.querySelector<HTMLElement>(
+          "[data-preview-mode-header]",
         );
-        const badge = Array.from(
-          toolbar?.querySelectorAll("span") ?? [],
-        ).find((element) =>
-          /^\d+ pages?$/.test((element.textContent ?? "").trim()),
+        const badge = modeHeader?.querySelector<HTMLElement>(
+          "[data-page-overflow], [data-preview-page-label]",
         );
         const name = document.querySelector<HTMLElement>(
           "#panel-preview .resume-page .resume-name",
@@ -606,11 +604,6 @@ for (const viewport of VIEWPORTS) {
         const modeHeader = document.querySelector<HTMLElement>(
           "[data-preview-mode-header]",
         );
-        // A one-page resume has no status strip: the "1 page" count lives in
-        // the calm mode bar, so that bar is the relevant chrome in that case.
-        const strip = document.querySelector<HTMLElement>(
-          "[data-preview-header]",
-        );
         const name = document.querySelector<HTMLElement>(
           "#panel-preview .resume-page .resume-name",
         );
@@ -620,16 +613,12 @@ for (const viewport of VIEWPORTS) {
         }
 
         const mode = modeHeader.getBoundingClientRect();
-        const chrome = (strip ?? modeHeader).getBoundingClientRect();
 
         return {
+          modeTop: mode.top,
           modeBottom: mode.bottom,
-          chromeTop: chrome.top,
-          chromeBottom: chrome.bottom,
           nameTop: name.getBoundingClientRect().top,
           modePosition: getComputedStyle(modeHeader).position,
-          chromePosition: strip ? getComputedStyle(strip).position : null,
-          hasStrip: strip !== null,
         };
       });
 
@@ -639,13 +628,9 @@ for (const viewport of VIEWPORTS) {
       if (viewport.name !== "mobile") {
         expect(result.modePosition).toBe("sticky");
       }
-      if (result.hasStrip) {
-        expect(result.chromePosition).toBe("sticky");
-      }
-      // The chrome occupies normal flow above the paper, so Page 1 starts
-      // below it instead of being covered at rest.
-      expect(result.nameTop).toBeGreaterThanOrEqual(result.chromeBottom);
-      expect(result.chromeTop).toBeGreaterThanOrEqual(result.modeBottom - 1);
+      // The single preview bar occupies normal flow above the paper, so Page 1
+      // starts below it instead of being covered at rest.
+      expect(result.nameTop).toBeGreaterThanOrEqual(result.modeBottom);
     });
 
     test("desktop columns scroll independently without a second page scrollbar", async ({

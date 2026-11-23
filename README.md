@@ -221,8 +221,9 @@ in control of every line, and your data stays on your device.
   template, or paper size. On a phone, the Preview controls collapse into one
   tight, sideways-scrollable row and the panel's extra padding is trimmed, so the
   resume itself fills as much of the screen as possible. The top bar keeps just
-  the **Visual / ATS text** switch and one **Review** pill; the occasional review
-  tools live inside it instead of crowding the live resume. Page 1 keeps
+  the **Visual / ATS** switch, one compact page pill, and one **Review** pill;
+  trim hints, fitting, and the occasional review lenses live inside it instead of
+  crowding the live resume. Page 1 keeps
   breathing room above and below, so its top edge and shadow never clip. On tall
   tablets and phones showing the desktop site, the fitted page sits centred with
   even side margins, the gray preview desk ends with the last page instead of
@@ -246,17 +247,17 @@ in control of every line, and your data stays on your device.
   shrinks the page below a readable size — if one page would need microscopic
   type, the preview says so instead. The fitted width keeps a little breathing
   room at the right edge, so right-aligned dates never lose their last pixels.
-  Whenever a reduced fit is active, a **Reset fit** pill in the preview header
-  returns the page to 100%.
+  Whenever a reduced fit is active, **Reset fit** inside **Review** returns the
+  page to 100%.
 - **A calm page count.** A resume that fits on one page just shows a quiet
   **1 page** label in the top bar, with no extra row stealing height from the
-  paper. When it spills, one slim strip combines the count, **Fit to 1 Page**,
-  and **Trim tips** (with the number of culprits) instead of a tall warning box
-  plus a second toolbar — the duplicate count is gone and the live resume keeps
-  the reclaimed space.
+  paper. When it spills, that same bar shows one compact pill such as
+  **2 pages · Fit**; if one page would need unreadable type, the pill shows the
+  **Min 78%** floor instead of a truncated sentence. There is no second toolbar
+  row, so the live resume keeps the reclaimed space.
 - **Trim tips** find the bullets that quietly cost you a line. When a bullet
   wraps and leaves only a word or two on its last line, or grows into a long
-  block, the preview counts it. Tap **Trim tips** in the slim strip to open a
+  block, the preview counts it. Open **Review** and tap **Trim tips (N)** to see a
   dismissible list with each bullet's opening words and a plain-language reason;
   it covers the preview only while open, so the resume stays fully readable on a
   phone. Trimming those bullets can reclaim whole lines before you shrink the
@@ -304,10 +305,9 @@ in control of every line, and your data stays on your device.
   it opens as a centred modal. Either way one tap on the **X** (or the dimmed
   background) closes it outright, with no half-collapsed bar left behind.
   Matching runs locally with simple word heuristics, not AI.
-- The **Visual / ATS text** switch and **Review** pill stay pinned in one calm
-  top bar, and the slim count/fit/trim strip sits just above the paper when it
-  is needed, so none of them ever cover your name or header — and the paper
-  stops cleanly below that chrome instead of sliding underneath it.
+- The **Visual / ATS** switch, page pill, and **Review** pill stay pinned in one
+  calm top bar, so none of them ever cover your name or header — and the paper
+  starts cleanly below that bar instead of sliding underneath a second strip.
 - Print/PDF filenames are generated from your name, headline, and date. While
   **Anonymize** is on, the filename uses the placeholder name too, so the file
   itself does not reveal who the resume belongs to. The browser tab keeps

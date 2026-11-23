@@ -1244,24 +1244,19 @@ rediscover.
        kept a hairline between the `Visual | ATS text` mode group and the review
        tools; those tools now live behind one **Review** pill (#84).
 
-   84. **The Preview bar has two controls and a conditional slim strip.**
-      `EditorWorkspace` owns the calm `[data-preview-mode-header]`: only the
-      `Visual | ATS text` group plus `ReviewMenu`, a compact pill with an
-      `aria-hidden` dot while 6s Scan or Anonymize is on. `ReviewMenu` portals
-      a `CenteredModal` with `role="switch"` toggles for the two review lenses,
-      so no review control occupies the mode bar. A clean one-page resume adds
-      a quiet `[data-preview-page-label]` **"1 page"** inside that bar and
-      renders **no** `[data-preview-header]` row at all. Once the resume spills
-      (or a trim/reset control is active), `LiveCanvasViewport` renders a
-      single slim `[data-preview-header]` strip combining `PageOverflowBanner`
-      (an inline `[data-page-overflow]` with the count, optional `~N lines` and
-      Fit/blocked copy) and `CanvasToolbar` (trim, Reset fit, Reset zoom). The
-      yellow `page-overflow-warning` box and the duplicate page-count pill are
-      gone. Keep the count out of both places at once: the label lives in the
-      mode bar only for `pages.length <= 1`, the strip's count only for `> 1`.
-      `role="status"` on the strip and sr-only "Spills onto" / "Runs onto page
-      N by" prefixes preserve the old accessible text while the visible copy
-      stays short.
+   84. **The Preview bar is one row: switch, page pill, Review.**
+      `EditorWorkspace` owns the calm `[data-preview-mode-header]`: the
+      `Visual | ATS` group (visible label **ATS**, `aria-label="ATS text"`), a
+      quiet `[data-preview-page-label]` **"1 page"** while
+      `layout.pages.length <= 1 && layout.overflowPx <= 0`, and the **Review**
+      pill. Once the resume spills, the label is replaced by one compact
+      `PageOverflowBanner` pill in the same bar (`2 pages · Fit`, or
+      `2 pages · Min 78%` with the full reason in `title` + sr-only copy). A
+      conditional `CanvasResetButton` joins that row only while the canvas is
+      zoomed. There is **no** `[data-preview-header]` / `[data-canvas-toolbar]`
+      second row: the viewport's scroller starts at the stage top. Trim tips
+      and Fit/Reset fit live inside Review (#86). Keep the count in exactly one
+      place: the quiet label or the spill pill, never both.
 
    85. **Fit centring uses the scroller's content width; the gutter is desktop
       only.** `[data-canvas-scroll]` gained `py-3` so Page 1's edge and shadow
@@ -1277,6 +1272,22 @@ rediscover.
       `fitOffsetX` and made the transform dance even though the height guard
       settled. The delta excludes the root's `px-2 lg:p-4` padding and the
       desktop gutter, so margins stay equal at every width.
+
+   86. **Trim tips and Fit/Reset fit live in the Review dialog, and the viewport
+       reports upward instead of owning chrome.** `ReviewMenu` gained
+       `Trim tips (N)`, `Fit to 1 Page`, `Reset fit`, and a blocked-fit note,
+       plus two markers: `[data-review-trim-badge]` (count) and
+       `[data-review-fit-dot]` (reduced fit). `LiveCanvasViewport` no longer
+       renders `PreviewChrome` or `CanvasToolbar`; it calls
+       `onBulletReport(scanBulletLint(root))` (or `null` outside canvas mode) and
+       `onZoomChange(zoomed)`, and exposes `resetZoom` / `resetFit` through a
+       `LiveCanvasViewportHandle` ref. `EditorWorkspace` owns those two states,
+       the single `applyFitScale` patch, and the conditional zoom `Reset` pill.
+       `TrimTipsDialog` (new) holds the list markup, shared copy lives in
+       `src/lib/pagination/fitCopy.ts` (`MIN_FIT_LABEL`, `FIT_BLOCKED_COPY`), and
+       `PageOverflowBanner` is now one inline `h-8 rounded-full` pill with no
+       `lineHeightPx` estimate. Review still closes before the trim dialog opens,
+       so only one `role="dialog"` is mounted at a time.
 
 ## Verification and tooling
 

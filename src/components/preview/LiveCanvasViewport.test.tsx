@@ -1,6 +1,8 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { createRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
 import {
   PAGE_STACK_GAP_PX,
   centeredCanvasOffsetX,
@@ -12,7 +14,10 @@ import { createEmptyResume } from "@/lib/schema/defaults";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { pageGeometry } from "@/lib/units/pageGeometry";
 
-import { LiveCanvasViewport } from "./LiveCanvasViewport";
+import {
+  LiveCanvasViewport,
+  type LiveCanvasViewportHandle,
+} from "./LiveCanvasViewport";
 import { usePreservedScroll } from "./usePreservedScroll";
 
 vi.mock("./PageStack", () => ({
@@ -145,6 +150,7 @@ async function renderCanvas(
     onFit?: (scale: number) => void;
     containerWidth?: number;
     scanHighlight?: boolean;
+    onBulletReport?: (report: BulletLintReport | null) => void;
   } = {},
 ) {
   const doc = options.doc ?? createEmptyResume();
@@ -163,6 +169,7 @@ async function renderCanvas(
       layout={createLayout(pageCount)}
       onFit={options.onFit}
       scanHighlight={options.scanHighlight}
+      onBulletReport={options.onBulletReport}
     />,
   );
 
@@ -312,10 +319,19 @@ describe("LiveCanvasViewport", () => {
     );
   });
 
-  it("shows a page count without a zoom toolbar over the resume", async () => {
+  it("renders no preview chrome row above the canvas", async () => {
     await renderCanvas(2);
 
-    expect(screen.getByText("2 pages")).toBeVisible();
+    // The page count, Fit, Trim tips, and Reset all live in the Preview mode
+    // bar now, so the viewport owns no second toolbar row.
+    expect(
+      document.querySelector("[data-preview-header]"),
+    ).not.toBeInTheDocument();
+    expect(
+      document.querySelector("[data-canvas-toolbar]"),
+    ).not.toBeInTheDocument();
+    expect(document.querySelector("[data-page-overflow]")).not.toBeInTheDocument();
+    expect(screen.queryByText("2 pages")).not.toBeInTheDocument();
 
     for (const name of [
       "Zoom out",
@@ -336,95 +352,78 @@ describe("LiveCanvasViewport", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders no overflow strip for a one-page resume", async () => {
-    await renderCanvas(1);
+  it("hands the rendered bullet scan to its owner", async () => {
+    const onBulletReport = vi.fn<(report: BulletLintReport | null) => void>();
 
-    // The "1 page" count lives in the mode bar on a single page, so the only
-    // chrome shown here is a trim/reset strip when those controls are active.
-    expect(
-      document.querySelector("[data-page-overflow]"),
-    ).not.toBeInTheDocument();
-  });
+    await renderCanvas(1, { onBulletReport });
 
-  it("scans rendered bullets and surfaces trim tips in the toolbar", async () => {
-    await renderCanvas(1);
-
-    const trigger = await screen.findByRole("button", {
-      name: "Trim tips (1)",
+    await waitFor(() => {
+      expect(onBulletReport).toHaveBeenCalled();
     });
 
-    expect(trigger).toBeVisible();
+    const report = onBulletReport.mock.calls
+      .map(([value]) => value)
+      .filter((value): value is BulletLintReport => value !== null)
+      .at(-1);
 
-    fireEvent.click(trigger);
-
-    expect(
-      screen.getByRole("dialog", { name: "Trim tips" }),
-    ).toHaveTextContent(/long bullet/);
+    // jsdom has no line layout, so the long mocked bullet is caught by the
+    // character budget instead of the orphan rule.
+    expect(report).toBeDefined();
+    expect(report?.issues).toHaveLength(1);
   });
 
-  it("renders the page count in the slim strip above the canvas, never over the page", async () => {
-    const { wrapper } = await renderCanvas(2);
+  it("clears the bullet report outside canvas mode", () => {
+    const onBulletReport = vi.fn();
 
-    const badge = screen.getByText("2 pages");
-    const strip = badge.closest("[data-page-overflow]");
-    const header = badge.closest("[data-preview-header]");
+    render(
+      <LiveCanvasViewport
+        doc={createEmptyResume()}
+        layout={createLayout(2)}
+        mode="ats"
+        onBulletReport={onBulletReport}
+      />,
+    );
 
-    expect(strip).not.toBeNull();
-    expect(header).toContainElement(strip as HTMLElement);
-    // The strip lives outside the transform wrapper, so no zoom level or paper
-    // size can make it cover the resume header.
-    expect(wrapper.contains(header)).toBe(false);
-    expect(wrapper.contains(badge)).toBe(false);
-    expect(
-      header!.compareDocumentPosition(wrapper) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(onBulletReport).toHaveBeenLastCalledWith(null);
   });
 
-  it("keeps the page-count strip outside the transform wrapper", async () => {
-    const { wrapper } = await renderCanvas(2);
+  it("keeps the canvas inside the single scroll region", async () => {
+    const { wrapper, view } = await renderCanvas(2);
 
-    const badge = screen.getByText("2 pages");
-    const header = badge.closest("[data-preview-header]");
+    const scroll = wrapper.closest("[data-canvas-scroll]");
+    const root = view.container.firstElementChild as HTMLElement;
 
-    // The strip sits above `<TransformWrapper>`, so no scale or pan offset can
-    // move it over the candidate's name.
-    expect(header).not.toBeNull();
-    expect(header).not.toContainElement(wrapper);
-    expect(
-      header!.compareDocumentPosition(wrapper) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(scroll).not.toBeNull();
+    // The paper (and only the paper) scrolls. No chrome row sits between the
+    // stage root and that scroller, so Page 1 starts at the top of the canvas.
+    expect(scroll).toHaveClass(
+      "min-h-0",
+      "flex-1",
+      "overflow-y-auto",
+      "overscroll-contain",
+    );
+    expect(scroll).toContainElement(wrapper);
+    expect(root.querySelector("[data-preview-header]")).toBeNull();
   });
 
-  it("offers an inline Reset fit pill whenever a reduced fit scale is applied", async () => {
+  it("exposes both reset paths through its ref", async () => {
     const doc = createEmptyResume();
     doc.metadata.page.fitScale = 0.85;
     const onFit = vi.fn();
+    const ref = createRef<LiveCanvasViewportHandle>();
 
-    await renderCanvas(2, { doc, onFit });
+    const view = render(
+      <LiveCanvasViewport
+        ref={ref}
+        doc={doc}
+        layout={createLayout(2)}
+        onFit={onFit}
+      />,
+    );
 
-    const button = screen.getByRole("button", { name: "Reset fit to 100%" });
-
-    expect(button).toHaveTextContent("Reset fit");
-    fireEvent.click(button);
-    expect(onFit).toHaveBeenCalledWith(1);
-  });
-
-  it("hides the Reset fit pill at full size", async () => {
-    await renderCanvas(1, { onFit: vi.fn() });
-
-    expect(
-      screen.queryByRole("button", { name: "Reset fit to 100%" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("scrolls the paper back to the top when a reset is clicked", async () => {
-    const doc = createEmptyResume();
-    doc.metadata.page.fitScale = 0.85;
-    const onFit = vi.fn();
-
-    const { view } = await renderCanvas(2, { doc, onFit });
+    await waitFor(() => {
+      expect(ref.current).not.toBeNull();
+    });
 
     const scroll = view.container.querySelector<HTMLDivElement>(
       "[data-canvas-scroll]",
@@ -432,14 +431,20 @@ describe("LiveCanvasViewport", () => {
 
     expect(scroll).not.toBeNull();
     scroll!.scrollTop = 240;
-    expect(scroll!.scrollTop).toBe(240);
 
-    fireEvent.click(screen.getByRole("button", { name: "Reset fit to 100%" }));
+    act(() => {
+      ref.current!.resetFit();
+    });
 
-    // Same position as on first landing in the Preview tab, not where the
-    // user had scrolled the multi-page stack.
+    // Reset fit returns the paper to Page 1 and asks the owner for 100%.
     expect(scroll!.scrollTop).toBe(0);
     expect(onFit).toHaveBeenCalledWith(1);
+
+    scroll!.scrollTop = 180;
+    act(() => {
+      ref.current!.resetZoom();
+    });
+    expect(scroll!.scrollTop).toBe(0);
   });
 
   it("lets plain wheel and two-finger scrolling pass through to the page", async () => {
@@ -471,65 +476,20 @@ describe("LiveCanvasViewport", () => {
     }
   });
 
-  it("groups the warning and page count in one slim strip above Page 1", async () => {
-    const { wrapper } = await renderCanvas(2);
-
-    const badge = screen.getByText("2 pages");
-    const header = badge.closest("[data-preview-header]");
-
-    expect(header).not.toBeNull();
-    // Fixed chrome on phones; sticky only once the desktop panel scrolls.
-    expect(header).toHaveClass("shrink-0", "z-10");
-    expect(header).toHaveClass("lg:sticky", "lg:top-14");
-    expect(header).not.toHaveClass("sticky");
-    // One compact row, bleeding to the trimmed mobile padding and restoring
-    // the desktop padding from `lg` — no tall yellow box or stacked toolbar.
-    expect(header).toHaveClass("-mx-2", "px-2", "py-1.5", "flex-nowrap");
-    expect(header).toHaveClass("lg:-mx-4", "lg:px-4");
-    expect(header).not.toHaveClass("flex-col", "gap-2", "bg-amber-50");
-    expect(header).toContainElement(badge);
-    expect(wrapper.contains(header)).toBe(false);
-    expect(
-      header!.compareDocumentPosition(wrapper) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  });
-
-  it("gives the resume the screen on mobile by trimming the canvas padding", async () => {
-    const { view } = await renderCanvas(2);
+  it("gives the resume the whole stage and keeps the mode-bar chrome out", async () => {
+    const { wrapper, view } = await renderCanvas(2);
     const root = view.container.firstElementChild as HTMLElement;
 
-    expect(root).toHaveClass("px-2", "py-2", "gap-2");
-    expect(root).toHaveClass("lg:p-4", "lg:gap-4");
+    // No stacked status row and no inter-row gap: the canvas scroller is the
+    // only child after the zero-height measure shell.
+    expect(root).toHaveClass("px-2", "py-2");
+    expect(root).toHaveClass("lg:p-4");
+    expect(root).not.toHaveClass("gap-2", "lg:gap-4");
+    expect(root.querySelector("[data-preview-header]")).toBeNull();
+    expect(wrapper.closest("[data-canvas-scroll]")).not.toBeNull();
   });
 
-  it("keeps the count, trim and reset pills in one compact, scrollable row", async () => {
-    const doc = createEmptyResume();
-    doc.metadata.page.fitScale = 0.85;
-
-    await renderCanvas(2, { doc, onFit: vi.fn() });
-
-    const badge = screen.getByText("2 pages");
-    const header = badge.closest("[data-preview-header]")!;
-    const row = header.firstElementChild as HTMLElement;
-    const toolbar = header.querySelector<HTMLElement>("[data-canvas-toolbar]")!;
-    const trim = screen.getByRole("button", { name: "Trim tips (1)" });
-    const reset = screen.getByRole("button", { name: "Reset fit to 100%" });
-
-    // One line that scrolls sideways on a very narrow phone rather than
-    // wrapping into several tall rows inside the fixed preview chrome.
-    expect(row).toHaveClass(
-      "flex-nowrap",
-      "overflow-x-auto",
-      "no-scrollbar",
-    );
-    expect(toolbar).toHaveClass("flex-nowrap", "gap-1.5");
-    expect(trim).toHaveClass("h-8", "text-xs");
-    expect(reset).toHaveClass("h-8", "text-xs");
-    expect(header.querySelectorAll("[data-page-overflow]")).toHaveLength(1);
-  });
-
-  it("keeps the overflow banner in normal flow above the ATS text view", () => {
+  it("keeps the ATS text in one scroll region without preview chrome", () => {
     const { container } = render(
       <LiveCanvasViewport
         doc={createEmptyResume()}
@@ -538,8 +498,6 @@ describe("LiveCanvasViewport", () => {
       />,
     );
 
-    const banner = screen.getByText("2 pages");
-    const header = banner.closest("[data-preview-header]");
     const ats = container.querySelector(
       '[aria-label="ATS plain text preview"]',
     );
@@ -548,45 +506,29 @@ describe("LiveCanvasViewport", () => {
       name: "Copy all plain text",
     });
 
-    expect(header).not.toBeNull();
     expect(ats).not.toBeNull();
     expect(scroll).not.toBeNull();
+    expect(container.querySelector("[data-preview-header]")).toBeNull();
+    expect(container.querySelector("[data-page-overflow]")).toBeNull();
     expect(
       container.querySelector("[data-canvas-desk]"),
     ).not.toBeInTheDocument();
-    expect(header).toHaveClass("shrink-0", "z-10");
-    // Sticky chrome belongs to the canvas only: over the ATS text it would
-    // cover the "Copy all" button and helper copy while the panel scrolls.
-    expect(header).not.toHaveClass("lg:sticky");
-    expect(header).not.toHaveClass("lg:top-14");
-    expect(header).not.toContainElement(ats as HTMLElement);
-    expect(scroll).not.toContainElement(header as HTMLElement);
     // One scroll region for the whole ATS view: the copy bar and every section
     // move together instead of a nested box scrolling inside the panel.
     expect(scroll).toContainElement(copyAll);
     expect(scroll).toContainElement(ats as HTMLElement);
     expect(ats).not.toHaveClass("overflow-auto");
     expect((ats as HTMLElement).className).not.toContain("max-h");
-    expect(
-      header!.compareDocumentPosition(ats as HTMLElement) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      header!.compareDocumentPosition(scroll as HTMLElement) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
   });
 
-  it("scrolls the paper in its own region below the preview chrome", async () => {
+  it("scrolls the paper in its own region with nothing above it", async () => {
     const { wrapper } = await renderCanvas(2);
 
     const scroll = wrapper.closest("[data-canvas-scroll]");
-    const header = screen.getByText("2 pages").closest("[data-preview-header]");
 
     expect(scroll).not.toBeNull();
-    expect(header).not.toBeNull();
-    // The paper (and only the paper) scrolls, so pages are clipped at the
-    // bottom edge of the chrome instead of scrolling behind it.
+    // The paper (and only the paper) scrolls; there is no chrome row left to
+    // clip it against, and Page 1 starts at the top of the stage.
     expect(scroll).toHaveClass(
       "min-h-0",
       "flex-1",
@@ -594,11 +536,6 @@ describe("LiveCanvasViewport", () => {
       "overscroll-contain",
     );
     expect(scroll).toContainElement(wrapper);
-    expect(scroll!.contains(header)).toBe(false);
-    expect(
-      header!.compareDocumentPosition(scroll!) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
   });
 
   it("keeps native page scrolling for coarse pointers", async () => {

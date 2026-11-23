@@ -601,6 +601,18 @@ describe("EditorWorkspace", () => {
     expect(heading).toHaveClass("hidden", "lg:block");
     expect(header).toContainElement(visual);
     expect(header).toContainElement(screen.getByRole("button", { name: "ATS text" }));
+    // The visible label is short enough for 390px; the accessible name keeps
+    // the full "ATS text" wording.
+    expect(screen.getByRole("button", { name: "ATS text" })).toHaveTextContent(
+      /^ATS$/,
+    );
+    // There is no second preview toolbar row any more.
+    expect(
+      document.querySelector("[data-preview-header]"),
+    ).not.toBeInTheDocument();
+    expect(
+      document.querySelector("[data-canvas-toolbar]"),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps the mobile preview controls in one compact, scrollable pill row", async () => {
