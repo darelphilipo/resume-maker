@@ -1350,6 +1350,36 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-23 — One-row Preview bar with Review-owned trim/fit tools
+- Task: the In Progress P1 item. The single-row Preview bar, Review utilities,
+  and lifted viewport state were already present in the checkpoint; this run
+  audited them, added the missing conditional-Reset regression, and moved the
+  item to Done.
+- Bar: `[data-preview-mode-header]` holds `Visual | ATS` (short label, full
+  `aria-label="ATS text"`), the quiet `1 page` label or one inline
+  `PageOverflowBanner` pill, a conditional `Reset` pill only while the canvas
+  is zoomed, and **Review**. `[data-preview-header]` / `[data-canvas-toolbar]`
+  no longer exist.
+- Review: `ReviewMenu` owns `Trim tips (N)` → `TrimTipsDialog`, `Fit to 1 Page`,
+  `Reset fit`, the trim-count badge, and the reduced-fit dot. Blocked-fit copy
+  and `Min 78%` come from `src/lib/pagination/fitCopy.ts`.
+- Viewport: `LiveCanvasViewport` reports `onBulletReport` / `onZoomChange` and
+  exposes `resetZoom` / `resetFit` through `LiveCanvasViewportHandle`; the
+  workspace owns the states and the one `applyFitScale` patch. Decisions
+  #84–#86.
+- Tests: new review/trim/fit/reset/badge, inline-pill, no-second-row, and
+  ref-reset cases; the workspace mock now reports zoom through
+  `onZoomChange` so the conditional Reset pill is guarded. 930 pass.
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/PageOverflowBanner.tsx` (+ test),
+  `src/components/preview/TrimTipsDialog.tsx` (+ test, new),
+  `src/lib/pagination/fitCopy.ts` (new),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (930 pass), `npm run lint`.
+  Playwright remains blocked here, so the e2e case is browser-unverified.
+
 ### 2026-11-23 — One-row Writing helpers and a persistent PDF tab title
 - Task: top P1 Queue item. The Writing helper strip no longer duplicates its
   verbs, and the browser tab keeps the resume name so phone print spoolers do
@@ -1563,35 +1593,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/JdMatchDrawer.tsx` (+ test), `README.md`,
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (892 pass), `npm run lint`.
-
-### 2026-11-22 — Compact mobile Preview chrome and one-scroll ATS text
-- Task: top P1 Queue item. The mobile Preview chrome stacked four tall rows and
-  the ATS tab had a scrollbar inside the panel's scrollbar.
-- Chrome: `EditorWorkspace` hides the redundant `Preview` heading below `lg`
-  (`hidden lg:block`) and puts `Visual`/`ATS text`, `6s Scan`, and `Anonymize`
-  into one `h-8 text-xs px-2.5` pill row that is `flex-nowrap
-  overflow-x-auto no-scrollbar` on phones (desktop restores `lg:flex-wrap` and
-  `lg:min-h-14`). A new `.no-scrollbar` utility in `globals.css` hides the bar.
-  Decision #33 updated.
-- Canvas: the viewport root is `px-2 py-2` on phones (`lg:p-4`), with
-  `PreviewChrome` mirroring that bleed (`-mx-2 -mt-2`, `lg:-mx-4 lg:-mt-4`).
-  `CanvasToolbar` is one `h-8` row: page-count, `Trim tips`, `Reset fit`, and
-  `Reset` pills all use `h-8 text-xs px-2.5` and scroll sideways rather than
-  wrapping. Decision #33.
-- ATS: removed the inner `max-h-[70vh] overflow-auto` box from
-  `AtsTextView` (now `overflow-hidden`), so the `Copy all` bar and every section
-  live directly in `[data-canvas-scroll]` / the desktop panel and scroll as one
-  area. Decision #37 updated.
-- Tests: 874 pass (was 870). Added the compact mode-row contract, mobile canvas
-  padding, the one-line toolbar/pill classes, and the ATS no-nested-scroller
-  case (unit + viewport integration).
-- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/preview/AtsTextView.tsx` (+ test),
-  `src/components/preview/PageOverflowBanner.tsx`,
-  `src/components/preview/CanvasResetButton.tsx` (+ test),
-  `src/app/globals.css`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (874 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

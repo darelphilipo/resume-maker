@@ -18,11 +18,7 @@ _empty
 
 ## In Progress (OpenCode Updates This)
 
-- [ ] P1: Eliminate the second Preview toolbar row by moving `Trim tips` and `Reset fit` into the `Review ▾` menu.
-  1. **Single-row Preview bar (`Visual | ATS` + page pill + `Review ▾`):** Shorten `ATS text` to `ATS` (keeping `aria-label="ATS text"`), drop the second `[data-preview-header]` row, and keep a conditional `Reset` pill in row 1 while the canvas is zoomed.
-  2. **Move `Trim tips` and `Fit / Reset fit` into `Review ▾`:** the Review dialog gains a `Trim tips (N)` row (opens the trim modal), `Fit to 1 Page` / `Reset fit` rows, and a small badge/dot on the pill when trim tips exist or `fitScale < 1`. `LiveCanvasViewport` lifts its bullet report and zoom state to `EditorWorkspace` through stable callbacks and a ref handle.
-  3. **Compact overflow cue:** `PageOverflowBanner` becomes one inline pill in the mode bar (`2 pages · Fit`, or `2 pages · Min 78%` with the full explanation in `title` + sr-only copy) instead of a truncating strip.
-  - Target files: `src/components/editor/EditorWorkspace.tsx`, `src/components/editor/ReviewMenu.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`, matching tests, `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`.
+_empty
 
 ## Queue (Ready for Next Run)
 
@@ -30,6 +26,31 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-23 — Collapsed the Preview chrome to one row and moved `Trim
+  tips` / `Fit` / `Reset fit` into **Review**. The mode bar now holds only
+  `Visual | ATS` (visible label short, `aria-label="ATS text"`), a quiet
+  `1 page` label or one inline `PageOverflowBanner` pill (`2 pages · Fit` /
+  `2 pages · Min 78%`, full reason in `title` + sr-only copy), a conditional
+  `Reset` pill while zoomed, and the **Review** pill. `ReviewMenu` gained
+  `Trim tips (N)` (opens the new `TrimTipsDialog`), `Fit to 1 Page`, and
+  `Reset fit`, plus a trim-count badge and a reduced-fit dot. `LiveCanvasViewport`
+  no longer renders `PreviewChrome`/`CanvasToolbar`: it reports
+  `onBulletReport` / `onZoomChange` upward and exposes `resetZoom` / `resetFit`
+  through `LiveCanvasViewportHandle`, while `EditorWorkspace` owns both states
+  and the single `applyFitScale` patch. Shared `Min 78%` / blocked-fit copy
+  lives in `src/lib/pagination/fitCopy.ts`. Added mode-row/no-second-row,
+  Review trim/fit/reset/badge, pill, ref-reset, and workspace conditional-Reset
+  regressions. Verified `npm run typecheck`, `npm test` (930 pass),
+  `npm run lint`. Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/PageOverflowBanner.tsx` (+ test),
+  `src/components/preview/TrimTipsDialog.tsx` (+ test, new),
+  `src/lib/pagination/fitCopy.ts` (new),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  Playwright remains blocked here, so the updated e2e case is
+  browser-unverified.
 
 - [x] 2026-11-23 — Decluttered `Writing helpers` and kept the PDF filename alive.
   Removed the four duplicate single-word verb pills (**Built / Reduced / Led /
