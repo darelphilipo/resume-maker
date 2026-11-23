@@ -22,7 +22,11 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+- [ ] P0: Fix `Studio Sidebar` multi-page packing, `totalHeightPx` over-counting, and Page 2+ width mismatch (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/lib/pagination/computePages.ts`, `src/lib/pagination/usePageLayout.ts`, `src/components/preview/MeasureLayer.tsx`).
+  1. **Pack Page 1 columns independently:** For `studio-sidebar` (`gengar`), pack `sidebarBlocks` into Page 1's right column instead of counting their heights against Page 2+ main-column budgets, so trailing sections (`Awards`, `Certifications`, etc.) don't get stranded on an extra Page 3 while Page 2 is half-empty.
+  2. **Fix `totalHeightPx` for `Fit to 1 Page`:** Compute `totalHeightPx` for `studio-sidebar` using `headerHeightPx + Math.max(mainHeightPx, sidebarHeightPx)` rather than `mainHeightPx + sidebarHeightPx`, so `Fit to 1 Page` and the `78%` floor reflect actual two-column height.
+  3. **Measure Page 2+ overflow at full width (or account for `.studio-layout--full`):** Measure/re-measure main blocks that overflow past Page 1 at full `100%` width so Page 2 packs accurately without leaving artificial empty space at the bottom.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
