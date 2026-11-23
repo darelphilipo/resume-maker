@@ -21,6 +21,7 @@ import { PrintTriggerButton } from "@/components/preview/PrintTriggerButton";
 import { ExportJsonButton } from "@/components/shared/ExportJsonButton";
 import { usePageLayout } from "@/lib/pagination/usePageLayout";
 import { anonymizeResumeDoc } from "@/lib/privacy/anonymizeDoc";
+import { resumeDocumentTitle } from "@/lib/print/printDocument";
 import { resumeDisplayName } from "@/lib/schema/resumeName";
 import {
   canRedo,
@@ -169,6 +170,33 @@ export function EditorWorkspace() {
     [anonymizePreview, displayDoc],
   );
 
+  const status: LoadStatus = !id
+    ? "missing"
+    : loadResult?.id === id
+      ? loadResult.found
+        ? "ready"
+        : "notfound"
+      : "loading";
+
+  /**
+   * Keep the browser tab named after the current resume. The print routine
+   * briefly swaps in the slugified filename, but Android Chrome spools the PDF
+   * asynchronously after `window.print()` returns, so restoring the page title
+   * immediately can make the saved file fall back to a default name. The title
+   * therefore stays synced while the editor is open and is restored on unmount.
+   */
+  useEffect(() => {
+    if (status !== "ready") {
+      return;
+    }
+
+    document.title = resumeDocumentTitle(previewDoc.basics.name);
+
+    return () => {
+      document.title = "Resume Maker";
+    };
+  }, [previewDoc.basics.name, status]);
+
   useEffect(() => {
     if (!id) {
       return;
@@ -240,14 +268,6 @@ export function EditorWorkspace() {
       window.removeEventListener("keydown", handleUndoShortcut);
     };
   }, []);
-
-  const status: LoadStatus = !id
-    ? "missing"
-    : loadResult?.id === id
-      ? loadResult.found
-        ? "ready"
-        : "notfound"
-      : "loading";
 
   if (status === "missing") {
     return (

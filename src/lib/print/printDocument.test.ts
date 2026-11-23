@@ -4,6 +4,7 @@ import {
   printDateStamp,
   printResume,
   printTitle,
+  resumeDocumentTitle,
   slugSegment,
 } from "./printDocument";
 
@@ -139,6 +140,24 @@ describe("printTitle", () => {
         date: new Date(2026, 10, 15, 23, 30),
       }),
     ).toBe("ada-lovelace-2026-11-15-resume");
+  });
+});
+
+describe("resumeDocumentTitle", () => {
+  it("keeps the readable resume name for the browser tab and PDF", () => {
+    expect(resumeDocumentTitle("Daniel Okafor")).toBe("Daniel Okafor - Resume");
+    expect(resumeDocumentTitle("Alex Taylor")).toBe("Alex Taylor - Resume");
+  });
+
+  it("collapses stray whitespace without slugifying the name", () => {
+    expect(resumeDocumentTitle("  Zoë   O'Brien  ")).toBe(
+      "Zoë O'Brien - Resume",
+    );
+  });
+
+  it("falls back to the app name when no resume name is set", () => {
+    expect(resumeDocumentTitle("")).toBe("Resume Maker");
+    expect(resumeDocumentTitle("   ")).toBe("Resume Maker");
   });
 });
 

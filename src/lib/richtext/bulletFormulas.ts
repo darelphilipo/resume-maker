@@ -32,8 +32,8 @@ export const BULLET_FORMULAS: readonly BulletFormula[] = [
 ] as const;
 
 /**
- * Insert a formula at the cursor with the same spacing rule as the action
- * verbs, plus a trailing space so the user can continue the sentence.
+ * Insert a formula at the cursor with the shared spacing rule, plus a trailing
+ * space so the user can continue the sentence.
  */
 export function bulletFormulaInsertion(
   formula: BulletFormula,

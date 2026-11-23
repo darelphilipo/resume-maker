@@ -122,16 +122,16 @@ in control of every line, and your data stays on your device.
   Publications, and References.
 - Rich-text descriptions with bold, italic, bullet/numbered lists, links, and
   editor undo. All eight formatting controls share one tidy row, even in the
-  narrow desktop Content column. Experience and project bullets offer a compact
-  row of one-tap action verbs (**Built**, **Reduced**, **Led**, **Automated**)
-  plus four tappable fill-in formulas: **Reduced [metric] by [X%] by [action]**,
+  narrow desktop Content column. Experience and project bullets offer four
+  tappable fill-in formulas: **Reduced [metric] by [X%] by [action]**,
   **Built [feature/system] for [N] users, improving [outcome]**,
   **Led [team/project] to deliver [result]**, and
   **Automated [workflow], saving [N] hrs/wk**. Tap a formula to drop the whole
   skeleton at your cursor, replace the bracketed parts with your own facts, and
-  keep the result. Everything inserts cleanly after the existing sentence with a
-  leading space when needed, so words never run together; tap **Writing
-  helpers** to tuck the strip away so your bullets stay in view. A blank bullet
+  keep the result. Each formula wraps neatly to its own left edge, and
+  everything inserts cleanly after the existing sentence with a leading space
+  when needed, so words never run together; tap **Writing helpers** to tuck the
+  strip away so your bullets stay in view. A blank bullet
   left at the end of a list is ignored in the preview, PDF, and ATS text, so it
   never prints as a stray dot.
 - Skills grouped by an optional category with comma-separated keywords (for
@@ -310,7 +310,9 @@ in control of every line, and your data stays on your device.
   stops cleanly below that chrome instead of sliding underneath it.
 - Print/PDF filenames are generated from your name, headline, and date. While
   **Anonymize** is on, the filename uses the placeholder name too, so the file
-  itself does not reveal who the resume belongs to.
+  itself does not reveal who the resume belongs to. The browser tab keeps
+  showing the resume name while the editor is open, so phones and tablets that
+  prepare the PDF after the print dialog closes still suggest the right name.
 
 ### Keep your work
 

@@ -47,6 +47,18 @@ export function printTitle(input: PrintTitleInput): string {
   return base === "" ? "resume" : `${base}-resume`;
 }
 
+/**
+ * Human-readable browser-tab title for the open editor. It stays in place for
+ * the whole editing session so browsers (notably Android Chrome's async print
+ * spooler) can read the resume name for the PDF "Save as" filename instead of
+ * a title that was restored too early.
+ */
+export function resumeDocumentTitle(name: string): string {
+  const clean = name.trim().replace(/\s+/g, " ");
+
+  return clean === "" ? "Resume Maker" : `${clean} - Resume`;
+}
+
 function isCoarsePointer(): boolean {
   if (typeof window.matchMedia !== "function") {
     return false;

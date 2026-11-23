@@ -22,10 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P1: Clean up `Writing helpers` (remove duplicate single-word verb pills) and fix mobile/desktop PDF filename (`src/components/editor/RichTextField.tsx`, `src/lib/print/printDocument.ts`, `src/components/editor/EditorWorkspace.tsx`).
-  1. **Remove duplicate verb pills in `RichTextField.tsx`:** Delete the 4 redundant single-word pills (`Built`, `Reduced`, `Led`, `Automated`) below the Impact Formula cards so `Writing helpers` shows only the 4 tappable formula scaffolds. Fix formula button text alignment (`block w-full text-left`) so wrapped lines (like `improving [outcome]` and `wk`) align cleanly to the left edge instead of indenting awkwardly.
-  2. **Keep `document.title` synced to the resume filename in `/editor`:** Instead of swapping `document.title` only briefly around `window.print()` (which resets too early on Android Chrome's async print spooler and causes a temp/default filename), sync `document.title` via `useEffect` in `EditorWorkspace.tsx` to the clean PDF filename (e.g. `Daniel Okafor - Resume`, or `Alex Taylor - Resume` when `Anonymize` is active) for the entire time the editor is open, restoring `"Resume Maker"` on unmount.
-
 - [ ] P1: Eliminate the second Preview toolbar row by moving `Trim tips` and `Reset fit` into the `Review ▾` menu (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`).
   1. **Single-row Preview bar (`Visual | ATS` + page pill + `Review ▾`):** Shorten `ATS text` label to `ATS` (keeping `aria-label="ATS text"`) so the top bar never crowds at `390px`, and remove the separate second row used for `Trim tips (N)` and `Reset fit`.
   2. **Move `Trim tips` and `Fit / Reset fit` into `Review ▾`:** Inside the `Review` popover menu (alongside `6s Scan` and `Anonymize`), show `Trim tips (N)` (opening the Trim tips modal) and `Fit to 1 Page` / `Reset fit` (showing a subtle dot/badge on `Review ▾` when trim tips exist or `fitScale < 1`).
@@ -33,6 +29,27 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-23 — Decluttered `Writing helpers` and kept the PDF filename alive.
+  Removed the four duplicate single-word verb pills (**Built / Reduced / Led /
+  Automated**) and the now-unused `actionVerbInsertion` helper, so the strip
+  shows only the four impact-formula scaffolds. Each formula chip is now a
+  `block w-full text-left` button inside a `flex flex-col` group, so wrapped
+  lines align to the chip's left edge instead of indenting behind the bold verb.
+  A new pure `resumeDocumentTitle(name)` returns `{name} - Resume` (or
+  `Resume Maker` when blank), and `EditorWorkspace` keeps `document.title`
+  synced to the displayed name through a `useEffect` covering live typing and
+  **Anonymize**, restoring `Resume Maker` on unmount. That removes the Android
+  Chrome async-print-spooler default filename; the slugified print title and its
+  1200 ms coarse-pointer grace remain. Added formula-only/alignment/collapse,
+  title-helper, and live/anonymized/unmount title regressions. Verified
+  `npm run typecheck`, `npm test` (931 pass), `npm run lint`. Files:
+  `src/components/editor/RichTextField.tsx` (+ test),
+  `src/lib/richtext/actionVerbs.ts` (+ test),
+  `src/lib/richtext/bulletFormulas.ts`,
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/lib/print/printDocument.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-23 — Decluttered the Preview chrome and gave the resume page equal
   breathing room. The mode bar now holds only `Visual | ATS text`, an inline

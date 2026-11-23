@@ -75,8 +75,14 @@ rediscover.
    hydration flicker.
 4. **PDF filename comes from `document.title`.** There is no HTTP response in a
    static export, so title is the only lever. Format:
-   `{name}-{headline}-{YYYY-MM-DD}-resume`, lowercase-kebab, local date. A
-   1200 ms grace on coarse pointers keeps the title alive after `afterprint`.
+   `{name}-{headline}-{YYYY-MM-DD}-resume`, lowercase-kebab, local date. The
+   editor also keeps `document.title` synced to a readable `{name} - Resume`
+   (`resumeDocumentTitle` in `src/lib/print/printDocument.ts`) through a
+   `useEffect` keyed on the displayed (live or anonymized) name, and restores
+   `Resume Maker` on unmount. Android Chrome spools the PDF asynchronously after
+   `window.print()` returns, so restoring the page title immediately produced a
+   temp/default filename; the 1200 ms grace on coarse pointers is a second line
+   of defence, not the main fix.
 5. **Wheel zoom is intercept-and-scale, and modifier-gated** (`src/lib/zoom/`).
    Only Ctrl/⌘ + wheel zooms (`isZoomWheel` in `wheelZoom.ts`): browsers
    synthesize `ctrlKey` on trackpad pinch, while a plain wheel or two-finger
@@ -253,20 +259,22 @@ rediscover.
     cards). Export stays in the editor header (`ExportJsonButton`), and the
     disclosure copy points users there. PDF upload now has its own input and
     error state; do not fold JSON back into the primary file picker.
-22. **Action-verb and impact-formula helpers are opt-in and insert plain text.**
-    `RichTextField`'s `actionHelpers` prop renders four one-tap action verbs
-    (Built, Reduced, Led, Automated) and four tappable impact formulas
-    (`BULLET_FORMULAS` in `src/lib/richtext/bulletFormulas.ts`). A verb inserts
-    the verb plus a trailing space at the cursor; a formula inserts its whole
-    fill-in skeleton (bracketed placeholders intact) plus a trailing space. Both
-    go through TipTap `insertContent` and the shared `textInsertion` spacing rule
-    in `actionVerbs.ts`, so they do not wrap the current selection, add
-    formatting, or glue themselves to the preceding word. The formulas replace
-    the old static `[Action] + [What] + [Result by X%]` paragraph in the
-    collapsible strip rather than adding another stacked helper row. Only
-    achievement-style fields (Experience and Projects descriptions) pass the
-    prop — Summary, award notes, and reference notes stay prose-only. Keep the
-    helpers local and client-side: no AI suggestions, prompts, or network calls.
+22. **Impact-formula helpers are opt-in and insert plain text.**
+    `RichTextField`'s `actionHelpers` prop renders four tappable fill-in
+    formulas (`BULLET_FORMULAS` in `src/lib/richtext/bulletFormulas.ts`). A
+    formula inserts its whole fill-in skeleton (bracketed placeholders intact)
+    plus a trailing space through TipTap `insertContent` and the shared
+    `textInsertion` spacing rule in `actionVerbs.ts`, so it does not wrap the
+    current selection, add formatting, or glue itself to the preceding word.
+    The strip shows only those four scaffolds: the older single-word
+    **Built / Reduced / Led / Automated** pills were duplicates and were removed.
+    Each chip is a `block w-full text-left` button (not a two-column
+    `inline-flex`), so a wrapped formula such as
+    `Built … improving [outcome]` starts every line at the chip's left edge
+    instead of indenting behind the bold verb. Only achievement-style fields
+    (Experience and Projects descriptions) pass the prop — Summary, award notes,
+    and reference notes stay prose-only. Keep the helpers local and client-side:
+    no AI suggestions, prompts, or network calls.
 23. **The home page is a landing page, not a bare form.** `src/app/page.tsx`
     owns the only `h1`, the `Resume Maker` wordmark; the e2e a11y and page tests
     look that heading up by name, so the value proposition stays an `h2`. The
@@ -582,8 +590,8 @@ rediscover.
     (`src/lib/schema/resumeName.ts`) is the single `"Untitled resume"` fallback
     used by the header and preview canvas, which read the committed `doc` so
     they follow typing without waiting for blur.
-43. **Action-verb insertions respect the preceding character.** The pure
-    `actionVerbInsertion` helper in `src/lib/richtext/actionVerbs.ts` prepends a
+43. **Formula insertions respect the preceding character.** The pure
+    `textInsertion` helper in `src/lib/richtext/actionVerbs.ts` prepends a
     space only when the cursor follows non-whitespace; `RichTextField` reads
     `editor.state.selection.$from.parent.textBetween(offset - 1, offset)` and
     delegates the formatting. Keep the spacing rule unit-tested there rather than
@@ -1331,6 +1339,34 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-23 — One-row Writing helpers and a persistent PDF tab title
+- Task: top P1 Queue item. The Writing helper strip no longer duplicates its
+  verbs, and the browser tab keeps the resume name so phone print spoolers do
+  not save a temp/default PDF filename.
+- Helpers: removed the four single-word **Built / Reduced / Led / Automated**
+  pills and their `actionVerbInsertion` helper. `RichTextField` now shows only
+  the four impact-formula scaffolds, each a `block w-full text-left` chip in a
+  `flex flex-col` group, so a wrapped formula starts every line at the left edge.
+  Decision #22/#43 rewritten.
+- Title: new pure `resumeDocumentTitle(name)` returns `{name} - Resume` (or
+  `Resume Maker` when blank). `EditorWorkspace` syncs `document.title` in a
+  `useEffect` keyed on `previewDoc.basics.name` (so live typing and Anonymize
+  both follow) and restores `Resume Maker` on unmount. The print routine still
+  swaps in the slugified filename and keeps the coarse-pointer grace, but the
+  persistent title is now the primary fix for Android Chrome's async spooler.
+  Decision #4 updated.
+- Tests: formula-only chip count, no verb pills, block/w-full alignment, and
+  collapse; `resumeDocumentTitle` formatting/fallbacks; workspace tab title
+  following a live name edit, the anonymized alias, and unmount restoration.
+  931 pass (was 930).
+- Files: `src/components/editor/RichTextField.tsx` (+ test),
+  `src/lib/richtext/actionVerbs.ts` (+ test),
+  `src/lib/richtext/bulletFormulas.ts`,
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/lib/print/printDocument.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (931 pass), `npm run lint`.
+
 ### 2026-11-23 — Calm Preview chrome and a centred canvas
 - Task: the In Progress P1 item. The implementation was already present in the
   checkpoint (ReviewMenu, the slim strip, canvas padding/gutter, and scroller
@@ -1545,33 +1581,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/preview/CanvasResetButton.tsx` (+ test),
   `src/app/globals.css`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (874 pass), `npm run lint`.
-
-### 2026-11-22 — Open JSON Resume import/export
-- Task: the only P2 Queue item. Resumes can now be read from and written to the
-  open JSON Resume schema, so they are portable outside Resume Maker.
-- Adapter: new pure `src/lib/schema/jsonResume.ts` owns detection, import
-  mapping, export mapping, and serialization. Import accepts `$schema`,
-  standard section arrays, or JSON Resume-only basics fields; dates normalize to
-  `YYYY-MM`; `highlights`/`courses` become bullet lists; a missing work end date
-  is current. Export emits standard keys with `YYYY-MM-01` dates, prose + bullets
-  split into `summary`/`highlights`, and only visible sections/entries. Custom
-  sections, layout, and design stay in the Resume Maker backup.
-- Import: `parseResumeJson` detects JSON Resume before the native schema, so the
-  existing Backup & Restore picker works with no new UI. The launcher copy names
-  both formats.
-- Export: the editor's JSON header control opens a compact two-item menu
-  (**Resume Maker backup** / **JSON Resume**), keeping one 44px header action
-  (Decision #25); the menu supports Arrow keys, Escape, outside-tap close, and
-  returns focus to the trigger.
-- Tests: detection, every import section, export mapping, hidden filtering,
-  current-role handling, round-trip, serialization, launcher JSON Resume import,
-  and export-menu interactions. 870 pass (was 850). Decision #80.
-- Files: `src/lib/schema/jsonResume.ts` (+ test, new),
-  `src/lib/schema/serialize.ts` (+ test),
-  `src/components/shared/ExportJsonButton.tsx` (+ test),
-  `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (870 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

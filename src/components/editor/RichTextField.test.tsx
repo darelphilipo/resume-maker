@@ -237,7 +237,7 @@ describe("RichTextField", () => {
       name: "Impact bullet formulas",
     });
 
-    expect(group).toHaveClass("flex", "flex-wrap", "gap-1");
+    expect(group).toHaveClass("flex", "flex-col", "gap-1");
     expect(
       screen.queryByText("[Action] + [What] + [Result by X%]"),
     ).not.toBeInTheDocument();
@@ -256,14 +256,23 @@ describe("RichTextField", () => {
 
       expect(chip).toHaveTextContent(formula);
       expect(chip).toHaveClass(
+        "block",
+        "w-full",
         "min-h-9",
         "text-left",
         "text-xs",
         "whitespace-normal",
         "pointer-coarse:min-h-11",
       );
+      expect(chip).not.toHaveClass("inline-flex", "items-start", "gap-1");
       expect(chip).not.toHaveClass("min-h-11");
     }
+
+    // The single-word verb pills were duplicates of these formula verbs and
+    // used to stack a second row below the scaffolds.
+    expect(
+      screen.queryByRole("group", { name: "Action verb helpers" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not show action helpers unless requested", () => {
@@ -276,17 +285,17 @@ describe("RichTextField", () => {
     );
 
     expect(
-      screen.queryByRole("group", { name: "Action verb helpers" }),
+      screen.queryByRole("group", { name: "Impact bullet formulas" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("group", { name: "Impact bullet formulas" }),
+      screen.queryByRole("button", { name: "Writing helpers" }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText("[Action] + [What] + [Result by X%]"),
     ).not.toBeInTheDocument();
   });
 
-  it("shows action verb chips and impact formulas when enabled", () => {
+  it("shows only the four impact formula chips when enabled", () => {
     render(
       <RichTextField
         value=""
@@ -296,21 +305,22 @@ describe("RichTextField", () => {
       />,
     );
 
-    expect(
-      screen.getByRole("group", { name: "Impact bullet formulas" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("group", { name: "Action verb helpers" }),
-    ).toBeInTheDocument();
+    const formulas = screen.getByRole("group", {
+      name: "Impact bullet formulas",
+    });
 
+    expect(formulas.querySelectorAll("button")).toHaveLength(4);
+    expect(
+      screen.queryByRole("group", { name: "Action verb helpers" }),
+    ).not.toBeInTheDocument();
     for (const verb of ["Built", "Reduced", "Led", "Automated"]) {
       expect(
-        screen.getByRole("button", { name: `Insert action verb ${verb}` }),
-      ).toBeInTheDocument();
+        screen.queryByRole("button", { name: `Insert action verb ${verb}` }),
+      ).not.toBeInTheDocument();
     }
   });
 
-  it("renders the action verbs as a compact, organized group", () => {
+  it("renders each formula as one full-width, left-aligned chip", () => {
     render(
       <RichTextField
         value=""
@@ -320,14 +330,19 @@ describe("RichTextField", () => {
       />,
     );
 
-    const group = screen.getByRole("group", { name: "Action verb helpers" });
+    const group = screen.getByRole("group", {
+      name: "Impact bullet formulas",
+    });
     const built = screen.getByRole("button", {
-      name: "Insert action verb Built",
+      name: "Insert impact formula Built [feature/system] for [N] users, improving [outcome]",
     });
 
-    expect(group).toHaveClass("flex", "flex-wrap", "items-center", "gap-1");
-    expect(built).toHaveClass("min-h-9", "px-2.5", "py-1");
-    expect(built).not.toHaveClass("min-h-11");
+    expect(group).toHaveClass("flex", "flex-col", "gap-1");
+    expect(group).not.toHaveClass("flex-row", "items-stretch");
+    // A block button wraps every line at the chip's own left edge instead of
+    // indenting continuation lines behind the bold verb.
+    expect(built).toHaveClass("block", "w-full", "text-left");
+    expect(built).not.toHaveClass("inline-flex");
   });
 
   it("tucks the writing helpers away so the bullets stay visible", () => {
@@ -341,22 +356,19 @@ describe("RichTextField", () => {
     );
 
     const toggle = screen.getByRole("button", { name: "Writing helpers" });
-    const verbGroup = screen.getByRole("group", {
-      name: "Action verb helpers",
+    const formulaGroup = screen.getByRole("group", {
+      name: "Impact bullet formulas",
     });
 
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(toggle).toHaveAttribute(
       "aria-controls",
-      verbGroup.parentElement?.id,
+      formulaGroup.parentElement?.id,
     );
 
     fireEvent.click(toggle);
 
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(
-      screen.queryByRole("group", { name: "Action verb helpers" }),
-    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("group", { name: "Impact bullet formulas" }),
     ).not.toBeInTheDocument();
@@ -365,48 +377,8 @@ describe("RichTextField", () => {
 
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(
-      screen.getByRole("group", { name: "Action verb helpers" }),
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole("group", { name: "Impact bullet formulas" }),
     ).toBeInTheDocument();
-  });
-
-  it("inserts the chosen action verb followed by a space", () => {
-    render(
-      <RichTextField
-        value=""
-        onChange={vi.fn()}
-        ariaLabel="Description for entry 1"
-        actionHelpers
-      />,
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Insert action verb Reduced" }),
-    );
-
-    expect(tiptapMock.editor.chain).toHaveBeenCalledTimes(1);
-    expect(tiptapMock.insertedContent).toEqual(["Reduced "]);
-  });
-
-  it("leads with a space when the cursor follows non-whitespace text", () => {
-    tiptapMock.cursor.before = ".";
-
-    render(
-      <RichTextField
-        value=""
-        onChange={vi.fn()}
-        ariaLabel="Description for entry 1"
-        actionHelpers
-      />,
-    );
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Insert action verb Built" }),
-    );
-
-    expect(tiptapMock.insertedContent).toEqual([" Built "]);
   });
 
   it("inserts the chosen impact formula followed by a space", () => {

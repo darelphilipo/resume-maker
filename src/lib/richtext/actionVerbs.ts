@@ -10,14 +10,3 @@ export function textInsertion(text: string, textBeforeCursor: string): string {
 
   return `${needsLeadingSpace ? " " : ""}${text}`;
 }
-
-/**
- * Action-verb chips insert the verb plus a trailing space so the user can keep
- * typing the rest of the bullet.
- */
-export function actionVerbInsertion(
-  verb: string,
-  textBeforeCursor: string,
-): string {
-  return textInsertion(`${verb} `, textBeforeCursor);
-}

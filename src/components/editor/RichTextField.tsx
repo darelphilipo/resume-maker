@@ -24,15 +24,12 @@ import {
   type ReactNode,
 } from "react";
 
-import { actionVerbInsertion } from "@/lib/richtext/actionVerbs";
 import {
   BULLET_FORMULAS,
   bulletFormulaInsertion,
   type BulletFormula,
 } from "@/lib/richtext/bulletFormulas";
 import { sanitizeRichText } from "@/lib/richtext/sanitize";
-
-export const ACTION_VERBS = ["Built", "Reduced", "Led", "Automated"] as const;
 
 export type RichTextFieldProps = {
   value: string;
@@ -181,10 +178,6 @@ export function RichTextField({
     editor.chain().focus().insertContent(build(textBeforeCursor)).run();
   }
 
-  function insertActionVerb(verb: string): void {
-    insertAtCursor((beforeCursor) => actionVerbInsertion(verb, beforeCursor));
-  }
-
   function insertBulletFormula(formula: BulletFormula): void {
     insertAtCursor((beforeCursor) =>
       bulletFormulaInsertion(formula, beforeCursor),
@@ -319,7 +312,7 @@ export function RichTextField({
               <div
                 role="group"
                 aria-label="Impact bullet formulas"
-                className="flex flex-wrap items-stretch gap-1"
+                className="flex flex-col gap-1"
               >
                 {BULLET_FORMULAS.map((formula) => (
                   <button
@@ -328,7 +321,7 @@ export function RichTextField({
                     aria-label={`Insert impact formula ${formula.template}`}
                     disabled={!editor}
                     onClick={() => insertBulletFormula(formula)}
-                    className="inline-flex min-h-9 max-w-full items-start gap-1 whitespace-normal rounded-md border border-line bg-surface px-2 py-1 text-left text-xs leading-snug text-muted transition-colors hover:border-black/30 hover:text-text active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line pointer-coarse:min-h-11"
+                    className="block w-full min-h-9 max-w-full whitespace-normal rounded-md border border-line bg-surface px-2 py-1 text-left text-xs leading-snug text-muted transition-colors hover:border-black/30 hover:text-text active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line pointer-coarse:min-h-11"
                   >
                     <span className="font-medium text-text">
                       {formula.verb}
@@ -336,24 +329,6 @@ export function RichTextField({
                     <span>
                       {formula.template.slice(formula.verb.length).trimStart()}
                     </span>
-                  </button>
-                ))}
-              </div>
-              <div
-                role="group"
-                aria-label="Action verb helpers"
-                className="flex flex-wrap items-center gap-1"
-              >
-                {ACTION_VERBS.map((verb) => (
-                  <button
-                    key={verb}
-                    type="button"
-                    aria-label={`Insert action verb ${verb}`}
-                    disabled={!editor}
-                    onClick={() => insertActionVerb(verb)}
-                    className="inline-flex min-h-9 items-center rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-line"
-                  >
-                    {verb}
                   </button>
                 ))}
               </div>

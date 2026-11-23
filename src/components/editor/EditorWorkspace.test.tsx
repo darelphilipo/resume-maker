@@ -83,6 +83,7 @@ const loadResumeMock = vi.fn();
 beforeEach(() => {
   vi.clearAllMocks();
   searchParamsState.id = "resume-1";
+  document.title = "Resume Maker";
   resetResumeStore();
   loadResumeMock.mockReset().mockResolvedValue(true);
   useResumeStore.setState({ loadResume: loadResumeMock });
@@ -217,6 +218,53 @@ describe("EditorWorkspace", () => {
 
     expect(toggle).toHaveAttribute("aria-checked", "false");
     expect(canvas).toHaveAttribute("data-scan-highlight", "false");
+  });
+
+  it("keeps the browser tab synced to the resume name while editing", async () => {
+    const doc = createEmptyResume();
+
+    doc.basics.name = "Daniel Okafor";
+    useResumeStore.setState({ doc });
+
+    render(<EditorWorkspace />);
+    await screen.findByRole("heading", {
+      level: 1,
+      name: "Daniel Okafor",
+    });
+
+    expect(document.title).toBe("Daniel Okafor - Resume");
+
+    expandBasics();
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Daniel Okafor Jr." },
+    });
+
+    expect(document.title).toBe("Daniel Okafor Jr. - Resume");
+  });
+
+  it("uses the anonymized name in the tab title and restores the app name", async () => {
+    const doc = createEmptyResume();
+
+    doc.basics.name = "Grace Hopper";
+    useResumeStore.setState({ doc });
+
+    const { unmount } = render(<EditorWorkspace />);
+
+    await screen.findByRole("heading", {
+      level: 1,
+      name: "Grace Hopper",
+    });
+
+    expect(document.title).toBe("Grace Hopper - Resume");
+
+    openReviewMenu();
+    fireEvent.click(screen.getByRole("switch", { name: "Anonymize" }));
+
+    expect(document.title).toBe(`${ANONYMIZED_NAME} - Resume`);
+
+    unmount();
+
+    expect(document.title).toBe("Resume Maker");
   });
 
   it("uses the anonymized name in the captured print filename", async () => {
