@@ -22,7 +22,27 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+### P0 — PDF & Paste Import Reliability Upgrades
+
+- [ ] P0: Add two-column PDF detection and glyph/hyphen cleanup to `src/lib/import/pdfResume.ts`.
+  1. **Strip icon & broken glyphs:** Remove Private Use Area icon characters (`[\uE000-\uF8FF]`), zero-width chars, and rejoin soft-hyphenated/replacement-char line wraps (`\u00AD`, `\uFFFD` inside words/URLs) during text extraction.
+  2. **Detect two-column layouts (Canva / sidebar PDFs):** Before merging items into full-width lines in `groupPageLines`, check if page items split cleanly into two non-overlapping horizontal columns separated by a consistent vertical gutter (e.g., left sidebar vs right main column across ≥30% of lines, below any full-width top banner). Extract full-width header first, then left column top-to-bottom, then right column top-to-bottom so sidebar skills/contact never interleave with Experience.
+  3. Add unit tests covering two-column coordinate fixtures and PUA icon glyph stripping.
+
+- [ ] P0: Wire all remaining sections and expand `SECTION_ALIASES` in `src/lib/import/pasteResume.ts`.
+  1. **Stop dropping recognized sections:** Populate `projects`, `certifications`, `awards`, `languages`, `interests`, `volunteer`, `publications`, `references`, and `profiles` in `parsePastedResume` instead of discarding them after `splitSections`.
+  2. **Expand `SECTION_ALIASES`:** Add common real-world variants including `certifications & awards` / `certifications and awards`, `courses & certifications` / `courses and certifications`, `hard skills`, `soft skills` (mapping to `skills` with the heading preserved as category), `education background`, `internship` / `internships` (mapping to `experience` or `customSections`), `extra curricular` / `extracurricular` / `extracurricular activities` (mapping to `volunteer` or `awards`), and `contact` / `my contact` / `contact details` (routed to `parseHeader`).
+  3. **Handle 3-column bulleted Skills:** Split skill lines containing multiple `•` / `·` bullets on the same line into individual skill keywords.
+
+- [ ] P0: Upgrade header, contact, date, location, and entry-block heuristics in `src/lib/import/pasteResume.ts`.
+  1. **Unlabeled opening summary & fallback contact scan:** If the top `header` block contains a multi-sentence paragraph (`> 120` chars) with no `Summary` heading, capture it into `summary.content` instead of discarding it. If email, phone, or LinkedIn/GitHub URLs aren't found in the top header, scan any `My Contact` block (or full text) as a fallback.
+  2. **Smarter Experience & Education parsing:**
+     - Prefer `isDateAnchor` splitting over naive blank-line splitting inside Experience/Education so PDF paragraph gaps between bullets don't split one role into multiple broken entries.
+     - Support `Company as Title` (`/\s+as\s+/i`) in `splitTitleAndCompany`.
+     - Support single dates (`Completed in 2018`, `Expected May 2027`, `Apr 2026`, `2014`) in addition to date ranges.
+     - Broaden `LOCATION_PATTERN` to accept 3-part locations (`Bengaluru, Karnataka, India`) and common standalone/global cities instead of only US `City, ST`.
+  3. Add unit tests modeled on all 3 resume archetypes (Reactive Resume single-column with icons, single-column with unlabeled summary + 3-col skills, and 2-page two-column Canva resume).
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
