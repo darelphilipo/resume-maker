@@ -1,5 +1,34 @@
 export const PAGE_STACK_GAP_PX = 24;
 
+/**
+ * Vertical padding of the preview canvas scroller (`py-3` in
+ * `LiveCanvasViewport`). Keep the two in sync.
+ *
+ * The gray desk is anchored at the top of the scroller's padding box while the
+ * transform wrapper starts after that scroller's top padding, so the desk
+ * height adds **both** paddings (`frame.height + CANVAS_SCROLL_PADDING_PX * 2`).
+ * That wraps Page 1 and the last page inside the backdrop instead of letting
+ * the paper spill past its gray edge.
+ */
+export const CANVAS_SCROLL_PADDING_PX = 12;
+
+/**
+ * Height of the gray preview desk behind the scaled page stack.
+ *
+ * The desk is anchored at the top of the scroller's padding box while the
+ * transform wrapper starts after the scroller's top padding, so the backdrop
+ * must cover the stack plus **both** `py-3` paddings. That wraps Page 1's top
+ * edge and keeps the last page from spilling below the gray edge at any paper
+ * size or page count.
+ */
+export function canvasDeskHeight(stackHeightPx: number): number {
+  if (!Number.isFinite(stackHeightPx) || stackHeightPx <= 0) {
+    return 0;
+  }
+
+  return stackHeightPx + CANVAS_SCROLL_PADDING_PX * 2;
+}
+
 export type CanvasFrame = {
   width: number;
   height: number;

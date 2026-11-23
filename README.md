@@ -226,16 +226,17 @@ in control of every line, and your data stays on your device.
   crowding the live resume. Page 1 keeps
   breathing room above and below, so its top edge and shadow never clip. On tall
   tablets and phones showing the desktop site, the fitted page sits centred with
-  even side margins, the gray preview desk ends with the last page instead of
-  trailing into empty space, and short Content or Design cards stay vertically
-  balanced above the bar.
+  even side margins, and the gray preview desk wraps the first and last pages
+  instead of ending short of the paper or trailing into empty space. Short
+  Content or Design cards stay vertically balanced above the bar.
 - **Scroll or zoom the preview naturally**: on a phone, two fingers zoom the
   resume and a one-finger drag moves freely in any direction across the zoomed
   page. At normal size a one-finger swipe scrolls a multi-page preview smoothly
   and natively, while the preview header stays fixed, so pages stop cleanly at
   its edge instead of slipping behind the page-count pill. When a drag reaches
   the top or bottom of the zoomed page, scrolling eases in smoothly, so you can
-  always reach every page. A small **Reset** button appears only while zoomed
+  always reach every page. A small **Reset** button floats over the bottom-right
+   of the preview only while zoomed, so the top bar never crowds **Review**,
   and returns the page to its fitted width; **Reset** and **Reset fit** both
   bring you back to the top of the resume, just like when you first open the
   Preview tab. On a computer, the mouse wheel and two-finger scrolling move the

@@ -48,12 +48,10 @@ vi.mock("@/components/preview/LiveCanvasViewport", () => ({
     mode,
     doc,
     scanHighlight,
-    onZoomChange,
   }: {
     mode?: string;
     doc: ResumeDocument;
     scanHighlight?: boolean;
-    onZoomChange?: (zoomed: boolean) => void;
   }) => (
     <div
       data-testid="preview-canvas"
@@ -61,24 +59,6 @@ vi.mock("@/components/preview/LiveCanvasViewport", () => ({
       data-scan-highlight={scanHighlight ? "true" : "false"}
     >
       <span data-testid="canvas-name">{doc.basics.name}</span>
-      {/* The real viewport reports its transformed scale; these stand-ins let
-          the workspace tests drive the conditional Reset pill. */}
-      <button
-        type="button"
-        onClick={() => {
-          onZoomChange?.(true);
-        }}
-      >
-        Simulate preview zoom
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          onZoomChange?.(false);
-        }}
-      >
-        Simulate preview fit
-      </button>
     </div>
   ),
 }));
@@ -693,33 +673,22 @@ describe("EditorWorkspace", () => {
     expect(document.querySelector("[data-review-active-dot]")).toBeVisible();
   });
 
-  it("keeps the zoom Reset pill in the same row only while the canvas is zoomed", async () => {
+  it("keeps the preview mode row free of the floating zoom reset", async () => {
     await renderReadyWorkspace();
 
     const header = screen
       .getByRole("button", { name: "Visual" })
       .closest<HTMLElement>("[data-preview-mode-header]")!;
 
+    // The zoom Reset is owned by the viewport as a floating bottom-right pill
+    // (covered by its own tests); the single mode row must never render it and
+    // start crowding Review off a 390px phone.
     expect(
       screen.queryByRole("button", { name: "Reset preview zoom" }),
     ).not.toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Simulate preview zoom" }),
+    expect(header).toContainElement(
+      screen.getByRole("button", { name: "Review" }),
     );
-
-    const reset = screen.getByRole("button", { name: "Reset preview zoom" });
-
-    // The reset joins the single mode row instead of opening a second one.
-    expect(header).toContainElement(reset);
-    expect(reset).toHaveClass("h-8", "text-xs", "px-2.5");
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Simulate preview fit" }),
-    );
-    expect(
-      screen.queryByRole("button", { name: "Reset preview zoom" }),
-    ).not.toBeInTheDocument();
   });
 
   it("makes the mobile preview a fixed-height column above a scrolling canvas", async () => {

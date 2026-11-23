@@ -17,6 +17,7 @@ import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
 import { scanBulletLint } from "@/lib/lint/bulletMetrics";
 import type { CanvasFrame } from "@/lib/pagination/canvasFrame";
 import {
+  canvasDeskHeight,
   centeredCanvasOffsetX,
   computeCanvasFrame,
 } from "@/lib/pagination/canvasFrame";
@@ -42,7 +43,10 @@ import {
 } from "@/lib/zoom/wheelZoom";
 
 import { AtsTextView } from "./AtsTextView";
-import { RESET_ANIMATION_MS } from "./CanvasResetButton";
+import {
+  CanvasResetOverlay,
+  RESET_ANIMATION_MS,
+} from "./CanvasResetButton";
 import { PageStack } from "./PageStack";
 import { TouchPanCanvas } from "./TouchPanCanvas";
 import { useFitTransform } from "./useFitTransform";
@@ -222,7 +226,7 @@ function CanvasSurface({
   );
 }
 
-/** Imperative escapes for the mode bar's conditional Reset pills. */
+/** Imperative escapes for Review's Reset fit (and the floating zoom Reset). */
 export type LiveCanvasViewportHandle = {
   resetZoom: () => void;
   resetFit: () => void;
@@ -235,7 +239,6 @@ export function LiveCanvasViewport({
   mode = "canvas",
   scanHighlight = false,
   onBulletReport,
-  onZoomChange,
   ref,
 }: {
   doc: ResumeDocument;
@@ -250,8 +253,6 @@ export function LiveCanvasViewport({
    * mounted (ATS mode or a re-measure).
    */
   onBulletReport?: (report: BulletLintReport | null) => void;
-  /** Drives the conditional Reset pill in the mode bar. */
-  onZoomChange?: (zoomed: boolean) => void;
   ref?: Ref<LiveCanvasViewportHandle>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -394,9 +395,9 @@ export function LiveCanvasViewport({
       : centeredCanvasOffsetX(viewportWidth.scroller, frame.width);
 
   /**
-   * The toolbar lives outside `<TransformWrapper>`, so it cannot read the zoom
-   * level from the library context. `onTransform` mirrors that one bit of state
-   * into React, and the wrapper ref performs the reset.
+   * The floating reset pill lives outside `<TransformWrapper>`, so it cannot
+   * read the zoom level from the library context. `onTransform` mirrors that
+   * one bit of state into React, and the wrapper ref performs the reset.
    */
   const handleTransform = useCallback(
     (
@@ -454,27 +455,19 @@ export function LiveCanvasViewport({
     onFit?.(1);
   }, [onFit, resetScroll]);
 
-  // The mode bar owns the conditional Reset pills, so the viewport exposes the
-  // two reset paths instead of rendering a chrome row of its own (Decision #86).
+  // Review drives Reset fit through this ref, while the floating zoom pill
+  // below calls `resetZoom` directly. The viewport now owns its zoom bit
+  // locally instead of reporting it up to the mode bar (Decision #86).
   useImperativeHandle(ref, () => ({ resetZoom, resetFit }), [
     resetFit,
     resetZoom,
   ]);
 
-  useEffect(() => {
-    onZoomChange?.(isZoomed);
-  }, [isZoomed, onZoomChange]);
-
-  useEffect(
-    () => () => {
-      onZoomChange?.(false);
-    },
-    [onZoomChange],
-  );
-
   const gestures = canvasGestureConfig(isCoarsePointer);
 
   const showCanvas = mode === "canvas" && frame !== null && !layout.isMeasuring;
+
+  const deskHeight = frame === null ? 0 : canvasDeskHeight(frame.height);
 
   useIsomorphicLayoutEffect(() => {
     if (
@@ -534,14 +527,15 @@ export function LiveCanvasViewport({
         className="relative isolate min-h-0 flex-1 overflow-y-auto overscroll-contain py-3 lg:[scrollbar-gutter:stable] lg:flex-none lg:overflow-visible"
       >
         {showCanvas ? (
-          // The gray desk stops at the bottom of the page stack instead of
-          // stretching to the bottom of a tall preview panel, so a one-page
-          // resume no longer sits above an oversized empty gray void.
+          // The gray desk wraps the scaled page stack plus the scroller's own
+          // vertical padding, so Page 1's edge sits inside it and the last page
+          // can never spill past the gray edge, while a short resume still does
+          // not leave a full-panel gray void.
           <div
             aria-hidden
             data-canvas-desk=""
             className="pointer-events-none absolute inset-x-0 top-0 -z-10 bg-black/5"
-            style={{ height: `${frame!.height}px` }}
+            style={{ height: `${deskHeight}px` }}
           />
         ) : null}
         {showCanvas ? (
@@ -585,6 +579,14 @@ export function LiveCanvasViewport({
           />
         ) : null}
       </div>
+      {/*
+       * The zoom Reset floats over the viewport instead of joining the Preview
+       * mode row, so the single `Visual | ATS · Review` row cannot overflow or
+       * push Review off-screen on a 390px phone. It is a sibling of the scroller
+       * so its bottom-right anchor is the viewport root, not the canvas that
+       * transforms under it.
+       */}
+      <CanvasResetOverlay visible={isZoomed} onReset={resetZoom} />
     </div>
   );
 }

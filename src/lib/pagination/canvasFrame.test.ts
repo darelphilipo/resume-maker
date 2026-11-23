@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CANVAS_SCROLL_PADDING_PX,
   PAGE_STACK_GAP_PX,
+  canvasDeskHeight,
   centeredCanvasOffsetX,
   computeCanvasFrame,
 } from "./canvasFrame";
@@ -58,6 +60,47 @@ describe("computeCanvasFrame", () => {
 
   it("guards against non-finite page counts", () => {
     expect(frame({ pageCount: Number.NaN }).height).toBe(PAGE_HEIGHT);
+  });
+});
+
+describe("CANVAS_SCROLL_PADDING_PX", () => {
+  it("matches the scroller's py-3 padding", () => {
+    expect(CANVAS_SCROLL_PADDING_PX).toBe(12);
+  });
+
+  it("wraps the paper at every fit scale", () => {
+    for (const scale of [0.5, 0.78, 1]) {
+      const stack = frame({ pageCount: 2, fitScale: scale }).height;
+
+      expect(canvasDeskHeight(stack)).toBe(
+        stack + CANVAS_SCROLL_PADDING_PX * 2,
+      );
+      expect(canvasDeskHeight(stack)).toBeGreaterThan(stack);
+    }
+  });
+});
+
+describe("canvasDeskHeight", () => {
+  it("adds both paddings to the scaled stack height", () => {
+    expect(canvasDeskHeight(800)).toBe(824);
+    expect(canvasDeskHeight(1624)).toBe(1648);
+  });
+
+  it("covers the first and last edges of any page count", () => {
+    for (const pageCount of [1, 2, 4]) {
+      for (const fitScale of [0.5, 0.78, 1]) {
+        const stack = frame({ pageCount, fitScale }).height;
+        const desk = canvasDeskHeight(stack);
+
+        expect(desk - stack).toBe(CANVAS_SCROLL_PADDING_PX * 2);
+      }
+    }
+  });
+
+  it("reports no desk for an empty or invalid stack", () => {
+    expect(canvasDeskHeight(0)).toBe(0);
+    expect(canvasDeskHeight(-10)).toBe(0);
+    expect(canvasDeskHeight(Number.NaN)).toBe(0);
   });
 });
 

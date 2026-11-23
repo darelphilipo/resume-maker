@@ -1289,6 +1289,29 @@ rediscover.
        `lineHeightPx` estimate. Review still closes before the trim dialog opens,
        so only one `role="dialog"` is mounted at a time.
 
+   87. **The gray desk wraps the stack; the zoom Reset floats.** `[data-canvas-desk]`
+       is sized by `canvasDeskHeight(stackHeightPx)` in `src/lib/pagination/
+       canvasFrame.ts`: it adds `CANVAS_SCROLL_PADDING_PX * 2` (the scroller's
+       `py-3` top and bottom) to the scaled page-stack height. The desk is
+       `absolute top-0` in the scroller's padding box while the transform wrapper
+       starts after the top padding, so only adding **both** paddings covers
+       Page 1's top edge and the last page's bottom edge at every paper size and
+       page count; the old `frame.height` stopped ~12px short of the last page.
+       Keep the constant in sync with the `py-3` class and do not hardcode 24.
+       The zoomed `CanvasResetOverlay` (`absolute bottom-3 right-3 z-20`,
+       pointer-transparent wrapper) is a *sibling* of `[data-canvas-scroll]`
+       inside the viewport root, not a child of the transformed canvas. It owns
+       no props from `EditorWorkspace`: `LiveCanvasViewport` derives `isZoomed`
+       from `onTransform` and calls its own `resetZoom`. The mode bar therefore
+       stays one row and `Review` never gets pushed off a 390px phone; the
+       lifted `onZoomChange`/`canvasZoomed` state and the `onZoomChange` prop are
+       gone. `LiveCanvasViewportHandle.resetZoom` remains for Review's ref path.
+       Note: `npm run lint` reports five pre-existing
+       `react-hooks/preserve-manual-memoization` errors on the `handleTransform`
+       / `resetZoom` `useCallback`s in `LiveCanvasViewport`; they persist with
+       the original `onZoomChange` code, so they are not caused by this change.
+       CI only runs typecheck/test/build.
+
 ## Verification and tooling
 
 ```powershell
@@ -1349,6 +1372,35 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-23 — Gray desk wraps the paper; zoom Reset floats
+- Task: the In Progress P0 item. The desk ended above the last page and the
+  zoomed `Reset` pill crowded the one-row Preview bar on narrow phones.
+- Desk: new `canvasDeskHeight(stackHeightPx)` in `canvasFrame.ts` adds both
+  `py-3` paddings via `CANVAS_SCROLL_PADDING_PX * 2` to the scaled stack height;
+  `LiveCanvasViewport` uses it for `[data-canvas-desk]` instead of a magic 24.
+  The backdrop now covers Page 1's top edge and the last page's bottom edge at
+  any paper size/page count without becoming a full-panel void. Decision #87.
+- Reset: `CanvasResetOverlay` floats a pointer-transparent
+  `absolute bottom-3 right-3 z-20` pill as a sibling of `[data-canvas-scroll]`
+  inside the viewport root. The viewport derives `isZoomed` from `onTransform`
+  and calls its own `resetZoom`; `onZoomChange` and `EditorWorkspace`'s
+  `canvasZoomed` state are gone, so the mode bar keeps just switch, page count,
+  and Review. `resetZoom`/`resetFit` stay on `LiveCanvasViewportHandle` for
+  Review. Decision #87.
+- Tests: desk-height helper cases (both paddings, every page count/scale,
+  invalid inputs), overlay visibility/placement/reset, no-Reset-in-mode-bar,
+  and a tablet e2e that checks the desk wraps both paper edges. 939 pass.
+- Files: `src/lib/pagination/canvasFrame.ts` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/CanvasResetButton.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (939 pass). Playwright remains
+  blocked here, so the e2e case is browser-unverified. `npm run lint` still has
+  five pre-existing `react-hooks/preserve-manual-memoization` errors in
+  `LiveCanvasViewport.tsx` (reproduced with the original `onZoomChange` code);
+  CI does not run lint.
 
 ### 2026-11-23 — One-row Preview bar with Review-owned trim/fit tools
 - Task: the In Progress P1 item. The single-row Preview bar, Review utilities,
@@ -1571,28 +1623,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/launcher/Launcher.tsx` (+ test), `src/app/page.tsx` (+ test),
   `e2e/flow.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test`, `npm run lint`.
-
-### 2026-11-22 — Centred Bullet polish and desktop Match JD dialogs
-- Task: top P1 Queue item. `Bullet polish` clipped off the left viewport edge
-  on desktop, and the Match JD `X` needed a second tap to close.
-- Modal: new `CenteredModal` (`src/components/shared/CenteredModal.tsx`) portals
-  to `document.body`, centres a `max-w-md` `role="dialog" aria-modal="true"`
-  panel in the viewport, and closes on backdrop/X/Escape. `ResumeLintPopover`
-  now uses it at every width instead of an `absolute right-0` popover in the
-  left Content column. Decision #81.
-- Match JD: `useIsDesktop` (`src/lib/responsive/useIsDesktop.ts`) picks a
-  centred modal on `lg+` and keeps the non-snapped Vaul sheet on phones; both
-  render one shared `JdMatchBody`. The desktop X closes outright with no snap
-  point to collapse to. Decision #81.
-- Tests: new CenteredModal and useIsDesktop cases, Bullet polish role/class/
-  backdrop regressions, and a desktop JdMatchDrawer one-tap-close case. 892
-  pass (was 883).
-- Files: `src/components/shared/CenteredModal.tsx` (+ test, new),
-  `src/lib/responsive/useIsDesktop.ts` (+ test, new),
-  `src/components/editor/ResumeLintPopover.tsx` (+ test),
-  `src/components/editor/JdMatchDrawer.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (892 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

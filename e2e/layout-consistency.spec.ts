@@ -870,7 +870,9 @@ test.describe("tall tablet preview", () => {
         scrollBottom: scrollRect.bottom,
         canvasLeft: canvasRect.left,
         canvasRight: canvasRect.right,
+        canvasTop: canvasRect.top,
         canvasBottom: canvasRect.bottom,
+        deskTop: deskRect.top,
         deskBottom: deskRect.bottom,
         navBottom: nav.getBoundingClientRect().bottom,
         innerHeight: window.innerHeight,
@@ -891,11 +893,12 @@ test.describe("tall tablet preview", () => {
     expect(leftGap).toBeGreaterThan(1);
     expect(Math.abs(leftGap - rightGap)).toBeLessThanOrEqual(2);
 
-    // The backdrop stops at the bottom of the one-page stack; it must not paint
-    // a full-panel gray void down to the tab bar.
-    expect(Math.abs(result.deskBottom - result.canvasBottom)).toBeLessThanOrEqual(
-      2,
-    );
+    // The backdrop wraps the one-page stack plus the scroller's vertical
+    // padding, so Page 1 never spills past the gray edge. It must still stop at
+    // the stack instead of painting a full-panel void down to the tab bar.
+    expect(result.deskTop).toBeLessThanOrEqual(result.canvasTop + 0.5);
+    expect(result.deskBottom).toBeGreaterThanOrEqual(result.canvasBottom - 0.5);
+    expect(result.deskBottom - result.canvasBottom).toBeLessThanOrEqual(25);
     expect(result.deskBottom).toBeLessThan(result.scrollBottom - 50);
 
     // The fixed shell still spans the visual viewport with no body scroll.

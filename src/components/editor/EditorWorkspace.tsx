@@ -17,7 +17,6 @@ import {
   type LiveCanvasViewportHandle,
   type PreviewMode,
 } from "@/components/preview/LiveCanvasViewport";
-import { CanvasResetButton } from "@/components/preview/CanvasResetButton";
 import { InAppBrowserNotice } from "@/components/preview/InAppBrowserNotice";
 import { PageOverflowBanner } from "@/components/preview/PageOverflowBanner";
 import { PrintTriggerButton } from "@/components/preview/PrintTriggerButton";
@@ -128,13 +127,12 @@ export function EditorWorkspace() {
   const [scanPreview, setScanPreview] = useState(false);
   /**
    * Trim tips and Fit/Reset live in the Review dialog now, so their inputs are
-   * lifted here: the viewport reports the rendered-bullet scan and whether the
-   * canvas is zoomed, and exposes both reset paths through a ref.
+   * lifted here: the viewport reports the rendered-bullet scan and exposes both
+   * reset paths through a ref. The zoom Reset floats inside the viewport itself.
    */
   const [bulletReport, setBulletReport] = useState<BulletLintReport | null>(
     null,
   );
-  const [canvasZoomed, setCanvasZoomed] = useState(false);
   const canvasRef = useRef<LiveCanvasViewportHandle>(null);
   const [drawerSection, setDrawerSection] =
     useState<SectionListEntry | null>(null);
@@ -568,7 +566,8 @@ export function EditorWorkspace() {
                  * One calm row carries the whole Preview status: a quiet
                  * "1 page" label when the resume fits, or one compact spill
                  * pill (`2 pages · Fit`) once it does not. Trim tips, Fit, and
-                 * Reset fit moved into Review, so there is no second strip.
+                 * Reset fit moved into Review, and the zoom Reset floats inside
+                 * the viewport, so there is no second strip.
                  */}
                 {layout.pages.length > 1 || layout.overflowPx > 0 ? (
                   <PageOverflowBanner
@@ -586,13 +585,6 @@ export function EditorWorkspace() {
                     1 page
                   </span>
                 )}
-                {previewMode === "canvas" && canvasZoomed ? (
-                  <CanvasResetButton
-                    onReset={() => {
-                      canvasRef.current?.resetZoom();
-                    }}
-                  />
-                ) : null}
                 <ReviewMenu
                   scan={scanPreview}
                   anonymize={anonymizePreview}
@@ -633,7 +625,6 @@ export function EditorWorkspace() {
               mode={previewMode}
               scanHighlight={scanPreview}
               onBulletReport={setBulletReport}
-              onZoomChange={setCanvasZoomed}
               onFit={applyFitScale}
             />
           </div>

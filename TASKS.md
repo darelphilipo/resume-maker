@@ -22,13 +22,35 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P0: Fix resume page spilling below the gray Preview backdrop and `Reset` pill pushing `Review ▾` off-screen when zoomed (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/CanvasResetButton.tsx`).
-  1. **Keep the gray backdrop larger than the resume page:** Ensure the canvas backdrop/wrapper around `<TransformComponent>` sizes dynamically to fit the full scaled `<PageStack>` height plus vertical padding (rather than clipping or ending ~25px above the bottom of the white resume page).
-  2. **Stop `Reset` from crowding Row 1:** Move `CanvasResetButton` (`Reset`) out of the top `Visual | ATS · Review` bar into a floating bottom-right pill (`absolute bottom-3 right-3 z-20`) overlaid inside the preview viewport whenever zoomed in, so Row 1 never overflows or pushes `Review ▾` off the right edge on `390px` phones.
+_empty
 
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-23 — Wrapped the resume in the gray Preview backdrop and floated
+  the zoom **Reset** so the one-row Preview bar never crowds **Review**. The
+  new `canvasDeskHeight(stackHeightPx)` helper in `canvasFrame.ts` adds both
+  `py-3` paddings (`CANVAS_SCROLL_PADDING_PX * 2`) to the scaled page-stack
+  height, so `[data-canvas-desk]` starts above Page 1's edge and ends below the
+  last page at every paper size and page count without becoming a full-panel
+  void. `CanvasResetOverlay` renders the zoomed Reset as a pointer-transparent
+  `absolute bottom-3 right-3 z-20` sibling of the scroller inside
+  `LiveCanvasViewport`, which now owns the zoom bit locally; the lifted
+  `onZoomChange` prop and `canvasZoomed` state were removed from
+  `EditorWorkspace`. Added desk-height/padding helper cases, overlay placement
+  and zoom-reset regressions, a mode-bar-without-Reset assertion, and a
+  desktop-sheet geometry case that checks the desk wraps both paper edges.
+  Verified `npm run typecheck`, `npm test` (939 pass). Files:
+  `src/lib/pagination/canvasFrame.ts` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/CanvasResetButton.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  Playwright remains blocked here, so the e2e case is browser-unverified;
+  `npm run lint` still reports five pre-existing
+  `react-hooks/preserve-manual-memoization` errors in `LiveCanvasViewport.tsx`
+  (they persist with the original `onZoomChange` code, so they are not new).
 
 - [x] 2026-11-23 — Collapsed the Preview chrome to one row and moved `Trim
   tips` / `Fit` / `Reset fit` into **Review**. The mode bar now holds only

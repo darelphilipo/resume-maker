@@ -4,7 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
 import {
+  CANVAS_SCROLL_PADDING_PX,
   PAGE_STACK_GAP_PX,
+  canvasDeskHeight,
   centeredCanvasOffsetX,
   computeCanvasFrame,
 } from "@/lib/pagination/canvasFrame";
@@ -260,7 +262,7 @@ describe("LiveCanvasViewport", () => {
     });
   });
 
-  it("sizes the canvas backdrop to the page stack, not the whole panel", async () => {
+  it("sizes the canvas backdrop to the page stack plus the scroller padding", async () => {
     const { geometry, fitScale, view } = await renderCanvas();
     const frame = computeCanvasFrame({
       pageCount: 1,
@@ -274,7 +276,17 @@ describe("LiveCanvasViewport", () => {
     const root = view.container.firstElementChild as HTMLElement;
 
     expect(desk).not.toBeNull();
-    expect(Number.parseFloat(desk!.style.height)).toBeCloseTo(frame.height, 1);
+    // The desk is anchored at the scroller's padding-box top, so it must add
+    // both the top and bottom `py-3` padding to cover the full paper edge and
+    // stop the last page spilling past the gray backdrop.
+    expect(Number.parseFloat(desk!.style.height)).toBeCloseTo(
+      canvasDeskHeight(frame.height),
+      1,
+    );
+    expect(Number.parseFloat(desk!.style.height)).toBeCloseTo(
+      frame.height + CANVAS_SCROLL_PADDING_PX * 2,
+      1,
+    );
     expect(desk).toHaveClass("bg-black/5");
     // The stage itself must stay transparent, or a short resume still shows a
     // full-height gray void below the paper.
@@ -350,6 +362,44 @@ describe("LiveCanvasViewport", () => {
     expect(
       screen.queryByRole("button", { name: "Reset preview zoom" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("floats the zoom Reset over the viewport instead of the mode bar", async () => {
+    const { view, wrapper } = await renderCanvas();
+
+    expect(
+      screen.queryByRole("button", { name: "Reset preview zoom" }),
+    ).not.toBeInTheDocument();
+
+    wrapper.dispatchEvent(
+      new WheelEvent("wheel", {
+        bubbles: true,
+        cancelable: true,
+        deltaY: -120,
+        ctrlKey: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Reset preview zoom" }),
+      ).toBeInTheDocument();
+    });
+
+    const overlay = view.container.querySelector<HTMLElement>(
+      "[data-canvas-reset]",
+    );
+
+    expect(overlay).not.toBeNull();
+    expect(overlay).toHaveClass(
+      "absolute",
+      "bottom-3",
+      "right-3",
+      "z-20",
+      "pointer-events-none",
+    );
+    // It is a child of the viewport root, not a row above the canvas.
+    expect(overlay!.parentElement).toBe(view.container.firstElementChild);
   });
 
   it("hands the rendered bullet scan to its owner", async () => {

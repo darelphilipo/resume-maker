@@ -8,9 +8,10 @@ export const RESET_ANIMATION_MS = 150;
 /**
  * A single compact control for leaving a pinch-zoomed preview.
  *
- * It is props-driven (rather than reading `useControls`) so it can live in the
- * sticky toolbar *above* `<TransformWrapper>`; `LiveCanvasViewport` tracks the
- * zoom level through `onTransform` and calls the wrapper ref to reset.
+ * It is props-driven (rather than reading `useControls`) so it can be rendered
+ * by `LiveCanvasViewport` as a floating overlay outside `<TransformWrapper>`;
+ * the viewport tracks the zoom level through `onTransform` and calls the
+ * wrapper ref to reset.
  */
 export function CanvasResetButton({ onReset }: { onReset: () => void }) {
   return (
@@ -23,5 +24,34 @@ export function CanvasResetButton({ onReset }: { onReset: () => void }) {
       <CornersIn aria-hidden="true" size={14} />
       Reset
     </button>
+  );
+}
+
+/**
+ * Bottom-right placement for the zoom reset.
+ *
+ * It overlays the preview viewport instead of joining the Preview mode row, so
+ * the single `Visual | ATS · Review` row never overflows or pushes Review off
+ * a 390px phone. The wrapper is pointer-transparent so it cannot swallow canvas
+ * gestures; only the pill itself takes taps.
+ */
+export function CanvasResetOverlay({
+  visible,
+  onReset,
+}: {
+  visible: boolean;
+  onReset: () => void;
+}) {
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <div
+      data-canvas-reset=""
+      className="pointer-events-none absolute bottom-3 right-3 z-20"
+    >
+      <CanvasResetButton onReset={onReset} />
+    </div>
   );
 }
