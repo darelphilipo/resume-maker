@@ -29,20 +29,22 @@ in control of every line, and your data stays on your device.
 
 - **Three clear ways to begin**: the home page asks you to choose between
   pasting text, uploading a PDF, or starting from scratch, with each option
-  explained in plain language. The free, no-sign-up, offline promises sit
-  together on one compact line above the choices, so starting stays one tap and
-  the options stay near the top of a phone screen.
+  explained in plain language. One compact promise line above the choices covers
+  free, no-sign-up, and offline use once, so starting stays one tap and the
+  options stay near the top of a phone screen.
 - **Start blank or from a role sample**: choose **Start with a blank resume**
   when you would rather type from an empty page, or pick a role preset for a
-  complete editable example. Either way you land in the same editor with every
-  field yours to change.
-- **Recent resumes** on the home page list what you already saved in this
-  browser, newest first. Five show at a time, with a compact **Prev** / **Page 1
-  of N** / **Next** bar when there are more; tap anywhere on a row to reopen it,
-  or use its buttons to rename, duplicate, or delete it. Each row carries a
-  status pill — **Master**, **Draft**, **Applied**, **Interview**, or **Offer** —
-  and an optional target company tag, so you can see at a glance where each copy
-  stands. Change a status from the pill or type a company name right in the row without opening
+  complete editable example. Every preset opens as a clean one-page starter, so
+  nothing spills onto a second page before you change a word. Either way you
+  land in the same editor with every field yours to change.
+- **Recent resumes** live in their own section on the home page, shown only once
+  you have saved something in this browser. The list is newest first: five show
+  at a time, with a compact **Prev** / **Page 1 of N** / **Next** bar when there
+  are more; tap anywhere on a row to reopen it, or use its buttons to rename,
+  duplicate, or delete it. Each row carries a status pill — **Master**,
+  **Draft**, **Applied**, **Interview**, or **Offer** — and an optional target
+  company tag, so you can see at a glance where each copy stands. Change a
+  status from the pill or type a company name right in the row without opening
   the resume; when you have more than one saved, a compact filter line narrows
   the list to a single status. A duplicate is saved as a separate copy labelled
   **(Copy)**, keeping the same tracking tags, so you can tailor one version for
@@ -61,9 +63,9 @@ in control of every line, and your data stays on your device.
   enough: your name, a role, or the whole resume all work, and headings and
   dates are optional.
 - **Role presets** for Software Engineer, Product Manager, UX/UI Designer,
-  Finance & Operations, Data Analyst, and Fresh Graduate, each with a complete
-  editable sample including categorized skills you can adapt. The six cards fill
-  the two-column grid evenly, so no role sits beside an empty slot.
+  Finance & Operations, Data Analyst, and Fresh Graduate, each with a complete,
+  one-page editable sample including categorized skills you can adapt. The six
+  cards fill the two-column grid evenly, so no role sits beside an empty slot.
 - **Backup & Restore** lives at the bottom of the home page as a secondary
   option: restore a JSON backup you exported earlier, or a resume file from
   another tool in the open **JSON Resume** format, without treating JSON as the

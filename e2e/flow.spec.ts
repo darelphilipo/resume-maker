@@ -85,6 +85,26 @@ async function nextSectionY(page: Page, pageIndex: number, index: number) {
   );
 }
 
+const STARTER_PRESETS = [
+  "Software Engineer",
+  "Product Manager",
+  "UX/UI Designer",
+  "Finance & Operations",
+  "Data Analyst",
+  "Fresh Graduate",
+] as const;
+
+test.describe("starter presets", () => {
+  for (const label of STARTER_PRESETS) {
+    test(`${label} lands on one page out of the box`, async ({ page }) => {
+      await createPresetResume(page, new RegExp(label));
+      await showPreview(page);
+
+      await expect(page.getByText("1 page", { exact: true })).toBeVisible();
+    });
+  }
+});
+
 test("edits, reorders, undoes, and persists a resume", async ({ page }) => {
   await createPresetResume(page);
 

@@ -256,7 +256,7 @@ const PRODUCT_MANAGER: Archetype = {
       summary: {
         ...doc.summary,
         content:
-          "<p>Product manager with 7 years of experience shipping commerce and health products. Turns ambiguous customer signals into focused roadmaps with measurable outcomes. Works closely with design, engineering, and go-to-market teams.</p>",
+          "<p>Product manager with 7 years of experience shipping commerce and health products. Turns ambiguous customer signals into focused roadmaps with measurable outcomes.</p>",
       },
       sections: {
         ...doc.sections,
@@ -337,7 +337,6 @@ const PRODUCT_MANAGER: Archetype = {
               bullets: [
                 "Modeled 3 pricing tiers against 12 months of usage data and lifted expansion revenue by 9%.",
                 "Coordinated launch across 4 teams and 1,200 accounts in 10 weeks.",
-                "Cut discount approvals by 40% with a self-serve quote calculator.",
               ],
               keywords: ["Pricing", "Research", "Go-to-market"],
             }),
@@ -349,7 +348,6 @@ const PRODUCT_MANAGER: Archetype = {
               bullets: [
                 "Interviewed 24 churned customers and identified 5 repeatable churn drivers.",
                 "Shipped 7 fixes that recovered 310 accounts in 90 days.",
-                "Raised onboarding completion by 16% with a 4-step guided checklist.",
               ],
               keywords: ["Retention", "Onboarding", "Analytics"],
             }),
@@ -393,7 +391,7 @@ const UX_UI_DESIGNER: Archetype = {
       summary: {
         ...doc.summary,
         content:
-          "<p>Product designer with 7 years of experience shaping onboarding, checkout, and internal tools. Pairs research with systems thinking to ship work that is both usable and maintainable. Builds accessible interfaces with engineers from the first sketch.</p>",
+          "<p>Product designer with 7 years of experience shaping onboarding, checkout, and internal tools. Pairs research with systems thinking to ship work that is both usable and maintainable.</p>",
       },
       sections: {
         ...doc.sections,
@@ -474,7 +472,6 @@ const UX_UI_DESIGNER: Archetype = {
               bullets: [
                 "Documented 120 components and 38 tokens adopted by 4 product teams.",
                 "Cut design QA cycles from 6 days to 2 days with shared Figma libraries.",
-                "Shipped dark mode across 11 surfaces in 5 weeks.",
               ],
               keywords: ["Design Systems", "Figma", "Tokens"],
             }),
@@ -486,7 +483,6 @@ const UX_UI_DESIGNER: Archetype = {
               bullets: [
                 "Tested 6 signage layouts with 48 riders and improved route-finding success by 31%.",
                 "Delivered a 42-screen prototype in 4 weeks for a city pilot.",
-                "Reduced missed transfers by 18% in a 90-day field study.",
               ],
               keywords: ["Research", "Wayfinding", "Prototyping"],
             }),
@@ -529,7 +525,7 @@ const FINANCE_OPERATIONS: Archetype = {
       summary: {
         ...doc.summary,
         content:
-          "<p>Finance and operations leader with 9 years of experience across logistics and professional services. Builds planning models and controls that teams actually use. Combines close-cycle discipline with hands-on vendor and process work.</p>",
+          "<p>Finance and operations leader with 9 years of experience across logistics and professional services. Builds planning models and controls that teams actually use, pairing close-cycle discipline with hands-on vendor and process work.</p>",
       },
       sections: {
         ...doc.sections,
@@ -610,7 +606,6 @@ const FINANCE_OPERATIONS: Archetype = {
               bullets: [
                 "Automated 22 journal entries and saved 31 hours per month.",
                 "Reduced posting errors by 78% across 7 entities.",
-                "Documented 18 controls adopted by the 6-person accounting team.",
               ],
               keywords: ["NetSuite", "Controls", "Automation"],
             }),
@@ -622,7 +617,6 @@ const FINANCE_OPERATIONS: Archetype = {
               bullets: [
                 "Analyzed 14 months of lane data covering 2,400 shipments.",
                 "Identified 3 underperforming carriers and cut freight spend by 11%.",
-                "Built a weekly dashboard used by 9 operations managers.",
               ],
               keywords: ["Analytics", "Procurement", "Dashboards"],
             }),
@@ -747,7 +741,6 @@ const DATA_ANALYST: Archetype = {
               bullets: [
                 "Interviewed 18 churned customers and isolated 4 repeatable cancellation reasons.",
                 "Built a 6-segment model that recovered 2,300 accounts in 90 days.",
-                "Cut the analysis cycle from 3 weeks to 5 days with reusable SQL models.",
               ],
               keywords: ["SQL", "Retention", "Cohorts"],
             }),
@@ -759,7 +752,6 @@ const DATA_ANALYST: Archetype = {
               bullets: [
                 "Replaced 7 spreadsheets with one dashboard tracking 1,400 SKUs across 4 warehouses.",
                 "Reduced stockouts by 22% by flagging reorder points 3 days earlier.",
-                "Trained 16 store leads on the 9 core metrics in 4 sessions.",
               ],
               keywords: ["Tableau", "Inventory", "Automation"],
             }),
@@ -802,7 +794,7 @@ const FRESH_GRADUATE: Archetype = {
       summary: {
         ...doc.summary,
         content:
-          "<p>Computer science graduate with hands-on experience in data engineering and campus IT support. Ships reliable tools, documents them clearly, and learns new stacks quickly. Seeking an entry-level software engineering role.</p>",
+          "<p>Computer science graduate with hands-on experience in data engineering and campus IT support. Ships reliable tools, documents them clearly, and is seeking an entry-level software engineering role.</p>",
       },
       sections: {
         ...doc.sections,
@@ -873,7 +865,6 @@ const FRESH_GRADUATE: Archetype = {
               bullets: [
                 "Served 380 students during registration week with a 99.9% uptime record.",
                 "Reduced schedule conflicts by 41% with a constraint checker over 1,200 course sections.",
-                "Wrote 64 unit tests and kept median response time under 120 milliseconds.",
               ],
               keywords: ["React", "TypeScript", "PostgreSQL"],
             }),
@@ -885,7 +876,6 @@ const FRESH_GRADUATE: Archetype = {
               bullets: [
                 "Processed 25,000 reviews and classified sentiment with 88% accuracy.",
                 "Visualized 6 weekly trends in a React dashboard used by 2 research teams.",
-                "Cut report preparation from 5 hours to 20 minutes with automated exports.",
               ],
               keywords: ["Python", "Pandas", "React"],
             }),

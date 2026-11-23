@@ -38,4 +38,16 @@ describe("Home page", () => {
       screen.getByRole("heading", { name: "Choose one way to start" }),
     ).toBeInTheDocument();
   });
+
+  it("states the free/private promise once above the start options", () => {
+    render(<Home />);
+
+    expect(screen.queryByText("Private by default")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/No account, no AI, no cost/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getAllByRole("list", { name: "Resume Maker promises" }),
+    ).toHaveLength(1);
+  });
 });

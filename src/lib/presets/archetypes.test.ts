@@ -145,6 +145,34 @@ describe("ARCHETYPES", () => {
     },
   );
 
+  it.each(ARCHETYPES.map((archetype) => [archetype.id, archetype] as const))(
+    "%s keeps the starter sample compact enough for one page",
+    (_id, archetype) => {
+      const doc = archetype.build();
+      const summarySentences = doc.summary.content
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .split(/(?<=[.!?])\s+/)
+        .filter(Boolean);
+
+      // The Playwright flow suite proves the real page count. This budget stops
+      // future sample edits from quietly adding overflow-prone content.
+      expect(summarySentences.length).toBeLessThanOrEqual(2);
+
+      for (const item of doc.sections.projects.items) {
+        expect(bulletLines(item.description)).toHaveLength(2);
+      }
+
+      const totalBullets = [
+        ...doc.sections.experience.items.map((item) => item.summary),
+        ...doc.sections.projects.items.map((item) => item.description),
+      ].reduce((count, html) => count + bulletLines(html).length, 0);
+
+      expect(totalBullets).toBeLessThanOrEqual(10);
+    },
+  );
+
   it("gives the fresh graduate early-career roles instead of senior titles", () => {
     const doc = buildArchetype("fresh-graduate");
     expect(doc).not.toBeNull();

@@ -338,7 +338,7 @@ describe("Launcher", () => {
     render(<Launcher />);
 
     expect(
-      screen.getByRole("heading", { name: "Recent resumes" }),
+      await screen.findByRole("heading", { name: "Recent resumes" }),
     ).toBeInTheDocument();
     expect(
       await screen.findByRole("button", { name: "Open Grace Hopper" }),
@@ -346,12 +346,41 @@ describe("Launcher", () => {
     expect(screen.getByText("Edited Nov 18, 2026")).toBeInTheDocument();
   });
 
-  it("explains when no resume has been saved yet", async () => {
+  it("renders saved resumes as a standalone section outside the start cards", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    render(<Launcher />);
+
+    const heading = await screen.findByRole("heading", {
+      name: "Recent resumes",
+    });
+    const section = heading.closest("section");
+
+    expect(section).not.toBeNull();
+    expect(section).toHaveAttribute(
+      "aria-labelledby",
+      "launcher-recent-heading",
+    );
+    expect(
+      screen.getByRole("region", { name: "Recent resumes" }),
+    ).toBe(section);
+    expect(
+      within(
+        screen.getByRole("region", { name: "Start from scratch" }),
+      ).queryByRole("heading", { name: "Recent resumes" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("region")).toHaveLength(4);
+  });
+
+  it("hides the Recent resumes section until a resume has been saved", () => {
     render(<Launcher />);
 
     expect(
-      await screen.findByText(/Nothing saved yet/),
-    ).toBeInTheDocument();
+      screen.queryByRole("heading", { name: "Recent resumes" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Nothing saved yet/),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("region")).toHaveLength(3);
   });
 
   it("shows editable tracking tags on a recent resume", async () => {

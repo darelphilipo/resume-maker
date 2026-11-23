@@ -219,16 +219,21 @@ rediscover.
 23. **The home page is a landing page, not a bare form.** `src/app/page.tsx`
     owns the only `h1`, the `Resume Maker` wordmark; the e2e a11y and page tests
     look that heading up by name, so the value proposition stays an `h2`. The
-    `Launcher` keeps exactly three entry `<section>`s labelled by their card
-    headings, so `getAllByRole("region")` still returns three. Trust promises
-    stay a `ul[aria-label="Resume Maker promises"]` of three `li` items, but
-    they are one compact nowrap line, not three bordered capsules: per-phrase
+    `Launcher` keeps exactly three primary entry `<section>`s labelled by their
+    card headings, so `getAllByRole("region")` returns three before anything is
+    saved. **Recent resumes** is a separate fourth `<section>` rendered only when
+    saved rows (or a recent-list error) exist; it lives after the three start
+    cards and before Backup & Restore, never inside the scratch card. Trust
+    promises stay a `ul[aria-label="Resume Maker promises"]` of three `li` items,
+    but they are one compact nowrap line, not three bordered capsules: per-phrase
     `whitespace-nowrap` labels never break mid-phrase, dot separators and icons
-    appear only at `sm+`, and items have no capsule padding or border. Keep the
-    separators `aria-hidden`; the old inline `·` text made screen readers read
-    "100% Free · No Sign-Up". `page.tsx` is
-    a server component, so do not import Phosphor icons there (they call
-    `useContext`); the brand mark is an inline SVG.
+    appear only at `sm+`, and items have no capsule padding or border. This row
+    is the single free/private trust statement above the fold — the header
+    "Private by default" pill and the "No account, no AI, no cost" hero sentence
+    were removed, so do not add a third. Keep the separators `aria-hidden`; the
+    old inline `·` text made screen readers read "100% Free · No Sign-Up".
+    `page.tsx` is a server component, so do not import Phosphor icons there
+    (they call `useContext`); the brand mark is an inline SVG.
 24. **The warm paper/navy theme is token-driven.** `src/app/globals.css` owns
     `--brand-*` (`background` #f5f3ee, `surface` white, `surface-muted` #fbfaf7,
     `line` #e3ddd2, `muted` #5b6a7a, `primary` #1b3a57) and exposes them to
@@ -474,20 +479,25 @@ rediscover.
     new fit-to-one-page scale). Treat every `useControls()` method identity as
     unstable — never use one as an unguarded effect dependency.
 
-40. **Blank start and Recent resumes belong to the scratch card.** `/` must keep
-    exactly three named `<section>` regions (the page and e2e a11y tests count
-    them), so **Start with a blank resume** and the Dexie-backed **Recent
-    resumes** list render *inside* the "Start from scratch" card rather than as
-    a fourth entry point. `listRecentResumes` returns `updatedAt`-descending
-    rows; `renameResume` writes `basics.name` and bumps `updatedAt`;
-    `deleteResume` removes the row. Labels and timestamps come from the pure
-    `src/lib/store/recentResumes.ts` (name → headline → "Untitled resume").
-    The preset `<ul>` carries `data-preset-list` and the e2e preset selector
-    targets it, because the recent rows are also a `<ul>` of buttons. In the
-    paste parser, education headers split on `| • · – —` but never on commas,
-    and a school-looking value is kept whole, so
-    `University of California, Berkeley` stays one school instead of becoming a
-    school plus an invented location. Inline headings
+40. **Blank start belongs to the scratch card; Recent resumes is its own
+    conditional section.** `/` keeps exactly three primary entry `<section>`s
+    (the page and e2e a11y tests count those when nothing is saved), so **Start
+    with a blank resume** and the role presets render inside the "Start from
+    scratch" card. **Recent resumes** is *not* part of that card: it is a
+    separate `<section aria-labelledby="launcher-recent-heading">` after the
+    three cards and before Backup & Restore, rendered only when
+    `listRecentResumes` returns rows or the recent-list load errors. With saved
+    rows the launcher therefore exposes a fourth region named "Recent resumes";
+    tests must not assume a fixed count of three once a row is seeded.
+    `listRecentResumes` returns `updatedAt`-descending rows; `renameResume`
+    writes `basics.name` and bumps `updatedAt`; `deleteResume` removes the row.
+    Labels and timestamps come from the pure `src/lib/store/recentResumes.ts`
+    (name → headline → "Untitled resume"). The preset `<ul>` carries
+    `data-preset-list` and the e2e preset selector targets it, because the
+    recent rows are also a `<ul>` of buttons. In the paste parser, education
+    headers split on `| • · – —` but never on commas, and a school-looking value
+    is kept whole, so `University of California, Berkeley` stays one school
+    instead of becoming a school plus an invented location. Inline headings
     (`SKILLS: Python, SQL`) are only recognised when the heading is all caps;
     title-case `Languages: TypeScript, Python` stays a skills category inside
     the current section (it must not switch to the spoken-languages section).
@@ -1143,6 +1153,15 @@ rediscover.
        render. Portalled dialogs are outside `scanBulletLint`'s scanned page
        stack, so their own `<li>`s are never measured as resume bullets.
 
+   82. **Starter presets must fit one page on default A4 / Normal density.**
+       `ARCHETYPES` are samples, not full resumes: keep each summary to at most
+       two sentences, each project to exactly two bullets, and each experience
+       role to three bullets (ten bullets total). The Playwright flow suite opens
+       all six presets and asserts the `1 page` pill; the archetype unit test
+       guards that content budget because jsdom cannot measure layout. When a
+       sample needs room, trim prose instead of raising `fitScale` or relaxing
+       the budget.
+
 ## Verification and tooling
 
 ```powershell
@@ -1203,6 +1222,31 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-23 — One-page starter presets and a standalone Recent resumes section
+- Task: top P1 Queue item. All six role presets should open on one page, and the
+  home page should stop stacking recent resumes inside the scratch card and
+  repeating the free/private promises.
+- Presets: trimmed every sample to a one-page content budget (two-sentence
+  summaries, two bullets per project, three per experience role). Product
+  Manager also lost its third summary sentence and its two third project
+  bullets. Decision #82.
+- Launcher: **Recent resumes** moved out of the "Start from scratch" card into a
+  standalone `<section aria-labelledby="launcher-recent-heading">` that renders
+  only when saved rows or a list error exist. Before anything is saved the home
+  page still has exactly three primary regions; with a saved row it has four.
+  Decision #40 updated. The empty "Nothing saved yet" copy is gone.
+- Hero: removed the header "Private by default" pill and the repeated
+  "Everything is edited locally… No account, no AI, no cost" sentence, leaving
+  the single three-promise row as the only trust statement above the fold.
+  Decision #23 updated.
+- Tests: archetype budget cases, launcher standalone/hidden-recent cases, the
+  single-trust page assertion, and a Playwright loop that opens all six presets
+  and asserts the one-page pill (browser-unverified here).
+- Files: `src/lib/presets/archetypes.ts` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `src/app/page.tsx` (+ test),
+  `e2e/flow.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test`, `npm run lint`.
 
 ### 2026-11-22 — Centred Bullet polish and desktop Match JD dialogs
 - Task: top P1 Queue item. `Bullet polish` clipped off the left viewport edge
@@ -1452,30 +1496,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (768 pass), `npm run lint`.
-
-### 2026-11-22 — One-click drawer close, safe fit width, anonymized entry locations
-- Task: top P1 Queue item (three bundled regressions).
-- Drawer: the shared X is now inside `Drawer.Close`, so a click runs vaul's
-  internal `closeDrawer` and resets the active snap point instead of only
-  flipping the controlled `open` flag. Kept `data-vaul-no-drag` and the
-  `pointerdown` stop that keeps the tap out of vaul's drag handler. Added
-  EntryDrawer close/reopen and JdMatchDrawer close/reopen regressions.
-- Preview: new pure `computeWidthFitScale` subtracts the 32px preview padding
-  plus a 12px safety margin, so a right-aligned date cannot clip at fit.
-  `LiveCanvasViewport` uses the helper; viewport tests derive their expected
-  scale from it. Decision #74.
-- Anonymize: `ANONYMIZED_ENTRY_LOCATION` replaces non-blank locations on
-  experience, education, volunteer, and optional custom-section items; blanks
-  and absent optional values stay as-is. Added redaction, ATS, and
-  immutability cases. Decision #63 updated.
-- Tests: 758 pass (was 750). Files:
-  `src/components/editor/EntryDrawer.tsx` (+ test),
-  `src/components/editor/JdMatchDrawer.test.tsx`,
-  `src/lib/pagination/fitScale.ts` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/lib/privacy/anonymizeDoc.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (758 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

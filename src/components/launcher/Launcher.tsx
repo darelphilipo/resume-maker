@@ -872,24 +872,30 @@ export function Launcher() {
               {createError}
             </p>
           ) : null}
+        </EntryCard>
+      </div>
 
-          <div className="mt-6 flex flex-col gap-2 border-t border-[#e6e0d6] pt-4">
-            <h4 className="text-sm font-semibold text-[#172839]">
+      {recentRows.length > 0 || recentError ? (
+        <section
+          aria-labelledby="launcher-recent-heading"
+          className="rounded-2xl border border-[#e3ddd2] bg-white p-5 shadow-[0_2px_8px_rgba(23,40,57,0.04)] sm:p-6"
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2
+              id="launcher-recent-heading"
+              className="font-serif text-2xl font-semibold tracking-tight"
+            >
               Recent resumes
-            </h4>
+            </h2>
+            <p className="text-xs text-[#6a7683]">
+              Saved in this browser. Pick up where you left off.
+            </p>
+          </div>
 
-            {recent === null ? (
-              <p role="status" className="text-sm text-[#5b6a7a]">
-                Looking for resumes saved on this device...
-              </p>
-            ) : recent.length === 0 ? (
-              <p className="text-sm text-[#5b6a7a]">
-                Nothing saved yet. Resumes you create in this browser appear
-                here, so you can reopen them later without an account.
-              </p>
-            ) : (
+          <div className="mt-4 flex flex-col gap-2">
+            {recentRows.length > 0 ? (
               <div className="flex flex-col gap-2">
-                {recent.length >= 2 ? (
+                {recentRows.length >= 2 ? (
                   <div
                     role="group"
                     aria-label="Filter recent resumes by status"
@@ -899,7 +905,7 @@ export function Launcher() {
                       const isActive = activeStatusFilter === filter;
                       const count =
                         filter === "all"
-                          ? recent.length
+                          ? recentRows.length
                           : statusCounts[filter];
 
                       return (
@@ -1146,7 +1152,7 @@ export function Launcher() {
                   </nav>
                 ) : null}
               </div>
-            )}
+            ) : null}
 
             {recentError ? (
               <p role="alert" className="text-sm text-[#b42318]">
@@ -1154,8 +1160,8 @@ export function Launcher() {
               </p>
             ) : null}
           </div>
-        </EntryCard>
-      </div>
+        </section>
+      ) : null}
 
       <div className="rounded-2xl border border-[#e3ddd2] bg-white p-4">
         <button

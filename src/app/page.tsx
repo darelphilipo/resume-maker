@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <main className="min-h-dvh bg-background text-text">
       <div className="mx-auto flex w-full max-w-5xl flex-col px-4 pb-16 pt-5 sm:px-6 sm:pt-8 lg:px-8">
-        <header className="flex items-center justify-between gap-4">
+        <header className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <span
               aria-hidden
@@ -37,13 +37,6 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <p className="hidden items-center gap-2 rounded-full border border-line bg-surface/70 px-3 py-1.5 text-xs font-medium text-muted sm:flex">
-            <span
-              aria-hidden
-              className="size-1.5 rounded-full bg-[#2f7d5f]"
-            />
-            Private by default
-          </p>
         </header>
 
         <section aria-labelledby="home-heading" className="mt-8 sm:mt-12">
@@ -58,8 +51,7 @@ export default function Home() {
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
             Bring the resume you already have or start from a role template.
-            Everything is edited locally, saved on this device, and printed
-            straight from your browser. No account, no AI, no cost.
+            Your edits stay on this device and print straight from your browser.
           </p>
         </section>
 
