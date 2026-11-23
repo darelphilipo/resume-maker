@@ -190,10 +190,24 @@ rediscover.
     the chunk is large and only needed after a PDF is chosen. Text items are
     grouped by Y (±2.5 pt), ordered by X, joined without a space when the visual
     gap is ≤1.5 pt, and separated by a blank line when the gap exceeds 1.6× the
-    page's median line gap. The reconstructed text is fed straight into
-    `parsePastedResume`, so any parser fix benefits both import paths. Two-column
-    PDFs can interleave columns; this is a text heuristic, not a geometric
-    layout parser.
+    page's median line gap. Icon-font glyphs (`[\uE000-\uF8FF]`) and zero-width
+    characters are stripped from every item, and a trailing soft hyphen
+    (`\u00AD`) or replacement glyph (`\uFFFD`) marks a wrapped word/URL whose
+    next line is rejoined without a space. The reconstructed text is fed
+    straight into `parsePastedResume`, so any parser fix benefits both import
+    paths.
+
+    Two-column pages are split geometrically: `detectColumnGutter` tries
+    candidate x-gutters from empty vertical bands and from item end→next-start
+    pairs (a full-width banner can cover the empty band), then keeps only a
+    gutter where each side has at least 30% of the page's lines, both sides
+    start at a stable left edge, and the right side's starts are at least as
+    clustered as its right edges. That last rule is what stops a single-column
+    resume's right-aligned dates from looking like a second column. Output is
+    emitted as full-width banner lines, then the left column, then the right
+    column, each top-to-bottom with its own paragraph gaps. Each line that has
+    items on both sides is split rather than joined, so sidebar skills never
+    interleave with Experience. Keep this heuristic pure and client-side.
 21. **JSON is a backup path, not a starting point.** The `/` launcher keeps
     three primary cards: Paste, Upload a PDF, and Start from scratch. JSON
     restore lives in a collapsed `Backup & Restore` disclosure at the bottom
@@ -1247,6 +1261,27 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-23 — Two-column PDF import and glyph cleanup
+- Task: top P0 Queue item. `pdfResume.ts` now strips decorative glyphs and
+  rebuilds two-column pages column-by-column instead of interleaving a sidebar
+  with the main body.
+- Glyphs: every item drops Private Use Area icon characters and zero-width
+  characters; PUA-only items disappear. A trailing soft hyphen or replacement
+  glyph marks a wrapped word/URL, and `mergeWrappedLines` rejoins the next line
+  without inserting a space. Mid-word glyphs are simply removed.
+- Columns: `detectColumnGutter` scores candidate gutters from empty vertical
+  bands plus item end→next-start pairs (banners can cover the empty band). A
+  gutter survives only when each side owns ≥30% of lines, each side's line
+  starts are tightly clustered, and the right side's starts cluster at least as
+  tightly as its right edges (the last rule rejects right-aligned dates). Output order is
+  banner → left → right, and each group gets its own paragraph-gap pass.
+- Tests: added PUA/zero-width stripping, soft-hyphen/replacement-char rejoin,
+  a banner + two-column exact-order fixture, an unaligned-column fixture, and a
+  right-aligned-dates regression. Decision #20 rewritten.
+- Files: `src/lib/import/pdfResume.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (911 pass), `npm run lint`.
+
 ### 2026-11-23 — Compact segmented Design panel and circular accent strip
 - Task: the P1 Queue item. The Design panel stacked six tall full-width radio
   cards above the templates; Paper size, Font pairing, and Density now share
@@ -1476,41 +1511,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/templates/shared/allFieldsWiring.test.tsx`, `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (819 pass), `npm run lint`.
-
-### 2026-11-22 — Grouped promotions at one company
-- Task: top P2 Queue item. Added the **Group promotions at the same company**
-  checkbox to Experience and a shared grouped renderer.
-- Model: `sections.experience.groupSameCompany` (Zod default false). The
-  checkbox writes it through `patchDoc` immediately, so one Zundo undo restores
-  the flat layout. Old saved rows have no field at runtime; all reads compare
-  `=== true` (Decision #77).
-- Grouping: new pure `groupExperienceItems` / `experienceDateSpan` /
-  `normalizeCompanyName`. Only consecutive visible roles with the same
-  normalized company join; blanks never join; unique locations are joined with
-  `" · "`; the combined span uses the earliest start, latest end, and Present
-  when any role is current.
-- Render: `SectionRenderer` emits one `.resume-company-group` header plus a
-  `.resume-company-roles` stack. Each role keeps its own position, dates, and
-  bullets through `EntryShell`/`keepTogether`; single roles keep the old layout.
-  All six templates use this renderer. New Onyx CSS draws the role rail and
-  keeps the header with its first role.
-- Pagination: `getSectionPlans` now emits `SectionPlan.blocks` for grouped
-  Experience, `planBlockKeys` uses the new `encodeEntryGroup`, and
-  `decodeBlock` accepts comma-separated ids. Measurement and packing therefore
-  match the grouped render instead of over-counting a repeated header.
-- ATS: unchanged and linear; a regression asserts the company repeats once per
-  role. Tests: 10 helper cases, three grouped/ungrouped/hidden renderer cases,
-  the form toggle, planner group blocks, block-id groups/escaped commas, and the
-  ATS linear case. 808 pass (was 786).
-- Files: `src/lib/experience/groupExperience.ts` (+ test, new),
-  `src/lib/schema/resume.schema.ts`,
-  `src/components/editor/ExperienceForm.tsx` (+ test),
-  `src/templates/shared/SectionRenderer.tsx` (+ test),
-  `src/templates/onyx/onyx.css`, `src/lib/pagination/blockIds.ts` (+ test),
-  `src/lib/pagination/sectionPlans.ts` (+ test),
-  `src/lib/pagination/index.ts`, `src/lib/ats/atsText.test.ts`, `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (808 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

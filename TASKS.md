@@ -24,11 +24,6 @@ _empty
 
 ### P0 — PDF & Paste Import Reliability Upgrades
 
-- [ ] P0: Add two-column PDF detection and glyph/hyphen cleanup to `src/lib/import/pdfResume.ts`.
-  1. **Strip icon & broken glyphs:** Remove Private Use Area icon characters (`[\uE000-\uF8FF]`), zero-width chars, and rejoin soft-hyphenated/replacement-char line wraps (`\u00AD`, `\uFFFD` inside words/URLs) during text extraction.
-  2. **Detect two-column layouts (Canva / sidebar PDFs):** Before merging items into full-width lines in `groupPageLines`, check if page items split cleanly into two non-overlapping horizontal columns separated by a consistent vertical gutter (e.g., left sidebar vs right main column across ≥30% of lines, below any full-width top banner). Extract full-width header first, then left column top-to-bottom, then right column top-to-bottom so sidebar skills/contact never interleave with Experience.
-  3. Add unit tests covering two-column coordinate fixtures and PUA icon glyph stripping.
-
 - [ ] P0: Wire all remaining sections and expand `SECTION_ALIASES` in `src/lib/import/pasteResume.ts`.
   1. **Stop dropping recognized sections:** Populate `projects`, `certifications`, `awards`, `languages`, `interests`, `volunteer`, `publications`, `references`, and `profiles` in `parsePastedResume` instead of discarding them after `splitSections`.
   2. **Expand `SECTION_ALIASES`:** Add common real-world variants including `certifications & awards` / `certifications and awards`, `courses & certifications` / `courses and certifications`, `hard skills`, `soft skills` (mapping to `skills` with the heading preserved as category), `education background`, `internship` / `internships` (mapping to `experience` or `customSections`), `extra curricular` / `extracurricular` / `extracurricular activities` (mapping to `volunteer` or `awards`), and `contact` / `my contact` / `contact details` (routed to `parseHeader`).
@@ -46,6 +41,25 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-23 — Added two-column PDF detection and broken-glyph cleanup to
+  PDF import. Every extracted item drops Private Use Area icon glyphs and
+  zero-width characters (PUA-only items disappear), and a trailing soft hyphen
+  (`\u00AD`) or replacement glyph (`\uFFFD`) marks a wrapped word/URL whose next
+  line is rejoined without a space; mid-word glyphs are simply removed.
+  `detectColumnGutter` scores candidate x-gutters from empty vertical bands plus
+  item end→next-start pairs (so a full-width banner covering the empty band is
+  still handled), and accepts one only when each side owns ≥30% of the page's
+  lines, both sides' line starts cluster, and the right side's starts cluster at
+  least as tightly as its right edges — the last rule rejects single-column
+  resumes with right-aligned dates. Accepted pages are emitted as full-width
+  banner lines, then the left column, then the right column, each top-to-bottom
+  with its own paragraph gaps, and a line with items on both sides is split so
+  sidebar skills never interleave with Experience. Added PUA/zero-width,
+  soft-hyphen/replacement-char, banner + exact two-column order,
+  unaligned-column, and right-aligned-dates regressions. Verified
+  `npm run typecheck`, `npm test` (911 pass), `npm run lint`. Files:
+  `src/lib/import/pdfResume.ts` (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-23 — Compacted the **Design** panel into segmented rows and a
   circular accent strip. **Paper size**, **Font pairing**, and **Density** no

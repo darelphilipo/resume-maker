@@ -66,6 +66,127 @@ describe("groupPdfTextItems", () => {
     expect(text).toBe("Page one\n\nPage two");
   });
 
+  it("strips private-use icon glyphs and zero-width characters", () => {
+    const text = groupPdfTextItems([
+      [
+        item("\uE900 Jane\u200B Doe \uE901", 10, 700, 90),
+        item("ada@example.com", 10, 685, 70),
+        item("\uE902", 10, 670, 8),
+      ],
+    ]);
+
+    expect(text).toBe("Jane Doe\nada@example.com");
+  });
+
+  it("rejoins soft-hyphen and broken-glyph line wraps without a space", () => {
+    const text = groupPdfTextItems([
+      [
+        item("https://exa\u00AD", 10, 700, 70),
+        item("mple.com/path", 10, 685, 80),
+        item("linked\uFFFD", 10, 670, 40),
+        item("in.com", 10, 655, 30),
+        item("soft\u00ADware", 10, 640, 40),
+      ],
+    ]);
+
+    expect(text).toBe("https://example.com/path\nlinkedin.com\nsoftware");
+  });
+
+  it("emits a two-column page as banner, left column, then right column", () => {
+    const text = groupPdfTextItems([
+      [
+        item("Jane Doe", 10, 800, 560),
+        item("Senior Product Manager", 10, 785, 400),
+        item("SKILLS", 10, 750, 45),
+        item("EXPERIENCE", 300, 750, 70),
+        item("Python", 10, 735, 35),
+        item("Acme Corp", 300, 735, 55),
+        item("SQL", 10, 720, 20),
+        item("Senior Engineer | Jan 2020 - Present", 300, 720, 220),
+        item("CONTACT", 10, 690, 50),
+        item("Built the billing service.", 300, 705, 150),
+        item("jane@example.com", 10, 675, 100),
+        item("EDUCATION", 300, 670, 70),
+        item("State University", 300, 655, 90),
+      ],
+    ]);
+
+    expect(text).toBe(
+      [
+        "Jane Doe",
+        "Senior Product Manager",
+        "",
+        "SKILLS",
+        "Python",
+        "SQL",
+        "",
+        "CONTACT",
+        "jane@example.com",
+        "",
+        "EXPERIENCE",
+        "Acme Corp",
+        "Senior Engineer | Jan 2020 - Present",
+        "Built the billing service.",
+        "",
+        "EDUCATION",
+        "State University",
+      ].join("\n"),
+    );
+  });
+
+  it("keeps unaligned side columns from interleaving", () => {
+    const text = groupPdfTextItems([
+      [
+        item("SKILLS", 10, 700, 50),
+        item("Python", 10, 685, 35),
+        item("SQL", 10, 670, 20),
+        item("EXPERIENCE", 200, 692, 70),
+        item("Acme Corp", 200, 677, 55),
+        item("Built the billing service.", 200, 662, 130),
+      ],
+    ]);
+
+    expect(text).toBe(
+      "SKILLS\nPython\nSQL\n\nEXPERIENCE\nAcme Corp\nBuilt the billing service.",
+    );
+  });
+
+  it("does not mistake right-aligned dates for a second column", () => {
+    const text = groupPdfTextItems([
+      [
+        item("Built the billing service.", 10, 700, 250),
+        item("Jan 2020", 500, 700, 40),
+        item("Shipped the redesign.", 10, 685, 250),
+        item("Sep 2019", 495, 685, 45),
+        item("Led the platform team.", 10, 670, 250),
+        item("December 2022", 470, 670, 70),
+        item("Cut latency in half.", 10, 655, 250),
+        item("Jun 2021", 497, 655, 43),
+        item("Mentored four engineers.", 10, 640, 250),
+        item("Feb 2020", 496, 640, 44),
+        item("Ran the migration.", 10, 625, 250),
+        item("Nov 2017", 497, 625, 43),
+        item("Owned the roadmap.", 10, 610, 250),
+        item("Aug 2023", 498, 610, 42),
+        item("Hired six engineers.", 10, 595, 250),
+        item("May 2018", 490, 595, 50),
+      ],
+    ]);
+
+    expect(text).toBe(
+      [
+        "Built the billing service. Jan 2020",
+        "Shipped the redesign. Sep 2019",
+        "Led the platform team. December 2022",
+        "Cut latency in half. Jun 2021",
+        "Mentored four engineers. Feb 2020",
+        "Ran the migration. Nov 2017",
+        "Owned the roadmap. Aug 2023",
+        "Hired six engineers. May 2018",
+      ].join("\n"),
+    );
+  });
+
   it("feeds reconstructed text through the paste parser", () => {
     const text = groupPdfTextItems([
       [

@@ -51,7 +51,10 @@ in control of every line, and your data stays on your device.
   a job without changing the original. Nothing leaves the device.
 - **PDF import**: choose a PDF and its text is read locally in your browser,
   then split into editable contact details, summary, experience, education, and
-  skills. Scanned or image-only PDFs need to be pasted as text instead.
+  skills. Two-column layouts keep their sidebar and main body in the right
+  order, decorative icon glyphs are dropped, and words split across lines are
+  joined back together. Scanned or image-only PDFs need to be pasted as text
+  instead.
 - **Paste-to-parse import**: paste the text of an existing resume from a PDF,
   LinkedIn profile, or another tool, and your contact details, summary,
   experience, education, and skills are split into editable fields. Parsing
