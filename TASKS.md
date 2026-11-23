@@ -22,7 +22,10 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+- [ ] P0: Fix resume page spilling below the gray Preview backdrop and `Reset` pill pushing `Review ▾` off-screen when zoomed (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/CanvasResetButton.tsx`).
+  1. **Keep the gray backdrop larger than the resume page:** Ensure the canvas backdrop/wrapper around `<TransformComponent>` sizes dynamically to fit the full scaled `<PageStack>` height plus vertical padding (rather than clipping or ending ~25px above the bottom of the white resume page).
+  2. **Stop `Reset` from crowding Row 1:** Move `CanvasResetButton` (`Reset`) out of the top `Visual | ATS · Review` bar into a floating bottom-right pill (`absolute bottom-3 right-3 z-20`) overlaid inside the preview viewport whenever zoomed in, so Row 1 never overflows or pushes `Review ▾` off the right edge on `390px` phones.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
