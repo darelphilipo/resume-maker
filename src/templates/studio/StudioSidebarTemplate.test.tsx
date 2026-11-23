@@ -84,15 +84,18 @@ describe("StudioSidebarTemplate", () => {
     ).toBeInTheDocument();
   });
 
-  it("anchors sidebar blocks to Page 1 and renders main-only pages full-width", () => {
+  it("keeps only Page 1's assigned sidebar blocks in the aside", () => {
     const doc = buildDoc();
-    // Simulate packing: the main column overflows, so the short sidebar
-    // sections land on Page 2 after the remaining experience entries.
+    // Packing caps the Page 1 sidebar, so Certifications did not fit there and
+    // now belongs to Page 2's full-width main flow.
     const pages = [
-      [HEADER_BLOCK_ID, encodeEntryBlock("experience", "exp-1", true)],
+      [
+        HEADER_BLOCK_ID,
+        encodeEntryBlock("experience", "exp-1", true),
+        encodeEntryBlock("skills", "skill-1", true),
+      ],
       [
         encodeEntryBlock("experience", "exp-2", false),
-        encodeEntryBlock("skills", "skill-1", true),
         "certifications",
       ],
     ];
@@ -108,18 +111,16 @@ describe("StudioSidebarTemplate", () => {
     expect(firstLayout).not.toHaveClass("studio-layout--full");
     expect(firstMain).not.toBeNull();
     expect(firstSidebar).not.toBeNull();
-    // Both sidebar sections are pinned to Page 1 even though packing put them
-    // on Page 2, including a split (entry-level) skills block.
     expect(
       within(firstSidebar as HTMLElement).getByRole("heading", {
         name: "Skills",
       }),
     ).toBeInTheDocument();
     expect(
-      within(firstSidebar as HTMLElement).getByRole("heading", {
+      within(firstSidebar as HTMLElement).queryByRole("heading", {
         name: "Certifications",
       }),
-    ).toBeInTheDocument();
+    ).toBeNull();
     expect(
       within(firstMain as HTMLElement).queryByRole("heading", {
         name: "Skills",
@@ -148,11 +149,15 @@ describe("StudioSidebarTemplate", () => {
     expect(
       within(secondMain as HTMLElement).getByText("Senior Engineer"),
     ).toBeInTheDocument();
+    // The sidebar block that did not fit Page 1 now renders full-width here.
     expect(
-      within(secondMain as HTMLElement).queryByRole("region", {
+      within(secondMain as HTMLElement).getByRole("heading", {
         name: "Certifications",
       }),
-    ).toBeNull();
+    ).toBeInTheDocument();
+    expect(
+      within(secondMain as HTMLElement).getByText("Cloud Architect"),
+    ).toBeInTheDocument();
   });
 
   it("keeps Awards on Page 2 when Page 1's sidebar holds Skills and Certifications", () => {
@@ -297,6 +302,22 @@ describe("StudioSidebarTemplate", () => {
       "studio-layout--full",
     );
     expect(container.querySelector(".studio-sidebar")).toBeNull();
+  });
+
+  it("bounds each printed page so a tall Studio grid cannot fragment", () => {
+    const css = readFileSync(
+      path.resolve(process.cwd(), "src/styles/print.css"),
+      "utf8",
+    );
+    const pageRule = css.match(
+      /@media print[\s\S]*?\.resume-page\s*\{([^}]*)\}/,
+    );
+
+    expect(pageRule, "the print page rule must exist").not.toBeNull();
+    expect(pageRule?.[1]).toMatch(/height:\s*var\(--page-height/);
+    expect(pageRule?.[1]).toMatch(/max-height:\s*var\(--page-height/);
+    expect(pageRule?.[1]).toContain("overflow: hidden;");
+    expect(pageRule?.[1]).toContain("box-sizing: border-box;");
   });
 
   it("defines a two-column grid in the Studio stylesheet", () => {

@@ -15,7 +15,10 @@ import {
   type SectionPlan,
 } from "@/lib/pagination/sectionPlans";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
-import { isStudioSidebarSection } from "@/templates/studio/sidebarSections";
+import {
+  fullWidthMeasureId,
+  isStudioSidebarSection,
+} from "@/templates/studio/sidebarSections";
 import { HeaderSlot } from "@/templates/shared/HeaderSlot";
 import { SectionRenderer } from "@/templates/shared/SectionRenderer";
 import { resolveSection } from "@/templates/shared/sectionData";
@@ -219,6 +222,22 @@ export function MeasureLayer({
         ) : (
           <main className="page-stack">{blocks.map(renderBlock)}</main>
         )}
+        {/* Sidebar blocks that do not fit Page 1 spill into the main flow on
+            Page 2+, where they render at the full content width. Measure that
+            copy separately so a narrow sidebar-height over-estimate cannot
+            inflate every later page. */}
+        {hasStudioSidebar ? (
+          <div className="studio-main" data-measure-full-width="">
+            {sidebarBlocks.map((block) => (
+              <div
+                key={block.key}
+                data-measure-id={fullWidthMeasureId(block.key)}
+              >
+                <SectionRenderer doc={doc} pageSectionIds={[block.key]} />
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

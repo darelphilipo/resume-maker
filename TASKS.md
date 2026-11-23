@@ -22,14 +22,37 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P0: Fix `Studio Sidebar` sidebar overflow, print page-break blank Page 1 (`Save as PDF`), and Page 2/3 stranding (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/templates/studio/studio.css`, `src/styles/print.css`, `src/lib/pagination/computePages.ts`, `src/lib/pagination/usePageLayout.ts`, `src/components/preview/MeasureLayer.tsx`).
-  1. **Cap Page 1 sidebar height & spill overflow cleanly:** Pack `sidebarBlocks` (`Skills`, `Certifications`, etc.) against Page 1's available height (`pageHeight - headerHeight - margins`). Keep only the sidebar items that actually fit on Page 1 inside Page 1's right column; route any remaining sidebar items into Page 2+ so Page 1's `.studio-layout` grid can **never** exceed 1 printable page height.
-  2. **Prevent Chrome Print from pushing `.studio-layout` to Page 2:** In `studio.css` / `print.css`, ensure `.resume-page` in `@media print` has exact printable height/overflow bounds (`break-inside: avoid-page` on the Page 1 `.studio-layout` only once guaranteed to fit, or `display: flex` / zero extra print padding) so `Save as PDF` produces the exact same 2 pages shown in Visual Preview—never a blank Page 1 with just the header.
-  3. **Fix `totalHeightPx` & Page 2+ width:** Compute `totalHeightPx` for `studio-sidebar` using `headerHeightPx + Math.max(mainHeightPx, sidebarHeightPx)`, pack Page 1 columns independently so `Awards` doesn't strand on Page 3 when Page 2 has space, and measure Page 2+ overflow blocks at full `100%` width.
-
+_empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-23 — Capped the Studio Sidebar's Page 1 side column and made
+  `Save as PDF` print exactly the measured pages. `computePages` now splits
+  pinned sidebar blocks and packs them against
+  `contentHeight - headerHeight - gap`: only blocks that fit stay in `pages[0]`,
+  and the rest join the main flow on Page 2+ (forced off Page 1 when the main
+  column left room). A new optional `fullWidthHeights` record lets those
+  spilled blocks be packed at the width they actually render.
+  `StudioSidebarTemplate` reads the aside from `pages[0]` only, so a later-page
+  sidebar block renders full-width instead of re-growing Page 1.
+  `MeasureLayer` renders a hidden full-width copy of every sidebar block
+  (`FULL_WIDTH_MEASURE_PREFIX` in `sidebarSections.ts`), and `usePageLayout`
+  forwards those heights and computes the Studio fit height as
+  `header + max(mainColumn, sidebarColumn)` rather than the sum. Finally,
+  `@media print .resume-page` now has fixed
+  `height`/`max-height: var(--page-height)` plus `overflow: hidden`, so mm/pt
+  rounding can no longer fragment a packed page into a blank Page 1. Added
+  sidebar-cap/overflow/full-width packing cases, a fit-max regression, the
+  MeasureLayer full-width copy, template aside ownership and full-width spill
+  tests, and a print-CSS contract. Verified `npm run typecheck`, `npm test`
+  (947 pass). Files: `src/lib/pagination/computePages.ts` (+ test),
+  `src/lib/pagination/usePageLayout.ts` (+ test),
+  `src/components/preview/MeasureLayer.tsx` (+ test),
+  `src/templates/studio/StudioSidebarTemplate.tsx` (+ test),
+  `src/templates/studio/sidebarSections.ts`, `src/styles/print.css`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`. Playwright remains blocked here, so
+  the visual/PDF check is browser-unverified.
 
 - [x] 2026-11-23 — Stopped the Studio Sidebar stranding trailing main sections on
   a nearly empty extra page. `computePages` no longer packs sidebar-routed

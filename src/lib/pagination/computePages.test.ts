@@ -183,7 +183,7 @@ describe("computePages with sections pinned to Page 1", () => {
     ]);
   });
 
-  it("anchors every pinned block to Page 1, not just the last one", () => {
+  it("caps Page 1's sidebar at the page height and spills the rest to Page 2", () => {
     const result = computePages(
       makeInput({
         sectionIds: ["experience", "skills", "certifications"],
@@ -195,9 +195,76 @@ describe("computePages with sections pinned to Page 1", () => {
       }),
     );
 
+    // Skills fills Page 1's sidebar exactly; Certifications may not grow the
+    // two-column grid past one printable page, so it joins the main flow.
     expect(result.pages).toEqual([
-      ["__header", "experience", "skills", "certifications"],
+      ["__header", "experience", "skills"],
+      ["certifications"],
     ]);
+  });
+
+  it("moves a sidebar block taller than Page 1 into the main flow", () => {
+    const result = computePages(
+      makeInput({
+        sectionIds: ["experience", "skills"],
+        heights: { experience: 300, skills: 1200 },
+        headerHeightPx: 100,
+        gapPx: 0,
+        contentHeightPx: 1000,
+        pinnedToFirstPage: new Set(["skills"]),
+      }),
+    );
+
+    expect(result.pages).toEqual([
+      ["__header", "experience"],
+      ["skills"],
+    ]);
+  });
+
+  it("sends sidebar overflow to Page 2 even when Page 1's main column has room", () => {
+    const result = computePages(
+      makeInput({
+        sectionIds: ["experience", "skills", "certifications"],
+        heights: { experience: 300, skills: 900, certifications: 700 },
+        headerHeightPx: 100,
+        gapPx: 0,
+        contentHeightPx: 1000,
+        pinnedToFirstPage: new Set(["skills", "certifications"]),
+      }),
+    );
+
+    expect(result.pages).toEqual([
+      ["__header", "experience", "skills"],
+      ["certifications"],
+    ]);
+  });
+
+  it("measures spilled sidebar blocks at full width so they fit Page 2", () => {
+    const result = computePages(
+      makeInput({
+        sectionIds: ["experience", "projects", "skills", "certifications"],
+        heights: {
+          experience: 900,
+          projects: 400,
+          skills: 900,
+          certifications: 700,
+        },
+        headerHeightPx: 100,
+        gapPx: 0,
+        contentHeightPx: 1000,
+        pinnedToFirstPage: new Set(["skills", "certifications"]),
+        // Certifications is only 700px tall in the narrow sidebar, but 500px
+        // once it renders full-width beside Projects on Page 2.
+        fullWidthHeights: { certifications: 500 },
+      }),
+    );
+
+    // Without the full-width height, 400 + 700 would overflow onto Page 3.
+    expect(result.pages).toEqual([
+      ["__header", "experience", "skills"],
+      ["projects", "certifications"],
+    ]);
+    expect(result.overflowPx).toBe(0);
   });
 });
 

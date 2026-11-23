@@ -10,11 +10,16 @@ import {
   type ResumeDocument,
 } from "@/lib/schema/resume.schema";
 import { PT_TO_PX, pageGeometry } from "@/lib/units/pageGeometry";
-import { STUDIO_SIDEBAR_SECTION_IDS } from "@/templates/studio/sidebarSections";
+import {
+  STUDIO_SIDEBAR_SECTION_IDS,
+  collectFullWidthHeights,
+  isStudioSidebarBlock,
+} from "@/templates/studio/sidebarSections";
 
 import { HEADER_BLOCK_ID } from "./constants";
 import { computePages } from "./computePages";
 import { computeFitScale } from "./fitScale";
+import type { PackBlock } from "./packPages";
 import {
   buildPackBlocks,
   getSectionPlans,
@@ -62,6 +67,42 @@ function hasMeasuredHeight(
   id: string,
 ): boolean {
   return Object.prototype.hasOwnProperty.call(heights, id);
+}
+
+/**
+ * Fit-to-1-Page shrink target for a two-column Studio layout. The main and
+ * side columns are laid out side by side, so the document height is the header
+ * plus the taller column — summing both columns asked for a needlessly small
+ * scale and disagreed with the packed page count.
+ */
+function studioSidebarTotalHeight(
+  blocks: readonly PackBlock[],
+  headerHeightPx: number,
+  gapPx: number,
+): number {
+  let mainHeightPx = 0;
+  let mainCount = 0;
+  let sidebarHeightPx = 0;
+  let sidebarCount = 0;
+
+  for (const block of blocks) {
+    if (isStudioSidebarBlock(block.id)) {
+      sidebarHeightPx += block.heightPx;
+      sidebarCount += 1;
+    } else {
+      mainHeightPx += block.heightPx;
+      mainCount += 1;
+    }
+  }
+
+  // Each column includes the root gap between the header and its first block,
+  // plus one gap between every following pair.
+  const mainColumnHeightPx = mainHeightPx + gapPx * mainCount;
+  const sidebarColumnHeightPx = sidebarHeightPx + gapPx * sidebarCount;
+
+  return (
+    headerHeightPx + Math.max(mainColumnHeightPx, sidebarColumnHeightPx)
+  );
 }
 
 export function isMeasurementComplete(
@@ -206,6 +247,26 @@ export function usePageLayout(
         expectedKeys,
       );
 
+  // The Studio Sidebar always renders its side column on Page 1, so its blocks
+  // are packed against that column's remaining height instead of the shared
+  // main sequence.
+  const pinnedToFirstPage =
+    doc.metadata.template === "gengar"
+      ? STUDIO_SIDEBAR_SECTION_IDS
+      : undefined;
+
+  const fullWidthHeights = useMemo(() => {
+    if (!measurements) {
+      return undefined;
+    }
+
+    const collectedHeights = collectFullWidthHeights(measurements.heights);
+
+    return Object.keys(collectedHeights).length > 0
+      ? collectedHeights
+      : undefined;
+  }, [measurements]);
+
   const measureLayer = measure
     ? null
     : createElement(MeasureLayer, {
@@ -230,13 +291,6 @@ export function usePageLayout(
     };
   }
 
-  // The Studio Sidebar always renders its side column on Page 1, so a trailing
-  // page holding only those sections must not survive as a blank page.
-  const pinnedToFirstPage =
-    doc.metadata.template === "gengar"
-      ? STUDIO_SIDEBAR_SECTION_IDS
-      : undefined;
-
   const packed = computePages({
     sectionIds: order,
     heights: measurements.heights,
@@ -246,17 +300,27 @@ export function usePageLayout(
     startOnNewPage,
     plans,
     pinnedToFirstPage,
+    fullWidthHeights,
   });
 
-  const blockHeights = buildPackBlocks(
+  const packBlocks = buildPackBlocks(
     plans,
     measurements.heights,
     startOnNewPage,
-  ).map((block) => block.heightPx);
-  const totalHeightPx =
-    measurements.headerHeightPx +
-    blockHeights.reduce((sum, heightPx) => sum + heightPx, 0) +
-    gapPx * blockHeights.length;
+  );
+  // Studio renders its main and side columns side by side, so the stack height
+  // that Fit-to-1-Page must shrink is the taller column, not the sum of both.
+  // Summing them asked for a far smaller scale than the document needed and
+  // made the fit target disagree with the page count.
+  const totalHeightPx = pinnedToFirstPage
+    ? studioSidebarTotalHeight(
+        packBlocks,
+        measurements.headerHeightPx,
+        gapPx,
+      )
+    : measurements.headerHeightPx +
+      packBlocks.reduce((sum, block) => sum + block.heightPx, 0) +
+      gapPx * packBlocks.length;
   const fitScale =
     startOnNewPage.size > 0
       ? null

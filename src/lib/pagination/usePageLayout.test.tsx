@@ -10,6 +10,7 @@ import {
   type ResumeDocument,
 } from "@/lib/schema/resume.schema";
 import { pageGeometry } from "@/lib/units/pageGeometry";
+import { fullWidthMeasureId } from "@/templates/studio/sidebarSections";
 
 import { getSectionPlans, planBlockKeys } from "./sectionPlans";
 import {
@@ -217,6 +218,33 @@ describe("usePageLayout", () => {
     expect(result.current.pages).toEqual([
       ["__header", "experience", "skills"],
     ]);
+    // Fit uses the taller column, not main + sidebar: 100 + max(900, 300) fits.
+    expect(result.current.fitScale).toBeNull();
+  });
+
+  it("spills sidebar overflow to Page 2 and packs it at full width", () => {
+    const doc = createEmptyResume("gengar");
+    doc.metadata.page.gapY = 0;
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: {
+        experience: 900,
+        projects: 400,
+        skills: 900,
+        certifications: 700,
+        [fullWidthMeasureId("certifications")]: 500,
+      },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    // Skills fills Page 1's side column. Certifications did not fit there, so
+    // it joins Projects on Page 2 at the width it actually renders.
+    expect(result.current.pages).toEqual([
+      ["__header", "experience", "skills"],
+      ["projects", "certifications"],
+    ]);
+    expect(result.current.overflowPx).toBe(0);
   });
 
   it("does not charge gengar sidebar sections to Page 2's main-column budget", () => {

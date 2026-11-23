@@ -28,16 +28,15 @@ export function StudioSidebarTemplate({
   const pageIds = pages[pageIndex] ?? firstPage;
   const hasHeader = pageIds.includes(HEADER_BLOCK_ID);
 
-  // Packing is a single shared column in canonical order (main first, sidebar
-  // last), so a tall main column pushes the short sidebar sections onto a later
-  // page whose main side is empty. The sidebar is its own column, independent
-  // of the main column's height: keep every sidebar block on Page 1 and let
-  // later pages carry main-column overflow only.
-  const sidebarIds = (pages.length > 0 ? pages.flat() : firstPage).filter(
+  // Packing already caps Page 1's side column at one page height; pinned blocks
+  // that did not fit were routed into the main flow on Page 2+. The aside
+  // therefore owns exactly the sidebar ids assigned to Page 1, and any sidebar
+  // block on a later page renders at full width with that page's main content.
+  const sidebarIds = (pages.length > 0 ? pages[0] : firstPage).filter(
     isStudioSidebarBlock,
   );
   const mainIds = pageIds.filter(
-    (id) => id !== HEADER_BLOCK_ID && !isStudioSidebarBlock(id),
+    (id) => id !== HEADER_BLOCK_ID && !sidebarIds.includes(id),
   );
   const showSidebar = pageIndex === 0 && sidebarIds.length > 0;
 

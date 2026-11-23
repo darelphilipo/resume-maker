@@ -865,22 +865,30 @@ rediscover.
       (`atsText.ts`); links for profiles, certifications, and publications plus
       Education `grade` now render in `SectionRenderer` too.
 
-  62. **Studio Sidebar pinned blocks are packed apart from the main column.**
-      The sidebar renders in Page 1's `<aside>` whatever page packing assigned
-      it, so charging its height to the shared main-then-sidebar sequence
-      (#34/#46) does two kinds of damage: a full main column can leave a blank
-      Page 2 whose only content is sidebar blocks, and — because the canonical
-      order interleaves `skills`/`certifications` between `education` and
-      `awards` — those sidebar blocks can fill Page 2's main budget and strand
-      `Awards` on a nearly empty Page 3. `computePages` now accepts
-      `pinnedToFirstPage`: it splits those blocks out, packs the main column
-      (header + main sections) with the whole page budget, and appends **every**
-      pinned block to Page 1 in canonical order. Keep the ids in `pages` — the
-      template recovers its side column from `pages.flat()`, so dropping them
-      would delete content. `usePageLayout` passes
-      `STUDIO_SIDEBAR_SECTION_IDS` only for `gengar`; single-column templates
-      keep their canonical trailing page. Page count, canvas frame, print, and
-      the overflow banner all derive from the corrected `pages`.
+  62. **Studio Sidebar's side column is packed apart and capped at Page 1.**
+      The sidebar renders in Page 1's `<aside>`, so charging its height to the
+      shared main-then-sidebar sequence (#34/#46) does two kinds of damage: a
+      full main column can leave a blank Page 2 whose only content is sidebar
+      blocks, and — because the canonical order interleaves
+      `skills`/`certifications` between `education` and `awards` — those blocks
+      can fill Page 2's main budget and strand `Awards` on a nearly empty
+      Page 3. `computePages` accepts `pinnedToFirstPage` **and** an optional
+      `fullWidthHeights` record: it splits pinned blocks out, packs the main
+      column (header + main sections) with the whole page budget, and packs the
+      side column independently against `contentHeight - headerHeight - gap`.
+      Only blocks that genuinely fit stay in `pages[0]`; the rest join the main
+      flow on Page 2+ (forced off Page 1 when the main column left room) and
+      render full-width there. `StudioSidebarTemplate` therefore reads the
+      aside from `pages[0]` only — not `pages.flat()`, which would re-grow the
+      grid past one printable page. `MeasureLayer` renders a hidden full-width
+      copy of every sidebar block under
+      `FULL_WIDTH_MEASURE_PREFIX` (`sidebarSections.ts`), and `usePageLayout`
+      passes those heights so a spilled block is packed at the width it will
+      occupy. The fit height is `header + max(mainColumn, sidebarColumn)`, never
+      their sum. `usePageLayout` passes `STUDIO_SIDEBAR_SECTION_IDS` only for
+      `gengar`; single-column templates keep their canonical sequence. Page
+      count, canvas frame, print, and the overflow banner all derive from the
+      corrected `pages`.
 
   63. **Review mode redacts every rendered URL and location, and the drawer X
       uses vaul's close primitive.** `anonymizeResumeDoc` replaces entry `url`
@@ -1038,9 +1046,10 @@ rediscover.
       forever. `studioSectionIdOf` / `isStudioSidebarBlock` live in
       `sidebarSections.ts` so the template and measure layer route split entry
       blocks identically. Keep the root-class map in sync with `registry.ts`; the
-      registry test renders all six templates. Packing itself did not need a new
-      mode: a trailing page containing only pinned sidebar blocks is still folded
-      into Page 1, while any unpinned main overflow keeps its own page.
+      registry test renders all six templates. Packing caps the side column
+      instead of folding it (#62): only sidebar blocks that fit Page 1 stay in
+      `pages[0]`, the rest continue in the main flow, and the measure layer also
+      reports a full-width copy for those spilled blocks.
 
   72. **Empty list items are stripped at render time, and JD matching is
       whole-token.** TipTap leaves an empty `<li><p></p></li>` when Enter ends a
@@ -1315,11 +1324,22 @@ rediscover.
        the original `onZoomChange` code, so they are not caused by this change.
        CI only runs typecheck/test/build.
 
+  88. **Printed pages are fixed-height and clipped.** `@media print .resume-page`
+      now sets `height`/`max-height: var(--page-height)` plus
+      `overflow: hidden` on top of `box-sizing: border-box`. Pagination already
+      guarantees every packed page fits, so the clamp cannot hide content in
+      normal use; it stops Chrome from fragmenting a two-column Studio grid that
+      measured a fraction taller in print (mm/pt rounding) into a blank Page 1
+      plus the whole grid on Page 2. Do **not** add
+      `break-inside: avoid-page` to `.studio-layout` as an alternative: when the
+      grid genuinely does not fit, `avoid-page` *creates* the blank first page
+      instead of preventing it. Fix the packing (#62) instead.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~942 tests
+npm test               # vitest, ~947 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1375,6 +1395,39 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-23 — Studio Sidebar caps Page 1's sidebar and prints exactly its pages
+- Task: Queue P0. A tall side column grew `.studio-layout` past one printable
+  page, so Chrome's print layout pushed the whole grid to Page 2 and `Save as
+  PDF` produced a blank Page 1 with only the header. The same side column also
+  had no height budget on Page 1.
+- Packing: `splitPinnedBlocks` packs pinned blocks against
+  `contentHeight - header - gap`. Only the fitting blocks stay in `pages[0]`;
+  the rest join the main flow on Page 2+ (forced off Page 1 when the main
+  column left room). `fullWidthHeights` lets a spilled block be packed at the
+  width it will render. Decision #62 rewritten.
+- Template: the aside reads `pages[0]` only (not `pages.flat()`), so spilled
+  sidebar blocks render full-width in a later page's main column instead of
+  re-growing Page 1.
+- Measure/fit: `MeasureLayer` renders a hidden full-width copy of every sidebar
+  block under `FULL_WIDTH_MEASURE_PREFIX`; `usePageLayout` forwards those
+  heights and computes the fit height as `header + max(mainColumn,
+  sidebarColumn)` instead of the sum.
+- Print: `@media print .resume-page` now has fixed
+  `height`/`max-height: var(--page-height)` and `overflow: hidden`, so mm/pt
+  rounding cannot fragment a packed page. Decision #88 explains why
+  `break-inside: avoid-page` is not used.
+- Tests: computePages capping/overflow/full-width cases; usePageLayout fit-max
+  and spill cases; MeasureLayer full-width-copy case; Studio template aside
+  ownership and full-width spill; print-page CSS contract. 947 pass.
+- Files: `src/lib/pagination/computePages.ts` (+ test),
+  `src/lib/pagination/usePageLayout.ts` (+ test),
+  `src/components/preview/MeasureLayer.tsx` (+ test),
+  `src/templates/studio/StudioSidebarTemplate.tsx` (+ test),
+  `src/templates/studio/sidebarSections.ts`, `src/styles/print.css`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (947 pass). Playwright remains
+  blocked here, so the visual/PDF check is browser-unverified.
 
 ### 2026-11-23 — Studio Sidebar no longer strands trailing main sections
 - Task: In Progress P0. With the canonical interleaved order, Page 1's sidebar
@@ -1598,31 +1651,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   That e2e case remains browser-unverified here.
 - Files: `src/components/editor/DesignPanel.tsx` (+ test),
   `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (906 pass), `npm run lint`.
-
-### 2026-11-23 — Collapsed Basics and quiet editor toolbars
-- Task: top P1 Queue item. The UI was already implemented in this checkpoint;
-  this run fixed the stale drawer test and recorded the work.
-- Basics: `EditorWorkspace` renders a collapsed accordion (`basicsOpen` false)
-  with the resume name as its summary; `BasicsForm` stays mounted behind
-  `hidden`. Optional work-auth/website/profile fields live behind **More contact
-  details**, and **Picture URL** is not rendered while **Hide picture** is
-  checked. Decision #83.
-- Toolbars: **Save PDF** is the only filled CTA, with the **⋮** backup menu after
-  it; **Bullet polish** and **Match JD** share one muted pill class; the Preview
-  toolbar gained a hairline divider between view modes and review tools.
-  Decision #83.
-- Tests: fixed `sectionEditorDrawer.test.tsx` to open the Basics accordion and
-  the contact-details disclosure before tapping **Manage profiles**. 906 pass.
-- Files: `src/components/editor/BasicsForm.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/contentHeaderAction.ts` (new),
-  `src/components/editor/ResumeLintPopover.tsx` (+ test),
-  `src/components/editor/JdMatchDrawer.tsx`,
-  `src/components/editor/sectionEditorDrawer.test.tsx`,
-  `src/components/shared/ExportJsonButton.tsx` (+ test),
-  `src/components/launcher/Launcher.tsx` (+ test), `e2e/a11y.spec.ts`,
-  `e2e/flow.spec.ts`, `e2e/helpers.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (906 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar

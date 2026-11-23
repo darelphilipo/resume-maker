@@ -7,6 +7,7 @@ import {
   ExperienceItemSchema,
   SkillItemSchema,
 } from "@/lib/schema/resume.schema";
+import { fullWidthMeasureId } from "@/templates/studio/sidebarSections";
 
 import { MeasureLayer } from "./MeasureLayer";
 
@@ -254,8 +255,21 @@ describe("MeasureLayer", () => {
       expect(
         main?.querySelector('[data-measure-id="skills"]'),
       ).toBeNull();
+      // Sidebar blocks that later spill to Page 2 render full-width, so the
+      // measure layer also reports a full-width copy under its own id.
+      const fullWidthCopy = content.querySelector(
+        `[data-measure-id="${fullWidthMeasureId("skills")}"]`,
+      );
+
+      expect(fullWidthCopy).not.toBeNull();
+      expect(content.querySelector("[data-measure-full-width]")).toContainElement(
+        fullWidthCopy as HTMLElement,
+      );
       expect(onMeasure).toHaveBeenCalledWith("experience", 0);
       expect(onMeasure).toHaveBeenCalledWith("skills", 0);
+      expect(
+        onMeasure,
+      ).toHaveBeenCalledWith(fullWidthMeasureId("skills"), 0);
     } finally {
       restore();
     }
