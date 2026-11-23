@@ -22,7 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-### P0 — PDF & Paste Import Reliability Upgrades
 
 - [ ] P1: Clean up `Writing helpers` (remove duplicate single-word verb pills) and fix mobile/desktop PDF filename (`src/components/editor/RichTextField.tsx`, `src/lib/print/printDocument.ts`, `src/components/editor/EditorWorkspace.tsx`).
   1. **Remove duplicate verb pills in `RichTextField.tsx`:** Delete the 4 redundant single-word pills (`Built`, `Reduced`, `Led`, `Automated`) below the Impact Formula cards so `Writing helpers` shows only the 4 tappable formula scaffolds. Fix formula button text alignment (`block w-full text-left`) so wrapped lines (like `improving [outcome]` and `wk`) align cleanly to the left edge instead of indenting awkwardly.
