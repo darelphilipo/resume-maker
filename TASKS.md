@@ -24,20 +24,6 @@ _empty
 
 ### P0 — PDF & Paste Import Reliability Upgrades
 
-- [ ] P0: Wire all remaining sections and expand `SECTION_ALIASES` in `src/lib/import/pasteResume.ts`.
-  1. **Stop dropping recognized sections:** Populate `projects`, `certifications`, `awards`, `languages`, `interests`, `volunteer`, `publications`, `references`, and `profiles` in `parsePastedResume` instead of discarding them after `splitSections`.
-  2. **Expand `SECTION_ALIASES`:** Add common real-world variants including `certifications & awards` / `certifications and awards`, `courses & certifications` / `courses and certifications`, `hard skills`, `soft skills` (mapping to `skills` with the heading preserved as category), `education background`, `internship` / `internships` (mapping to `experience` or `customSections`), `extra curricular` / `extracurricular` / `extracurricular activities` (mapping to `volunteer` or `awards`), and `contact` / `my contact` / `contact details` (routed to `parseHeader`).
-  3. **Handle 3-column bulleted Skills:** Split skill lines containing multiple `•` / `·` bullets on the same line into individual skill keywords.
-
-- [ ] P0: Upgrade header, contact, date, location, and entry-block heuristics in `src/lib/import/pasteResume.ts`.
-  1. **Unlabeled opening summary & fallback contact scan:** If the top `header` block contains a multi-sentence paragraph (`> 120` chars) with no `Summary` heading, capture it into `summary.content` instead of discarding it. If email, phone, or LinkedIn/GitHub URLs aren't found in the top header, scan any `My Contact` block (or full text) as a fallback.
-  2. **Smarter Experience & Education parsing:**
-     - Prefer `isDateAnchor` splitting over naive blank-line splitting inside Experience/Education so PDF paragraph gaps between bullets don't split one role into multiple broken entries.
-     - Support `Company as Title` (`/\s+as\s+/i`) in `splitTitleAndCompany`.
-     - Support single dates (`Completed in 2018`, `Expected May 2027`, `Apr 2026`, `2014`) in addition to date ranges.
-     - Broaden `LOCATION_PATTERN` to accept 3-part locations (`Bengaluru, Karnataka, India`) and common standalone/global cities instead of only US `City, ST`.
-  3. Add unit tests modeled on all 3 resume archetypes (Reactive Resume single-column with icons, single-column with unlabeled summary + 3-col skills, and 2-page two-column Canva resume).
-
 - [ ] P1: Clean up `Writing helpers` (remove duplicate single-word verb pills) and fix mobile/desktop PDF filename (`src/components/editor/RichTextField.tsx`, `src/lib/print/printDocument.ts`, `src/components/editor/EditorWorkspace.tsx`).
   1. **Remove duplicate verb pills in `RichTextField.tsx`:** Delete the 4 redundant single-word pills (`Built`, `Reduced`, `Led`, `Automated`) below the Impact Formula cards so `Writing helpers` shows only the 4 tappable formula scaffolds. Fix formula button text alignment (`block w-full text-left`) so wrapped lines (like `improving [outcome]` and `wk`) align cleanly to the left edge instead of indenting awkwardly.
   2. **Keep `document.title` synced to the resume filename in `/editor`:** Instead of swapping `document.title` only briefly around `window.print()` (which resets too early on Android Chrome's async print spooler and causes a temp/default filename), sync `document.title` via `useEffect` in `EditorWorkspace.tsx` to the clean PDF filename (e.g. `Daniel Okafor - Resume`, or `Alex Taylor - Resume` when `Anonymize` is active) for the entire time the editor is open, restoring `"Resume Maker"` on unmount.
@@ -45,6 +31,40 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-23 — Upgraded the paste-import header, contact, date, location, and
+  entry-block heuristics in `src/lib/import/pasteResume.ts`. A wrapped,
+  unlabelled >120-char multi-sentence opening paragraph now becomes the summary
+  when no Summary heading exists, and missing email/phone/profile URLs are
+  recovered from the full text. Blank PDF paragraph gaps between bullets no
+  longer split one role into several; `isDateAnchor` splits undated multi-role
+  blocks, `Company as Title` overrides the generic header order, single dates
+  (`Completed in 2018`, `Expected May 2027`, `Apr 2026`, `2014`) map to the
+  correct start/end field, and locations accept `Bengaluru, Karnataka, India`
+  and standalone global cities. Added three resume-archetype fixtures plus
+  fallback, paragraph-gap, single-date, `Bengaluru` degree-abbreviation, and
+  `+44` phone-prefix regressions. Verified `npm run typecheck`, `npm test`
+  (922 pass), `npm run lint`. Files: `src/lib/import/pasteResume.ts` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+
+- [x] 2026-11-23 — Wired every remaining paste-import section and expanded
+  `SECTION_ALIASES` in `src/lib/import/pasteResume.ts`. `parsePastedResume`
+  now emits projects, certifications, awards, languages, interests, volunteer,
+  publications, and references (profiles were already read from the header)
+  instead of dropping recognised content. A `PROFILES` section is merged with
+  the header links and de-duplicated. Compact sections share
+  `splitCompactEntryBlocks` (blank blocks, all-bullet lists, then date/URL/
+  separator-led lines) and `extractSingleDate` accepts `(2023)` / `Mar 2024`
+  dates. New aliases cover `certifications & awards` / `certifications and
+  awards`, `courses & certifications`, `education background`, internships,
+  extracurricular headings, and contact blocks; `hard skills` / `soft skills`
+  map through internal keys so `parseSkills` keeps the heading as the row
+  category. `splitKeywords` treats every bullet glyph as a separator, so
+  three-column `Python • SQL • Tableau` lines become individual keywords. Added
+  full multi-section, hard/soft-skills, inline-bullet, and alias/contact
+  regressions. Verified `npm run typecheck`, `npm test` (915 pass),
+  `npm run lint`. Files: `src/lib/import/pasteResume.ts` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-23 — Added two-column PDF detection and broken-glyph cleanup to
   PDF import. Every extracted item drops Private Use Area icon glyphs and

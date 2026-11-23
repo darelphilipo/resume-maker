@@ -166,12 +166,49 @@ rediscover.
 18. **Paste-to-parse is a third importer.** `src/lib/import/pasteResume.ts`
     maps plain text into a `ResumeDocument` using a section-alias table; content
     under an unrecognised heading folds into the previous section, so add every
-    new standard heading alias there when a section is introduced. It emits
-    escaped `<p>`/`<ul>` rich text, and `Launcher` still runs
+    new standard heading alias there when a section is introduced. Every
+    standard section is now populated: profiles, experience, education, skills,
+    projects, certifications, awards, languages, interests, volunteer,
+    publications, and references. Header links are the primary profile source,
+    and a `PROFILES` / `LINKS` section is read by `parseProfileLinks`, which
+    recognizes known hosts and de-duplicates URLs already seen in the header.
+    `contact` / `my contact` / `contact details`
+    route to the `header` key so `parseHeader` fills the basics fields even when
+    the block sits below the name. `hard skills` and `soft skills` map to the
+    internal `hardSkills` / `softSkills` keys and are merged by `parseSkills`
+    with the heading kept as the row category, so those rows do not lose their
+    label. Compact sections (certifications, awards, publications) use
+    `splitCompactEntryBlocks`: blank lines separate entries, an all-bullet list
+    is one entry per bullet, and otherwise each line carrying its own date, URL,
+    or title/source separator starts an entry while bare titles and bullets
+    attach to the entry above. `extractSingleDate` is scoped to those compact
+    sections. `splitKeywords` treats every bullet glyph (`• · ▪ ◦ ● ○ ■
+    □ ‣ ⁃`) as a separator, so a three-column skills line becomes individual
+    keywords. It emits escaped `<p>`/`<ul>` rich text, and `Launcher` still runs
     `sanitizeResumeDocument` before `importResume`. Dates normalize to
     `YYYY-MM` (year-only ranges use `-01` for the start and `-12` for the end).
     Keep the parser pure and client-side: no network calls, no AI, and no
     persistence of the pasted text.
+
+    Header heuristics: `parseHeader` gathers long leftovers as `proseLines`
+    (>90 chars), joins them, and only treats the result as `openingSummary`
+    when it is >120 chars with two or more sentences — otherwise they go back
+    to the candidate list so a long headline still works. `parsePastedResume`
+    uses that summary only when no Summary heading exists, and
+    `scanContactFallback` fills a missing email/phone/recognised profile URL
+    from any line in the whole text (duplicate URLs are skipped). Entry
+    blocks: blank lines fold bullet-led or headerless groups into the previous
+    role before `isDateAnchor` splits a block, so PDF paragraph gaps between
+    bullets cannot invent roles. `extractEntryDates` handles ranges plus
+    `Completed in 2018` / `Expected May 2027` / `Apr 2026` / `2014`; a bare
+    single date is a **start** for experience/projects/volunteer and an **end**
+    for education (graduation), normalized to `-01` / `-12` accordingly.
+    `Company as Title` overrides the generic first/second header pairing.
+    Locations accept `City, Region, Country` and a curated standalone-city
+    list, with every comma part screened by `NON_LOCATION_WORDS`/`TITLE_WORDS`.
+    Two regex traps: `DEGREE_PATTERN` needs its `(?![A-Za-z])` guard or
+    `B.Eng` eats the front of `Bengaluru`, and the phone pattern needs a
+    two-digit national prefix for `+44 20 7946 0958`.
 19. **The print reminder is a tooltip, not a layout row.** `PrintTriggerButton`
     keeps the “Headers and footers” message in an absolutely positioned
     `role="tooltip"` bubble so the print control stays the same 44px height as
@@ -1261,6 +1298,51 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-23 — Header, contact, date, location and entry-block heuristics
+- Task: top P0 Queue item (the stale "wire all sections" checkbox had already
+  been completed and was removed from the Queue).
+- Header: a wrapped, unlabelled >120-char multi-sentence opening paragraph is
+  now the summary when no Summary heading exists; missing email/phone/profile
+  URLs are recovered from anywhere in the pasted text, not just the top block.
+- Entries: blank PDF paragraph gaps between bullets no longer split one role;
+  `isDateAnchor` splits undated multi-role blocks, `Company as Title` wins over
+  the generic title/company order, and single dates (`Completed in 2018`,
+  `Expected May 2027`, `Apr 2026`, `2014`) are parsed with the right start/end
+  field. Locations accept `Bengaluru, Karnataka, India` and standalone cities.
+- Regressions: three archetype fixtures (Reactive Resume icon column, unlabeled
+  summary + three-column skills, reconstructed two-page two-column Canva),
+  contact fallback, paragraph-gap folding, expected/bare single dates, plus the
+  `Bengaluru` degree-abbreviation and `+44` phone-prefix fixes. 922 pass.
+- Decision #18 expanded.
+- Files: `src/lib/import/pasteResume.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (922 pass), `npm run lint`.
+
+### 2026-11-23 — All remaining paste-import sections and heading aliases
+- Task: top P0 Queue item. `parsePastedResume` now populates every standard
+  section instead of dropping recognised content after `splitSections`.
+- Sections: new builders map projects, certifications, awards, languages,
+  interests, volunteer, publications, and references into their schema items,
+  and a `PROFILES` section is merged with the header links and de-duplicated.
+  Compact sections use
+  `splitCompactEntryBlocks` (blank blocks, all-bullet lists, then date/URL/
+  separator-led lines), and a small `extractSingleDate` handles their
+  `(2023)` / `Mar 2024` dates.
+- Aliases: added real-world variants for summary, experience/internships,
+  education backgrounds, certifications + `certifications & awards`,
+  awards, languages, interests, volunteer/extracurricular, publications,
+  references, and contact blocks. `contact` variants route to `parseHeader`.
+  `hard skills` / `soft skills` use internal keys so `parseSkills` keeps the
+  heading as the row category.
+- Skills: `splitKeywords` now treats every bullet glyph as a separator, so a
+  three-column `Python • SQL • Tableau` line becomes three keywords.
+- Tests: full multi-section fixture, hard/soft skills + inline bullets, and a
+  contact/internships/education-background/extracurricular alias case and a
+  Profiles-section merge case. 915 pass (was 911). Decision #18 expanded.
+- Files: `src/lib/import/pasteResume.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (915 pass), `npm run lint`.
+
 ### 2026-11-23 — Two-column PDF import and glyph cleanup
 - Task: top P0 Queue item. `pdfResume.ts` now strips decorative glyphs and
   rebuilds two-column pages column-by-column instead of interleaving a sidebar
@@ -1453,64 +1535,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/RichTextField.tsx` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (850 pass), `npm run lint`.
-
-### 2026-11-22 — Application status and target-company tags on Recent resumes
-- Task: top P2 Queue item. Saved resumes on `/` can now be tracked as
-  **Master / Draft / Applied / Interview / Offer** and tagged with a target
-  company.
-- Model: optional `status` and `targetCompany` fields on `ResumeRow` (Dexie),
-  deliberately outside `ResumeDocument` so JSON backups stay portable. New pure
-  `resumeTracking.ts` normalizes legacy rows to **Master**, trims/collapses the
-  company tag, filters by status, counts statuses, and resolves a stale filter
-  back to **All**. Decision #79.
-- Persistence: the launcher writes tags through `updateResumeMeta` (no
-  `updatedAt` bump, so list order does not jump). Because Dexie `put` replaces
-  the whole row, the three editor save/autosave paths now use the new
-  `saveResumeDoc`, which merges the existing tags back; `duplicateResume` copies
-  them. A store regression covers this.
-- UI: each recent row has a status pill that doubles as a native select and a
-  compact target-company field (commit on blur/Enter). Both stop row-click
-  propagation. A filter row (**All** plus non-zero statuses) appears at 2+ rows.
-- Tests: helper defaults/filter/count cases, db meta update and save/duplicate
-  preservation, the autosave regression, and Launcher status/company/filter
-  interactions. 843 pass (was 819).
-- Files: `src/lib/store/resumeTracking.ts` (+ test, new), `src/lib/store/db.ts`
-  (+ test), `src/lib/store/useResumeStore.ts` (+ test),
-  `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (843 pass), `npm run lint`.
-
-### 2026-11-22 — Profiles promoted into the resume header
-- Task: top P2 Queue item. Visible `Profiles` rows now appear as clickable links
-  in the resume header across all six templates, with brand marks and a Basics
-  shortcut.
-- Helper: `profileHeaderLink` / `headerProfileIcon` in `contactLinks.ts` reuse
-  the existing `sections.profiles` data. They clean the label with
-  `websiteLabelFromUrl` (no `https://` / `www.`), build an absolute href with
-  `externalLinkHref` (non-http schemes dropped), and map only resume-relevant
-  hosts (GitHub, GitLab, LinkedIn, Stack Overflow, X/Twitter, Dribbble, Behance,
-  Medium, DEV) to logos, with a globe fallback. A known saved `icon` wins over
-  the URL heuristic.
-- Header: `HeaderSlot` reads profiles through `resolveSection(doc, "profiles")`
-  and appends the links after the website. Hidden sections/rows and URL-less
-  rows are excluded; `hideIcons` hides the logos but keeps the links. The
-  Profiles section renderer and ATS text were not changed, so ATS output is not
-  duplicated. `allFieldsWiring` now expects the profile link in both the header
-  and the section.
-- Editor: `BasicsForm` has a compact **Profile links** row; **Manage profiles**
-  calls a new `onManageProfiles` prop wired in `EditorWorkspace` to open the
-  existing Profiles drawer, so there is no duplicate form or state.
-- Tests: 6 helper cases, 3 HeaderSlot cases (clean links/icons, hidden rows and
-  section, icon suppression), the BasicsForm shortcut callback, and the
-  EditorWorkspace drawer opening. 819 pass (was 808). Decision #78.
-- Files: `src/lib/links/contactLinks.ts` (+ test),
-  `src/templates/shared/HeaderSlot.tsx`, `AvatarSlot.test.tsx`,
-  `src/components/editor/BasicsForm.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx`,
-  `src/components/editor/sectionEditorDrawer.test.tsx`,
-  `src/templates/shared/allFieldsWiring.test.tsx`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (819 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

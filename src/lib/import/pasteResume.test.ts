@@ -309,4 +309,517 @@ Built <script>alert(1)</script> checks.`);
     expect(parsePastedResume("   ")).toBeNull();
     expect(parsePastedResume("just some notes about my weekend")).toBeNull();
   });
+
+  it("parses projects, certifications, awards, languages, interests, volunteer, publications, and references", () => {
+    const doc = parsePastedResume(`Jordan Lee
+Data Engineer
+jordan.lee@example.com | (206) 555-0102 | Seattle, WA
+
+CONTACT
+linkedin.com/in/jordanlee | jordanlee.dev
+
+PROJECTS
+Revenue Dashboard
+React, TypeScript
+Jan 2023 - Present
+- Built a dashboard used by 200 analysts.
+
+CERTIFICATIONS & AWARDS
+AWS Certified Solutions Architect — Amazon Web Services (2023)
+Certified Scrum Master — Scrum Alliance (2022)
+
+AWARDS
+Employee of the Year — Acme Corp (2021)
+- Recognized for leading the migration.
+
+LANGUAGES
+English (Native), Spanish (Professional)
+
+INTERESTS
+Hiking • Chess
+
+VOLUNTEER
+Volunteer Mentor
+Code for Seattle | Seattle, WA
+2021 - 2022
+- Mentored four junior developers.
+
+PUBLICATIONS
+Streaming at Scale — Data Weekly, Mar 2024
+- A practical guide to event pipelines.
+https://dataweekly.example.com/streaming-at-scale
+
+REFERENCES
+Jane Smith
+Engineering Manager, Acme Corp
+jane.smith@example.com | (555) 987-6543`);
+
+    expect(doc?.basics).toMatchObject({
+      name: "Jordan Lee",
+      headline: "Data Engineer",
+      email: "jordan.lee@example.com",
+      phone: "(206) 555-0102",
+      location: "Seattle, WA",
+    });
+    expect(doc?.sections.profiles.items).toEqual([
+      expect.objectContaining({ network: "LinkedIn", username: "jordanlee" }),
+    ]);
+    expect(doc?.basics.website.url).toBe("https://jordanlee.dev");
+
+    expect(doc?.sections.projects.items).toEqual([
+      expect.objectContaining({
+        name: "Revenue Dashboard",
+        keywords: ["React", "TypeScript"],
+        startDate: "2023-01",
+        endDate: "",
+      }),
+    ]);
+    expect(doc?.sections.projects.items[0]?.description).toContain(
+      "Built a dashboard used by 200 analysts.",
+    );
+
+    expect(doc?.sections.certifications.items).toEqual([
+      expect.objectContaining({
+        name: "AWS Certified Solutions Architect",
+        issuer: "Amazon Web Services",
+        date: "2023",
+      }),
+      expect.objectContaining({
+        name: "Certified Scrum Master",
+        issuer: "Scrum Alliance",
+        date: "2022",
+      }),
+    ]);
+
+    expect(doc?.sections.awards.items).toEqual([
+      expect.objectContaining({
+        title: "Employee of the Year",
+        awarder: "Acme Corp",
+        date: "2021",
+      }),
+    ]);
+    expect(doc?.sections.awards.items[0]?.summary).toContain(
+      "Recognized for leading the migration.",
+    );
+
+    expect(doc?.sections.languages.items).toEqual([
+      expect.objectContaining({ name: "English", fluency: "Native" }),
+      expect.objectContaining({ name: "Spanish", fluency: "Professional" }),
+    ]);
+    expect(doc?.sections.interests.items.map((item) => item.name)).toEqual([
+      "Hiking",
+      "Chess",
+    ]);
+
+    expect(doc?.sections.volunteer.items).toEqual([
+      expect.objectContaining({
+        organization: "Code for Seattle",
+        position: "Volunteer Mentor",
+        location: "Seattle, WA",
+        startDate: "2021-01",
+        endDate: "2022-12",
+      }),
+    ]);
+
+    expect(doc?.sections.publications.items).toEqual([
+      expect.objectContaining({
+        title: "Streaming at Scale",
+        publisher: "Data Weekly",
+        date: "2024-03",
+        url: "https://dataweekly.example.com/streaming-at-scale",
+      }),
+    ]);
+    expect(doc?.sections.publications.items[0]?.summary).toContain(
+      "A practical guide to event pipelines.",
+    );
+
+    expect(doc?.sections.references.items).toEqual([
+      expect.objectContaining({
+        name: "Jane Smith",
+        position: "Engineering Manager",
+        company: "Acme Corp",
+        email: "jane.smith@example.com",
+        phone: "(555) 987-6543",
+      }),
+    ]);
+  });
+
+  it("keeps Hard skills and Soft skills headings as categories and splits inline bullets", () => {
+    const doc = parsePastedResume(`Nina Torres
+Data Analyst
+nina@example.com
+
+SKILLS
+Languages: Python • SQL
+
+HARD SKILLS
+Docker ▪ Kubernetes ▪ Terraform
+dbt • Snowflake
+
+SOFT SKILLS
+Communication · Mentoring`);
+
+    expect(doc?.sections.skills.items).toEqual([
+      expect.objectContaining({
+        name: "Languages",
+        keywords: ["Python", "SQL"],
+      }),
+      expect.objectContaining({
+        name: "Hard skills",
+        keywords: ["Docker", "Kubernetes", "Terraform", "dbt", "Snowflake"],
+      }),
+      expect.objectContaining({
+        name: "Soft skills",
+        keywords: ["Communication", "Mentoring"],
+      }),
+    ]);
+  });
+
+  it("collects links from a Profiles section and de-duplicates header links", () => {
+    const doc = parsePastedResume(`Omar Haddad
+Product Designer
+omar@example.com
+linkedin.com/in/omhaddad
+
+PROFILES
+github.com/omhaddad
+https://omhaddad.design
+linkedin.com/in/omhaddad`);
+
+    const items = doc?.sections.profiles.items ?? [];
+
+    expect(items).toHaveLength(3);
+    expect(items).toEqual([
+      expect.objectContaining({ network: "LinkedIn", username: "omhaddad" }),
+      expect.objectContaining({ network: "GitHub", username: "omhaddad" }),
+      expect.objectContaining({
+        network: "",
+        url: "https://omhaddad.design",
+      }),
+    ]);
+  });
+
+  it("routes contact headings to the header and recognizes expanded aliases", () => {
+    const doc = parsePastedResume(`Mina Patel
+Backend Engineer
+
+CONTACT DETAILS
+mina@example.com | +1 415 555 0111 | linkedin.com/in/minapatel
+
+INTERNSHIPS
+Software Engineering Intern
+Acme | Jun 2022 - Aug 2022
+- Shipped an API.
+
+EDUCATION BACKGROUND
+B.S. in Computer Science
+State University | 2018 - 2022
+
+EXTRACURRICULAR ACTIVITIES
+Coding Club Lead
+State University | 2021 - 2022
+- Ran weekly workshops.`);
+
+    expect(doc?.basics).toMatchObject({
+      name: "Mina Patel",
+      headline: "Backend Engineer",
+      email: "mina@example.com",
+      phone: "+1 415 555 0111",
+    });
+    expect(doc?.sections.profiles.items).toEqual([
+      expect.objectContaining({ network: "LinkedIn", username: "minapatel" }),
+    ]);
+
+    expect(doc?.sections.experience.items).toEqual([
+      expect.objectContaining({
+        position: "Software Engineering Intern",
+        company: "Acme",
+        startDate: "2022-06",
+        endDate: "2022-08",
+      }),
+    ]);
+    expect(doc?.sections.education.items).toEqual([
+      expect.objectContaining({
+        school: "State University",
+        degree: "B.S.",
+        area: "Computer Science",
+      }),
+    ]);
+    expect(doc?.sections.volunteer.items).toEqual([
+      expect.objectContaining({
+        organization: "State University",
+        position: "Coding Club Lead",
+      }),
+    ]);
+  });
+});
+
+describe("paste-import resume archetypes", () => {
+  it("reads a Reactive Resume-style single-column export with icon-only contact lines", () => {
+    const doc = parsePastedResume(`Daniel Okafor
+Senior Product Manager
+
+daniel.okafor@example.com
+(415) 555-0188
+San Francisco, CA
+linkedin.com/in/danielokafor
+github.com/danielokafor
+
+PROFESSIONAL SUMMARY
+Product manager with nine years of experience shipping data-driven products.
+
+EXPERIENCE
+Senior Product Manager
+Acme Corp
+San Francisco, CA
+Jan 2021 - Present
+- Grew activation by 32%.
+- Led a team of six engineers.
+
+Product Manager
+Beta Labs | 2017 - 2020
+- Shipped the first mobile app.
+
+EDUCATION
+B.S. in Computer Science
+University of California, Berkeley
+2012 - 2016
+
+SKILLS
+Product: Roadmapping, A/B testing
+Analytics: SQL, Amplitude`);
+
+    expect(doc?.basics).toMatchObject({
+      name: "Daniel Okafor",
+      headline: "Senior Product Manager",
+      email: "daniel.okafor@example.com",
+      phone: "(415) 555-0188",
+      location: "San Francisco, CA",
+    });
+    expect(doc?.sections.profiles.items.map((item) => item.network)).toEqual([
+      "LinkedIn",
+      "GitHub",
+    ]);
+    expect(doc?.summary.content).toContain(
+      "Product manager with nine years of experience",
+    );
+
+    const experience = doc?.sections.experience.items ?? [];
+    expect(experience).toHaveLength(2);
+    expect(experience[0]).toMatchObject({
+      position: "Senior Product Manager",
+      company: "Acme Corp",
+      location: "San Francisco, CA",
+      startDate: "2021-01",
+      current: true,
+    });
+    expect(experience[0]?.summary).toContain("Grew activation by 32%.");
+    expect(experience[1]).toMatchObject({
+      position: "Product Manager",
+      company: "Beta Labs",
+      startDate: "2017-01",
+      endDate: "2020-12",
+    });
+    expect(doc?.sections.education.items[0]).toMatchObject({
+      school: "University of California, Berkeley",
+      degree: "B.S.",
+      area: "Computer Science",
+      startDate: "2012-01",
+      endDate: "2016-12",
+    });
+    expect(doc?.sections.skills.items.map((item) => item.name)).toEqual([
+      "Product",
+      "Analytics",
+    ]);
+  });
+
+  it("reads an unlabelled opening summary, three-column skills, and non-US dates and locations", () => {
+    const doc = parsePastedResume(`Priya Nair
+Staff Data Engineer
+
+Results-driven data engineer with a decade of experience building reliable data pipelines. Led platform
+migrations for three enterprises and cut costs by 30%. Mentored a team of eight engineers across two sites.
+
+HARD SKILLS
+Python • SQL • Spark
+dbt • Snowflake • Airflow
+
+SOFT SKILLS
+Mentoring • Communication
+
+EXPERIENCE
+Analytics Engineer
+Gamma Studio
+Apr 2026
+- Modelled the warehouse.
+
+EDUCATION
+B.S. in Computer Science
+Bengaluru University
+Bengaluru, Karnataka, India
+Completed in 2018`);
+
+    expect(doc?.basics.name).toBe("Priya Nair");
+    expect(doc?.basics.headline).toBe("Staff Data Engineer");
+    expect(doc?.summary.content).toBe(
+      "<p>Results-driven data engineer with a decade of experience building reliable data pipelines. Led platform migrations for three enterprises and cut costs by 30%. Mentored a team of eight engineers across two sites.</p>",
+    );
+    expect(doc?.sections.skills.items).toEqual([
+      expect.objectContaining({
+        name: "Hard skills",
+        keywords: ["Python", "SQL", "Spark", "dbt", "Snowflake", "Airflow"],
+      }),
+      expect.objectContaining({
+        name: "Soft skills",
+        keywords: ["Mentoring", "Communication"],
+      }),
+    ]);
+    expect(doc?.sections.experience.items).toEqual([
+      expect.objectContaining({
+        position: "Analytics Engineer",
+        company: "Gamma Studio",
+        startDate: "2026-04",
+        endDate: "",
+      }),
+    ]);
+    expect(doc?.sections.education.items).toEqual([
+      expect.objectContaining({
+        school: "Bengaluru University",
+        location: "Bengaluru, Karnataka, India",
+        endDate: "2018-12",
+      }),
+    ]);
+  });
+
+  it("reads a reconstructed two-page two-column Canva export in banner-left-right order", () => {
+    const doc = parsePastedResume(`Maya Chen
+Senior UX Researcher
+
+MY CONTACT
+maya.chen@example.com | +44 20 7946 0958 | linkedin.com/in/mayachen
+
+PROFESSIONAL SUMMARY
+UX researcher with twelve years of experience across fintech and health. Led studies in fourteen countries.
+
+EXPERIENCE
+Senior UX Researcher
+Northstar Studio as Head of Research
+London
+Jan 2020 - Present
+- Ran 60 discovery interviews.
+
+- Published the research playbook.
+
+Lead UX Researcher
+Orbit Labs
+2016 - 2019
+- Built the insight repository.
+
+SKILLS
+Research: Interviews, Usability testing
+Tools: Dovetail, Maze`);
+
+    expect(doc?.basics).toMatchObject({
+      name: "Maya Chen",
+      headline: "Senior UX Researcher",
+      email: "maya.chen@example.com",
+      phone: "+44 20 7946 0958",
+    });
+    expect(doc?.sections.profiles.items).toEqual([
+      expect.objectContaining({ network: "LinkedIn", username: "mayachen" }),
+    ]);
+
+    const experience = doc?.sections.experience.items ?? [];
+    expect(experience).toHaveLength(2);
+    expect(experience[0]).toMatchObject({
+      position: "Head of Research",
+      company: "Northstar Studio",
+      location: "London",
+      startDate: "2020-01",
+      current: true,
+    });
+    expect(experience[0]?.summary).toContain("Published the research playbook.");
+    expect(experience[1]).toMatchObject({
+      position: "Lead UX Researcher",
+      company: "Orbit Labs",
+      startDate: "2016-01",
+      endDate: "2019-12",
+    });
+    expect(doc?.sections.skills.items.map((item) => item.name)).toEqual([
+      "Research",
+      "Tools",
+    ]);
+  });
+
+  it("falls back to contact details that are not in the top header", () => {
+    const doc = parsePastedResume(`Leo Martins
+Product Designer
+
+SKILLS
+Contact: leo.martins@example.com | +1 415 555 0111 | linkedin.com/in/leomartins
+Figma, Prototyping`);
+
+    expect(doc?.basics.email).toBe("leo.martins@example.com");
+    expect(doc?.basics.phone).toBe("+1 415 555 0111");
+    expect(doc?.sections.profiles.items).toEqual([
+      expect.objectContaining({ network: "LinkedIn", username: "leomartins" }),
+    ]);
+  });
+
+  it("keeps a role intact across PDF paragraph gaps between bullets", () => {
+    const doc = parsePastedResume(`Sam Ito
+Engineer
+sam@example.com
+
+EXPERIENCE
+Senior Engineer
+Acme | 2020 - Present
+- Built the first service.
+
+- Reduced latency by 40%.
+
+- Mentored two engineers.`);
+
+    const items = doc?.sections.experience.items ?? [];
+    expect(items).toHaveLength(1);
+    expect(items[0]?.summary).toContain("Reduced latency by 40%.");
+    expect(items[0]?.summary).toContain("Mentored two engineers.");
+  });
+
+  it("reads an expected single date as the education end date", () => {
+    const doc = parsePastedResume(`Nora Lang
+Analyst
+nora@example.com
+
+EDUCATION
+M.Sc. in Statistics
+State University
+Expected May 2027`);
+
+    expect(doc?.sections.education.items).toEqual([
+      expect.objectContaining({
+        school: "State University",
+        degree: "M.Sc.",
+        area: "Statistics",
+        startDate: "",
+        endDate: "2027-05",
+        current: false,
+      }),
+    ]);
+  });
+
+  it("reads a bare year on an education entry as a single date", () => {
+    const doc = parsePastedResume(`Owen Brooks
+Designer
+owen@example.com
+
+EDUCATION
+B.A. in Design
+State University
+2014`);
+
+    expect(doc?.sections.education.items[0]).toMatchObject({
+      endDate: "2014-12",
+    });
+  });
 });

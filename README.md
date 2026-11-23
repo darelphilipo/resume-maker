@@ -50,17 +50,26 @@ in control of every line, and your data stays on your device.
   **(Copy)**, keeping the same tracking tags, so you can tailor one version for
   a job without changing the original. Nothing leaves the device.
 - **PDF import**: choose a PDF and its text is read locally in your browser,
-  then split into editable contact details, summary, experience, education, and
-  skills. Two-column layouts keep their sidebar and main body in the right
-  order, decorative icon glyphs are dropped, and words split across lines are
-  joined back together. Scanned or image-only PDFs need to be pasted as text
-  instead.
+  then split into editable contact details plus every standard resume section,
+  from summary and experience to projects, certifications, awards, languages,
+  interests, volunteer work, publications, and references. Two-column layouts
+  keep their sidebar and main body in the right order, decorative icon glyphs
+  are dropped, and words split across lines are joined back together. Scanned
+  or image-only PDFs need to be pasted as text instead.
 - **Paste-to-parse import**: paste the text of an existing resume from a PDF,
   LinkedIn profile, or another tool, and your contact details, summary,
-  experience, education, and skills are split into editable fields. Parsing
-  runs in your browser, and you can correct anything afterwards. School names
-  with a comma, such as `University of California, Berkeley`, stay whole, and
-  skills keep their categories under headings such as **Skills & Expertise**.
+  experience, education, skills, projects, certifications, awards, languages,
+  interests, volunteer work, publications, and references become editable
+  fields. A **My contact** block is read as contact details, **Hard skills** and
+  **Soft skills** keep their heading as the skill category, and a skills row
+  that uses several bullets for columns still splits into individual keywords.
+  Parsing runs in your browser, and you can correct anything afterwards. School
+  names with a comma, such as `University of California, Berkeley`, stay whole.
+  An unlabelled opening paragraph becomes your summary, and contact details
+  missed at the top are still found wherever they appear in the text. Roles stay
+  together across the blank gaps PDFs leave between bullets, `Company as Title`
+  and single dates such as `Apr 2026` are understood, and locations like
+  `Bengaluru, Karnataka, India` and `London` are recognised.
   **Create resume from text** turns on the moment you type or paste, so one tap
   starts the import. A short hint under the box makes clear that one line is
   enough: your name, a role, or the whole resume all work, and headings and
