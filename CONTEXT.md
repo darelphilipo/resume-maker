@@ -1331,6 +1331,32 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-23 — Calm Preview chrome and a centred canvas
+- Task: the In Progress P1 item. The implementation was already present in the
+  checkpoint (ReviewMenu, the slim strip, canvas padding/gutter, and scroller
+  width centring); this run re-verified it (`npm run typecheck`, `npm test`,
+  `npm run lint` all pass) and moved the item to Done with the session record.
+- Mode bar: only `Visual | ATS text`, a quiet **"1 page"** label when
+  `layout.pages.length <= 1`, and the **Review** pill. `ReviewMenu` opens a
+  `CenteredModal` with `role="switch"` 6s Scan / Anonymize toggles and an
+  `aria-hidden` dot while either lens is active. Decisions #84.
+- Slim strip: spilled resumes render one `[data-preview-header]` row combining
+  `PageOverflowBanner` (count, `~N lines`, Fit/blocked copy) with `CanvasToolbar`
+  (Trim tips, Reset fit, Reset zoom). The yellow box and duplicate count pill are
+  gone; the count appears in exactly one place.
+- Canvas: `[data-canvas-scroll]` has `py-3` and `lg:[scrollbar-gutter:stable]`;
+  `centeredCanvasOffsetX` uses the stabilized scroller content width, so an A/B
+  scrollbar oscillation cannot re-enter through `fitOffsetX`. Decisions #85.
+- Regressions: ReviewMenu dialog/dot, one-page label, single-strip, desktop-only
+  gutter + padding, and scroller-width centring. 930 pass. The updated docked
+  chrome e2e case remains browser-unverified here.
+- Files: `src/components/editor/ReviewMenu.tsx` (+ test, new),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/PageOverflowBanner.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (930 pass), `npm run lint`.
+
 ### 2026-11-23 — Header, contact, date, location and entry-block heuristics
 - Task: top P0 Queue item (the stale "wire all sections" checkbox had already
   been completed and was removed from the Queue).
@@ -1546,28 +1572,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (870 pass), `npm run lint`.
-
-### 2026-11-22 — Tappable impact-bullet formulas in RichTextField
-- Task: top P2 Queue item. The writing-helper strip now opens with four tappable
-  Zero-AI fill-in formulas instead of a static prompt.
-- Helper: new pure `bulletFormulas.ts` owns `BULLET_FORMULAS` and
-  `bulletFormulaInsertion`; the generic `textInsertion` in `actionVerbs.ts` keeps
-  the leading-space rule shared with the verb chips. A formula inserts its full
-  bracketed skeleton plus a trailing space at the cursor, so the user only
-  replaces the placeholders and the normal debounced save/undo path owns the
-  edit.
-- UI: `RichTextField` replaces the hint paragraph with an **Impact bullet
-  formulas** group; the existing verb chips stay in their own compact group, so
-  the strip does not gain an extra stacked row. The whole strip remains
-  collapsible through **Writing helpers**. Decision #22 updated.
-- Tests: formula data/insertion cases, generic insertion spacing, formula group
-  rendering/classes, formula insert and leading-space component cases, and the
-  collapse/reopen coverage now includes both groups. 850 pass (was 843).
-- Files: `src/lib/richtext/bulletFormulas.ts` (+ test, new),
-  `src/lib/richtext/actionVerbs.ts` (+ test),
-  `src/components/editor/RichTextField.tsx` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (850 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

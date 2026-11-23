@@ -18,11 +18,7 @@ _empty
 
 ## In Progress (OpenCode Updates This)
 
-- [ ] P1: Declutter Preview chrome, move `6s Scan` & `Anonymize` into a compact `Review` menu, and fix chopped top edge / uneven right margin on the resume page (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`).
-  1. **Single calm top bar (`Review ▾` menu):** Keep only the compact `Visual | ATS` toggle on the left and a single `Review` pill button on the right (showing an active indicator dot/pill when `6s Scan` or `Anonymize` is on). Move `6s Scan` and `Anonymize` switches inside that `Review` popover/drawer so rare review tools don't crowd the live resume.
-  2. **Collapse warning + page count + `Trim tips` into one slim strip:** When the resume fits on 1 page, show a subtle `"1 page"` text label inside the top bar (no extra row). When it spills onto 2+ pages, replace the tall yellow box AND separate `2 pages` / `Trim tips` row with a single slim inline bar (`2 pages · Fit to 1 Page · Trim tips (N)`), eliminating the duplicate page count and reclaiming ~110px for the live resume.
-  3. **Fix chopped top edge & uneven right spacing:** Add crisp top/bottom padding (`py-3`) inside `[data-canvas-scroll]` so the top edge and shadow of Page 1 are never clipped, restrict `[scrollbar-gutter:stable]` to desktop (`lg:[scrollbar-gutter:stable]`) so mobile doesn't reserve a phantom right-side scrollbar gap, and ensure the scaled resume page is horizontally centered with equal left/right margins.
-  - Plan: add a shared `ReviewMenu` trigger + `CenteredModal` holding the 6s Scan and Anonymize switches with an active dot on the pill; show `"1 page"` inline in the mode bar and replace the yellow overflow box + separate count/trim row with one slim strip for 2+ pages; add `py-3` to `[data-canvas-scroll]`, gate `scrollbar-gutter: stable` to `lg`, and centre the fitted page from the scroller's real content width. Update component + e2e tests, README, and CONTEXT.
+_empty
 
 ## Queue (Ready for Next Run)
 
@@ -33,6 +29,26 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-23 — Decluttered the Preview chrome and gave the resume page equal
+  breathing room. The mode bar now holds only `Visual | ATS text`, an inline
+  quiet **"1 page"** label when the resume fits, and one **Review** pill
+  (`ReviewMenu.tsx`) whose `CenteredModal` contains the `6s Scan` and
+  `Anonymize` switches with an `aria-hidden` active dot. Spilled resumes render
+  one slim `[data-preview-header]` strip combining the count, `~N lines`,
+  **Fit to 1 Page**, and **Trim tips (N)** instead of the tall yellow box plus a
+  duplicate count row. `[data-canvas-scroll]` gained `py-3` and desktop-only
+  `lg:[scrollbar-gutter:stable]`, and `LiveCanvasViewport` derives
+  `centeredCanvasOffsetX` from the scroller's stabilized content width so left
+  and right margins match. Updated the docked-chrome e2e case and added
+  ReviewMenu, one-page label, slim-strip, gutter/padding, and centring
+  regressions. Verified `npm run typecheck`, `npm test` (930 pass),
+  `npm run lint`. Files: `src/components/editor/ReviewMenu.tsx` (+ test, new),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/PageOverflowBanner.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  Playwright remains blocked here, so the updated e2e case is browser-unverified.
 
 - [x] 2026-11-23 — Upgraded the paste-import header, contact, date, location, and
   entry-block heuristics in `src/lib/import/pasteResume.ts`. A wrapped,
