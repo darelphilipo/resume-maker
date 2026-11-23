@@ -26,6 +26,10 @@ _empty
   1. **Remove duplicate verb pills in `RichTextField.tsx`:** Delete the 4 redundant single-word pills (`Built`, `Reduced`, `Led`, `Automated`) below the Impact Formula cards so `Writing helpers` shows only the 4 tappable formula scaffolds. Fix formula button text alignment (`block w-full text-left`) so wrapped lines (like `improving [outcome]` and `wk`) align cleanly to the left edge instead of indenting awkwardly.
   2. **Keep `document.title` synced to the resume filename in `/editor`:** Instead of swapping `document.title` only briefly around `window.print()` (which resets too early on Android Chrome's async print spooler and causes a temp/default filename), sync `document.title` via `useEffect` in `EditorWorkspace.tsx` to the clean PDF filename (e.g. `Daniel Okafor - Resume`, or `Alex Taylor - Resume` when `Anonymize` is active) for the entire time the editor is open, restoring `"Resume Maker"` on unmount.
 
+- [ ] P1: Eliminate the second Preview toolbar row by moving `Trim tips` and `Reset fit` into the `Review ▾` menu (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`).
+  1. **Single-row Preview bar (`Visual | ATS` + page pill + `Review ▾`):** Shorten `ATS text` label to `ATS` (keeping `aria-label="ATS text"`) so the top bar never crowds at `390px`, and remove the separate second row used for `Trim tips (N)` and `Reset fit`.
+  2. **Move `Trim tips` and `Fit / Reset fit` into `Review ▾`:** Inside the `Review` popover menu (alongside `6s Scan` and `Anonymize`), show `Trim tips (N)` (opening the Trim tips modal) and `Fit to 1 Page` / `Reset fit` (showing a subtle dot/badge on `Review ▾` when trim tips exist or `fitScale < 1`).
+  3. **Compact overflow cue:** When the resume spills onto 2+ pages, show a single compact inline pill right in Row 1 (e.g. `2 pages · Fit` button, or `2 pages` with a short non-truncated `"Min 78%"` tooltip/label when `fitBlockedReason` is active) instead of a full-width second banner row that truncates with `...`.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
