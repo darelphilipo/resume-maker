@@ -38,6 +38,10 @@ _empty
      - Broaden `LOCATION_PATTERN` to accept 3-part locations (`Bengaluru, Karnataka, India`) and common standalone/global cities instead of only US `City, ST`.
   3. Add unit tests modeled on all 3 resume archetypes (Reactive Resume single-column with icons, single-column with unlabeled summary + 3-col skills, and 2-page two-column Canva resume).
 
+- [ ] P1: Clean up `Writing helpers` (remove duplicate single-word verb pills) and fix mobile/desktop PDF filename (`src/components/editor/RichTextField.tsx`, `src/lib/print/printDocument.ts`, `src/components/editor/EditorWorkspace.tsx`).
+  1. **Remove duplicate verb pills in `RichTextField.tsx`:** Delete the 4 redundant single-word pills (`Built`, `Reduced`, `Led`, `Automated`) below the Impact Formula cards so `Writing helpers` shows only the 4 tappable formula scaffolds. Fix formula button text alignment (`block w-full text-left`) so wrapped lines (like `improving [outcome]` and `wk`) align cleanly to the left edge instead of indenting awkwardly.
+  2. **Keep `document.title` synced to the resume filename in `/editor`:** Instead of swapping `document.title` only briefly around `window.print()` (which resets too early on Android Chrome's async print spooler and causes a temp/default filename), sync `document.title` via `useEffect` in `EditorWorkspace.tsx` to the clean PDF filename (e.g. `Daniel Okafor - Resume`, or `Alex Taylor - Resume` when `Anonymize` is active) for the entire time the editor is open, restoring `"Resume Maker"` on unmount.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
