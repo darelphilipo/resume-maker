@@ -22,10 +22,10 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P0: Fix `Studio Sidebar` multi-page packing, `totalHeightPx` over-counting, and Page 2+ width mismatch (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/lib/pagination/computePages.ts`, `src/lib/pagination/usePageLayout.ts`, `src/components/preview/MeasureLayer.tsx`).
-  1. **Pack Page 1 columns independently:** For `studio-sidebar` (`gengar`), pack `sidebarBlocks` into Page 1's right column instead of counting their heights against Page 2+ main-column budgets, so trailing sections (`Awards`, `Certifications`, etc.) don't get stranded on an extra Page 3 while Page 2 is half-empty.
-  2. **Fix `totalHeightPx` for `Fit to 1 Page`:** Compute `totalHeightPx` for `studio-sidebar` using `headerHeightPx + Math.max(mainHeightPx, sidebarHeightPx)` rather than `mainHeightPx + sidebarHeightPx`, so `Fit to 1 Page` and the `78%` floor reflect actual two-column height.
-  3. **Measure Page 2+ overflow at full width (or account for `.studio-layout--full`):** Measure/re-measure main blocks that overflow past Page 1 at full `100%` width so Page 2 packs accurately without leaving artificial empty space at the bottom.
+- [ ] P0: Fix `Studio Sidebar` sidebar overflow, print page-break blank Page 1 (`Save as PDF`), and Page 2/3 stranding (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/templates/studio/studio.css`, `src/styles/print.css`, `src/lib/pagination/computePages.ts`, `src/lib/pagination/usePageLayout.ts`, `src/components/preview/MeasureLayer.tsx`).
+  1. **Cap Page 1 sidebar height & spill overflow cleanly:** Pack `sidebarBlocks` (`Skills`, `Certifications`, etc.) against Page 1's available height (`pageHeight - headerHeight - margins`). Keep only the sidebar items that actually fit on Page 1 inside Page 1's right column; route any remaining sidebar items into Page 2+ so Page 1's `.studio-layout` grid can **never** exceed 1 printable page height.
+  2. **Prevent Chrome Print from pushing `.studio-layout` to Page 2:** In `studio.css` / `print.css`, ensure `.resume-page` in `@media print` has exact printable height/overflow bounds (`break-inside: avoid-page` on the Page 1 `.studio-layout` only once guaranteed to fit, or `display: flex` / zero extra print padding) so `Save as PDF` produces the exact same 2 pages shown in Visual Preview—never a blank Page 1 with just the header.
+  3. **Fix `totalHeightPx` & Page 2+ width:** Compute `totalHeightPx` for `studio-sidebar` using `headerHeightPx + Math.max(mainHeightPx, sidebarHeightPx)`, pack Page 1 columns independently so `Awards` doesn't strand on Page 3 when Page 2 has space, and measure Page 2+ overflow blocks at full `100%` width.
 
 
 ## Done
