@@ -23,7 +23,7 @@ const PAGE_FORMATS: readonly { id: PageFormat; label: string; detail: string }[]
     { id: "letter", label: "Letter", detail: "8.5 × 11 in" },
   ];
 
-// `relative` anchors the `sr-only` accent radios to their own card. Without a
+// `relative` anchors the `sr-only` radios to their own tap target. Without a
 // positioned ancestor, focusing a clipped input makes the browser scroll the
 // document to its static position, which slides the mobile bottom nav into
 // mid-screen.
@@ -32,6 +32,29 @@ function cardClass(isCurrent: boolean): string {
     isCurrent
       ? "border-primary bg-primary/10 ring-1 ring-primary/30"
       : "border-line hover:border-black/30"
+  }`;
+}
+
+// Paper size, Font pairing, and Density are short mutually exclusive choices,
+// so one compact segmented track keeps them scannable without stacking six
+// full-width radio cards above the template list.
+const SEGMENT_ROW_CLASS =
+  "mt-1 flex w-full min-w-0 gap-0.5 rounded-lg border border-line bg-surface-muted p-0.5";
+
+function segmentClass(isCurrent: boolean): string {
+  return `relative flex min-h-9 min-w-0 flex-1 cursor-pointer items-center justify-center gap-1 rounded-md px-2 py-1 text-center text-xs font-medium transition-colors pointer-coarse:min-h-11 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-1 ${
+    isCurrent ? "bg-primary text-white shadow-sm" : "text-text hover:bg-black/5"
+  }`;
+}
+
+const ACCENT_GRID_CLASS = "mt-1 grid grid-cols-4 gap-1.5 sm:grid-cols-8";
+
+const ACCENT_TARGET_CLASS =
+  "relative flex min-h-9 min-w-0 cursor-pointer items-center justify-center rounded-lg transition-colors pointer-coarse:min-h-11 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-1";
+
+function accentDotClass(isCurrent: boolean): string {
+  return `flex h-7 w-7 items-center justify-center rounded-full border border-black/10 transition-shadow ${
+    isCurrent ? "ring-2 ring-primary ring-offset-2 ring-offset-white" : ""
   }`;
 }
 
@@ -60,12 +83,12 @@ export function DesignPanel() {
 
   return (
     <div className="flex flex-col gap-5">
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex flex-col gap-2" data-design-section="paper">
         <legend className="text-sm font-medium">Paper size</legend>
         <p className="text-xs text-muted">
           The preview and printed PDF use this page size.
         </p>
-        <div className="mt-1 grid gap-2">
+        <div className={SEGMENT_ROW_CLASS} data-segmented-row="paper">
           {PAGE_FORMATS.map((pageFormat) => {
             const isCurrent = format === pageFormat.id;
             const inputId = `page-format-${pageFormat.id}`;
@@ -74,7 +97,8 @@ export function DesignPanel() {
               <label
                 key={pageFormat.id}
                 htmlFor={inputId}
-                className={cardClass(isCurrent)}
+                title={pageFormat.detail}
+                className={segmentClass(isCurrent)}
               >
                 <input
                   id={inputId}
@@ -87,14 +111,10 @@ export function DesignPanel() {
                       metadata: { page: { format: pageFormat.id } },
                     })
                   }
-                  className="h-4 w-4 accent-primary"
+                  className="sr-only"
                 />
-                <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                  <span className="font-medium">{pageFormat.label}</span>
-                  <span className="text-xs text-muted">
-                    {pageFormat.detail}
-                  </span>
-                </span>
+                <span className="whitespace-nowrap">{pageFormat.label}</span>
+                <span className="sr-only"> {pageFormat.detail}</span>
               </label>
             );
           })}
@@ -149,13 +169,13 @@ export function DesignPanel() {
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex flex-col gap-2" data-design-section="accent">
         <legend className="text-sm font-medium">Accent color</legend>
         <p className="text-xs text-muted">
           Used for section rules, highlights, and tags. Your text stays dark and
           readable.
         </p>
-        <div className="mt-1 grid grid-cols-2 gap-2">
+        <div className={ACCENT_GRID_CLASS} data-accent-strip="">
           {ACCENT_SWATCHES.map((swatch) => {
             const isCurrent = accentId === swatch.id;
             const inputId = `accent-${swatch.id}`;
@@ -164,13 +184,15 @@ export function DesignPanel() {
               <label
                 key={swatch.id}
                 htmlFor={inputId}
-                className={`${cardClass(isCurrent)} flex-wrap`}
+                title={swatch.label}
+                className={ACCENT_TARGET_CLASS}
               >
                 <input
                   id={inputId}
                   type="radio"
                   name="accent-color"
                   value={swatch.id}
+                  aria-label={swatch.label}
                   checked={isCurrent}
                   onChange={() =>
                     patchDoc({
@@ -181,20 +203,19 @@ export function DesignPanel() {
                 />
                 <span
                   aria-hidden="true"
-                  className="h-4 w-4 shrink-0 rounded-full border border-black/10"
+                  data-accent-dot=""
+                  className={accentDotClass(isCurrent)}
                   style={{ backgroundColor: swatch.hex }}
-                />
-                {isCurrent ? (
-                  <Check
-                    aria-hidden="true"
-                    data-accent-check=""
-                    size={14}
-                    weight="bold"
-                    className="ml-auto shrink-0 text-primary"
-                  />
-                ) : null}
-                <span className="w-full whitespace-nowrap text-xs leading-tight">
-                  {swatch.label}
+                >
+                  {isCurrent ? (
+                    <Check
+                      aria-hidden="true"
+                      data-accent-check=""
+                      size={14}
+                      weight="bold"
+                      className="text-white drop-shadow-sm"
+                    />
+                  ) : null}
                 </span>
               </label>
             );
@@ -202,12 +223,12 @@ export function DesignPanel() {
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex flex-col gap-2" data-design-section="fonts">
         <legend className="text-sm font-medium">Font pairing</legend>
         <p className="text-xs text-muted">
           Sans is cleanest for ATS; Serif and Classic add a more editorial feel.
         </p>
-        <div className="mt-1 grid gap-2">
+        <div className={SEGMENT_ROW_CLASS} data-segmented-row="fonts">
           {FONT_PAIRINGS.map((pairing) => {
             const isCurrent = pairingId === pairing.id;
             const inputId = `font-pairing-${pairing.id}`;
@@ -216,7 +237,8 @@ export function DesignPanel() {
               <label
                 key={pairing.id}
                 htmlFor={inputId}
-                className={cardClass(isCurrent)}
+                title={pairing.description}
+                className={segmentClass(isCurrent)}
               >
                 <input
                   id={inputId}
@@ -234,18 +256,13 @@ export function DesignPanel() {
                       },
                     })
                   }
-                  className="h-4 w-4 shrink-0 accent-primary"
+                  className="sr-only"
                 />
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span
-                    className="font-medium"
-                    style={{ fontFamily: pairing.heading }}
-                  >
-                    {pairing.label}
-                  </span>
-                  <span className="text-xs text-muted">
-                    {pairing.description}
-                  </span>
+                <span
+                  className="whitespace-nowrap"
+                  style={{ fontFamily: pairing.heading }}
+                >
+                  {pairing.label}
                 </span>
               </label>
             );
@@ -253,13 +270,13 @@ export function DesignPanel() {
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex flex-col gap-2" data-design-section="density">
         <legend className="text-sm font-medium">Density</legend>
         <p className="text-xs text-muted">
           Controls line height and the space between sections. Changing it
           re-measures the preview and the PDF.
         </p>
-        <div className="mt-1 grid gap-2">
+        <div className={SEGMENT_ROW_CLASS} data-segmented-row="density">
           {DENSITY_PRESETS.map((preset) => {
             const isCurrent = densityId === preset.id;
             const inputId = `density-${preset.id}`;
@@ -268,7 +285,8 @@ export function DesignPanel() {
               <label
                 key={preset.id}
                 htmlFor={inputId}
-                className={cardClass(isCurrent)}
+                title={preset.description}
+                className={segmentClass(isCurrent)}
               >
                 <input
                   id={inputId}
@@ -285,14 +303,9 @@ export function DesignPanel() {
                       },
                     })
                   }
-                  className="h-4 w-4 shrink-0 accent-primary"
+                  className="sr-only"
                 />
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="font-medium">{preset.label}</span>
-                  <span className="text-xs text-muted">
-                    {preset.description}
-                  </span>
-                </span>
+                <span className="whitespace-nowrap">{preset.label}</span>
               </label>
             );
           })}

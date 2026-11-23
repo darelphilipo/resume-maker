@@ -13,29 +13,53 @@ describe("DesignPanel", () => {
     resetResumeStore();
   });
 
-  it("pairs each paper-size card with its radio and fills the card width", () => {
+  it("puts paper size, font pairing, and density in one segmented row each", () => {
     render(<DesignPanel />);
 
-    const a4 = screen.getByRole("radio", { name: /A4/ }) as HTMLInputElement;
-    const letter = screen.getByRole("radio", {
-      name: /Letter/,
-    }) as HTMLInputElement;
+    const groups = [
+      {
+        name: "paper",
+        radios: ["page-format-a4", "page-format-letter"],
+      },
+      {
+        name: "fonts",
+        radios: [
+          "font-pairing-sans",
+          "font-pairing-serif",
+          "font-pairing-classic",
+        ],
+      },
+      {
+        name: "density",
+        radios: ["density-compact", "density-normal", "density-relaxed"],
+      },
+    ] as const;
 
-    for (const [input, inputId] of [
-      [a4, "page-format-a4"],
-      [letter, "page-format-letter"],
-    ] as const) {
-      expect(input).toHaveAttribute("id", inputId);
-      expect(input.closest("label")).toHaveAttribute("for", inputId);
-      expect(input.closest("label")).toHaveClass("w-full");
+    for (const group of groups) {
+      const row = document.querySelector(
+        `[data-segmented-row="${group.name}"]`,
+      ) as HTMLElement;
+
+      expect(row).toHaveClass("flex", "gap-0.5", "rounded-lg", "p-0.5");
+      // The old tall radio cards are gone: one short row per choice.
+      expect(row).not.toHaveClass("grid", "flex-col");
+
+      for (const inputId of group.radios) {
+        const input = document.getElementById(inputId) as HTMLInputElement;
+        const segment = input.closest("label") as HTMLElement;
+
+        expect(segment.parentElement).toBe(row);
+        expect(segment).toHaveAttribute("for", inputId);
+        expect(segment).toHaveClass("relative", "min-h-9", "flex-1");
+        expect(input).toHaveClass("sr-only");
+      }
     }
   });
 
-  it("switches paper size when the Letter card body is clicked", () => {
+  it("switches paper size when the Letter segment is clicked", () => {
     render(<DesignPanel />);
 
-    // Click the detail text, not the radio dot: the whole label is the target.
-    fireEvent.click(screen.getByText("8.5 × 11 in"));
+    fireEvent.click(screen.getByText("Letter", { exact: true }));
 
     expect(useResumeStore.getState().doc.metadata.page.format).toBe("letter");
     expect(screen.getByRole("radio", { name: /Letter/ })).toBeChecked();
@@ -133,53 +157,59 @@ describe("DesignPanel", () => {
     expect(screen.getByRole("radio", { name: /^Monochrome/ })).not.toBeChecked();
   });
 
-  it("marks the active accent with a border, fill, and checkmark instead of a radio dot", () => {
+  it("marks the active accent with a ring and a checkmark inside its swatch", () => {
     render(<DesignPanel />);
 
     const monoInput = screen.getByRole("radio", {
       name: /^Monochrome/,
     }) as HTMLInputElement;
     const monoCard = monoInput.closest("label") as HTMLElement;
+    const monoDot = monoCard.querySelector("[data-accent-dot]") as HTMLElement;
     const navyInput = screen.getByRole("radio", {
       name: /^Navy/,
     }) as HTMLInputElement;
     const navyCard = navyInput.closest("label") as HTMLElement;
+    const navyDot = navyCard.querySelector("[data-accent-dot]") as HTMLElement;
 
     // The radio stays in the a11y tree but is not drawn beside the color dot.
     expect(monoInput).toHaveClass("sr-only");
-    expect(monoCard).toHaveClass("border-primary", "bg-primary/10");
+    expect(monoDot).toHaveClass("rounded-full", "ring-2", "ring-primary");
     expect(monoCard.querySelector("[data-accent-check]")).not.toBeNull();
-    expect(navyCard).not.toHaveClass("border-primary");
+    expect(navyDot).not.toHaveClass("ring-2");
     expect(navyCard.querySelector("[data-accent-check]")).toBeNull();
 
     fireEvent.click(navyInput);
 
-    expect(navyCard).toHaveClass("border-primary", "bg-primary/10");
+    expect(navyDot).toHaveClass("rounded-full", "ring-2", "ring-primary");
     expect(navyCard.querySelector("[data-accent-check]")).not.toBeNull();
+    expect(monoDot).not.toHaveClass("ring-2");
     expect(monoCard.querySelector("[data-accent-check]")).toBeNull();
   });
 
-  it("keeps every accent name readable in a two-column swatch grid", () => {
+  it("uses one compact strip of circular swatches with accessible name tooltips", () => {
     render(<DesignPanel />);
 
-    const mono = document.getElementById("accent-mono");
-    const grid = mono?.closest("label")?.parentElement;
-    expect(grid).toHaveClass("grid-cols-2");
-    expect(grid).not.toHaveClass("sm:grid-cols-3");
+    const strip = document.querySelector(
+      "[data-accent-strip]",
+    ) as HTMLElement;
+    // 2×4 mini strip on phones, one row from `sm` up.
+    expect(strip).toHaveClass("grid", "grid-cols-4", "sm:grid-cols-8");
+    expect(strip).not.toHaveClass("grid-cols-2");
+    expect(ACCENT_SWATCHES).toHaveLength(8);
 
     for (const swatch of ACCENT_SWATCHES) {
-      const input = document.getElementById(`accent-${swatch.id}`);
-      const card = input?.closest("label");
-      const name = screen.getByText(swatch.label);
+      const input = document.getElementById(
+        `accent-${swatch.id}`,
+      ) as HTMLInputElement;
+      const target = input.closest("label") as HTMLElement;
+      const dot = target.querySelector("[data-accent-dot]") as HTMLElement;
 
-      expect(card).toHaveClass("w-full", "min-h-11", "flex-wrap");
-      expect(card).toContainElement(name);
-      expect(name).toHaveClass("w-full", "whitespace-nowrap");
-      expect(name).not.toHaveClass("truncate");
+      expect(target).toHaveClass("relative");
+      expect(target).toHaveAttribute("title", swatch.label);
+      expect(input).toHaveAttribute("aria-label", swatch.label);
+      expect(dot).toHaveClass("h-7", "w-7", "rounded-full");
+      expect(dot).toHaveStyle({ backgroundColor: swatch.hex });
     }
-
-    // Eight swatches fill four complete rows, so no card is left orphaned.
-    expect(ACCENT_SWATCHES.length % 2).toBe(0);
   });
 
   it("writes both font families when a pairing is chosen", () => {
@@ -239,13 +269,13 @@ describe("DesignPanel", () => {
     expect(doc.metadata.typography.body.lineHeight).toBe(1.55);
   });
 
-  it("gives the active density card a solid border and fill", () => {
+  it("gives the active density segment a solid fill", () => {
     render(<DesignPanel />);
 
     const normalCard = document
       .getElementById("density-normal")!
       .closest("label") as HTMLElement;
-    expect(normalCard).toHaveClass("border-primary", "bg-primary/10");
+    expect(normalCard).toHaveClass("bg-primary", "text-white");
 
     const compact = document.getElementById(
       "density-compact",
@@ -253,8 +283,8 @@ describe("DesignPanel", () => {
     fireEvent.click(compact);
 
     const compactCard = compact.closest("label") as HTMLElement;
-    expect(compactCard).toHaveClass("border-primary", "bg-primary/10", "ring-1");
-    expect(normalCard).not.toHaveClass("border-primary");
+    expect(compactCard).toHaveClass("bg-primary", "text-white", "shadow-sm");
+    expect(normalCard).not.toHaveClass("bg-primary");
   });
 
   it("lights up a density preset for legacy docs without a stored density", () => {

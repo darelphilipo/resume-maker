@@ -583,14 +583,20 @@ rediscover.
     (#32) — sidebar height is measured at full content width, not side-column
     width — so a genuinely tall sidebar can still overflow Page 1.
 
-47. **Accent swatches stay two columns so names cannot be clipped.** The Design
-    panel lives in the 20rem (`lg`) sidebar, leaving ~286px for its card;
-    `sm:grid-cols-3` made each swatch cell ~100px, and `truncate` on the label in
-    a `flex` row then collapsed names such as `Monochrome` to one character.
-    `DesignPanel` now keeps `grid-cols-2` at every width and lets each card wrap:
-    radio + color dot on one row, the full name on a `w-full whitespace-nowrap`
-    row (never `truncate`). Keep that two-row shape if the swatches change — a
-    one-row card with a nowrap name cannot fit the desktop sidebar.
+47. **Design choices are compact rows, not tall cards.** Paper size, Font
+    pairing, and Density live in one shared segmented track
+    (`SEGMENT_ROW_CLASS` + `segmentClass` in `DesignPanel`): a `rounded-lg`
+    `bg-surface-muted` row with 50% `gap-0.5` padding, flex-1 `min-h-9`
+    segments (`pointer-coarse:min-h-11`), and a solid `bg-primary text-white`
+    fill on the checked one. Descriptions moved from a second card line to a
+    `title` tooltip so the rows stay one line. The eight accent swatches are a
+    `grid-cols-4 sm:grid-cols-8` strip of 28px circles with no visible name;
+    each label carries `title` and the `sr-only` radio carries `aria-label`, so
+    the name is still announced and visible on hover. The active circle gets
+    `ring-2 ring-primary ring-offset-2 ring-offset-white` plus a white `Check`.
+    Every label stays `relative` (Decision #65) because all of these radios are
+    `sr-only`. This replaces the old two-column accent-card shape, where each
+    name needed its own full-width row.
 
 48. **Entry reorders must not throw the Content column to the top.** All six
     entry forms already key their `EntryCard` by `item.id` (never the array
@@ -696,23 +702,23 @@ rediscover.
      must be re-checked in a real browser at `390x844` and `1280x800`.
 
  55. **Density may be absent on saved rows, and accent selection is drawn on the
-     card.** `design.density` was added after the earliest Dexie rows were
+     dot.** `design.density` was added after the earliest Dexie rows were
      written, and `loadResume` stores a row as-is, so an old doc has
      `density === undefined` at runtime even though the Zod type says otherwise —
-     no Density card was highlighted. `resolveDensityId(density, gapY,
+     no Density choice was highlighted. `resolveDensityId(density, gapY,
      lineHeight)` in `designOptions.ts` accepts the raw value (known id → spacing
-     match → `normal`), and `DesignPanel` derives every checked Density card from
-     it. The shared option-card active style is now
-     `border-primary bg-primary/10 ring-1 ring-primary/30` so a selected
-     Density/Font/Template/Paper card is unmistakable. Accent swatches keep their
-     accessible radio but hide it (`sr-only`) and show a checkmark in a fixed
-     top-right slot instead; the card keeps the `flex-wrap` two-row shape from
-     #47 because a one-row nowrap name still does not fit the 20rem column.
-     There are now eight swatches (the new `rose`) so `grid-cols-2` has no
-     orphaned card. Template badges share one `[data-template-title-row]`
+     match → `normal`), and `DesignPanel` derives every checked Density segment
+     from it. Template cards keep the option-card active style
+     (`border-primary bg-primary/10 ring-1 ring-primary/30`); Paper size, Font
+     pairing, and Density use the solid segmented fill from #47. Accent swatches
+     keep their accessible radio but hide it (`sr-only`) and mark the active
+     circle with a primary ring and centered white checkmark; the name lives in
+     the label `title` and the radio `aria-label`. There are now eight swatches
+     (the new `rose`), which fills the 2×4 phone strip exactly.
+     Template badges share one `[data-template-title-row]`
      `justify-between` row: the name may wrap (`min-w-0`), while the badge stays
      `shrink-0 whitespace-nowrap`, so it cannot jump between inline and wrapped.
-     Font pairing names carry `style={{ fontFamily }}` so they preview their own
+     Font pairing labels carry `style={{ fontFamily }}` so they preview their own
      typeface.
 
  56. **Recent resume rows are clickable without nesting controls.** The launcher
@@ -1241,6 +1247,28 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-23 — Compact segmented Design panel and circular accent strip
+- Task: the P1 Queue item. The Design panel stacked six tall full-width radio
+  cards above the templates; Paper size, Font pairing, and Density now share
+  one-row segmented controls, and the eight accent cards became one circular
+  strip.
+- Layout: `DesignPanel` gained `SEGMENT_ROW_CLASS` / `segmentClass` (muted
+  track, flex-1 `min-h-9`, `pointer-coarse:min-h-11`, solid primary fill when
+  checked) and every choice radio is `sr-only` inside a `relative` label.
+  Descriptions moved to `title` tooltips. Font labels still render in their own
+  typeface.
+- Accents: a `grid-cols-4 sm:grid-cols-8` strip of 28px circles; the label
+  `title` plus the radio `aria-label` keep the color name accessible, and the
+  active circle gets `ring-2 ring-primary ring-offset-2` with a white check
+  inside. Decision #47 rewritten, #55 updated.
+- Tests: rewrote the DesignPanel segment, accent-strip, active-ring, and
+  density-fill cases; the mobile shell-lock e2e now taps
+  `label[for="accent-rose"]` because the swatch no longer has visible text.
+  That e2e case remains browser-unverified here.
+- Files: `src/components/editor/DesignPanel.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (906 pass), `npm run lint`.
+
 ### 2026-11-23 — Collapsed Basics and quiet editor toolbars
 - Task: top P1 Queue item. The UI was already implemented in this checkpoint;
   this run fixed the stale drawer test and recorded the work.
@@ -1483,32 +1511,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/lib/pagination/index.ts`, `src/lib/ats/atsText.test.ts`, `README.md`,
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (808 pass), `npm run lint`.
-
-### 2026-11-22 — One-tap newest-first sorting and date sanity warnings
-- Task: top P2 Queue item. Added the **Sort newest first** button to the
-  Experience, Education, and Projects forms, plus an inline reversed-range
-  warning under **End date**.
-- Helpers: new pure `src/lib/date/sortEntries.ts`. `sortEntriesNewestFirst`
-  ranks current/Present first, then the latest effective end month (`endDate`,
-  falling back to `startDate`), then `startDate`, with undated entries last and
-  ties stable. The first implementation compared a blank `endDate` literally,
-  which ranked a 2024 start-only role below a role that ended in 2020; the
-  fallback fixed that. `isNewestFirst` decides whether the button is shown.
-- Wiring: the shared `SortNewestFirstButton` lives in `SectionFormControls`;
-  each form sorts its local RHF values and lets the normal 50 ms debounced
-  `patchDoc` commit, so one Zundo undo restores the order. `MonthSelect` gained
-  an amber `warning` caption linked with `aria-describedby`; Experience and
-  Education suppress it for current roles, Projects has no current flag.
-- Tests: 9 pure helper cases, Experience sort + warning + current suppression,
-  Education sort/warning/single-entry, Projects sort/warning, and the MonthSelect
-  warning contract. 786 pass (was 768). Decision #76.
-- Files: `src/lib/date/sortEntries.ts` (+ test, new),
-  `src/components/editor/SectionFormControls.tsx` (+ test),
-  `src/components/editor/ExperienceForm.tsx` (+ test),
-  `src/components/editor/EducationForm.tsx` (+ new test),
-  `src/components/editor/ProjectsForm.tsx` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (786 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit

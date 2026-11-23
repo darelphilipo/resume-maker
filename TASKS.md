@@ -22,16 +22,27 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-### P1 — First-Impression & Visual Calm Polish
-
-- [ ] P1: Compact the `Design` panel so Templates, Colors, Fonts, and Density are scannable without heavy scrolling (`src/components/editor/DesignPanel.tsx`).
-  1. Convert `Paper size` (`A4 | Letter`), `Font pairing` (`Sans | Serif | Classic`, styled in their actual typefaces), and `Density` (`Compact | Normal | Relaxed`) from tall full-width radio cards into compact segmented control rows.
-  2. Convert the 8 `Accent color` swatches from 8 tall rectangular cards into a single compact row (or 2×4 mini strip) of circular color swatches with accessible `aria-label` tooltips and a crisp ring + checkmark on the active color, keeping `relative` on any `sr-only` radio container so mobile focus never scrolls the viewport.
-
-
+_empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-23 — Compacted the **Design** panel into segmented rows and a
+  circular accent strip. **Paper size**, **Font pairing**, and **Density** no
+  longer stack six tall full-width radio cards: each choice is one short
+  `bg-surface-muted` track of flex-1 `min-h-9` segments
+  (`pointer-coarse:min-h-11`) whose checked segment is a solid primary fill, and
+  the card descriptions moved to `title` tooltips. Font labels still render in
+  their own typeface. The eight accent cards became a
+  `grid-cols-4 sm:grid-cols-8` strip of 28px circles; the color name lives on the
+  label `title` and the radio `aria-label`, and the active circle wears a primary
+  ring plus a centered white checkmark. Every `sr-only` radio stays inside a
+  `relative` label, so mobile focus cannot scroll the locked shell. Updated the
+  mobile shell-lock e2e to tap `label[for="accent-rose"]` since the swatch has no
+  visible text (browser-unverified here). Verified `npm run typecheck`,
+  `npm test` (906 pass), `npm run lint`. Files:
+  `src/components/editor/DesignPanel.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-23 — Collapsed **Basics** by default and quietened the editor
   toolbars. The Content panel now opens with a compact **Basics** accordion

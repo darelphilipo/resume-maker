@@ -352,9 +352,10 @@ for (const viewport of VIEWPORTS) {
       await createPresetResume(page);
       await showTab(page, "Design");
 
-      // The accent radios are `sr-only`; tap the visible card text, exactly as
-      // a user would. Changing the accent also re-measures the canvas.
-      await page.getByText("Rose", { exact: true }).click();
+      // The accent radios are `sr-only` and the circular swatch has no visible
+      // name, so tap its labelled target exactly as a user would. Changing the
+      // accent also re-measures the canvas.
+      await page.locator('label[for="accent-rose"]').click();
       await expect(page.locator("#accent-rose")).toBeChecked();
 
       const metrics = await page.evaluate(() => {
