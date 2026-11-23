@@ -22,7 +22,10 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+- [ ] P0: Fix `Studio Sidebar` stranding trailing sections (`Awards`, `Certifications`, etc.) on an extra page while Page 2 is half-empty (`src/templates/studio/StudioSidebarTemplate.tsx`, `src/lib/pagination/computePages.ts`, `src/lib/pagination/usePageLayout.ts`).
+  1. **Exclude Page 1 sidebar blocks from Page 2+ height budgets:** When paginating the `studio-sidebar` template, pack the sidebar-routed blocks (`Skills`, `Certifications`, etc., up to Page 1's sidebar height) separately into Page 1's right column rather than counting their heights against the main/overflow pages, so main/overflow sections (`Education`, `Awards`, etc.) pack into the full height of Page 2 without being pushed onto an unnecessary Page 3.
+  2. **Unit test:** Add a multi-page `StudioSidebarTemplate` test with `Experience` + `Education` + `Skills` + `Certifications` + `Awards` verifying `Awards` stays on Page 2 when Page 2 has space rather than spilling to Page 3.
+
 
 
 ## Done
