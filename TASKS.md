@@ -24,12 +24,6 @@ _empty
 
 ### P1 — Input Validation & Two-Column Layout Balance
 
-- [ ] **Enforce sane year bounds (`1950–2100`) in `MonthSelect` so `0000` and `9999` cannot render on the resume.**
-  `MonthSelect` currently strips letters (`abcd`) and caps input at 4 digits (`99999` → `9999`), but accepts and renders `0000` and `9999` literally in preview and PDF.
-  - Add a pure year-range validator (`MIN_RESUME_YEAR = 1950`, `MAX_RESUME_YEAR = 2100`) in `src/lib/date/month.ts`.
-  - In `MonthSelect` (`src/components/editor/SectionFormControls.tsx`), block committing out-of-range 4-digit years to the store/preview, display an inline `aria-describedby` warning (e.g., `"Enter a year between 1950 and 2100"`), and restore the previous valid year on blur or Enter.
-  - Add unit tests in `src/lib/date/month.test.ts` and `src/components/editor/SectionFormControls.test.tsx` covering `0000`, `9999`, `99999`, `abcd`, and valid boundary years. Verify `npm run typecheck`, `npm test`, `npm run lint`.
-
 - [ ] **Keep `Studio Sidebar` (`gengar`) Page 1 left column balanced when the first Experience entry is oversized.**
   Depends on the P0 oversized-entry bullet-splitting task. When a tall first Experience entry overflows in `Studio Sidebar`, Page 1's left column below Summary should accept the entry header + fitting bullets while Skills/Certifications occupy the right sidebar, spilling continuation bullets to Page 2 full-width instead of leaving the Page 1 left column empty.
   - Verify and adjust `computePages.ts`, `MeasureLayer.tsx`, and `StudioSidebarTemplate.tsx` so split entry continuation blocks respect `gengar`'s narrow Page 1 main column width and full-width Page 2+ flow.
@@ -63,6 +57,19 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — `MonthSelect` now rejects impossible resume years instead of
+  printing `0000`/`9999`. New pure `MIN_RESUME_YEAR` (1950), `MAX_RESUME_YEAR`
+  (2100), and `isResumeYearInRange` in `src/lib/date/month.ts` gate every
+  commit, so a complete out-of-range draft stays local with an amber
+  `aria-invalid` + `aria-describedby` note ("Enter a year between 1950 and
+  2100") and never reaches the store, preview, or PDF; blur and Enter restore
+  the stored year and month. Added validator boundary/malformed cases and
+  MonthSelect block/overlong/letters/partial-draft/blur/Enter regressions.
+  Verified `npm run typecheck`, `npm test` (1009 pass), `npm run lint`. Files:
+  `src/lib/date/month.ts` (+ test),
+  `src/components/editor/SectionFormControls.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-24 — The Preview canvas no longer sticks flush-left with a gray
   gap on the right after switching templates or returning from another mobile

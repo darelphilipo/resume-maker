@@ -142,8 +142,10 @@ in control of every line, and your data stays on your device.
 - One Month + Year picker for every date field (month list plus a four-digit
   year), so `2023-10` stays consistent and no browser opens a slow year
   scroller. A year on its own is enough when that is all you know, and prints as
-  `2018 — 2019`. End dates for current roles have a **Present** toggle, and a
-  quiet note appears under the End date when it sits before the Start date.
+  `2018 — 2019`. Stray years outside 1950–2100 are caught right under the field
+  and never reach the preview or PDF. End dates for current roles have a
+  **Present** toggle, and a quiet note appears under the End date when it sits
+  before the Start date.
 - **Sort newest first** appears above Experience, Education, or Projects when
   two or more entries are out of order, so one tap puts current roles and the
   latest dates at the top (undo still works).

@@ -2,9 +2,38 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatMonth,
+  isResumeYearInRange,
+  MAX_RESUME_YEAR,
+  MIN_RESUME_YEAR,
   parseMonthInput,
   toMonthValue,
 } from "./month";
+
+describe("isResumeYearInRange", () => {
+  it("exposes the documented boundary years", () => {
+    expect(MIN_RESUME_YEAR).toBe(1950);
+    expect(MAX_RESUME_YEAR).toBe(2100);
+  });
+
+  it.each([
+    ["1950", true],
+    ["2000", true],
+    ["2023", true],
+    ["2100", true],
+    [" 2023 ", true],
+    ["1949", false],
+    ["2101", false],
+    ["0000", false],
+    ["9999", false],
+    ["99999", false],
+    ["195", false],
+    ["20a3", false],
+    ["abcd", false],
+    ["", false],
+  ])("accepts %j as %j", (input, expected) => {
+    expect(isResumeYearInRange(input)).toBe(expected);
+  });
+});
 
 describe("toMonthValue", () => {
   it.each([

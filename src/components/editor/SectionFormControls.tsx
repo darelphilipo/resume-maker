@@ -19,6 +19,9 @@ import {
 
 import {
   formatMonth,
+  isResumeYearInRange,
+  MAX_RESUME_YEAR,
+  MIN_RESUME_YEAR,
   parseMonthInput,
   toMonthValue,
 } from "@/lib/date/month";
@@ -141,9 +144,19 @@ export function MonthSelect({
   const labelId = `${id}-label`;
   const monthId = `${id}-month`;
   const yearId = `${id}-year`;
+  // Partial drafts are normal while typing, so only a complete four-digit year
+  // outside the sane range raises the inline warning.
+  const yearOutOfRange =
+    YEAR_PATTERN.test(yearDraft) && !isResumeYearInRange(yearDraft);
+  const yearWarningId = `${id}-year-warning`;
+
+  function restoreStoredDrafts(): void {
+    setYearDraft(storedYear);
+    setMonthDraft(storedMonth);
+  }
 
   function commit(nextYear: string, nextMonth: string): void {
-    if (!YEAR_PATTERN.test(nextYear)) {
+    if (!isResumeYearInRange(nextYear)) {
       return;
     }
 
@@ -193,10 +206,10 @@ export function MonthSelect({
     // the Content column's scroll to the top).
     event.preventDefault();
 
-    if (YEAR_PATTERN.test(yearDraft)) {
+    if (isResumeYearInRange(yearDraft)) {
       commit(yearDraft, monthDraft);
     } else {
-      setYearDraft(storedYear);
+      restoreStoredDrafts();
     }
 
     // Blur mirrors the compact MonthInput: Enter confirms and dismisses the
@@ -238,18 +251,25 @@ export function MonthSelect({
           autoComplete="off"
           placeholder="Year"
           maxLength={4}
+          aria-invalid={yearOutOfRange ? true : undefined}
+          aria-describedby={yearOutOfRange ? yearWarningId : undefined}
           value={yearDraft}
           disabled={isPresent}
           onChange={(event) => changeYear(event.currentTarget.value)}
           onKeyDown={handleYearKeyDown}
           onBlur={() => {
-            if (!YEAR_PATTERN.test(yearDraft)) {
-              setYearDraft(storedYear);
+            if (!isResumeYearInRange(yearDraft)) {
+              restoreStoredDrafts();
             }
           }}
           className={INPUT_CLASS}
         />
       </div>
+      {yearOutOfRange ? (
+        <p id={yearWarningId} className="text-xs font-medium text-amber-700">
+          Enter a year between {MIN_RESUME_YEAR} and {MAX_RESUME_YEAR}
+        </p>
+      ) : null}
       {warning ? (
         <p
           id={`${id}-warning`}

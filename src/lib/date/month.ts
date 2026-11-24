@@ -1,3 +1,9 @@
+/** Oldest year a resume may print; earlier values are almost always typos. */
+export const MIN_RESUME_YEAR = 1950;
+
+/** Latest year a resume may print; later values are almost always typos. */
+export const MAX_RESUME_YEAR = 2100;
+
 const MONTH_NAMES = [
   "Jan",
   "Feb",
@@ -53,6 +59,24 @@ function monthFromName(value: string): number | null {
   // "Sept" is a common abbreviation that is neither the 3-letter short name
   // nor the full name.
   return normalized === "sept" ? 9 : null;
+}
+
+/**
+ * True only for a complete four-digit year inside `MIN_RESUME_YEAR` and
+ * `MAX_RESUME_YEAR`. Partial drafts (`20`), non-digits (`abcd`), and padded
+ * extremes (`0000`, `9999`) are rejected so they can never reach the preview or
+ * PDF. Kept pure so the forms share the same boundary rule.
+ */
+export function isResumeYearInRange(year: string): boolean {
+  const trimmed = year.trim();
+
+  if (!/^\d{4}$/.test(trimmed)) {
+    return false;
+  }
+
+  const numericYear = Number(trimmed);
+
+  return numericYear >= MIN_RESUME_YEAR && numericYear <= MAX_RESUME_YEAR;
 }
 
 /**

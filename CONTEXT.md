@@ -1404,6 +1404,19 @@ rediscover.
        `offsetWidth`, which is always 0 there), so the wiring test mocks the
        hook and the real check is the browser tab/template switch.
 
+  93. **Resume years are bounded at 1950–2100 in one pure helper.**
+       `MIN_RESUME_YEAR` / `MAX_RESUME_YEAR` and `isResumeYearInRange` in
+       `src/lib/date/month.ts` are the single boundary rule. `MonthSelect` gates
+       every `commit()` on it, so a complete four-digit year outside the range
+       stays a local draft: no `onChange`, so preview, measurement, and PDF keep
+       the previous valid date. The year input carries `aria-invalid` plus
+       `aria-describedby` to the amber "Enter a year between 1950 and 2100"
+       caption. Blur and Enter restore the stored year **and month** drafts, so a
+       rejected year cannot leave the two fields disagreeing with the committed
+       value. Partial drafts (`20`, `999`) stay quiet while typing; letters are
+       still stripped, and an all-letters field clears as before. Compare
+       numerically — `"0000"` and `"9999"` must never pass a lexical check.
+
 ## Verification and tooling
 
 ```powershell
@@ -1464,6 +1477,21 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-24 — MonthSelect rejects impossible years
+- Task: top Queue item. `MonthSelect` accepted `0000`/`9999` literally and
+  rendered them in the preview and PDF.
+- Change: new pure `MIN_RESUME_YEAR` / `MAX_RESUME_YEAR` /
+  `isResumeYearInRange` in `src/lib/date/month.ts`; `MonthSelect` gates every
+  commit, shows an amber `aria-invalid` + described warning, and restores the
+  stored year and month on blur/Enter. Decision #93.
+- Tests: validator boundaries/malformed values plus MonthSelect cases for
+  `0000`, `9999`, `99999`, `abcd`, partial drafts, both valid boundaries, and
+  blur/Enter restore. 1009 pass.
+- Files: `src/lib/date/month.ts` (+ test),
+  `src/components/editor/SectionFormControls.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1009 pass), `npm run lint`.
 
 ### 2026-11-24 — Preview re-centres after template switches and tab returns
 - Task: In Progress was empty, so this run took the top Queue item (P0). The
@@ -1685,34 +1713,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (930 pass), `npm run lint`.
   Playwright remains blocked here, so the e2e case is browser-unverified.
-
-### 2026-11-23 — One-row Writing helpers and a persistent PDF tab title
-- Task: top P1 Queue item. The Writing helper strip no longer duplicates its
-  verbs, and the browser tab keeps the resume name so phone print spoolers do
-  not save a temp/default PDF filename.
-- Helpers: removed the four single-word **Built / Reduced / Led / Automated**
-  pills and their `actionVerbInsertion` helper. `RichTextField` now shows only
-  the four impact-formula scaffolds, each a `block w-full text-left` chip in a
-  `flex flex-col` group, so a wrapped formula starts every line at the left edge.
-  Decision #22/#43 rewritten.
-- Title: new pure `resumeDocumentTitle(name)` returns `{name} - Resume` (or
-  `Resume Maker` when blank). `EditorWorkspace` syncs `document.title` in a
-  `useEffect` keyed on `previewDoc.basics.name` (so live typing and Anonymize
-  both follow) and restores `Resume Maker` on unmount. The print routine still
-  swaps in the slugified filename and keeps the coarse-pointer grace, but the
-  persistent title is now the primary fix for Android Chrome's async spooler.
-  Decision #4 updated.
-- Tests: formula-only chip count, no verb pills, block/w-full alignment, and
-  collapse; `resumeDocumentTitle` formatting/fallbacks; workspace tab title
-  following a live name edit, the anonymized alias, and unmount restoration.
-  931 pass (was 930).
-- Files: `src/components/editor/RichTextField.tsx` (+ test),
-  `src/lib/richtext/actionVerbs.ts` (+ test),
-  `src/lib/richtext/bulletFormulas.ts`,
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/lib/print/printDocument.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (931 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

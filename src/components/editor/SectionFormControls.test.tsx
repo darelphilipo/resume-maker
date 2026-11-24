@@ -426,6 +426,101 @@ describe("MonthSelect", () => {
     expect(onChange).toHaveBeenCalledWith("2024-10");
   });
 
+  it.each(["1950", "2100"])(
+    "commits the valid boundary year %s",
+    (boundaryYear) => {
+      const { year, onChange } = renderSelect("2023-10");
+
+      fireEvent.change(year, { target: { value: boundaryYear } });
+
+      expect(onChange).toHaveBeenCalledWith(`${boundaryYear}-10`);
+      expect(
+        screen.queryByText("Enter a year between 1950 and 2100"),
+      ).toBeNull();
+    },
+  );
+
+  it.each(["0000", "9999"])(
+    "blocks the out-of-range year %s and describes why",
+    (invalidYear) => {
+      const { year, onChange } = renderSelect("2023-10");
+
+      fireEvent.change(year, { target: { value: invalidYear } });
+
+      expect(onChange).not.toHaveBeenCalled();
+      expect(year).toHaveValue(invalidYear);
+      expect(year).toHaveAttribute("aria-invalid", "true");
+      expect(year).toHaveAttribute(
+        "aria-describedby",
+        "start-date-year-warning",
+      );
+
+      const warning = screen.getByText("Enter a year between 1950 and 2100");
+
+      expect(warning).toHaveAttribute("id", "start-date-year-warning");
+      expect(warning).toHaveClass("text-xs", "font-medium", "text-amber-700");
+    },
+  );
+
+  it("caps an overlong year at four digits and refuses to commit it", () => {
+    const { year, onChange } = renderSelect("2023-10");
+
+    fireEvent.change(year, { target: { value: "99999" } });
+
+    expect(year).toHaveValue("9999");
+    expect(onChange).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Enter a year between 1950 and 2100"),
+    ).toBeInTheDocument();
+  });
+
+  it("strips letters instead of committing them as a year", () => {
+    const { month, year, onChange } = renderSelect("2023-10");
+
+    fireEvent.change(year, { target: { value: "abcd" } });
+
+    expect(onChange).toHaveBeenCalledWith("");
+    expect(year).toHaveValue("");
+    expect(month).toHaveValue("");
+    expect(screen.queryByText("Enter a year between 1950 and 2100")).toBeNull();
+  });
+
+  it("keeps an incomplete draft quiet while typing", () => {
+    const { year, onChange } = renderSelect("2023-10");
+
+    fireEvent.change(year, { target: { value: "999" } });
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(year).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByText("Enter a year between 1950 and 2100")).toBeNull();
+  });
+
+  it("restores the stored year and month on blur after an out-of-range draft", () => {
+    const { month, year, onChange } = renderSelect("2023-10");
+
+    fireEvent.change(year, { target: { value: "9999" } });
+    fireEvent.blur(year);
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(year).toHaveValue("2023");
+    expect(month).toHaveValue("10");
+    expect(year).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByText("Enter a year between 1950 and 2100")).toBeNull();
+  });
+
+  it("restores the stored year on Enter after an out-of-range draft", () => {
+    const { year, onChange } = renderSelect("2023-10");
+
+    fireEvent.change(year, { target: { value: "9999" } });
+
+    const defaultPrevented = !fireEvent.keyDown(year, { key: "Enter" });
+
+    expect(defaultPrevented).toBe(true);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(year).toHaveValue("2023");
+    expect(screen.queryByText("Enter a year between 1950 and 2100")).toBeNull();
+  });
+
   it("stores a year-only value when only the year is known", () => {
     const { year, onChange } = renderSelect("");
 
