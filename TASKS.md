@@ -18,12 +18,7 @@ _empty
 
 ## In Progress (OpenCode Updates This)
 
-- [ ] P0: Fix zoomed mobile Preview freezing vertical scroll past page breaks (only allowing sideways pan) (`src/components/preview/TouchPanCanvas.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/lib/zoom/canvasGestures.ts`).
-  1. Pass the exact `[data-canvas-scroll]` ref (`scrollRef`) directly from `LiveCanvasViewport.tsx` into `TouchPanCanvas.tsx` instead of relying on `findScrollableAncestor`.
-  2. Fix `resolveVerticalPanHandoff` / `TouchPanCanvas` so whenever a vertical touch drag reaches `instance.bounds.minPositionY` or `maxPositionY` (or when `TransformComponent` cannot pan further vertically in that direction), **100% of the remaining `deltaY`** scrolls `scrollRef.current.scrollTop` immediately with no dead zone or vertical lock—so users can smoothly scroll across Page 1 → Page 2 → Page 3 even while zoomed in.
-  3. Add a unit test simulating a zoomed 2-page canvas at its vertical pan bound and asserting further upward swipes advance `scrollRef.current.scrollTop` cleanly.
-
-  Plan: thread `scrollRef` (the real `[data-canvas-scroll]` box) from `LiveCanvasViewport` → `CanvasSurface` → `TouchPanCanvas`; add a preferred-scroller path to `scrollPageBy` in `src/lib/zoom/touchScroll.ts` so the phone paper box is scrolled directly (with the ancestor/panel fallback for wide coarse-pointer tablets). Remove the `dampHandoffScroll` ramp so the full leftover delta reaches `scrollTop` on the first at-bound move, track the pan position locally within a gesture so a lagging library state cannot swallow the hand-off, then update the gesture/scroll/TouchPan tests and add a viewport wiring test.
+_empty
 
 ## Queue (Ready for Next Run)
 
@@ -62,6 +57,28 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — A zoomed phone Preview no longer freezes at a page break:
+  `LiveCanvasViewport` now threads the exact `[data-canvas-scroll]` element
+  through `CanvasSurface` into `TouchPanCanvas` as `scrollRef`, so the vertical
+  pan hand-off scrolls the real paper box instead of walking ancestors to a
+  non-scrolling `<main>`. `scrollPageBy` accepts that preferred element (falling
+  back to the ancestor walk for wide coarse-pointer tablets), and the
+  `dampHandoffScroll` ramp is gone, so 100% of the leftover delta reaches
+  `scrollTop` on the first at-bound move. The gesture also tracks its own
+  `panPositionY`, so a lagging library position cannot re-pan instead of
+  scrolling. Added a phone-shape 2-page bottom-bound regression, a
+  lagging-position hand-off case, preferred-scroller/ancestor-fallback scroll
+  tests, and a viewport wiring test; removed the obsolete ramp cases. Verified
+  `npm run typecheck`, `npm test` (1015 pass), `npm run lint`. Files:
+  `src/components/preview/LiveCanvasViewport.tsx`,
+  `src/components/preview/TouchPanCanvas.tsx`,
+  `src/components/preview/TouchPanCanvas.test.tsx`,
+  `src/components/preview/LiveCanvasViewport.touchWiring.test.tsx` (new),
+  `src/lib/zoom/touchScroll.ts` (+ test),
+  `src/lib/zoom/canvasGestures.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`. Playwright remains blocked here, so the real touch geometry is
+  browser-unverified.
 
 - [x] 2026-11-24 — Fixed the `Studio Sidebar` Page 2+ width mismatch so
   `AWARDS` packs into Page 2 instead of stranding on Page 3. Page 1 keeps the

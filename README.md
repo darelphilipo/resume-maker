@@ -246,8 +246,9 @@ in control of every line, and your data stays on your device.
   page. At normal size a one-finger swipe scrolls a multi-page preview smoothly
   and natively, while the preview header stays fixed, so pages stop cleanly at
   its edge instead of slipping behind the page-count pill. When a drag reaches
-  the top or bottom of the zoomed page, scrolling eases in smoothly, so you can
-  always reach every page. A small **Reset** button floats over the bottom-right
+  the top or bottom of the zoomed page, the same swipe keeps scrolling on to the
+  next page, so you can always reach every part of a long resume without
+  zooming out. A small **Reset** button floats over the bottom-right
    of the preview only while zoomed, so the top bar never crowds **Review**,
   and returns the page to its fitted width; **Reset** and **Reset fit** both
   bring you back to the top of the resume, just like when you first open the

@@ -324,9 +324,15 @@ rediscover.
     the user resets to fit. Panning is gated by `isPreviewZoomed`. Because
     `touch-action: none` also locks out native scrolling, vertical drags are
     clamped to the library's `instance.bounds`: once the canvas hits its top or
-    bottom edge, `resolveVerticalPanHandoff` hands the leftover delta to
-    `scrollPageBy` (`src/lib/zoom/touchScroll.ts`), which scrolls the nearest
-    scrolling ancestor (`<main>` on mobile). Dragging down at the canvas top
+    bottom edge, `resolveVerticalPanHandoff` hands **100% of the leftover** delta
+    to `scrollPageBy` (`src/lib/zoom/touchScroll.ts`) on that same move. The
+    phone's paper scroller (`[data-canvas-scroll]`) is a *descendant* of the touch
+    host, so `LiveCanvasViewport` threads that exact element through
+    `CanvasSurface` → `TouchPanCanvas` as `scrollRef`; the ancestor walk only
+    covers the wide-tablet shape where the Preview panel scrolls instead. There
+    is no ramp or dead zone: the first at-bound move already reaches `scrollTop`,
+    so a zoomed two-page resume keeps scrolling from Page 1 into Page 2 and 3
+    instead of freezing at the page break. Dragging down at the canvas top
     therefore scrolls the editor back up to the preview toolbar and Reset
     instead of stranding them off-screen on a multi-page resume. There is
     **no zoom/pan toolbar**: page count plus the `Reset fit` / `CanvasResetButton`
@@ -429,10 +435,9 @@ rediscover.
     `-mx-2 -mt-2 px-2 pt-2` (`lg:-mx-4 lg:-mt-4 lg:px-4 lg:pt-3`); the toolbar
     is one `h-8` row (`page count`, `Trim tips`, `Reset fit`, `Reset`) that
     scrolls sideways on very narrow phones instead of wrapping. The vertical
-    pan-to-scroll hand-off now calls `dampHandoffScroll` (`HANDOFF_RAMP_MOVES =
-    4`): the page-scroller contribution ramps in over the first four at-bound
-    touches instead of snapping by the full leftover delta on contact; any
-    move with no leftover resets the ramp. On phones the same two rows are
+    pan-to-scroll hand-off applies the full leftover delta on the first at-bound
+    move (no damping ramp), because a softened contribution read as a dead zone
+    at every page break. On phones the same two rows are
     static (`shrink-0`) inside the fixed-height preview column — see #37. The
     panel hosting the sticky rows is no longer itself sticky (#51); it is an
     independently scrolling desktop grid column.
@@ -507,9 +512,10 @@ rediscover.
     fitted scale there is no JS touch handler and no `scrollPageBy` hand-off, so
     native `touch-action: pan-y` scrolling is smooth instead of jittery. A
     fitted canvas is exactly as tall as its scroller, so `TransformWrapper` has
-    no pan range to fight the scroll. While zoomed, `findScrollableAncestor`
-    now finds that canvas box rather than `<main>`; that is the intended
-    hand-off target.
+    no pan range to fight the scroll. While zoomed, the hand-off target is the
+    exact `[data-canvas-scroll]` box passed in as `scrollRef`, not an ancestor
+    walk: it is a descendant of the touch host, so `findScrollableAncestor` only
+    serves the wide-tablet fallback.
 
 38. **Drawer sheets shrink above the mobile keyboard.** `useVisualViewportOffset`
     reports the keyboard overlap as
@@ -1495,6 +1501,34 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-24 — Zoomed mobile Preview keeps scrolling across page breaks
+- Task: the In Progress P0 item. Finishing a checkpoint: `TouchPanCanvas` already
+  required a `scrollRef` prop and took the pan position locally, but the viewport
+  never passed it, the `dampHandoffScroll` ramp tests still targeted a deleted
+  helper, and `scrollPageBy` did not accept an `undefined` preferred element.
+- Change: `LiveCanvasViewport` → `CanvasSurface` → `TouchPanCanvas` now passes the
+  exact `[data-canvas-scroll]` element. That box is a *descendant* of the touch
+  host, so the old ancestor walk resolved to a non-scrolling `<main>` and a
+  zoomed two-page resume froze at the page break. `scrollPageBy` prefers the
+  explicit box and keeps the ancestor walk as the wide-tablet fallback. The ramp
+  is gone: the full leftover `deltaY` reaches `scrollTop` on the first at-bound
+  move. Updated Decisions #26/#33/#37.
+- Tests: a phone-shape harness where the scroller is a descendant, a bottom-bound
+  2-page swipe sequence that advances `scrollTop` by exactly each leftover, a
+  lagging-library-position case, preferred-scroller + non-scrolling fallback
+  cases, and a `LiveCanvasViewport.touchWiring` case asserting the ref handed to
+  `TouchPanCanvas` is the `[data-canvas-scroll]` element. Obsolete ramp cases
+  removed. 1015 pass.
+- Files: `src/components/preview/LiveCanvasViewport.tsx`,
+  `src/components/preview/TouchPanCanvas.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.touchWiring.test.tsx` (new),
+  `src/lib/zoom/touchScroll.ts` (+ test),
+  `src/lib/zoom/canvasGestures.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1015 pass), `npm run lint`.
+  Playwright remains blocked here, so the real touch geometry is
+  browser-unverified.
+
 ### 2026-11-24 — Studio Sidebar Page 2+ packs at full width
 - Task: In Progress was empty, so this run took the top Queue P0. Studio's
   Page 2+ collapses the grid, but packing still used the narrow Page 1 main
@@ -1692,35 +1726,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (942 pass). No e2e case added: the
   regression is a pure packing + render test, and Playwright remains blocked
   here.
-
-### 2026-11-23 — Gray desk wraps the paper; zoom Reset floats
-- Task: the In Progress P0 item. The desk ended above the last page and the
-  zoomed `Reset` pill crowded the one-row Preview bar on narrow phones.
-- Desk: new `canvasDeskHeight(stackHeightPx)` in `canvasFrame.ts` adds both
-  `py-3` paddings via `CANVAS_SCROLL_PADDING_PX * 2` to the scaled stack height;
-  `LiveCanvasViewport` uses it for `[data-canvas-desk]` instead of a magic 24.
-  The backdrop now covers Page 1's top edge and the last page's bottom edge at
-  any paper size/page count without becoming a full-panel void. Decision #87.
-- Reset: `CanvasResetOverlay` floats a pointer-transparent
-  `absolute bottom-3 right-3 z-20` pill as a sibling of `[data-canvas-scroll]`
-  inside the viewport root. The viewport derives `isZoomed` from `onTransform`
-  and calls its own `resetZoom`; `onZoomChange` and `EditorWorkspace`'s
-  `canvasZoomed` state are gone, so the mode bar keeps just switch, page count,
-  and Review. `resetZoom`/`resetFit` stay on `LiveCanvasViewportHandle` for
-  Review. Decision #87.
-- Tests: desk-height helper cases (both paddings, every page count/scale,
-  invalid inputs), overlay visibility/placement/reset, no-Reset-in-mode-bar,
-  and a tablet e2e that checks the desk wraps both paper edges. 939 pass.
-- Files: `src/lib/pagination/canvasFrame.ts` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/preview/CanvasResetButton.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (939 pass). Playwright remains
-  blocked here, so the e2e case is browser-unverified. `npm run lint` still has
-  five pre-existing `react-hooks/preserve-manual-memoization` errors in
-  `LiveCanvasViewport.tsx` (reproduced with the original `onZoomChange` code);
-  CI does not run lint.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

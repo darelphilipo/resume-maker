@@ -98,6 +98,37 @@ describe("scrollPageBy", () => {
     expect(scroller.scrollTop).toBe(220);
   });
 
+  it("scrolls the explicit paper scroller even when it is a descendant", () => {
+    // Phone shape: [data-canvas-scroll] lives *inside* the touch host, so the
+    // ancestor walk cannot find it and the preferred element must win.
+    const host = document.createElement("div");
+    const paper = makeScrollable("auto");
+
+    host.append(paper);
+    document.body.append(host);
+    paper.scrollTop = 120;
+
+    expect(scrollPageBy(host, 60, paper)).toBe(true);
+    expect(paper.scrollTop).toBe(180);
+  });
+
+  it("falls back to an ancestor when the preferred box does not scroll", () => {
+    // Wide coarse-pointer tablets keep [data-canvas-scroll] non-scrolling and
+    // scroll the Preview panel instead.
+    const ancestor = makeScrollable("auto");
+    const host = document.createElement("div");
+    const paper = makeScrollable("hidden", { scrollHeight: 200 });
+
+    host.append(paper);
+    ancestor.append(host);
+    document.body.append(ancestor);
+    ancestor.scrollTop = 200;
+
+    expect(scrollPageBy(host, 40, paper)).toBe(true);
+    expect(ancestor.scrollTop).toBe(240);
+    expect(paper.scrollTop).toBe(0);
+  });
+
   it("does nothing for empty or non-finite deltas", () => {
     const scroller = makeScrollable("auto");
     const host = document.createElement("div");

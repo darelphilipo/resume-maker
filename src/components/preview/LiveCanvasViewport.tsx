@@ -184,6 +184,7 @@ function CanvasSurface({
   fitResetKey,
   isCoarsePointer,
   hostRef,
+  scrollRef,
   children,
 }: {
   frame: CanvasFrame;
@@ -192,6 +193,13 @@ function CanvasSurface({
   fitResetKey: string;
   isCoarsePointer: boolean;
   hostRef: RefObject<HTMLDivElement | null>;
+  /**
+   * The exact `[data-canvas-scroll]` box. It is a *descendant* of the touch
+   * host, so it must be handed to `TouchPanCanvas` directly: the ancestor walk
+   * would resolve to `<main>`, which does not scroll while the phone preview is
+   * a fixed-height column.
+   */
+  scrollRef: RefObject<HTMLDivElement | null>;
   children: ReactNode;
 }) {
   const isZoomed = useTransformComponent(({ state }) =>
@@ -207,6 +215,7 @@ function CanvasSurface({
       />
       <TouchPanCanvas
         hostRef={hostRef}
+        scrollRef={scrollRef}
         fitScale={fitScale}
         isZoomed={isZoomed}
         enabled={isCoarsePointer}
@@ -595,6 +604,7 @@ export function LiveCanvasViewport({
               fitResetKey={fitResetKey}
               isCoarsePointer={isCoarsePointer}
               hostRef={containerRef}
+              scrollRef={scrollRef}
             >
               <PageStack
                 doc={doc}

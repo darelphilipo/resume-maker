@@ -7,7 +7,9 @@ const SCROLLABLE_OVERFLOW = /(auto|scroll|overlay)/;
  * once it hits its pan bounds the remaining delta must be applied to the page
  * scroller by hand instead of relying on native scrolling.
  */
-export function isScrollableElement(element: Element | null): boolean {
+export function isScrollableElement(
+  element: Element | null | undefined,
+): boolean {
   if (!(element instanceof HTMLElement)) {
     return false;
   }

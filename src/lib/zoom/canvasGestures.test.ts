@@ -2,12 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   CANVAS_PINCH_STEP,
-  HANDOFF_RAMP_MOVES,
   PREVIEW_ZOOM_EPSILON,
   TOUCH_AXIS_SLOP_PX,
   canvasGestureConfig,
   canvasTouchAction,
-  dampHandoffScroll,
   hasClearedTouchSlop,
   isPreviewZoomed,
   resolveVerticalPanHandoff,
@@ -123,36 +121,14 @@ describe("resolveVerticalPanHandoff", () => {
   });
 });
 
-describe("dampHandoffScroll", () => {
-  it("eases the page scroll in over the first few at-bound moves", () => {
-    let moves = 0;
-    const scrolls: number[] = [];
+describe("exact page hand-off", () => {
+  const bounds = { minPositionY: -400, maxPositionY: 0 };
 
-    for (let index = 0; index < HANDOFF_RAMP_MOVES; index += 1) {
-      const eased = dampHandoffScroll(-40, moves);
-
-      moves = eased.moves;
-      scrolls.push(eased.scroll);
-    }
-
-    expect(scrolls).toEqual([-10, -20, -30, -40]);
-    expect(moves).toBe(HANDOFF_RAMP_MOVES);
-  });
-
-  it("holds full speed on sustained at-bound moves", () => {
-    expect(dampHandoffScroll(60, HANDOFF_RAMP_MOVES)).toEqual({
-      scroll: 60,
-      moves: HANDOFF_RAMP_MOVES + 1,
-    });
-  });
-
-  it("resets the ramp when the canvas resumes panning", () => {
-    expect(dampHandoffScroll(-40, 3)).toEqual({ scroll: -40, moves: 4 });
-    expect(dampHandoffScroll(0, 3)).toEqual({ scroll: 0, moves: 0 });
-  });
-
-  it("ignores non-finite deltas", () => {
-    expect(dampHandoffScroll(Number.NaN, 0)).toEqual({ scroll: 0, moves: 0 });
+  it("never softens the hand-off: the whole leftover reaches the page", () => {
+    // The page scroller is handed the entire leftover on the first at-bound
+    // move, so crossing a page break has no dead zone or vertical lock.
+    expect(resolveVerticalPanHandoff(-400, -18, bounds).scroll).toBe(18);
+    expect(resolveVerticalPanHandoff(0, 22, bounds).scroll).toBe(-22);
   });
 });
 
