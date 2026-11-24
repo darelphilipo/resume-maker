@@ -293,18 +293,20 @@ in control of every line, and your data stays on your device.
   the current template, so you can check section order and wording before you
   apply. **Copy all plain text** grabs the whole resume for Workday, Greenhouse,
   or Lever in one tap, and compact **Copy** buttons let you paste just one
-  section or one role. The copy bar and every section scroll together as one
-  smooth page, with no nested box to fight against on a phone.
+  section or one role. When a section is a single block with no heading, its
+  section button is the only one shown, so two identical buttons never stack
+  together. The copy bar and every section scroll together as one smooth page,
+  with no nested box to fight against on a phone.
 - **Anonymize for review**: open **Review** in the preview bar and switch on
   **Anonymize** to replace your name, contact details, website, profile links,
   photo, and company or school names with neutral placeholders. Each role's,
   school's, volunteer entry's, and custom entry's location is replaced too, so
   personal geography cannot give you away. Project, certification, publication,
   and custom-section links are replaced as well, so a username inside a URL
-  cannot leak. A dot on the **Review** pill and a note in the menu make review
-  mode obvious, the Visual and ATS views and the PDF all use the hidden version,
-  and your saved resume is never changed — switch it off again to return to the
-  real details.
+  cannot leak. A dot on the **Review** pill and one note above the preview make
+  review mode obvious; the Visual and ATS views and the PDF all use the hidden
+  version, and your saved resume is never changed — switch it off again to
+  return to the real details.
 - **6-Second recruiter scan**: in the same **Review** menu, switch on **6s Scan**
   to see your resume the way a hurried recruiter does. Body prose fades back
   while your name, headline, section headings, job titles, companies, dates,

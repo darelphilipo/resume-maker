@@ -1449,6 +1449,18 @@ rediscover.
        height. `computePages` forwards the map from `usePageLayout`; the old
        `overflowBlocks` re-height mapping is gone because the packer owns it.
 
+   95. **Review notices and ATS Copy buttons appear once.** The active
+       "Review mode is on..." notice lives only in the `EditorWorkspace` banner
+       above the canvas (#58); `ReviewMenu`'s `Review tools` dialog must not
+       render a second copy. In `AtsTextView`, the pure
+       `shouldHideEntryCopy(section)` guard drops the inner per-entry `Copy`
+       button only when a section has exactly one entry whose text equals
+       `section.text` — a headingless single-block section such as a hidden
+       Summary heading — because the section-level button already copies that
+       exact text. A shown heading (section text gains the title) or 2+ entries
+       keeps every per-entry button. Do not widen the guard: the other buttons
+       copy genuinely different text.
+
 ## Verification and tooling
 
 ```powershell
@@ -1514,21 +1526,22 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
-### 2026-11-24 — Stray explore test merged and deprecated
-- Task: top Queue item (P2 test hygiene). The live-name publication regression
-  had been left in `src/components/editor/__explore.test.tsx` since 2026-11-20.
-- Change: moved that regression into the existing `describe("BasicsForm")`
-  suite, reusing its `setup()` and fake timers, so one file now guards both the
-  immediate `onLiveNameChange` callback and the debounced store commit. `rm` is
-  blocked by this runner's shell permission, so the stray file is a comment-only
-  deprecation stub excluded from discovery in `vitest.config.ts` (an empty test
-  file still fails Vitest with "No test suite found"). No user-visible feature
-  changed, so README is untouched.
-- Tests: 1031 pass / 101 files. Verified `npm run typecheck`, `npm test`,
-  `npm run lint`.
-- Files: `src/components/editor/BasicsForm.test.tsx`,
-  `src/components/editor/__explore.test.tsx`, `vitest.config.ts`, `TASKS.md`,
-  `CONTEXT.md`.
+### 2026-11-24 — Review dialog and ATS Copy buttons deduplicated
+- Task: top Queue item (P2): duplicate Anonymize notice in `Review tools` and
+  stacked Copy buttons on single-item ATS sections.
+- Change: removed the `data-review-mode-note` paragraph from `ReviewMenu`, so
+  the `EditorWorkspace` Preview banner is the only "Review mode is on" notice.
+  Added the pure `shouldHideEntryCopy(section)` guard in `AtsTextView` to omit
+  the inner per-entry Copy button only when one entry's text equals the
+  section's own Copy output (e.g. a headingless Summary); the section button
+  still copies that text and all headed/multi-entry buttons stay. README's
+  Review/ATS feature copy updated. Decision #95.
+- Tests: dialog no-duplicate-notice case plus ATS cases for headingless
+  single-block, headed, and headingless multi-entry sections. 1034 pass.
+- Files: `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1034 pass).
 
 ### 2026-11-24 — Permanent extreme-QA regression gate
 - Task: top Queue item. The five extreme QA cases were covered piecemeal (8

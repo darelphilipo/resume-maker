@@ -60,6 +60,17 @@ function CopyButton({
   );
 }
 
+/**
+ * A section with exactly one entry and no heading prints the same text in its
+ * section Copy and its entry Copy. Skip the inner button so two identical
+ * controls never stack above each other — the section button still copies it.
+ */
+export function shouldHideEntryCopy(section: AtsCopySection): boolean {
+  return (
+    section.entries.length === 1 && section.entries[0].text === section.text
+  );
+}
+
 export function AtsTextView({ doc }: { doc: ResumeDocument }) {
   const blocks = useMemo(() => buildAtsCopyBlocks(doc), [doc]);
   const header = blocks.header;
@@ -157,52 +168,58 @@ export function AtsTextView({ doc }: { doc: ResumeDocument }) {
               </section>
             ) : null}
 
-            {blocks.sections.map((section) => (
-              <section
-                key={section.id}
-                data-ats-section={section.id}
-                className="border-b border-line last:border-b-0"
-              >
-                <div className="flex items-center justify-between gap-2 bg-surface-muted px-3 py-2">
-                  <h3 className="min-w-0 text-[11px] font-semibold uppercase tracking-wide text-muted">
-                    {section.title}
-                  </h3>
-                  <CopyButton
-                    ariaLabel={`Copy ${section.title} section`}
-                    copied={copied?.key === section.id}
-                    label="Copy"
-                    onCopy={() => {
-                      void handleCopy(section.id, `${section.title} section`, section.text);
-                    }}
-                  />
-                </div>
+            {blocks.sections.map((section) => {
+              const hideEntryCopy = shouldHideEntryCopy(section);
 
-                <div className="divide-y divide-line/60">
-                  {section.entries.map((entry, index) => (
-                    <div
-                      key={`${entry.id}:${index}`}
-                      className="flex items-start gap-2 px-3 py-2"
-                    >
-                      <pre className="min-w-0 flex-1 whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-text">
-                        {entry.text}
-                      </pre>
-                      <CopyButton
-                        ariaLabel={`Copy ${entry.label || section.title}`}
-                        copied={copiedEntry(section, entry)}
-                        label="Copy"
-                        onCopy={() => {
-                          void handleCopy(
-                            `${section.id}:${entry.id}`,
-                            entry.label || section.title,
-                            entry.text,
-                          );
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ))}
+              return (
+                <section
+                  key={section.id}
+                  data-ats-section={section.id}
+                  className="border-b border-line last:border-b-0"
+                >
+                  <div className="flex items-center justify-between gap-2 bg-surface-muted px-3 py-2">
+                    <h3 className="min-w-0 text-[11px] font-semibold uppercase tracking-wide text-muted">
+                      {section.title}
+                    </h3>
+                    <CopyButton
+                      ariaLabel={`Copy ${section.title} section`}
+                      copied={copied?.key === section.id}
+                      label="Copy"
+                      onCopy={() => {
+                        void handleCopy(section.id, `${section.title} section`, section.text);
+                      }}
+                    />
+                  </div>
+
+                  <div className="divide-y divide-line/60">
+                    {section.entries.map((entry, index) => (
+                      <div
+                        key={`${entry.id}:${index}`}
+                        className="flex items-start gap-2 px-3 py-2"
+                      >
+                        <pre className="min-w-0 flex-1 whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-text">
+                          {entry.text}
+                        </pre>
+                        {hideEntryCopy ? null : (
+                          <CopyButton
+                            ariaLabel={`Copy ${entry.label || section.title}`}
+                            copied={copiedEntry(section, entry)}
+                            label="Copy"
+                            onCopy={() => {
+                              void handleCopy(
+                                `${section.id}:${entry.id}`,
+                                entry.label || section.title,
+                                entry.text,
+                              );
+                            }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </>
         )}
       </div>

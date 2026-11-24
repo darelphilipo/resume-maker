@@ -129,7 +129,7 @@ describe("ReviewMenu", () => {
     expect(onToggleAnonymize).toHaveBeenCalledTimes(1);
   });
 
-  it("reflects an active tool as a checked switch and explains review mode", () => {
+  it("reflects active tools as checked switches without repeating the review-mode notice", () => {
     renderMenu({ scan: true, anonymize: true });
 
     openMenu();
@@ -142,9 +142,9 @@ describe("ReviewMenu", () => {
       "aria-checked",
       "true",
     );
-    expect(document.querySelector("[data-review-mode-note]")).toHaveTextContent(
-      "your saved resume is unchanged",
-    );
+    // The Preview pane's banner is the only "Review mode is on" notice; the
+    // dialog stays clean instead of stacking a second copy behind the modal.
+    expect(screen.queryByText(/Review mode is on/)).not.toBeInTheDocument();
   });
 
   it("badges the pill and opens Trim tips from the dialog", () => {

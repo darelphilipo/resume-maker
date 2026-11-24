@@ -28,10 +28,6 @@ _empty
 ### P2 — Extreme-Case Regression Gate & Test Hygiene
 
 
-- [ ] P2: Remove duplicate `Anonymize` notice in `Review tools` and stacked `Copy` buttons on single-item `ATS` sections (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/AtsTextView.tsx`).
-  1. **Single `Anonymize` notice:** Remove the duplicate *"Review mode is on..."* notice from inside the `Review tools` modal so the active banner only appears once in the Preview pane (keeping the modal clean).
-  2. **Deduplicate `ATS` Copy buttons:** In `AtsTextView.tsx`, omit the inner per-entry `Copy` button on single-block sections like `SUMMARY` (or any section with only 1 entry whose text is identical to the section's Copy output) so two identical `Copy` buttons never stack right above each other.
-
 - [ ] P2: Fix `Profiles` header rendering when only `Network` + `Username` are filled, and add a `Collapse all` button in the Content panel (`src/templates/shared/HeaderSlot.tsx`, `src/lib/links/contactLinks.ts`, `src/templates/shared/SectionRenderer.tsx`, `src/components/editor/SectionList.tsx`).
   1. **`Profiles` header consistency:** When a user enters a `Network` + `Username` without a full `url`, derive the canonical URL for known networks (e.g. `GitHub` → `https://github.com/{username}`, `LinkedIn` → `https://linkedin.com/in/{username}`) or still render `Network: username` inline in `HeaderSlot` (omitting the redundant `PROFILES` body section) so `Basics`' *"shown in the header"* copy always matches reality.
   2. **Content panel `Collapse all`:** Show a subtle `"Collapse all"` text button in the Content panel header/list whenever 2 or more section accordions are expanded at once so users can tidy the left sidebar in one click.
@@ -39,6 +35,20 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — Removed two stacked duplicates in the Preview tools: the
+  `Review tools` dialog no longer repeats the *"Review mode is on..."* notice
+  (the `EditorWorkspace` banner above the canvas is now the single one), and
+  `AtsTextView` omits the inner per-entry `Copy` button when a section has just
+  one entry whose text equals the section's own copy output (e.g. a headingless
+  Summary), keeping the section-level button that copies the same text. The new
+  pure `shouldHideEntryCopy(section)` guard leaves headed and multi-entry
+  sections untouched. Added a dialog-no-duplicate-notice regression plus ATS
+  cases for headingless single-block, headed, and headingless multi-entry
+  sections. Verified `npm run typecheck`, `npm test` (1034 pass). Files:
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-24 — Cleaned up the stray `__explore.test.tsx` test hygiene debt:
   merged its live-name publication regression into the existing

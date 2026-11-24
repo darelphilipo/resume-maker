@@ -114,6 +114,72 @@ describe("AtsTextView", () => {
     expect(button).toHaveTextContent("Copy all plain text");
   });
 
+  it("omits the per-entry Copy when a headingless single block duplicates the section copy", async () => {
+    const writeText = stubClipboard();
+    const doc = createEmptyResume();
+
+    doc.basics.name = "Ada Lovelace";
+    doc.summary.content = "<p>Product-minded engineer.</p>";
+    doc.summary.showHeading = false;
+
+    render(<AtsTextView doc={doc} />);
+
+    expect(
+      screen.getByRole("button", { name: "Copy Summary section" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Copy Summary" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Copy Summary section" }),
+    );
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith("Product-minded engineer."),
+    );
+  });
+
+  it("keeps the per-entry Copy when the section adds a heading", () => {
+    const doc = createEmptyResume();
+
+    doc.basics.name = "Ada Lovelace";
+    doc.summary.content = "<p>Product-minded engineer.</p>";
+
+    render(<AtsTextView doc={doc} />);
+
+    expect(
+      screen.getByRole("button", { name: "Copy Summary section" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Copy Summary" })).toBeVisible();
+  });
+
+  it("keeps per-entry Copy buttons on a headingless multi-entry section", () => {
+    const doc = createEmptyResume();
+
+    doc.basics.name = "Ada Lovelace";
+    doc.sections.experience.showHeading = false;
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "exp-1",
+        company: "Acme",
+        position: "Engineer",
+      }),
+      ExperienceItemSchema.parse({
+        id: "exp-2",
+        company: "Globex",
+        position: "Lead",
+      }),
+    ];
+
+    render(<AtsTextView doc={doc} />);
+
+    expect(
+      screen.getByRole("button", { name: "Copy Experience section" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Copy Engineer" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Copy Lead" })).toBeVisible();
+  });
+
   it("copies a single section and a single entry as clean plain text", async () => {
     const writeText = stubClipboard();
     const doc = createEmptyResume();

@@ -228,17 +228,6 @@ export function ReviewMenu({
             ) : null}
           </div>
         ) : null}
-
-        {anonymize ? (
-          <p
-            data-review-mode-note=""
-            role="status"
-            className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-[11px] leading-snug text-primary"
-          >
-            Review mode is on. Personal details are replaced in the preview and
-            PDF; your saved resume is unchanged.
-          </p>
-        ) : null}
       </CenteredModal>
 
       {trimOpen && bulletReport && trimCount > 0 ? (
