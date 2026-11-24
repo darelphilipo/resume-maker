@@ -36,6 +36,24 @@ _empty
      - **Wire all 13 sections + unlabeled summary:** Populate `projects`, `certifications`, `awards`, `languages`, `interests`, `volunteer`, `publications`, `references`, and `profiles` in `parsePastedResume`, split multi-bullet 3-column skill lines (`• A • B • C`), capture unlabeled opening paragraphs (`> 120` chars) into `summary.content`, scan fallback `My Contact` blocks, and broaden `LOCATION_PATTERN` for global/Indian cities.
   3. Add unit tests in `src/lib/import/pasteResume.test.ts` & `featureScoring.test.ts` covering single-column with icons/certifications/awards, unlabeled summary + 3-column skills, GPA/CGPA extraction, and two-column Canva resumes (`Company as Title`, `Completed in YYYY`, `Hard Skills`/`Soft Skills`).
 
+### P1 — Final Pre-Freeze UX & Bug Polish
+
+- [ ] P1: Fix `Save PDF` stuck-dimmed state, inline `1 page · Reset` symmetry, `Anonymize` cert domains, `ATS` duplicate `SUMMARY` Copy, and `⋮` Backup label (`src/components/preview/PrintTriggerButton.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/lib/privacy/anonymizeDoc.ts`, `src/components/preview/AtsTextView.tsx`, `src/components/editor/EditorWorkspace.tsx`).
+  1. **`Save PDF` button state:** Ensure `Save PDF` never stays stuck in a dimmed/disabled state after clicking when the browser print dialog is dismissed or suppressed (reset any pending/printing state on `afterprint` + short fallback timeout).
+  2. **Inline `1 page · Reset`:** When `Fit` scales a 2-page resume onto 1 page (`fitScale < 1`), keep a compact inline `1 page · Reset` button right in the same Preview bar slot where `2 pages · Fit` appeared so users don't have to hunt inside `Review ▾`.
+  3. **`Anonymize` certification domains & `ATS` duplicate Copy:** Preserve generic public certification issuer domains (e.g. `credly.com`, `aws.amazon.com`, `scrum.org`, `coursera.org`) in `anonymizeResumeDoc` when no personal username is present (redacting only personal paths/profiles), and remove the duplicate stacked inner `Copy` button on single-block `SUMMARY` in `AtsTextView.tsx`.
+  4. **Clear `⋮` menu affordance:** Add a clear `"Export / Backup"` tooltip/`aria-label` (or compact `"Backup"` label on desktop) on the top-right `⋮` button so `Resume Maker backup` and `JSON Resume` are easy to find.
+
+- [ ] P1: Move section `Hide / ↑ / ↓` controls onto section headers, clean up `Profiles` form, and add global `"Clear sample data"` (`src/components/editor/SectionList.tsx`, `src/components/editor/sectionFields.ts`, `src/components/editor/EditorWorkspace.tsx`, `src/lib/store/`).
+  1. **Compact header reorder/hide buttons:** Place compact `↑`, `↓`, and `Hide` icon buttons directly on each section's header row in `SectionList.tsx` (stopping click propagation so clicking them doesn't toggle expansion), removing the need to expand a section and scroll to the bottom just to reorder or hide it.
+  2. **`Profiles` cleanup & auto-fill hint:** Remove the leftover `Section heading` input inside `Profiles` (since `Profiles` renders inline in the top contact bar) and update the `Profile URL` placeholder to `"Paste GitHub or LinkedIn URL — auto-fills below"`.
+  3. **Global `"Clear sample data"`:** Add a one-click `"Clear sample data"` action (in the `⋮` menu or top of `Content` when using a starter preset, committed via Zustand/Zundo so it's undoable) that clears sample entries across all sections at once.
+
+- [ ] P1: Make `Trim tips` bullets clickable, add lightweight stemming to `Match JD`, and add discoverability hints on `ATS` & `Review ▾` (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/lib/keywords/jdMatch.ts`).
+  1. **Clickable `Trim tips`:** Clicking any listed bullet in the `Trim tips` modal closes the modal, switches to the `Content` tab on mobile, expands that bullet's section (`Experience` / `Projects`), and scrolls smoothly to that entry so the user can trim the 1–2 words immediately.
+  2. **`Match JD` stemming & stopword cleanup:** Add lightweight suffix normalization (`-ing`, `-ed`, `-s`/`-es`, e.g. `building` ↔ `build`, `managed` ↔ `manage`) and filter generic JD filler words (`high`, `improve`, `reduce`, `junior`, `looking`, `strong`) in `jdMatch.ts`.
+  3. **Discoverability cues:** Add a clear tooltip/`title` on the `ATS` toggle (*"Plain text & one-click Workday copy"*) and on the `Review N ▾` badge (*"N trim tips available — click to review"*) so first-time users immediately understand both features.
+
 
 
 ## Done
