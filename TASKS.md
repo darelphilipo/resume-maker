@@ -59,6 +59,11 @@ _empty
   2. **`Match JD` stemming & stopword cleanup:** Add lightweight suffix normalization (`-ing`, `-ed`, `-s`/`-es`, e.g. `building` ↔ `build`, `managed` ↔ `manage`) and filter generic JD filler words (`high`, `improve`, `reduce`, `junior`, `looking`, `strong`) in `jdMatch.ts`.
   3. **Discoverability cues:** Add a clear tooltip/`title` on the `ATS` toggle (*"Plain text & one-click Workday copy"*) and on the `Review N ▾` badge (*"N trim tips available — click to review"*) so first-time users immediately understand both features.
 
+- [ ] P1: Final mobile micro-polish from device review (`src/components/editor/DesignPanel.tsx`, `src/components/preview/AtsTextView.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
+  1. **Fix `Sans` label typeface (`DesignPanel.tsx`):** Ensure the `Sans` option in the `Font pairing` segmented control renders with `font-sans` (currently inheriting serif styling on mobile).
+  2. **Fix `ATS` top-line clipping (`AtsTextView.tsx`):** Add top padding / check scroll-container flex alignment so the first line of the `ATS` intro caption is never clipped at the top edge on mobile (`390px`).
+  3. **Stop mid-word truncation in `Other ways to import` (`Launcher.tsx`):** Shorten the accordion label from `"Import via AI prompt (for scanned or Canva PDFs)"` to `"Import via AI prompt"` (keeping *"For scanned or Canva PDFs"* as helper copy inside the expanded panel) so it fits cleanly on `390px` with no `scanne...` ellipsis.
+  4. **Remove `78%` jargon inside `Review tools` (`LiveCanvasViewport.tsx`):** Update the yellow notice inside the `Review tools` modal from `"Min 78% · Too tall to fit on one page above 78% — trim a line or two."` to `"Too tall to fit on one page cleanly — trim a few lines or try Compact density."`
 
 
 ## Done
