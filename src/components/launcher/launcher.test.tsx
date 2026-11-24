@@ -931,6 +931,7 @@ describe("Launcher", () => {
     doc.basics.name = "Ada Lovelace";
     vi.mocked(parsePdfResume).mockResolvedValue({
       text: "Ada Lovelace",
+      lines: [],
       doc,
     });
     render(<Launcher />);
@@ -951,7 +952,11 @@ describe("Launcher", () => {
 
   it("explains when a PDF has no selectable text", async () => {
     const user = userEvent.setup();
-    vi.mocked(parsePdfResume).mockResolvedValue({ text: "  ", doc: null });
+    vi.mocked(parsePdfResume).mockResolvedValue({
+      text: "  ",
+      lines: [],
+      doc: null,
+    });
     render(<Launcher />);
 
     await user.upload(screen.getByLabelText("Resume PDF"), pdfFile());
@@ -1102,7 +1107,11 @@ Product: Roadmapping, Discovery`,
 
   it("links a scanned PDF straight to the AI prompt import", async () => {
     const user = userEvent.setup();
-    vi.mocked(parsePdfResume).mockResolvedValue({ text: "  ", doc: null });
+    vi.mocked(parsePdfResume).mockResolvedValue({
+      text: "  ",
+      lines: [],
+      doc: null,
+    });
     render(<Launcher />);
 
     await user.upload(screen.getByLabelText("Resume PDF"), pdfFile());

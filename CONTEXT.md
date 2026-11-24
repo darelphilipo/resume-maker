@@ -1513,6 +1513,33 @@ rediscover.
         `<section>`s, the utility strip is a `role="group"` so it is not counted
         as a region.
 
+    99. **PDF lines carry visual metadata from a pure layout module.**
+        `src/lib/import/pdfLayout.ts` owns `PdfTextItem` → `PdfPhrase[]` →
+        `PdfLine` (`{ y, text, phrases, isBoldLine, maxFontSize, lineGap?,
+        joinNext?, breakBefore? }`) plus the two-column gutter detector.
+        `pdfResume.ts` is now only the PDF.js shell: it calls
+        `await page.getOperatorList()` before `page.commonObjs.get(fontName)`
+        (try/catch → raw id) so `isBold` can read real names such as
+        `ABCDEF+Arial-BoldMT`, and `fontSize` comes from
+        `Math.hypot(transform[0], transform[1])` with `item.height` as the
+        fallback. `computeTypicalCharWidth` picks the character-weighted modal
+        `fontName::fontSize` pair and takes the median `width / text.length`, so
+        a large bold heading cannot widen the body estimate. Adjacent runs merge
+        into one phrase only while `gap <= typicalCharWidth`; separate phrases
+        keep their own x/width. Spacing follows OpenResume's idea with explicit
+        attach rules: `, . ; : ! ? % ) ] }` never take a leading space, openers
+        `( [ { / \ @` stay glued to the next token, and `, : ; | . ! ? % ) ] }`
+        plus a standalone bullet force a following space. That is what keeps
+        `Skills:Python` → `Skills: Python` and `SQL,SAP` → `SQL, SAP` even when
+        the PDF emits no gap. `layoutPdfPage` returns banner/left/right groups;
+        `layoutPdfPages` flattens with `breakBefore: "page" | "column"`, and
+        `mergeWrappedPdfLines` joins soft-hyphen/`\uFFFD` wraps while keeping
+        phrases. `groupPdfTextItems`/`extractPdfText` keep their exact old
+        plain-text contract, and `parsePdfResume` now also returns `lines` for
+        the next parser step (`PdfResumeResult` requires it — update every mock
+        that constructs the result). Do not reintroduce DOM or PDF.js imports in
+        `pdfLayout.ts`; it is the unit-tested layout contract.
+
 ## Verification and tooling
 
 ```powershell
@@ -1577,6 +1604,28 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-24 — Rich PDF line metadata and a pure layout engine
+- Task: top Queue item (P0, step 1): preserve bold/size/phrase metadata in PDF
+  import and move two-column/glyph cleanup into a testable layout module.
+- Change: new `src/lib/import/pdfLayout.ts` owns `PdfTextItem`/`PdfPhrase`/
+  `PdfLine`, font weight/size helpers, `computeTypicalCharWidth`,
+  `shouldAddSpaceBetweenText`, phrase grouping, line gaps, page/column breaks,
+  wrapped-line merging, and the existing gutter detector. `pdfResume.ts` now
+  builds each page's operator list before resolving `commonObjs` font names,
+  returns `lines` on `PdfResumeResult`, and exposes `extractPdfLines`;
+  `extractPdfText`/`groupPdfTextItems` keep their exact plain-text output.
+  Punctuation spacing now separates `Skills:Python` and `SQL,SAP` even when the
+  PDF reports no gap. Decision #99; README PDF copy updated.
+- Tests: new `pdfLayout.test.ts` covers bold names/transform sizes, modal body
+  char width, phrase splitting, punctuation attach/space rules, PUA/zero-width
+  stripping, soft-hyphen merge, line gaps, page/column breaks, and a Canva
+  banner/sidebar/main ordering fixture. Launcher PDF mocks gained `lines: []`.
+  1076 pass.
+- Files: `src/lib/import/pdfLayout.ts` (new, + test),
+  `src/lib/import/pdfResume.ts`, `src/components/launcher/launcher.test.tsx`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1076 pass).
 
 ### 2026-11-24 — Finalized the launcher/AI-rescue checkpoint
 - Task: resumed the In Progress launcher redesign. The code, tests, README, and
@@ -1760,30 +1809,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/SectionFormControls.tsx` (+ test), `README.md`,
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (1009 pass), `npm run lint`.
-
-### 2026-11-24 — Preview re-centres after template switches and tab returns
-- Task: In Progress was empty, so this run took the top Queue item (P0). The
-  fitted paper stayed flush-left with a gray strip on the right after switching
-  templates or returning to Preview from the Design tab on mobile.
-- Cause: the fit effect only re-applied when `fitScale`/`fitOffsetX` changed,
-  but an inactive mobile tab is `display: none`: the zoom library measures a
-  0×0 stage and clamps its stored position to `x = 0`. A template switch can
-  keep the same scale/offset too, so the guard suppressed the needed re-fit.
-- Fix: `useFitTransform` takes a `resetKey`; `LiveCanvasViewport` passes
-  `${doc.metadata.template}:${fitEpoch}`, records a 0-width measurement as
-  hidden, and bumps `fitEpoch` on the next real measurement. Decision #92.
-- Tests: hook re-applies for a template key change and a visibility epoch
-  change, and stays quiet when the key is unchanged; a new viewport test
-  mocks `useFitTransform` and asserts the template/visibility key wiring.
-  A tall-tablet Playwright case switches template from Design and polls for
-  equal left/right gaps after returning. 985 pass.
-- Files: `src/components/preview/useFitTransform.ts` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx`,
-  `src/components/preview/LiveCanvasViewport.fitReset.test.tsx` (new),
-  `e2e/layout-consistency.spec.ts`.
-- Verified: `npm run typecheck`, `npm test` (985 pass), `npm run lint`.
-  Playwright remains blocked here, so the browser tab/template switch is
-  browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

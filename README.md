@@ -59,7 +59,9 @@ in control of every line, and your data stays on your device.
   from summary and experience to projects, certifications, awards, languages,
   interests, volunteer work, publications, and references. Two-column layouts
   keep their sidebar and main body in the right order, decorative icon glyphs
-  are dropped, and words split across lines are joined back together. If a PDF
+  are dropped, and words split across lines are joined back together. Labels
+  and comma-separated lists keep their spaces too, so contact lines and skills
+  read as `Skills: Python` and `SQL, SAP` instead of one glued token. If a PDF
   is a scan, an image, or a Canva export with no selectable text, the upload
   error links straight to the AI prompt rescue import (pasting the text yourself
   still works too).

@@ -24,16 +24,6 @@ _empty
 
 ### P0 — OpenResume-Grade PDF Parsing Upgrade (2-Step Pipeline)
 
-- [ ] P0: Upgrade `src/lib/import/pdfResume.ts` to preserve rich `PdfLine` metadata (`isBold`, `fontSize`, `typicalCharWidth` phrases, punctuation spacing) alongside two-column & glyph cleanup.
-  1. **Resolve font names & visual metadata (`src/lib/import/pdfResume.ts`):**
-     - Call `await page.getOperatorList()` before reading `page.commonObjs.get(item.fontName)?.name` (with safe `try/catch` fallback to `item.fontName`) to compute `isBold = /bold|semibold|demi|heavy|black/i.test(resolvedFontName)` and `fontSize = Math.hypot(transform[0], transform[1]) || item.height`.
-     - Strip Private Use Area icon glyphs (`[\uE000-\uF8FF]`), zero-width chars, and rejoin soft-hyphen/replacement-char line wraps (`\u00AD`, `\uFFFD`).
-  2. **Two-column gutter detection + `typicalCharWidth` phrase grouping (new `src/lib/import/pdfLayout.ts`):**
-     - Detect a clean vertical column gutter (full-width header above, left sidebar + right main column below) and order items top-to-bottom per column so two-column Canva PDFs never interleave.
-     - Compute `typicalCharWidth` from the mode body `fontName`/`fontSize` (OpenResume algorithm), merge adjacent items on a line only when `gap <= typicalCharWidth`, and apply OpenResume's `shouldAddSpaceBetweenText` rule around `:`, `,`, `|`, `.`, and bullets so merged tokens like `Skills:Python` or `SQL,SAP` never glue together.
-     - Return structured `PdfLine[]` (`{ y, text, phrases: PdfPhrase[], isBoldLine, maxFontSize }`) while keeping `extractPdfText` backwards-compatible for plain-text callers.
-  3. Add unit tests in `src/lib/import/pdfLayout.test.ts` covering bold font resolution, `typicalCharWidth` phrase splitting, `shouldAddSpaceBetweenText`, PUA glyph stripping, and two-column Canva coordinates.
-
 - [ ] P0: Add OpenResume-style weighted feature scoring, `getDescriptionsLineIdx`, and `isBold`/`lineGap` subsection splitting to `src/lib/import/pasteResume.ts` (new `src/lib/import/featureScoring.ts`).
   1. **Create `src/lib/import/featureScoring.ts`:** Implement `scoreBestCandidate(items, featureSets)` modeled on OpenResume's weighted scoring tuples (`[predicate, weight]`) with mutual exclusion for:
      - **Name:** `+3` letters/spaces/periods, `+3` largest `fontSize` in header, `+2` `isBold`, `-4` email/digits/punctuation.
@@ -50,6 +40,25 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — Preserved rich PDF line metadata and moved layout into a
+  pure, testable module. New `src/lib/import/pdfLayout.ts` owns
+  `PdfTextItem` → `PdfPhrase` → `PdfLine`
+  (`y`, `text`, `phrases`, `isBoldLine`, `maxFontSize`, `lineGap`, `joinNext`,
+  `breakBefore`), font-name weight detection, transform-based font sizes, the
+  character-weighted modal body `typicalCharWidth`, OpenResume-style phrase
+  merging with punctuation attach/space rules (`Skills:Python` becomes
+  `Skills: Python`, `SQL,SAP` becomes `SQL, SAP`), two-column
+  banner/sidebar/main ordering, and soft-hyphen wrap merging. `pdfResume.ts`
+  now builds each page's operator list before resolving `commonObjs` font
+  names (try/catch fallback to the id), keeps
+  `extractPdfText`/`groupPdfTextItems` byte-compatible, exposes
+  `extractPdfLines`, and returns `lines` on `PdfResumeResult`. Verified
+  `npm run typecheck`, `npm test` (1076 pass), `npm run lint`. Files:
+  `src/lib/import/pdfLayout.ts` (new, + test),
+  `src/lib/import/pdfResume.ts`,
+  `src/components/launcher/launcher.test.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-24 — Redesigned the launcher around **Upload a PDF** and added a
   paste-based **AI prompt rescue import** for scanned/Canva PDFs. New pure
