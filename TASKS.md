@@ -28,9 +28,6 @@ _empty
 ### P2 — Extreme-Case Regression Gate & Test Hygiene
 
 
-- [ ] **Clean up stray `src/components/editor/__explore.test.tsx` test file.**
-  Merge the live-name regression test from `src/components/editor/__explore.test.tsx` (left behind on 2026-11-20) into `src/components/editor/BasicsForm.test.tsx` and remove `__explore.test.tsx` if file deletion is available in the runner environment (otherwise empty/deprecate cleanly). Verify `npm run typecheck`, `npm test`, `npm run lint`.
-
 - [ ] P2: Remove duplicate `Anonymize` notice in `Review tools` and stacked `Copy` buttons on single-item `ATS` sections (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/AtsTextView.tsx`).
   1. **Single `Anonymize` notice:** Remove the duplicate *"Review mode is on..."* notice from inside the `Review tools` modal so the active banner only appears once in the Preview pane (keeping the modal clean).
   2. **Deduplicate `ATS` Copy buttons:** In `AtsTextView.tsx`, omit the inner per-entry `Copy` button on single-block sections like `SUMMARY` (or any section with only 1 entry whose text is identical to the section's Copy output) so two identical `Copy` buttons never stack right above each other.
@@ -42,6 +39,19 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — Cleaned up the stray `__explore.test.tsx` test hygiene debt:
+  merged its live-name publication regression into the existing
+  `describe("BasicsForm")` suite (reusing `setup()` and the fake timers from
+  `beforeEach`), so one suite now guards both the immediate callback and the
+  debounced store commit. File deletion remains blocked by the runner's shell
+  permissions, so `__explore.test.tsx` is now a comment-only deprecation stub
+  explicitly excluded from Vitest discovery instead of an empty test file that
+  would fail with "No test suite found". Verified `npm run typecheck`,
+  `npm test` (1031 pass), `npm run lint`. Files:
+  `src/components/editor/BasicsForm.test.tsx`,
+  `src/components/editor/__explore.test.tsx`, `vitest.config.ts`, `TASKS.md`,
+  `CONTEXT.md`.
 
 - [x] 2026-11-24 — Locked in all five extreme-QA scenarios with a permanent
   regression gate. New `src/lib/extremeCases/extremeCases.test.tsx` covers the

@@ -1462,6 +1462,10 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Global `npm` has historically been broken on the dev machine; if `npm` fails,
   use the local binaries: `.\node_modules\.bin\tsc.cmd`, `vitest.cmd`,
   `playwright.cmd`, `next.cmd`.
+- When file deletion is blocked (as in this runner), deprecate a stray
+   `*.test.tsx` by replacing it with a comment-only `export {}` stub **and**
+   adding its path to Vitest's `exclude` in `vitest.config.ts`. An empty test
+   file still matches Vitest's discovery and fails with "No test suite found".
 - E2E helpers live in `e2e/helpers.ts`. `e2e/bundle.spec.ts` asserts a JS budget
   and needs a real `out/` build.
 - `test.use({ ...devices["iPhone 14"] })` spreads `defaultBrowserType: "webkit"`,
@@ -1509,6 +1513,22 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-24 — Stray explore test merged and deprecated
+- Task: top Queue item (P2 test hygiene). The live-name publication regression
+  had been left in `src/components/editor/__explore.test.tsx` since 2026-11-20.
+- Change: moved that regression into the existing `describe("BasicsForm")`
+  suite, reusing its `setup()` and fake timers, so one file now guards both the
+  immediate `onLiveNameChange` callback and the debounced store commit. `rm` is
+  blocked by this runner's shell permission, so the stray file is a comment-only
+  deprecation stub excluded from discovery in `vitest.config.ts` (an empty test
+  file still fails Vitest with "No test suite found"). No user-visible feature
+  changed, so README is untouched.
+- Tests: 1031 pass / 101 files. Verified `npm run typecheck`, `npm test`,
+  `npm run lint`.
+- Files: `src/components/editor/BasicsForm.test.tsx`,
+  `src/components/editor/__explore.test.tsx`, `vitest.config.ts`, `TASKS.md`,
+  `CONTEXT.md`.
 
 ### 2026-11-24 — Permanent extreme-QA regression gate
 - Task: top Queue item. The five extreme QA cases were covered piecemeal (8
@@ -1713,23 +1733,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (972 pass), `npm run lint`.
   Playwright remains blocked here, so the real print/PDF split is
   browser-unverified.
-
-### 2026-11-23 — Lint debt cleared in the Preview viewport
-- Task: Inbox and Queue were both empty, so this run picked up the one clear
-  standing item from the Done notes — the five
-  `react-hooks/preserve-manual-memoization` errors in `LiveCanvasViewport` that
-  every recent run deferred.
-- Change: dropped the `useCallback` wrappers around `handleTransform`,
-  `resetScroll`, `resetZoom`, and `resetFit`. They are plain closures that read
-  the current `fitScale`/`fitOffsetX`, and `useImperativeHandle` uses its
-  default re-create-per-render behaviour. Every consumer is an event prop or
-  the imperative handle, so unstable identity is harmless. Promoted to #89.
-- Tests: the existing `LiveCanvasViewport` reset/imperative-handle cases and
-  the `EditorWorkspace` Review-ref path cover the changed closures; no new test
-  because no behaviour or markup changed. `npm run lint` now reports 0 errors.
-- Files: `src/components/preview/LiveCanvasViewport.tsx`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (947 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

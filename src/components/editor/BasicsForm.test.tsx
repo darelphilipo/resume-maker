@@ -49,6 +49,21 @@ describe("BasicsForm", () => {
     expect(useResumeStore.getState().doc.basics.name).toBe("Ada Lovelace");
   });
 
+  it("publishes every keystroke immediately, ahead of the debounced store commit", () => {
+    const onLiveNameChange = vi.fn();
+
+    render(<BasicsForm onLiveNameChange={onLiveNameChange} />);
+
+    fireEvent.change(screen.getByLabelText("Name"), {
+      target: { value: "Ada" },
+    });
+
+    // No timers advanced: the header/preview must not wait for the 50 ms
+    // debounce (which a fast typist keeps resetting until they pause/blur).
+    expect(onLiveNameChange).toHaveBeenCalledWith("Ada");
+    expect(useResumeStore.getState().doc.basics.name).toBe("");
+  });
+
   it("replaces a picture that cannot load with a readable fallback", () => {
     render(<BasicsForm />);
 
