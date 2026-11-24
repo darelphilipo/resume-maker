@@ -22,6 +22,11 @@ _empty
 
 ## Queue (Ready for Next Run)
 
+- [ ] P0: Remove cryptic `Min 78%` text from the Preview bar so `Review ▾` never clips on mobile (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`).
+  1. When `fitBlockedReason` is active, show only `2 pages` (no `· Min 78%` suffix) in the Preview top bar so `[Visual | ATS]`, `2 pages`, and `[Review N ▾]` fit comfortably inside `390px` with zero right-edge clipping.
+  2. Move the plain-English explanation (*"Too long to shrink to 1 page cleanly — trim a few lines or try Compact density"*) inside the `Review ▾` menu under the disabled `Fit to 1 Page` control.
+
+
 ### P0 — OpenResume-Grade PDF Parsing Upgrade (2-Step Pipeline)
 
 - [ ] P0: Add OpenResume-style weighted feature scoring, `getDescriptionsLineIdx`, and `isBold`/`lineGap` subsection splitting to `src/lib/import/pasteResume.ts` (new `src/lib/import/featureScoring.ts`).
