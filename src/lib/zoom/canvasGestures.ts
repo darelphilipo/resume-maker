@@ -88,6 +88,10 @@ export type VerticalPanHandoff = {
  * bottom bound the drag has nowhere left to go inside it, so the leftover delta
  * is returned as a `scrollTop` delta for the page scroller. Dragging down at the
  * canvas top gives a negative delta, i.e. scrolling the editor back up.
+ *
+ * The hand-off is exact on purpose: the caller applies the whole `scroll`
+ * value, so crossing a page break never leaves a dead zone where neither the
+ * canvas nor the pages move.
  */
 export function resolveVerticalPanHandoff(
   positionY: number,
@@ -112,39 +116,6 @@ export function resolveVerticalPanHandoff(
   const pan = clamped - positionY;
 
   return { pan, scroll: pan - deltaY };
-}
-
-/** Moves at a pan bound before page scrolling reaches full speed. */
-export const HANDOFF_RAMP_MOVES = 4;
-
-export type DampedScroll = {
-  /** Leftover delta eased into the page scroller for this move. */
-  scroll: number;
-  /** Number of consecutive at-bound moves, used for the next ease-in. */
-  moves: number;
-};
-
-/**
- * Eases the page-scroller half of a pan-to-scroll handoff in over a few moves.
- *
- * The old hand-off handed the entire leftover delta to `scrollTop` on the very
- * first move past a pan bound, so a fast drag snapped the editor instead of
- * handing off smoothly. Ramping from zero keeps the canvas-to-page transition
- * continuous; a drag that resumes panning (no leftover) resets the ramp so the
- * next crossing eases in again.
- */
-export function dampHandoffScroll(
-  scroll: number,
-  moves: number,
-): DampedScroll {
-  if (!Number.isFinite(scroll) || scroll === 0) {
-    return { scroll: 0, moves: 0 };
-  }
-
-  const nextMoves = (Number.isFinite(moves) ? Math.max(0, moves) : 0) + 1;
-  const ratio = Math.min(1, nextMoves / HANDOFF_RAMP_MOVES);
-
-  return { scroll: scroll * ratio, moves: nextMoves };
 }
 
 /**

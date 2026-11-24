@@ -18,14 +18,14 @@ _empty
 
 ## In Progress (OpenCode Updates This)
 
-_empty
-
-## Queue (Ready for Next Run)
-
 - [ ] P0: Fix zoomed mobile Preview freezing vertical scroll past page breaks (only allowing sideways pan) (`src/components/preview/TouchPanCanvas.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/lib/zoom/canvasGestures.ts`).
   1. Pass the exact `[data-canvas-scroll]` ref (`scrollRef`) directly from `LiveCanvasViewport.tsx` into `TouchPanCanvas.tsx` instead of relying on `findScrollableAncestor`.
   2. Fix `resolveVerticalPanHandoff` / `TouchPanCanvas` so whenever a vertical touch drag reaches `instance.bounds.minPositionY` or `maxPositionY` (or when `TransformComponent` cannot pan further vertically in that direction), **100% of the remaining `deltaY`** scrolls `scrollRef.current.scrollTop` immediately with no dead zone or vertical lock—so users can smoothly scroll across Page 1 → Page 2 → Page 3 even while zoomed in.
   3. Add a unit test simulating a zoomed 2-page canvas at its vertical pan bound and asserting further upward swipes advance `scrollRef.current.scrollTop` cleanly.
+
+  Plan: thread `scrollRef` (the real `[data-canvas-scroll]` box) from `LiveCanvasViewport` → `CanvasSurface` → `TouchPanCanvas`; add a preferred-scroller path to `scrollPageBy` in `src/lib/zoom/touchScroll.ts` so the phone paper box is scrolled directly (with the ancestor/panel fallback for wide coarse-pointer tablets). Remove the `dampHandoffScroll` ramp so the full leftover delta reaches `scrollTop` on the first at-bound move, track the pan position locally within a gesture so a lagging library state cannot swallow the hand-off, then update the gesture/scroll/TouchPan tests and add a viewport wiring test.
+
+## Queue (Ready for Next Run)
 
 ### P1 — Input Validation & Two-Column Layout Balance
 

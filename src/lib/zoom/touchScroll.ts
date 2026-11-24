@@ -45,16 +45,29 @@ export function findScrollableAncestor(
 }
 
 /**
- * Scrolls the closest scrollable ancestor of `origin` by `deltaY` pixels,
- * falling back to the window when the page itself is the scroller (desktop).
- * Returns false when there was nothing to scroll.
+ * Scrolls `deltaY` pixels on the canvas' own paper scroller when it scrolls,
+ * otherwise on the closest scrollable ancestor of `origin`, falling back to the
+ * window when the page itself is the scroller (desktop).
+ *
+ * The phone preview's `[data-canvas-scroll]` box is a *descendant* of the
+ * viewport root that owns the touch listener, so `findScrollableAncestor`
+ * cannot find it; `preferred` carries that exact element. A wide coarse-pointer
+ * tablet is the opposite shape (`lg:overflow-visible` on the inner box, with the
+ * Preview panel as the scroller), so a non-scrolling preferred element falls
+ * back to the ancestor walk. Returns false when there was nothing to scroll.
  */
-export function scrollPageBy(origin: Element | null, deltaY: number): boolean {
+export function scrollPageBy(
+  origin: Element | null,
+  deltaY: number,
+  preferred?: Element | null,
+): boolean {
   if (!Number.isFinite(deltaY) || deltaY === 0) {
     return false;
   }
 
-  const scroller = findScrollableAncestor(origin);
+  const scroller = isScrollableElement(preferred)
+    ? (preferred as HTMLElement)
+    : findScrollableAncestor(origin);
 
   if (scroller) {
     scroller.scrollTop += deltaY;

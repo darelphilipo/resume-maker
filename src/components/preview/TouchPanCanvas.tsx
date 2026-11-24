@@ -5,7 +5,6 @@ import type { RefObject } from "react";
 import { useControls } from "react-zoom-pan-pinch";
 
 import {
-  dampHandoffScroll,
   hasClearedTouchSlop,
   isPreviewZoomed,
   resolveVerticalPanHandoff,
@@ -24,10 +23,13 @@ import { scrollPageBy } from "@/lib/zoom/touchScroll";
  * scrolling out (`touch-action: none`) for that zoomed state.
  *
  * That lock also strands the toolbar above a long, multi-page canvas. When a
- * vertical drag reaches the canvas top or bottom bound, the leftover delta is
- * handed to the nearest page scroller (`resolveVerticalPanHandoff`), so the
+ * vertical drag reaches the canvas top or bottom bound, 100% of the leftover
+ * delta is handed to the page scroller (`resolveVerticalPanHandoff`), so the
  * editor can still be scrolled back up to Reset and Save PDF without zooming
- * out first.
+ * out first, and can continue from Page 1 into Page 2 and Page 3. The phone's
+ * real paper scroller (`[data-canvas-scroll]`) is a *descendant* of the preview
+ * pane, so it is passed in explicitly as `scrollRef`; walking ancestors would
+ * miss it and leave the drag frozen at the page break.
  *
  * Listeners are attached to the preview pane (outside the transform wrapper)
  * because the library calls `stopPropagation()` on touch moves it handles.
@@ -41,11 +43,14 @@ import { scrollPageBy } from "@/lib/zoom/touchScroll";
  */
 export function TouchPanCanvas({
   hostRef,
+  scrollRef,
   fitScale,
   isZoomed,
   enabled,
 }: {
   hostRef: RefObject<HTMLDivElement | null>;
+  /** The exact `[data-canvas-scroll]` box that scrolls the paper on phones. */
+  scrollRef: RefObject<HTMLDivElement | null>;
   fitScale: number;
   /** Mirrored from `useTransformComponent`; re-renders on every zoom change. */
   isZoomed: boolean;
@@ -71,7 +76,13 @@ export function TouchPanCanvas({
 
     let active = false;
     let committed = false;
-    let handoffMoves = 0;
+    /**
+     * Vertical pan position for this gesture. The library's `state` object is
+     * read through a ref that only updates after a render, so a fast drag can
+     * resolve the next move against a stale `positionY`. Tracking the accepted
+     * pan locally keeps the canvas/page split exact at a page break.
+     */
+    let panPositionY = 0;
     let startX = 0;
     let startY = 0;
     let lastX = 0;
@@ -80,7 +91,7 @@ export function TouchPanCanvas({
     const begin = (touch: Touch): void => {
       active = true;
       committed = false;
-      handoffMoves = 0;
+      panPositionY = stateRef.current.positionY;
       startX = touch.clientX;
       startY = touch.clientY;
       lastX = touch.clientX;
@@ -92,7 +103,6 @@ export function TouchPanCanvas({
       if (event.touches.length !== 1) {
         active = false;
         committed = false;
-        handoffMoves = 0;
         return;
       }
 
@@ -138,23 +148,23 @@ export function TouchPanCanvas({
       }
 
       const handoff = resolveVerticalPanHandoff(
-        stateRef.current.positionY,
+        panPositionY,
         deltaY,
         instanceRef.current.bounds,
       );
+
+      panPositionY += handoff.pan;
 
       if (deltaX !== 0 || handoff.pan !== 0) {
         void panByRef.current(deltaX, handoff.pan, 0);
       }
 
-      // Ease the page-scroller contribution in so reaching a pan bound never
-      // snaps the editor by the full remaining delta in a single move.
-      const eased = dampHandoffScroll(handoff.scroll, handoffMoves);
-
-      handoffMoves = eased.moves;
-
-      if (eased.scroll !== 0) {
-        scrollPageBy(host, eased.scroll);
+      // Hand the *entire* leftover to the paper scroller on the same move.
+      // Ramping or dropping part of it leaves a dead zone at every page break,
+      // which reads as "vertical scrolling is frozen, only sideways panning
+      // works" once the canvas reaches its bottom bound.
+      if (handoff.scroll !== 0) {
+        scrollPageBy(host, handoff.scroll, scrollRef.current);
       }
     };
 
@@ -168,7 +178,6 @@ export function TouchPanCanvas({
 
       active = false;
       committed = false;
-      handoffMoves = 0;
     };
 
     host.addEventListener("touchstart", handleTouchStart, { passive: true });
@@ -182,7 +191,7 @@ export function TouchPanCanvas({
       host.removeEventListener("touchend", handleTouchEnd);
       host.removeEventListener("touchcancel", handleTouchEnd);
     };
-  }, [enabled, fitScale, isZoomed, hostRef]);
+  }, [enabled, fitScale, isZoomed, hostRef, scrollRef]);
 
   return null;
 }
