@@ -22,10 +22,16 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-### P1 — Input Validation & Two-Column Layout Balance
-
-
-### P2 — Extreme-Case Regression Gate & Test Hygiene
+- [ ] P1: Redesign Launcher (`/`) around **Upload PDF** as the primary entry and add a paste-based **AI Prompt Rescue Import** for scanned/Canva PDFs (`src/components/launcher/Launcher.tsx`, `src/app/page.tsx`, new `src/lib/import/aiJsonImport.ts`).
+  1. **Lowest-dropout `/` hierarchy:**
+     - Show **Recent resumes** at the very top whenever 1+ saved resumes exist so returning users are 1 tap from their work.
+     - Promote **Upload your PDF** to the primary hero card (`Recommended`, full-width dropzone) so new users can start in 2 taps without copy-pasting.
+     - Place **Start from scratch / role template** (`+ Start with a blank resume` + 2×3 role preset grid) cleanly below it.
+     - Demote **Paste resume text**, **Import via AI prompt (for scanned/Canva PDFs)**, and **Restore JSON backup** into a quiet secondary utility strip/disclosures at the bottom (removing the giant above-the-fold Paste textarea).
+  2. **Paste-based AI Prompt Rescue (`src/lib/import/aiJsonImport.ts`):**
+     - Inside the `"Scanned or Canva PDF? Import via AI prompt"` modal/disclosure (and linked directly from the PDF upload error state when a scanned/unreadable PDF is detected), provide a **1-click "Copy prompt"** button (instructing ChatGPT/Claude to convert the user's resume into standard JSON Resume format) and a **Paste result** textarea + **"Import resume"** button (never requiring users to save/upload a `.json` file on mobile).
+     - Make the parser forgiving: automatically strip ```` ```json ... ``` ```` markdown fences, leading/trailing conversational prose, and trailing commas before feeding into your existing JSON Resume / ResumeDocument importer, with a clear, friendly error if the pasted text is incomplete.
+  3. Add unit tests for `aiJsonImport.ts` (fenced JSON, prose-wrapped JSON, trailing commas, invalid input) and update `launcher.test.tsx` for the new `/` hierarchy.
 
 
 
