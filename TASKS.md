@@ -21,6 +21,14 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
+- [ ] P0: Fix `Studio Sidebar` Page 2+ width mismatch so `AWARDS` packs into Page 2 instead of stranding on Page 3 (`src/components/preview/MeasureLayer.tsx`, `src/lib/pagination/computePages.ts`, `src/lib/pagination/usePageLayout.ts`).
+  1. In `MeasureLayer.tsx`, for `studio-sidebar` (`gengar`), measure every main block **twice** (or render a second hidden full-width `.studio-layout--full` measurement group for `mainBlocks`): use the 63% `.studio-main` heights when packing **Page 1**, and use the **100% full-width** heights when packing **Page 2+** (`computePages.ts`).
+  2. Add a unit test verifying that blocks which appear taller than Page 2 at 63% width but fit cleanly at 100% width stay on Page 2 (e.g. `AWARDS` stays under `EDUCATION` on Page 2 instead of spilling to Page 3).
+
+- [ ] P0: Fix zoomed mobile Preview freezing vertical scroll past page breaks (only allowing sideways pan) (`src/components/preview/TouchPanCanvas.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/lib/zoom/canvasGestures.ts`).
+  1. Pass the exact `[data-canvas-scroll]` ref (`scrollRef`) directly from `LiveCanvasViewport.tsx` into `TouchPanCanvas.tsx` instead of relying on `findScrollableAncestor`.
+  2. Fix `resolveVerticalPanHandoff` / `TouchPanCanvas` so whenever a vertical touch drag reaches `instance.bounds.minPositionY` or `maxPositionY` (or when `TransformComponent` cannot pan further vertically in that direction), **100% of the remaining `deltaY`** scrolls `scrollRef.current.scrollTop` immediately with no dead zone or vertical lock—so users can smoothly scroll across Page 1 → Page 2 → Page 3 even while zoomed in.
+  3. Add a unit test simulating a zoomed 2-page canvas at its vertical pan bound and asserting further upward swipes advance `scrollRef.current.scrollTop` cleanly.
 
 ### P1 — Input Validation & Two-Column Layout Balance
 
