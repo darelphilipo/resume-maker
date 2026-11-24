@@ -18,7 +18,15 @@ _empty
 
 ## In Progress (OpenCode Updates This)
 
-_empty
+- [ ] P1: Redesign Launcher (`/`) around **Upload PDF** as the primary entry and add a paste-based **AI Prompt Rescue Import** for scanned/Canva PDFs.
+
+  **Plan (this run):**
+  1. Add pure `src/lib/import/aiJsonImport.ts`: a copy-ready prompt constant plus a forgiving parser that strips markdown fences, prose and trailing commas before delegating to `parseResumeJson`, with friendly incomplete/invalid errors.
+  2. Restructure `src/components/launcher/Launcher.tsx`: Recent resumes first when saved, **Upload a PDF** as the full-width Recommended hero, **Start from scratch** below it, and a quiet secondary disclosure strip holding **Paste resume text**, **Import via AI prompt (scanned/Canva PDFs)** (Copy prompt + Paste result + Import resume) and **Backup & Restore**. Link the scanned/unreadable PDF error straight to the AI disclosure.
+  3. Unit-test the parser (`src/lib/import/aiJsonImport.test.ts`) and update `src/components/launcher/launcher.test.tsx` for the new hierarchy, AI copy/paste flow, and PDF-error link. Refresh `README.md` Key features and `CONTEXT.md` decisions/session log.
+  4. Verify with `npm run typecheck && npm test`; only move to Done if both pass.
+
+  **Target files:** `src/lib/import/aiJsonImport.ts` (new), `src/lib/import/aiJsonImport.test.ts` (new), `src/components/launcher/Launcher.tsx`, `src/components/launcher/launcher.test.tsx`, `src/app/page.tsx` (review only), `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 ## Queue (Ready for Next Run)
 

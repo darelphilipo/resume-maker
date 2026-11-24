@@ -251,12 +251,15 @@ rediscover.
     column, each top-to-bottom with its own paragraph gaps. Each line that has
     items on both sides is split rather than joined, so sidebar skills never
     interleave with Experience. Keep this heuristic pure and client-side.
-21. **JSON is a backup path, not a starting point.** The `/` launcher keeps
-    three primary cards: Paste, Upload a PDF, and Start from scratch. JSON
-    restore lives in a collapsed `Backup & Restore` disclosure at the bottom
-    (`aria-expanded` + `aria-controls`; the panel is a `<div>`, not a
-    `<section>`, so `getAllByRole("region")` still counts only the primary
-    cards). Export stays in the editor header (`ExportJsonButton`), and the
+21. **JSON is a backup path, not a starting point.** The `/` launcher leads with
+    two primary cards: **Upload a PDF** (full-width dropzone, `Recommended`)
+    and **Start from scratch** below it. Paste text, AI prompt rescue, and JSON
+    restore live in one quiet `role="group"` strip labelled **Other ways to
+    import** at the bottom, each a collapsed disclosure with `aria-expanded`
+    and `aria-controls` only while open. The strip is a group, not a `<section>`,
+    so `getAllByRole("region")` counts only the two primary cards (plus
+    **Recent resumes** once a row exists). Export stays in the editor header
+    (`ExportJsonButton`), and the
     disclosure copy points users there. PDF upload now has its own input and
     error state; do not fold JSON back into the primary file picker.
 22. **Impact-formula helpers are opt-in and insert plain text.**
@@ -278,11 +281,12 @@ rediscover.
 23. **The home page is a landing page, not a bare form.** `src/app/page.tsx`
     owns the only `h1`, the `Resume Maker` wordmark; the e2e a11y and page tests
     look that heading up by name, so the value proposition stays an `h2`. The
-    `Launcher` keeps exactly three primary entry `<section>`s labelled by their
-    card headings, so `getAllByRole("region")` returns three before anything is
-    saved. **Recent resumes** is a separate fourth `<section>` rendered only when
-    saved rows (or a recent-list error) exist; it lives after the three start
-    cards and before Backup & Restore, never inside the scratch card. Trust
+    `Launcher` keeps exactly two primary entry `<section>`s labelled by their
+    card headings (**Upload a PDF**, then **Start from scratch**), so
+    `getAllByRole("region")` returns two before anything is saved. **Recent
+    resumes** is a separate `<section>` rendered first whenever saved rows (or a
+    recent-list error) exist, before the primary cards and the secondary
+    **Other ways to import** group. Trust
     promises stay a `ul[aria-label="Resume Maker promises"]` of three `li` items,
     but they are one compact nowrap line, not three bordered capsules: per-phrase
     `whitespace-nowrap` labels never break mid-phrase, dot separators and icons
@@ -545,15 +549,14 @@ rediscover.
     unstable — never use one as an unguarded effect dependency.
 
 40. **Blank start belongs to the scratch card; Recent resumes is its own
-    conditional section.** `/` keeps exactly three primary entry `<section>`s
-    (the page and e2e a11y tests count those when nothing is saved), so **Start
+    conditional section.** `/` keeps exactly two primary entry `<section>`s
+    (the page and launcher tests count those when nothing is saved), so **Start
     with a blank resume** and the role presets render inside the "Start from
     scratch" card. **Recent resumes** is *not* part of that card: it is a
-    separate `<section aria-labelledby="launcher-recent-heading">` after the
-    three cards and before Backup & Restore, rendered only when
-    `listRecentResumes` returns rows or the recent-list load errors. With saved
-    rows the launcher therefore exposes a fourth region named "Recent resumes";
-    tests must not assume a fixed count of three once a row is seeded.
+    separate `<section aria-labelledby="launcher-recent-heading">` rendered
+    **first** whenever `listRecentResumes` returns rows or the list errors.
+    With saved rows the launcher therefore exposes a third region named "Recent
+    resumes"; tests must not assume a fixed count of two once a row is seeded.
     `listRecentResumes` returns `updatedAt`-descending rows; `renameResume`
     writes `basics.name` and bumps `updatedAt`; `deleteResume` removes the row.
     Labels and timestamps come from the pure `src/lib/store/recentResumes.ts`
@@ -1487,6 +1490,29 @@ rediscover.
        and collapses only section rows, not the sibling Basics accordion owned
        by `EditorWorkspace`.
 
+    98. **AI prompt rescue is a copy-and-paste path, not an in-app model.**
+        `src/lib/import/aiJsonImport.ts` owns the copyable `AI_IMPORT_PROMPT`
+        plus a pure `parseAiJsonResume`: `stripCodeFences` removes fence-only
+        lines, `extractJsonBlock` takes the first balanced `{...}`/`[...]` while
+        ignoring braces inside strings (so prose before/after is harmless), and
+        `stripTrailingCommas` drops commas before `}`/`]` outside strings (with
+        the surrounding whitespace). The cleaned text goes through
+        `parseResumeJson`, so native backups and JSON Resume files both work;
+        a truncated or non-JSON paste gets `AI_IMPORT_INCOMPLETE_MESSAGE`, and
+        JSON with no name/headline/prose/entries gets
+        `AI_IMPORT_INVALID_MESSAGE` rather than an empty resume. No fetch, no
+        SDK, no file upload — keep it that way so the static export and the
+        privacy promise hold. In `Launcher`, the AI disclosure lives in the
+        **Other ways to import** group with **Copy prompt** (via `copyText`,
+        1.5 s "Copied"), a JSON-reply textarea, and **Import resume**. The PDF
+        upload error sets `pdfSuggestAi` for a no-text or unreadable file and
+        shows a button that opens this disclosure and scrolls to it; other PDF
+        errors do not. The paste textarea is deliberately *not* above the fold
+        any more — tests must open `Paste resume text` first. `page.tsx` still
+        owns the only `h1`; the two primary regions plus optional Recent are
+        `<section>`s, the utility strip is a `role="group"` so it is not counted
+        as a region.
+
 ## Verification and tooling
 
 ```powershell
@@ -1551,6 +1577,26 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-24 — Upload-PDF-first launcher and AI prompt rescue import
+- Task: In Progress was empty, so this run took the single top Queue item (P1):
+  redesign `/` around Upload PDF and add a paste-based AI Prompt Rescue Import.
+- Change: new pure `src/lib/import/aiJsonImport.ts` cleans fenced/prose-wrapped
+  replies (balanced-block extraction, trailing-comma stripping) and delegates to
+  `parseResumeJson`; empty-content replies get a friendly error. `Launcher` now
+  shows Recent resumes first, Upload a PDF as the full-width **Recommended**
+  hero, Start from scratch below it, and a quiet `role="group"` **Other ways to
+  import** strip holding collapsed Paste/AI/Backup disclosures. The AI panel has
+  Copy prompt + JSON-reply textarea + Import resume; a scanned/unreadable PDF
+  error links straight to it. Decisions #21/#23/#40 updated, new #98. README Key
+  features rewritten in user language; tagline no longer says "no-AI" because
+  the optional prompt helper exists (the app still sends nothing anywhere).
+- Tests: 10 parser cases plus launcher hierarchy/disclosure/AI-import/PDF-link
+  cases and updated `page.test.tsx` region expectations. 1061 pass.
+- Files: `src/lib/import/aiJsonImport.ts` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `src/app/page.test.tsx`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1061 pass), `npm run lint` (clean).
 
 ### 2026-11-24 — Profiles promote without a URL; Content Collapse all
 - Task: top (only) Queue item, P2: `Profiles` rows filled with just Network +

@@ -15,13 +15,13 @@ describe("Home page", () => {
       screen.getByRole("heading", { name: "Resume Maker" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("region", { name: "Paste your resume" }),
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole("region", { name: "Upload a PDF" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "Start from scratch" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Other ways to import" }),
     ).toBeInTheDocument();
   });
 

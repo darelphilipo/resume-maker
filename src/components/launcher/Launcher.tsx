@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ChangeEvent,
   type ClipboardEvent,
@@ -31,7 +32,12 @@ import {
   type ReactNode,
 } from "react";
 
+import { copyText } from "@/lib/clipboard/copyText";
 import { PDF_IMPORT_ENABLED } from "@/lib/features";
+import {
+  AI_IMPORT_PROMPT,
+  parseAiJsonResume,
+} from "@/lib/import/aiJsonImport";
 import { parsePastedResume } from "@/lib/import/pasteResume";
 import { ARCHETYPES, type Archetype } from "@/lib/presets/archetypes";
 import { sanitizeResumeDocument } from "@/lib/richtext/sanitize";
@@ -150,6 +156,54 @@ function EntryCard({
   );
 }
 
+type UtilityDisclosureProps = {
+  id: string;
+  icon: Icon;
+  title: string;
+  open: boolean;
+  onToggle(): void;
+  children: ReactNode;
+};
+
+/** A quiet, collapsed secondary option inside the launcher utility strip. */
+function UtilityDisclosure({
+  id,
+  icon: DisclosureIcon,
+  title,
+  open,
+  onToggle,
+  children,
+}: UtilityDisclosureProps) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-[#e3ddd2] bg-white">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={open ? id : undefined}
+        onClick={onToggle}
+        className="flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2 text-left transition-colors hover:bg-[#fbfaf7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-inset"
+      >
+        <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-[#33465a]">
+          <DisclosureIcon size={18} aria-hidden className="shrink-0 text-[#7a8794]" />
+          <span className="truncate">{title}</span>
+        </span>
+        <CaretDown
+          size={16}
+          aria-hidden
+          className={`shrink-0 text-[#7a8794] transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {open ? (
+        <div id={id} className="border-t border-[#e6e0d6] px-3 pb-3 pt-3">
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 type RecentResumeTrackingProps = {
   row: ResumeRow;
   name: string;
@@ -247,12 +301,20 @@ function RecentResumeTracking({
 
 export function Launcher() {
   const router = useRouter();
+  const [pasteOpen, setPasteOpen] = useState(false);
   const [pastedText, setPastedText] = useState("");
   const [isPasting, setIsPasting] = useState(false);
   const [pasteError, setPasteError] = useState<string | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPastedText, setAiPastedText] = useState("");
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [isAiImporting, setIsAiImporting] = useState(false);
+  const [aiCopied, setAiCopied] = useState(false);
+  const aiDisclosureRef = useRef<HTMLDivElement>(null);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
   const [isReadingPdf, setIsReadingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfSuggestAi, setPdfSuggestAi] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
   const [backupFileName, setBackupFileName] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -308,6 +370,16 @@ export function Launcher() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!aiCopied) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setAiCopied(false), 1500);
+
+    return () => window.clearTimeout(timer);
+  }, [aiCopied]);
+
   async function handlePdfChange(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
     const file = input.files?.[0];
@@ -318,6 +390,7 @@ export function Launcher() {
 
     setPdfFileName(file.name);
     setPdfError(null);
+    setPdfSuggestAi(false);
     setIsReadingPdf(true);
 
     let doc: ResumeDocument;
@@ -328,6 +401,7 @@ export function Launcher() {
 
       if (result.text.trim() === "") {
         setPdfError(PDF_NO_TEXT_MESSAGE);
+        setPdfSuggestAi(true);
         return;
       }
 
@@ -339,6 +413,7 @@ export function Launcher() {
       doc = result.doc;
     } catch {
       setPdfError(PDF_READ_ERROR_MESSAGE);
+      setPdfSuggestAi(true);
       return;
     } finally {
       setIsReadingPdf(false);
@@ -412,6 +487,51 @@ export function Launcher() {
       setPasteError(CREATE_RESUME_MESSAGE);
     } finally {
       setIsPasting(false);
+    }
+  }
+
+  function openAiImport() {
+    setPdfSuggestAi(false);
+    setAiOpen(true);
+    setAiError(null);
+    // The disclosure is already mounted, so the ref is valid on this same tick.
+    aiDisclosureRef.current?.scrollIntoView?.({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  async function handleCopyAiPrompt() {
+    const copied = await copyText(AI_IMPORT_PROMPT);
+
+    if (copied) {
+      setAiCopied(true);
+    }
+  }
+
+  async function handleAiImport() {
+    if (aiPastedText.trim() === "" || isAiImporting) {
+      return;
+    }
+
+    setIsAiImporting(true);
+    setAiError(null);
+
+    try {
+      const parsed = parseAiJsonResume(aiPastedText);
+
+      if (!parsed.ok) {
+        setAiError(parsed.error);
+        return;
+      }
+
+      const safeDoc = sanitizeResumeDocument(parsed.doc);
+      const id = await useResumeStore.getState().importResume(safeDoc);
+      router.push(`/editor?id=${id}`);
+    } catch {
+      setAiError(CREATE_RESUME_MESSAGE);
+    } finally {
+      setIsAiImporting(false);
     }
   }
 
@@ -672,208 +792,6 @@ export function Launcher() {
           </li>
         ))}
       </ul>
-
-      <div className="mt-1 flex flex-col gap-1 border-t border-[#e6e0d6] pt-5 sm:mt-2 sm:pt-6">
-        <h2 className="font-serif text-2xl font-semibold tracking-tight">
-          Choose one way to start
-        </h2>
-        <p className="text-sm text-[#5b6a7a]">
-          Pick the option that matches what you already have. Every field stays
-          editable.
-        </p>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <EntryCard
-          headingId="launcher-paste-heading"
-          icon={ClipboardText}
-          title="Paste your resume"
-          description="Copy the text from a PDF, LinkedIn profile, or another tool. The usual headings, dates, and bullet lists are turned into editable sections."
-          badge="Recommended"
-        >
-          <label
-            htmlFor="resume-paste-input"
-            className="text-sm font-medium text-[#33465a]"
-          >
-            Resume text
-          </label>
-          <p id="resume-paste-hint" className="mt-1 text-xs text-[#6a7683]">
-            One line is enough — paste your name, a role, or your whole resume.
-            Headings and dates help, but they are optional.
-          </p>
-          <textarea
-            id="resume-paste-input"
-            aria-describedby="resume-paste-hint"
-            value={pastedText}
-            onChange={(event) => {
-              setPastedText(event.currentTarget.value);
-              setPasteError(null);
-            }}
-            onPaste={handlePasteText}
-            rows={7}
-            placeholder="Paste your resume here. Headings such as Experience, Education, and Skills help the parser split it up."
-            className={`${INPUT_CLASS} min-h-44 resize-none`}
-          />
-
-          <button
-            type="button"
-            onClick={() => void handlePasteImport()}
-            disabled={pastedText.trim() === "" || isPasting}
-            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-transparent bg-[#172839] px-4 py-3 text-sm font-semibold text-white transition-colors enabled:hover:bg-[#24496b] enabled:active:bg-[#10202f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-[#d8d2c6] disabled:bg-[#e8e4dc] disabled:text-[#5b6a7a]"
-          >
-            <ClipboardText size={18} aria-hidden />
-            {isPasting ? "Creating..." : "Create resume from text"}
-          </button>
-
-          {pasteError ? (
-            <p role="alert" className="mt-3 text-sm text-[#b42318]">
-              {pasteError}
-            </p>
-          ) : null}
-        </EntryCard>
-
-        {PDF_IMPORT_ENABLED ? (
-          <EntryCard
-            headingId="launcher-pdf-heading"
-            icon={FilePdf}
-            title="Upload a PDF"
-            description="Choose an existing resume PDF and its text is read locally into editable sections. Scans and image-only files need pasted text."
-          >
-            {/* `relative` keeps the clipped file input anchored to this card, so
-                focusing it cannot scroll the page (and the mobile chrome). */}
-            <label
-              htmlFor="resume-pdf-input"
-              aria-disabled={isReadingPdf}
-              className={`relative flex min-h-44 flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#c9c2b6] bg-[#fbfaf7] px-4 py-6 text-center transition-colors hover:border-[#1b3a57] hover:bg-[#f6f8f9] ${
-                isReadingPdf ? "cursor-wait opacity-60" : ""
-              }`}
-            >
-              <span className="flex size-11 items-center justify-center rounded-full bg-[#eef2f6] text-[#1b3a57]">
-                <FilePdf size={22} weight="duotone" aria-hidden />
-              </span>
-              <span className="text-sm font-semibold">
-                {isReadingPdf ? "Reading..." : "Choose a PDF"}
-              </span>
-              <span className="text-xs text-[#6a7683]">
-                Drop it here or tap to browse
-              </span>
-              <input
-                id="resume-pdf-input"
-                aria-label="Resume PDF"
-                type="file"
-                accept=".pdf,application/pdf"
-                disabled={isReadingPdf}
-                onChange={handlePdfChange}
-                className="sr-only"
-              />
-            </label>
-
-            {pdfFileName ? (
-              <p
-                className="mt-3 flex items-center gap-2 text-sm text-[#33465a]"
-                aria-live="polite"
-              >
-                <FileText size={16} aria-hidden />
-                <span className="truncate">{pdfFileName}</span>
-                {isReadingPdf ? (
-                  <span className="text-[#6a7683]">Reading...</span>
-                ) : null}
-              </p>
-            ) : null}
-
-            {pdfError ? (
-              <p role="alert" className="mt-3 text-sm text-[#b42318]">
-                {pdfError}
-              </p>
-            ) : null}
-          </EntryCard>
-        ) : null}
-
-        <EntryCard
-          headingId="launcher-scratch-heading"
-          icon={ListChecks}
-          title="Start from scratch"
-          description="Start blank, or pick a role to load a complete, editable sample. Keep what fits and replace the rest with your own experience."
-          className="lg:col-span-2"
-        >
-          <button
-            type="button"
-            onClick={() => void handleBlank()}
-            disabled={creatingId === BLANK_ACTION_ID}
-            aria-busy={creatingId === BLANK_ACTION_ID}
-            data-cta="secondary"
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#d8d2c6] bg-white px-4 py-3 text-sm font-semibold text-[#33465a] transition-colors enabled:hover:border-[#1b3a57] enabled:hover:bg-[#fbfaf7] enabled:active:bg-[#f1ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-wait disabled:border-[#e3ddd2] disabled:text-[#5b6a7a]"
-          >
-            {creatingId === BLANK_ACTION_ID ? (
-              <CircleNotch size={18} aria-hidden className="animate-spin" />
-            ) : (
-              <Plus size={18} aria-hidden />
-            )}
-            {creatingId === BLANK_ACTION_ID
-              ? "Creating..."
-              : "Start with a blank resume"}
-          </button>
-          <p className="mt-2 text-xs text-[#6a7683]">
-            No sample text — just the standard empty sections, ready for your own
-            details.
-          </p>
-
-          <p className="mt-5 text-xs font-semibold uppercase tracking-[0.12em] text-[#6a7683]">
-            Or start from a role
-          </p>
-          <ul data-preset-list className="mt-2 grid gap-2.5 sm:grid-cols-2">
-            {ARCHETYPES.map((archetype) => {
-              const isPending = creatingId === archetype.id;
-              const isSiblingPending = creatingId !== null && !isPending;
-
-              return (
-                <li key={archetype.id} className="h-full items-start">
-                  <button
-                    type="button"
-                    onClick={() => void handleArchetype(archetype)}
-                    disabled={isPending}
-                    aria-busy={isPending}
-                    aria-disabled={isSiblingPending || undefined}
-                    className={`flex h-full min-h-11 w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 ${
-                      isPending
-                        ? "cursor-wait border-[#1b3a57] bg-white"
-                        : "border-[#e3ddd2] bg-[#fbfaf7] hover:border-[#1b3a57] hover:bg-white active:bg-[#f1ede5]"
-                    } ${isSiblingPending ? "pointer-events-none" : ""}`}
-                  >
-                    <span className="flex flex-col gap-1">
-                      <span className="font-medium text-[#172839]">
-                        {archetype.label}
-                      </span>
-                      <span className="text-sm text-[#5b6a7a]">
-                        {archetype.description}
-                      </span>
-                    </span>
-                    {isPending ? (
-                      <CircleNotch
-                        size={18}
-                        aria-hidden
-                        className="shrink-0 animate-spin text-[#1b3a57]"
-                      />
-                    ) : (
-                      <ArrowRight
-                        size={18}
-                        aria-hidden
-                        className="shrink-0 text-[#7a8794]"
-                      />
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-
-          {createError ? (
-            <p role="alert" className="mt-3 text-sm text-[#b42318]">
-              {createError}
-            </p>
-          ) : null}
-        </EntryCard>
-      </div>
 
       {recentRows.length > 0 || recentError ? (
         <section
@@ -1163,38 +1081,311 @@ export function Launcher() {
         </section>
       ) : null}
 
-      <div className="rounded-2xl border border-[#e3ddd2] bg-white p-4">
-        <button
-          type="button"
-          aria-expanded={backupOpen}
-          aria-controls={backupOpen ? "launcher-backup-panel" : undefined}
-          onClick={() => {
-            setBackupOpen((open) => !open);
-            setBackupError(null);
-          }}
-          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2"
+      <div className="mt-1 flex flex-col gap-1 border-t border-[#e6e0d6] pt-5 sm:mt-2 sm:pt-6">
+        <h2 className="font-serif text-2xl font-semibold tracking-tight">
+          Choose one way to start
+        </h2>
+        <p className="text-sm text-[#5b6a7a]">
+          Upload the resume you already have, or build a fresh one. Everything
+          stays editable, and more import options sit quietly below.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {PDF_IMPORT_ENABLED ? (
+          <EntryCard
+            headingId="launcher-pdf-heading"
+            icon={FilePdf}
+            title="Upload a PDF"
+            description="The fastest way to begin. Choose an existing resume PDF and its text is read locally into editable sections — nothing is uploaded."
+            badge="Recommended"
+            className="border-[#c9d8e6] bg-[#fbfdff]"
+          >
+            {/* `relative` keeps the clipped file input anchored to this card, so
+                focusing it cannot scroll the page (and the mobile chrome). */}
+            <label
+              htmlFor="resume-pdf-input"
+              aria-disabled={isReadingPdf}
+              className={`relative flex min-h-44 flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#c9c2b6] bg-[#fbfaf7] px-4 py-6 text-center transition-colors hover:border-[#1b3a57] hover:bg-[#f6f8f9] ${
+                isReadingPdf ? "cursor-wait opacity-60" : ""
+              }`}
+            >
+              <span className="flex size-11 items-center justify-center rounded-full bg-[#eef2f6] text-[#1b3a57]">
+                <FilePdf size={22} weight="duotone" aria-hidden />
+              </span>
+              <span className="text-sm font-semibold">
+                {isReadingPdf ? "Reading..." : "Choose a PDF"}
+              </span>
+              <span className="text-xs text-[#6a7683]">
+                Drop it here or tap to browse
+              </span>
+              <input
+                id="resume-pdf-input"
+                aria-label="Resume PDF"
+                type="file"
+                accept=".pdf,application/pdf"
+                disabled={isReadingPdf}
+                onChange={handlePdfChange}
+                className="sr-only"
+              />
+            </label>
+
+            {pdfFileName ? (
+              <p
+                className="mt-3 flex items-center gap-2 text-sm text-[#33465a]"
+                aria-live="polite"
+              >
+                <FileText size={16} aria-hidden />
+                <span className="truncate">{pdfFileName}</span>
+                {isReadingPdf ? (
+                  <span className="text-[#6a7683]">Reading...</span>
+                ) : null}
+              </p>
+            ) : null}
+
+            {pdfError ? (
+              <div role="alert" className="mt-3 text-sm text-[#b42318]">
+                <p>{pdfError}</p>
+                {pdfSuggestAi ? (
+                  <button
+                    type="button"
+                    onClick={openAiImport}
+                    className="mt-2 min-h-11 rounded-lg border border-[#d8d2c6] bg-white px-3 text-sm font-semibold text-[#1b3a57] transition-colors hover:bg-[#f6f8f9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] pointer-coarse:min-h-11"
+                  >
+                    Import via AI prompt instead
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </EntryCard>
+        ) : null}
+
+        <EntryCard
+          headingId="launcher-scratch-heading"
+          icon={ListChecks}
+          title="Start from scratch"
+          description="Start blank, or pick a role to load a complete, editable sample. Keep what fits and replace the rest with your own experience."
         >
-          <span className="flex items-center gap-2 text-sm font-medium text-[#33465a]">
-            <BoxArrowDown size={18} aria-hidden />
-            Backup &amp; Restore
-          </span>
-          <CaretDown
-            size={16}
-            aria-hidden
-            className={`shrink-0 text-[#7a8794] transition-transform ${
-              backupOpen ? "rotate-180" : ""
-            }`}
-          />
-        </button>
+          <button
+            type="button"
+            onClick={() => void handleBlank()}
+            disabled={creatingId === BLANK_ACTION_ID}
+            aria-busy={creatingId === BLANK_ACTION_ID}
+            data-cta="secondary"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#d8d2c6] bg-white px-4 py-3 text-sm font-semibold text-[#33465a] transition-colors enabled:hover:border-[#1b3a57] enabled:hover:bg-[#fbfaf7] enabled:active:bg-[#f1ede5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-wait disabled:border-[#e3ddd2] disabled:text-[#5b6a7a]"
+          >
+            {creatingId === BLANK_ACTION_ID ? (
+              <CircleNotch size={18} aria-hidden className="animate-spin" />
+            ) : (
+              <Plus size={18} aria-hidden />
+            )}
+            {creatingId === BLANK_ACTION_ID
+              ? "Creating..."
+              : "Start with a blank resume"}
+          </button>
+          <p className="mt-2 text-xs text-[#6a7683]">
+            No sample text — just the standard empty sections, ready for your own
+            details.
+          </p>
+
+          <p className="mt-5 text-xs font-semibold uppercase tracking-[0.12em] text-[#6a7683]">
+            Or start from a role
+          </p>
+          <ul data-preset-list className="mt-2 grid gap-2.5 sm:grid-cols-2">
+            {ARCHETYPES.map((archetype) => {
+              const isPending = creatingId === archetype.id;
+              const isSiblingPending = creatingId !== null && !isPending;
+
+              return (
+                <li key={archetype.id} className="h-full items-start">
+                  <button
+                    type="button"
+                    onClick={() => void handleArchetype(archetype)}
+                    disabled={isPending}
+                    aria-busy={isPending}
+                    aria-disabled={isSiblingPending || undefined}
+                    className={`flex h-full min-h-11 w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 ${
+                      isPending
+                        ? "cursor-wait border-[#1b3a57] bg-white"
+                        : "border-[#e3ddd2] bg-[#fbfaf7] hover:border-[#1b3a57] hover:bg-white active:bg-[#f1ede5]"
+                    } ${isSiblingPending ? "pointer-events-none" : ""}`}
+                  >
+                    <span className="flex flex-col gap-1">
+                      <span className="font-medium text-[#172839]">
+                        {archetype.label}
+                      </span>
+                      <span className="text-sm text-[#5b6a7a]">
+                        {archetype.description}
+                      </span>
+                    </span>
+                    {isPending ? (
+                      <CircleNotch
+                        size={18}
+                        aria-hidden
+                        className="shrink-0 animate-spin text-[#1b3a57]"
+                      />
+                    ) : (
+                      <ArrowRight
+                        size={18}
+                        aria-hidden
+                        className="shrink-0 text-[#7a8794]"
+                      />
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {createError ? (
+            <p role="alert" className="mt-3 text-sm text-[#b42318]">
+              {createError}
+            </p>
+          ) : null}
+        </EntryCard>
+      </div>
+
+      <div
+        role="group"
+        aria-labelledby="launcher-utilities-heading"
+        className="rounded-2xl border border-[#e3ddd2] bg-white p-4"
+      >
+        <h2
+          id="launcher-utilities-heading"
+          className="font-serif text-lg font-semibold tracking-tight text-[#33465a]"
+        >
+          Other ways to import
+        </h2>
         <p className="mt-1 text-xs text-[#6a7683]">
-          For moving or safeguarding a resume you already started. Not the main
-          way to begin.
+          Already have resume text, a scanned PDF, or a backup? These stay tucked
+          away so the two choices above stay quick on a phone.
         </p>
 
-        {backupOpen ? (
-          <div
+        <div className="mt-3 flex flex-col gap-2">
+          <UtilityDisclosure
+            id="launcher-paste-panel"
+            icon={ClipboardText}
+            title="Paste resume text"
+            open={pasteOpen}
+            onToggle={() => {
+              setPasteOpen((open) => !open);
+              setPasteError(null);
+            }}
+          >
+            <label
+              htmlFor="resume-paste-input"
+              className="text-sm font-medium text-[#33465a]"
+            >
+              Resume text
+            </label>
+            <p id="resume-paste-hint" className="mt-1 text-xs text-[#6a7683]">
+              One line is enough — paste your name, a role, or your whole resume.
+              Headings and dates help, but they are optional.
+            </p>
+            <textarea
+              id="resume-paste-input"
+              aria-describedby="resume-paste-hint"
+              value={pastedText}
+              onChange={(event) => {
+                setPastedText(event.currentTarget.value);
+                setPasteError(null);
+              }}
+              onPaste={handlePasteText}
+              rows={4}
+              placeholder="Paste your resume here. Headings such as Experience, Education, and Skills help the parser split it up."
+              className={`${INPUT_CLASS} min-h-28 resize-none`}
+            />
+
+            <button
+              type="button"
+              onClick={() => void handlePasteImport()}
+              disabled={pastedText.trim() === "" || isPasting}
+              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-transparent bg-[#172839] px-4 py-3 text-sm font-semibold text-white transition-colors enabled:hover:bg-[#24496b] enabled:active:bg-[#10202f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-[#d8d2c6] disabled:bg-[#e8e4dc] disabled:text-[#5b6a7a]"
+            >
+              <ClipboardText size={18} aria-hidden />
+              {isPasting ? "Creating..." : "Create resume from text"}
+            </button>
+
+            {pasteError ? (
+              <p role="alert" className="mt-3 text-sm text-[#b42318]">
+                {pasteError}
+              </p>
+            ) : null}
+          </UtilityDisclosure>
+
+          <div ref={aiDisclosureRef}>
+            <UtilityDisclosure
+              id="launcher-ai-panel"
+              icon={Copy}
+              title="Import via AI prompt (for scanned/Canva PDFs)"
+              open={aiOpen}
+              onToggle={() => {
+                setAiOpen((open) => !open);
+                setAiError(null);
+              }}
+            >
+              <p className="text-sm leading-relaxed text-[#5b6a7a]">
+                Resume Maker does not send your resume to any AI. Copy this
+                prompt into a chat assistant you trust together with your resume
+                text, then paste the JSON reply here — it is parsed on this
+                device, and every field stays editable.
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleCopyAiPrompt()}
+                className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#1b3a57] bg-white px-4 py-2.5 text-sm font-semibold text-[#1b3a57] transition-colors hover:bg-[#f6f8f9] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2"
+              >
+                <Copy size={16} aria-hidden />
+                {aiCopied ? "Copied" : "Copy prompt"}
+              </button>
+
+              <label
+                htmlFor="ai-json-input"
+                className="mt-3 block text-sm font-medium text-[#33465a]"
+              >
+                Assistant&apos;s JSON reply
+              </label>
+              <p id="ai-json-hint" className="mt-1 text-xs text-[#6a7683]">
+                Markdown fences, a little prose, and trailing commas are fine.
+              </p>
+              <textarea
+                id="ai-json-input"
+                aria-describedby="ai-json-hint"
+                value={aiPastedText}
+                onChange={(event) => {
+                  setAiPastedText(event.currentTarget.value);
+                  setAiError(null);
+                }}
+                rows={4}
+                placeholder='Paste the JSON reply here, e.g. {"basics":{"name":"..."}}'
+                className={`${INPUT_CLASS} min-h-28 resize-none font-mono text-xs`}
+              />
+              <button
+                type="button"
+                onClick={() => void handleAiImport()}
+                disabled={aiPastedText.trim() === "" || isAiImporting}
+                className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#172839] px-4 py-3 text-sm font-semibold text-white transition-colors enabled:hover:bg-[#24496b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#e8e4dc] disabled:text-[#5b6a7a]"
+              >
+                {isAiImporting ? "Importing..." : "Import resume"}
+              </button>
+
+              {aiError ? (
+                <p role="alert" className="mt-3 text-sm text-[#b42318]">
+                  {aiError}
+                </p>
+              ) : null}
+            </UtilityDisclosure>
+          </div>
+
+          <UtilityDisclosure
             id="launcher-backup-panel"
-            className="mt-4 flex flex-col gap-3 border-t border-[#e6e0d6] pt-4"
+            icon={BoxArrowDown}
+            title="Backup & Restore"
+            open={backupOpen}
+            onToggle={() => {
+              setBackupOpen((open) => !open);
+              setBackupError(null);
+            }}
           >
             <p className="text-sm text-[#5b6a7a]">
               Restore a JSON backup you exported earlier, or a resume file from
@@ -1206,7 +1397,7 @@ export function Launcher() {
             <label
               htmlFor="resume-backup-input"
               aria-disabled={isRestoring}
-              className={`relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#c9c2b6] bg-[#fbfaf7] px-4 py-5 text-center transition-colors hover:border-[#1b3a57] ${
+              className={`relative mt-3 flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#c9c2b6] bg-[#fbfaf7] px-4 py-5 text-center transition-colors hover:border-[#1b3a57] ${
                 isRestoring ? "cursor-wait opacity-60" : ""
               }`}
             >
@@ -1230,7 +1421,7 @@ export function Launcher() {
 
             {backupFileName ? (
               <p
-                className="flex items-center gap-2 text-sm"
+                className="mt-2 flex items-center gap-2 text-sm"
                 aria-live="polite"
               >
                 <FileText size={16} aria-hidden />
@@ -1242,12 +1433,12 @@ export function Launcher() {
             ) : null}
 
             {backupError ? (
-              <p role="alert" className="text-sm text-[#b42318]">
+              <p role="alert" className="mt-2 text-sm text-[#b42318]">
                 {backupError}
               </p>
             ) : null}
-          </div>
-        ) : null}
+          </UtilityDisclosure>
+        </div>
       </div>
     </div>
   );

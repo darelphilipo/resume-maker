@@ -19,10 +19,17 @@ import {
 
 import { Launcher } from "./Launcher";
 
-const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
+const { pushMock, copyTextMock } = vi.hoisted(() => ({
+  pushMock: vi.fn(),
+  copyTextMock: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
+}));
+
+vi.mock("@/lib/clipboard/copyText", () => ({
+  copyText: copyTextMock,
 }));
 
 vi.mock("@/lib/import/pdfResume", () => ({
@@ -64,8 +71,28 @@ async function openBackupMenu(user: ReturnType<typeof userEvent.setup>) {
   await user.click(backupToggle());
 }
 
+function pasteToggle() {
+  return screen.getByRole("button", { name: "Paste resume text" });
+}
+
+function aiToggle() {
+  return screen.getByRole("button", {
+    name: "Import via AI prompt (for scanned/Canva PDFs)",
+  });
+}
+
+async function openPasteMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(pasteToggle());
+}
+
+async function openAiMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(aiToggle());
+}
+
 beforeEach(async () => {
   pushMock.mockReset();
+  copyTextMock.mockReset();
+  copyTextMock.mockResolvedValue(true);
   vi.mocked(parsePdfResume).mockReset();
   resetResumeStore();
   await resumeDb.resumes.clear();
@@ -76,20 +103,62 @@ afterEach(() => {
 });
 
 describe("Launcher", () => {
-  it("renders the three primary entry cards with the expected accessible names", () => {
+  it("leads with Upload a PDF and puts Start from scratch below it", () => {
     render(<Launcher />);
 
-    const cards = screen.getAllByRole("region");
-    expect(cards).toHaveLength(3);
+    const upload = screen.getByRole("region", { name: "Upload a PDF" });
+    const scratch = screen.getByRole("region", { name: "Start from scratch" });
+
+    expect(screen.getAllByRole("region")).toEqual([upload, scratch]);
     expect(
-      screen.getByRole("region", { name: "Paste your resume" }),
-    ).toBeInTheDocument();
+      upload.compareDocumentPosition(scratch) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(within(upload).getByText("Recommended")).toBeInTheDocument();
     expect(
-      screen.getByRole("region", { name: "Upload a PDF" }),
-    ).toBeInTheDocument();
+      within(upload).getByLabelText("Resume PDF").closest("label"),
+    ).toHaveClass("min-h-44");
     expect(
-      screen.getByRole("region", { name: "Start from scratch" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("region", { name: "Paste your resume" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps paste, AI prompt, and JSON restore in a quiet secondary strip", () => {
+    render(<Launcher />);
+
+    const utilities = screen.getByRole("group", {
+      name: "Other ways to import",
+    });
+
+    expect(within(utilities).getAllByRole("button").map((button) => button.textContent)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Paste resume text"),
+        expect.stringContaining("Import via AI prompt (for scanned/Canva PDFs)"),
+        expect.stringContaining("Backup & Restore"),
+      ]),
+    );
+    expect(screen.queryByLabelText("Resume text")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Assistant's JSON reply"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Resume backup file"),
+    ).not.toBeInTheDocument();
+    expect(pasteToggle()).toHaveAttribute("aria-expanded", "false");
+    expect(aiToggle()).toHaveAttribute("aria-expanded", "false");
+    expect(backupToggle()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("shows Recent resumes above the primary cards once a resume is saved", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    render(<Launcher />);
+
+    const recent = await screen.findByRole("region", { name: "Recent resumes" });
+    const upload = screen.getByRole("region", { name: "Upload a PDF" });
+
+    expect(
+      recent.compareDocumentPosition(upload) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getAllByRole("region")).toHaveLength(3);
   });
 
   it("shows the free/local promises on one compact line above the upload card", () => {
@@ -127,16 +196,16 @@ describe("Launcher", () => {
     ).toBeTruthy();
   });
 
-  it("points users at the three entry options with a choose-one heading", () => {
+  it("points users at the two primary options with a choose-one heading", () => {
     render(<Launcher />);
 
     expect(
       screen.getByRole("heading", { name: "Choose one way to start" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Pick the option that matches what you already have/),
+      screen.getByText(/Upload the resume you already have, or build a fresh one/),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("region")).toHaveLength(3);
+    expect(screen.getAllByRole("region")).toHaveLength(2);
   });
 
   it("enables PDF upload from the primary card", () => {
@@ -181,12 +250,38 @@ describe("Launcher", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("contains no AI wording", () => {
-    const { container } = render(<Launcher />);
-    const text = container.textContent ?? "";
+  it("keeps the AI prompt import manual: copy a prompt, paste a reply, no network call", async () => {
+    const user = userEvent.setup();
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(
+      new Error("no network calls"),
+    );
+    render(<Launcher />);
 
-    expect(text).not.toMatch(/\bAI\b/);
-    expect(text).not.toMatch(/\b(assistant|refine|scorecard|rewrite)\b/i);
+    await openAiMenu(user);
+
+    expect(aiToggle()).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByText(/does not send your resume to any AI/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Assistant's JSON reply")).toBeInTheDocument();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  it("copies the rescue prompt with one tap and a short Copied confirmation", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+
+    await openAiMenu(user);
+    const copy = screen.getByRole("button", { name: "Copy prompt" });
+    await user.click(copy);
+
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining("JSON Resume format"),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Copied" }),
+    ).toBeInTheDocument();
   });
 
   it("gives every preset card the same width and keeps Fresh Graduate", () => {
@@ -234,8 +329,10 @@ describe("Launcher", () => {
     expect(sibling).not.toHaveAttribute("aria-busy", "true");
   });
 
-  it("keeps the disabled paste action readable instead of fading the whole button", () => {
+  it("keeps the disabled paste action readable instead of fading the whole button", async () => {
+    const user = userEvent.setup();
     render(<Launcher />);
+    await openPasteMenu(user);
 
     const button = screen.getByRole("button", {
       name: "Create resume from text",
@@ -246,8 +343,10 @@ describe("Launcher", () => {
     expect(button).not.toHaveClass("disabled:opacity-60");
   });
 
-  it("enables the paste action immediately on change and paste", () => {
+  it("enables the paste action immediately on change and paste", async () => {
+    const user = userEvent.setup();
     render(<Launcher />);
+    await openPasteMenu(user);
 
     const textarea = screen.getByLabelText("Resume text");
     const button = screen.getByRole("button", {
@@ -274,8 +373,10 @@ describe("Launcher", () => {
     expect(textarea).toHaveValue("Ada Lovelace\nSoftware Engineer");
   });
 
-  it("explains that a single line is enough before pasting", () => {
+  it("explains that a single line is enough before pasting", async () => {
+    const user = userEvent.setup();
     render(<Launcher />);
+    await openPasteMenu(user);
 
     const textarea = screen.getByLabelText("Resume text");
     const hint = document.getElementById("resume-paste-hint");
@@ -368,7 +469,7 @@ describe("Launcher", () => {
         screen.getByRole("region", { name: "Start from scratch" }),
       ).queryByRole("heading", { name: "Recent resumes" }),
     ).not.toBeInTheDocument();
-    expect(screen.getAllByRole("region")).toHaveLength(4);
+    expect(screen.getAllByRole("region")).toHaveLength(3);
   });
 
   it("hides the Recent resumes section until a resume has been saved", () => {
@@ -380,7 +481,7 @@ describe("Launcher", () => {
     expect(
       screen.queryByText(/Nothing saved yet/),
     ).not.toBeInTheDocument();
-    expect(screen.getAllByRole("region")).toHaveLength(3);
+    expect(screen.getAllByRole("region")).toHaveLength(2);
   });
 
   it("shows editable tracking tags on a recent resume", async () => {
@@ -876,17 +977,23 @@ describe("Launcher", () => {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
-  it("disables the paste action until text is entered", () => {
+  it("disables the paste action until text is entered", async () => {
+    const user = userEvent.setup();
     render(<Launcher />);
+    await openPasteMenu(user);
 
+    expect(pasteToggle()).toHaveAttribute("aria-expanded", "true");
     expect(
       screen.getByRole("button", { name: "Create resume from text" }),
     ).toBeDisabled();
+    await user.click(pasteToggle());
+    expect(screen.queryByLabelText("Resume text")).not.toBeInTheDocument();
   });
 
   it("parses pasted resume text and navigates to the editor", async () => {
     const user = userEvent.setup();
     render(<Launcher />);
+    await openPasteMenu(user);
 
     fireEvent.change(screen.getByLabelText("Resume text"), {
       target: {
@@ -927,6 +1034,7 @@ Product: Roadmapping, Discovery`,
   it("shows an inline error when pasted text cannot be parsed", async () => {
     const user = userEvent.setup();
     render(<Launcher />);
+    await openPasteMenu(user);
 
     fireEvent.change(screen.getByLabelText("Resume text"), {
       target: { value: "just some notes about my weekend" },
@@ -940,5 +1048,74 @@ Product: Roadmapping, Discovery`,
     );
     expect(useResumeStore.getState().resumeId).toBeNull();
     expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it("imports a fenced AI reply into the editor without a JSON file", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+    await openAiMenu(user);
+
+    fireEvent.change(screen.getByLabelText("Assistant's JSON reply"), {
+      target: {
+        value: [
+          "Here you go!",
+          "```json",
+          '{"$schema":"https://jsonresume.org/schema/",',
+          '"basics":{"name":"Ada Lovelace","label":"Mathematician",},',
+          '"work":[{"name":"Analytical Engine","position":"Programmer",}],}',
+          "```",
+        ].join("\n"),
+      },
+    });
+    await user.click(screen.getByRole("button", { name: "Import resume" }));
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/editor\?id=/),
+      );
+    });
+
+    const state = useResumeStore.getState();
+    expect(state.doc.basics.name).toBe("Ada Lovelace");
+    expect(state.doc.sections.experience.items[0].company).toBe(
+      "Analytical Engine",
+    );
+    expect(state.resumeId).not.toBeNull();
+  });
+
+  it("shows a friendly error when the AI reply is incomplete", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+    await openAiMenu(user);
+
+    fireEvent.change(screen.getByLabelText("Assistant's JSON reply"), {
+      target: { value: "Sure! {\"basics\":{\"name\":\"Ada\"" },
+    });
+    await user.click(screen.getByRole("button", { name: "Import resume" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "didn't contain a complete JSON resume",
+    );
+    expect(pushMock).not.toHaveBeenCalled();
+    expect(useResumeStore.getState().resumeId).toBeNull();
+  });
+
+  it("links a scanned PDF straight to the AI prompt import", async () => {
+    const user = userEvent.setup();
+    vi.mocked(parsePdfResume).mockResolvedValue({ text: "  ", doc: null });
+    render(<Launcher />);
+
+    await user.upload(screen.getByLabelText("Resume PDF"), pdfFile());
+
+    const link = await screen.findByRole("button", {
+      name: "Import via AI prompt instead",
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "That PDF has no selectable text.",
+    );
+    await user.click(link);
+
+    expect(aiToggle()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByLabelText("Assistant's JSON reply")).toBeInTheDocument();
   });
 });

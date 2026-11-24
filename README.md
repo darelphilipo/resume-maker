@@ -1,6 +1,6 @@
 # Resume Maker
 
-**A free, no-sign-up, no-AI resume builder that runs entirely in your browser.**
+**A free, no-sign-up resume builder that runs entirely in your browser.**
 
 Resume Maker exists to make one job quick and predictable: turn your experience
 into a clean, professional resume and save it as a PDF. No account, no paywall,
@@ -13,7 +13,10 @@ in control of every line, and your data stays on your device.
 ## Why people use it
 
 - **Free forever.** Every feature is available without an account or payment.
-- **No AI.** Nothing is generated, rewritten, or sent to a model. You write it.
+- **No AI rewriting your words.** Resume Maker generates nothing and sends
+  nothing to a model — you write every line. The optional **AI prompt rescue
+  import** only copies a ready-made prompt so you can use a chat assistant you
+  choose; the reply is parsed locally.
 - **Private by design.** Resumes are stored in your browser (IndexedDB). The app
   has no backend, accounts, or analytics on your resume content.
 - **Fast on a phone.** The editor is mobile-first, with large touch targets and
@@ -27,11 +30,13 @@ in control of every line, and your data stays on your device.
 
 ### Start quickly
 
-- **Three clear ways to begin**: the home page asks you to choose between
-  pasting text, uploading a PDF, or starting from scratch, with each option
-  explained in plain language. One compact promise line above the choices covers
-  free, no-sign-up, and offline use once, so starting stays one tap and the
-  options stay near the top of a phone screen.
+- **Two clear ways to begin**: the home page leads with **Upload a PDF** — a
+  full-width dropzone badged **Recommended** — and puts **Start from scratch**
+  (blank resume plus six role presets) directly below it. Returning users see
+  **Recent resumes** first, so their work is one tap away. One compact promise
+  line covers free, no-sign-up, and offline use once, so the first choice stays
+  near the top of a phone screen. Pasting text, AI prompt rescue, and JSON
+  restore live in a quiet **Other ways to import** strip at the bottom.
 - **Start blank or from a role sample**: choose **Start with a blank resume**
   when you would rather type from an empty page, or pick a role preset for a
   complete editable example. Every preset opens as a clean one-page starter, so
@@ -54,9 +59,20 @@ in control of every line, and your data stays on your device.
   from summary and experience to projects, certifications, awards, languages,
   interests, volunteer work, publications, and references. Two-column layouts
   keep their sidebar and main body in the right order, decorative icon glyphs
-  are dropped, and words split across lines are joined back together. Scanned
-  or image-only PDFs need to be pasted as text instead.
-- **Paste-to-parse import**: paste the text of an existing resume from a PDF,
+  are dropped, and words split across lines are joined back together. If a PDF
+  is a scan, an image, or a Canva export with no selectable text, the upload
+  error links straight to the AI prompt rescue import (pasting the text yourself
+  still works too).
+- **AI prompt rescue import** for scanned or Canva PDFs: open **Import via AI
+  prompt**, tap **Copy prompt**, and paste it into a chat assistant together
+  with your resume text. Paste the assistant's JSON reply back into the app and
+  tap **Import resume** — no JSON file to save or upload on a phone. Markdown
+  fences, a little surrounding prose, and trailing commas are cleaned up for
+  you, and an incomplete reply gets a friendly error instead of a technical one.
+  Resume Maker never contacts the assistant itself: nothing is uploaded, and
+  the imported result stays editable in the same editor.
+- **Paste-to-parse import** (in the **Other ways to import** strip): paste the
+  text of an existing resume from a PDF,
   LinkedIn profile, or another tool, and your contact details, summary,
   experience, education, skills, projects, certifications, awards, languages,
   interests, volunteer work, publications, and references become editable
@@ -78,8 +94,9 @@ in control of every line, and your data stays on your device.
   Finance & Operations, Data Analyst, and Fresh Graduate, each with a complete,
   one-page editable sample including categorized skills you can adapt. The six
   cards fill the two-column grid evenly, so no role sits beside an empty slot.
-- **Backup & Restore** lives at the bottom of the home page as a secondary
-  option: restore a JSON backup you exported earlier, or a resume file from
+- **Backup & Restore** lives in the **Other ways to import** strip at the bottom
+  of the home page as a secondary option: restore a JSON backup you exported
+  earlier, or a resume file from
   another tool in the open **JSON Resume** format, without treating JSON as the
   main way to start.
 - **JSON export** in the editor at any time so you are never locked in: the
