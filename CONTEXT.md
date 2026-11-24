@@ -1517,7 +1517,7 @@ rediscover.
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~947 tests
+npm test               # vitest, ~1061 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1577,6 +1577,15 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-24 — Finalized the launcher/AI-rescue checkpoint
+- Task: resumed the In Progress launcher redesign. The code, tests, README, and
+  Decisions #21/#23/#40/#98 were already in the tree and correct; only the
+  task bookkeeping was stale.
+- Change: re-ran the gates instead of re-implementing, then moved the item to
+  Done with its file list and cleared the duplicated Queue entry.
+- Verified: `npm run typecheck`, `npm test` (1061 pass), `npm run lint` (clean).
+- Files: `TASKS.md`, `CONTEXT.md`.
 
 ### 2026-11-24 — Upload-PDF-first launcher and AI prompt rescue import
 - Task: In Progress was empty, so this run took the single top Queue item (P1):
@@ -1775,39 +1784,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (985 pass), `npm run lint`.
   Playwright remains blocked here, so the browser tab/template switch is
   browser-unverified.
-
-### 2026-11-24 — Print dialog paper size follows the Design choice
-- Task: In Progress was empty, so this run took the top Queue item (P0):
-  `print.css` hardcoded `@page { size: A4 }` even for Letter documents, and
-  Android's Letter-defaulting print dialog clipped nearly-full A4 pages.
-- Change: pure `printPageSizeCss` / `printPageSizeLabel` in `printDocument.ts`;
-  `PrintPortal` injects `<style data-print-page-size>` inside `#print-portal`;
-  `PrintTriggerButton`'s coarse-pointer tip now names the active size.
-  `print.css` keeps A4 as a documented fallback. Decision #91.
-- Tests: helper cases for both formats + legacy fallback, portal rule A4/Letter
-  + unmount cleanup, tooltip reminder for both formats. 980 pass.
-- Files: `src/lib/print/printDocument.ts` (+ test),
-  `src/components/preview/PrintPortal.tsx` (+ test),
-  `src/components/preview/PrintTriggerButton.tsx` (+ test),
-  `src/styles/print.css`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (980 pass), `npm run lint`. The real
-  print-dialog page geometry remains browser-unverified here (Playwright blocked).
-
-### 2026-11-24 — Finalized the oversized-entry split checkpoint
-- Task: In Progress was empty, so this run picked the top Queue item — the
-  oversized-entry bullet split. A prior checkpoint had left the full
-  implementation uncommitted in the working tree (new `bulletSlices` splitter,
-  `__fragment:` ids, fragment plans/measurement, `packPages` split logic,
-  `SectionRenderer` continuation merge, plus tests and CONTEXT/README notes),
-  but TASKS.md was never updated and the checkpoint had not actually passed
-  typecheck.
-- Fix: `sectionPlans.test.ts` called `decodeBlock(key)` twice in one predicate,
-  so TypeScript could not narrow the union to read `withHeading`; bound the
-  result to a local in the `.some()` callback. No production code changed.
-- Verified: `npm run typecheck` (clean), `npm test` (972 pass),
-  `npm run lint` (clean). Moved the item to Done with the file list. Playwright
-  is still blocked here, so the real print/PDF split remains browser-unverified.
-- Files: `src/lib/pagination/sectionPlans.test.ts`, `TASKS.md`, `CONTEXT.md`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright
