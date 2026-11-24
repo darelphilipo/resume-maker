@@ -289,7 +289,7 @@ describe("StudioSidebarTemplate", () => {
     expect(second.queryByText("Cloud Architect")).toBeNull();
   });
 
-  it("renders an oversized first entry's header and first bullets on Page 1", () => {
+  it("fills Page 1's lower-left gap with a tall first entry's first bullets", () => {
     const doc = createEmptyResume("gengar");
     doc.metadata.page.gapY = 0;
     doc.summary.content = "<p>Impact-driven engineer.</p>";
@@ -319,7 +319,10 @@ describe("StudioSidebarTemplate", () => {
     const measure: MeasureFn = () => ({
       headerHeightPx: 100,
       heights: {
-        summary: 620,
+        // A4's default content box is ~1090px tall. Summary leaves ~290px in
+        // Page 1's narrow main column: too little for the whole 320px entry,
+        // but a quarter of the page is wasted if it moves whole.
+        summary: 700,
         experience: 320,
         skills: 200,
         [fragments[0]]: 90,

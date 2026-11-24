@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
-import { ExperienceItemSchema } from "@/lib/schema/resume.schema";
+import {
+  ExperienceItemSchema,
+  SkillItemSchema,
+} from "@/lib/schema/resume.schema";
 
 import { computePages } from "./computePages";
 import {
@@ -10,12 +13,26 @@ import {
   planFragmentKeys,
 } from "./sectionPlans";
 
+/**
+ * Studio Sidebar (`gengar`) Page 1 regression: a tall first Experience entry
+ * must start in the narrow main column beside the sidebar and continue at a
+ * bullet boundary on the full-width Page 2, instead of moving whole and leaving
+ * a quarter of Page 1 blank.
+ *
+ * This file started as the 2026-11-24 exploration harness (`__scratch`). The
+ * runner cannot delete files, so the live cases stay here; fold them into
+ * `computePages.test.ts` in a run that can remove the file. The equivalent
+ * four-bullet cases live in `computePages.test.ts` and
+ * `StudioSidebarTemplate.test.tsx`; these use a realistic 8-bullet role so a
+ * continuation spans several bullets.
+ */
+
 const EIGHT_BULLETS = `<ul>${Array.from(
   { length: 8 },
-  (_, i) => `<li><p>Bullet ${i + 1}</p></li>`,
+  (_, index) => `<li><p>Bullet ${index + 1}</p></li>`,
 ).join("")}</ul>`;
 
-function makeDoc(single: boolean) {
+function buildDoc(extraExperience = false) {
   const doc = createEmptyResume("gengar");
   doc.metadata.page.gapY = 0;
   doc.summary.content = "<p>Impact-driven engineer.</p>";
@@ -26,82 +43,131 @@ function makeDoc(single: boolean) {
       position: "Engineer",
       summary: EIGHT_BULLETS,
     }),
-    ...(single
-      ? []
-      : [
-          ExperienceItemSchema.parse({
-            id: "e2",
-            company: "Globex",
-            position: "Manager",
-          }),
-        ]),
   ];
+
+  if (extraExperience) {
+    doc.sections.experience.items.push(
+      ExperienceItemSchema.parse({
+        id: "e2",
+        company: "Globex",
+        position: "Maintainer",
+      }),
+    );
+  }
+
   doc.sections.skills.items = [
-    {
-      id: "s1",
+    SkillItemSchema.parse({
+      id: "skill-1",
       name: "Languages",
       keywords: ["TypeScript"],
-      level: 0,
-      hidden: false,
-    },
-  ] as never;
+    }),
+  ];
+
   return doc;
 }
 
-function run(single: boolean) {
-  const doc = makeDoc(single);
-  const plans = getSectionPlans(doc, ["summary", "experience", "skills"]);
-  const fragments = planFragmentKeys(plans[1]);
-  const keys = planBlockKeys(plans[1]);
+const CONTENT_HEIGHT_PX = 1000;
+const HEADER_HEIGHT_PX = 100;
 
-  const heights: Record<string, number> = {
-    summary: 150,
-    skills: 400,
-    experience: 900,
-    [keys[0]]: single ? 900 : 500,
-    [fragments[0]]: 320,
-  };
-  fragments.slice(1).forEach((key) => {
-    heights[key] = 110;
-  });
-  if (!single) {
-    heights[keys[1]] = 120;
-  }
-
-  const fullWidthHeights: Record<string, number> = {
-    experience: 700,
-    [keys[0]]: single ? 700 : 380,
-    [fragments[0]]: 220,
-  };
-  fragments.slice(1).forEach((key) => {
-    fullWidthHeights[key] = 80;
-  });
-  if (!single) {
-    fullWidthHeights[keys[1]] = 100;
-  }
-
-  const result = computePages({
-    sectionIds: ["summary", "experience", "skills"],
-    heights,
-    headerHeightPx: 100,
-    gapPx: 0,
-    contentHeightPx: 1000,
-    plans,
-    pinnedToFirstPage: new Set(["skills"]),
-    fullWidthHeights,
-  });
-
-  return { result, fragments, keys };
+function heightsFor(
+  fragments: readonly string[],
+  firstFragment: number,
+  rest: number,
+): Record<string, number> {
+  return Object.fromEntries(
+    fragments.map((key, index) => [
+      key,
+      index === 0 ? firstFragment : rest,
+    ]),
+  );
 }
 
-describe("scratch", () => {
-  it("single entry", () => {
-    const { result, fragments, keys } = run(true);
-    expect({ result, fragments, keys }).toEqual({});
+describe("gengar Page 1 with an oversized first Experience entry", () => {
+  it("fills the narrow main column with the entry header and first bullets", () => {
+    const doc = buildDoc();
+    const plans = getSectionPlans(doc, ["summary", "experience", "skills"]);
+    const blocks = planBlockKeys(plans[1]);
+    const fragments = planFragmentKeys(plans[1]);
+
+    const result = computePages({
+      sectionIds: ["summary", "experience", "skills"],
+      heights: {
+        summary: 150,
+        skills: 400,
+        ...heightsFor(fragments, 320, 110),
+        [blocks[0]]: 900,
+      },
+      headerHeightPx: HEADER_HEIGHT_PX,
+      gapPx: 0,
+      contentHeightPx: CONTENT_HEIGHT_PX,
+      plans,
+      pinnedToFirstPage: new Set(["skills"]),
+      fullWidthHeights: {
+        ...heightsFor(fragments, 220, 80),
+        [blocks[0]]: 700,
+      },
+    });
+
+    // The whole entry cannot fit beside the 400px sidebar, so it starts on
+    // Page 1 at a bullet boundary and continues on the full-width Page 2.
+    expect(result.pages).toEqual([
+      [
+        "__header",
+        "summary",
+        fragments[0],
+        fragments[1],
+        fragments[2],
+        fragments[3],
+        "skills",
+      ],
+      [fragments[4], fragments[5], fragments[6], fragments[7]],
+    ]);
+    expect(result.pages[0]).not.toContain(blocks[0]);
+    expect(result.pages).toHaveLength(2);
+    expect(result.overflowPx).toBe(0);
   });
 
-  it("two entries", () => {
-    const { result, fragments, keys } = run(false);
-    expect({ result, fragments, keys }).toEqual({});
+  it("keeps the following entry on the continuation page instead of Page 3", () => {
+    const doc = buildDoc(true);
+    const plans = getSectionPlans(doc, ["summary", "experience", "skills"]);
+    const blocks = planBlockKeys(plans[1]);
+    const fragments = planFragmentKeys(plans[1]);
+
+    const result = computePages({
+      sectionIds: ["summary", "experience", "skills"],
+      heights: {
+        summary: 300,
+        skills: 400,
+        ...heightsFor(fragments, 320, 110),
+        [blocks[0]]: 700,
+        [blocks[1]]: 150,
+      },
+      headerHeightPx: HEADER_HEIGHT_PX,
+      gapPx: 0,
+      contentHeightPx: CONTENT_HEIGHT_PX,
+      plans,
+      pinnedToFirstPage: new Set(["skills"]),
+      fullWidthHeights: {
+        ...heightsFor(fragments, 220, 80),
+        [blocks[0]]: 500,
+        [blocks[1]]: 130,
+      },
+    });
+
+    // Page 2 holds the rest of the split entry and the next role, so the two
+    // mechanical pages do not cascade into a nearly empty third page.
+    expect(result.pages).toEqual([
+      [
+        "__header",
+        "summary",
+        fragments[0],
+        fragments[1],
+        fragments[2],
+        "skills",
+      ],
+      [fragments[3], fragments[4], fragments[5], fragments[6], fragments[7], blocks[1]],
+    ]);
+    expect(result.pages).toHaveLength(2);
+    expect(result.overflowPx).toBe(0);
   });
 });

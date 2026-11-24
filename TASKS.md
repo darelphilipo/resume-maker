@@ -18,9 +18,7 @@ _empty
 
 ## In Progress (OpenCode Updates This)
 
-- [ ] **Keep `Studio Sidebar` (`gengar`) Page 1 left column balanced when the first Experience entry is oversized.** (Merged with the condensed P1 note about the ~40% blank lower-left hole, which describes the same bug.)
-  Plan: a tall entry that misses Page 1's remaining space is currently moved whole when it is under 35% of a page, leaving a quarter-page hole in `gengar`'s narrow main column. Make `packPages` split at bullet boundaries when the wasted gap is at least 25% of the page and at least two fragments fit, keeping Page 1 narrow heights and Page 2+ full-width heights. Add multi-page regressions in `computePages.test.ts` and `StudioSidebarTemplate.test.tsx`.
-  Files: `src/lib/pagination/packPages.ts` (+ test), `src/lib/pagination/computePages.ts` (+ test), `src/templates/studio/StudioSidebarTemplate.test.tsx`.
+_empty
 
 ## Queue (Ready for Next Run)
 
@@ -52,6 +50,29 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — Filled `Studio Sidebar`'s wasted Page 1 lower-left gap when
+  the first Experience role is mid-size. Finishing the prior In Progress
+  checkpoint: `packPages` split only at ≥35% of a page, so a role that missed
+  Page 1's remaining space moved whole and blanked a quarter of the narrow main
+  column beside a full sidebar. It now also splits at a bullet boundary when
+  moving the role whole would waste at least 25% of the page
+  (`FRAGMENT_SPLIT_WASTED_PAGE_RATIO`) and at least two complete fragments fit
+  (`FRAGMENT_SPLIT_MIN_FITTING_FRAGMENTS`), while Page 1 keeps narrow heights
+  and Page 2+ uses the full-width measurements (no `computePages.ts` change was
+  needed; it already forwards `fullWidthHeights`). Fixed the template
+  regression's injected summary (620 → 700 on A4's ~1090px content box) so it
+  actually misses the 320px entry, and repurposed the leftover
+  `__scratch.test.ts` exploration harness — file deletion is unavailable in
+  this runner — into live 8-bullet single-entry and following-entry `gengar`
+  regressions with a note to fold them into `computePages.test.ts` later.
+  Verified `npm run typecheck`, `npm test` (1022 pass), `npm run lint`. Files:
+  `src/lib/pagination/packPages.ts` (+ test),
+  `src/lib/pagination/computePages.test.ts`,
+  `src/lib/pagination/__scratch.test.ts`,
+  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains blocked here, so the browser
+  geometry is unverified.
 
 - [x] 2026-11-24 — A zoomed phone Preview no longer freezes at a page break:
   `LiveCanvasViewport` now threads the exact `[data-canvas-scroll]` element

@@ -217,7 +217,10 @@ in control of every line, and your data stays on your device.
   most of Page 1 blank. A single very tall role or project also continues at a
   clean bullet boundary on the next page: its header stays with the first
   bullets, the remaining bullets print as a continuation, and the PDF never
-  clips the end of the entry or starts with a blank page. Prose and bullets wrap
+  clips the end of the entry or starts with a blank page. A mid-size role that
+  would leave a quarter of the page empty also starts on that page and continues
+  at the next bullet boundary, so a narrow Studio Sidebar column never shows a
+  large blank gap below the first job. Prose and bullets wrap
   at natural word boundaries in both the preview and the PDF, so words never
   split mid-word; only long links break anywhere they need to.
 - **Three tidy columns on desktop**: on a wide window the editor fills the

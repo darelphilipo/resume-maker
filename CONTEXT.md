@@ -1370,8 +1370,17 @@ rediscover.
        `packPages` splits only when the whole block cannot fit and is at least
        `FRAGMENT_SPLIT_MIN_PAGE_RATIO` (0.35) of a page — or taller than a page —
        so a short entry that misses the remaining space still moves whole. The
-       first fragment carries the entry header (and the section heading for the
-       section's first entry), later fragments render as
+       one exception is the wasted-gap rule: an entry under 35% also splits when
+       moving it whole would leave at least
+       `FRAGMENT_SPLIT_WASTED_PAGE_RATIO` (0.25) of the page empty **and** at
+       least `FRAGMENT_SPLIT_MIN_FITTING_FRAGMENTS` (2) complete fragments fit
+       in that gap. The Studio Sidebar's narrow Page 1 main column makes entries
+       taller there, so a mid-size first role otherwise leaves a quarter-page
+       hole in the lower-left column beside a full sidebar. `packPages` measures
+       the fitting fragments at the current page's heights (narrow on Page 1,
+       full-width on Page 2+), so the continuation still packs at the width it
+       renders. The first fragment carries the entry header (and the section
+       heading for the section's first entry), later fragments render as
        `.resume-entry-continuation` with no header, and consecutive fragments on
        one page are merged by `SectionRenderer` into one entry. Keep the prefix
        on the first fragment and the suffix on the last. Grouped promotions stay
@@ -1500,6 +1509,35 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-24 — Studio Sidebar Page 1 fills a wasted lower-left gap
+- Task: the In Progress P1 item. A prior run had already committed the
+  `packPages` wasted-gap rule and most of its regressions, but left the suite
+  red: the `StudioSidebarTemplate` case injected a 620px summary, which still
+  left 370px on a ~1090px A4 page and so let the whole 320px entry fit, and
+  `src/lib/pagination/__scratch.test.ts` was an exploration harness asserting
+  the actual result against `{}`.
+- Change: kept the rule — an entry under
+  `FRAGMENT_SPLIT_MIN_PAGE_RATIO` also splits at a bullet boundary when moving
+  it whole would waste at least `FRAGMENT_SPLIT_WASTED_PAGE_RATIO` (0.25) of the
+  page and `FRAGMENT_SPLIT_MIN_FITTING_FRAGMENTS` (2) fragments fit — and kept
+  Page 1 narrow / Page 2+ full-width measurement. Fixed the template regression
+  to a 700px summary so ~290px remains: too little for the whole 320px entry,
+  but enough for three of its four bullets. File deletion is unavailable in this
+  runner, so the scratch harness is now a live 8-bullet `gengar` regression
+  (single entry, plus a following entry that must share the continuation page)
+  with a note to fold it into `computePages.test.ts` when deletion is possible.
+- Tests: `packPages` mid-size split + one-fragment-stays-whole cases,
+  `computePages` gengar split cases, the corrected template render case, and the
+  repurposed scratch regressions. 1022 pass.
+- Files: `src/lib/pagination/packPages.ts` (+ test),
+  `src/lib/pagination/computePages.test.ts`,
+  `src/lib/pagination/__scratch.test.ts`,
+  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1022 pass), `npm run lint`.
+  Playwright remains blocked here and jsdom has no layout, so the injected
+  heights are the contract and the real browser geometry is unverified.
 
 ### 2026-11-24 — Zoomed mobile Preview keeps scrolling across page breaks
 - Task: the In Progress P0 item. Finishing a checkpoint: `TouchPanCanvas` already
@@ -1703,29 +1741,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (947 pass). Playwright remains
   blocked here, so the visual/PDF check is browser-unverified.
-
-### 2026-11-23 — Studio Sidebar no longer strands trailing main sections
-- Task: In Progress P0. With the canonical interleaved order, Page 1's sidebar
-  blocks were charged to Page 2's main-column budget and pushed `Awards` onto a
-  nearly empty Page 3.
-- Fix: `computePages` replaces trailing-page folding with
-  `packWithPinnedBlocks` — sidebar (pinned) blocks are split out, the main
-  column packs alone with the full page budget, and every pinned block is
-  appended to Page 1 in canonical order. `pages.flat()` still yields them for
-  `StudioSidebarTemplate`. Decision #62 rewritten; single-column templates are
-  untouched.
-- Tests: updated the two `computePages` pinned-page cases; new regressions in
-  `computePages`, `usePageLayout` (gengar wiring), and a multi-page
-  `StudioSidebarTemplate` render test (Experience/Education/Skills/
-  Certifications/Awards) asserting two pages with Awards on Page 2 and the
-  sidebar only on Page 1. 942 pass.
-- Files: `src/lib/pagination/computePages.ts` (+ test),
-  `src/lib/pagination/usePageLayout.test.tsx`,
-  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (942 pass). No e2e case added: the
-  regression is a pure packing + render test, and Playwright remains blocked
-  here.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright
