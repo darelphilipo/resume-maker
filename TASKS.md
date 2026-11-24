@@ -22,7 +22,30 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+### P0 — OpenResume-Grade PDF Parsing Upgrade (2-Step Pipeline)
+
+- [ ] P0: Upgrade `src/lib/import/pdfResume.ts` to preserve rich `PdfLine` metadata (`isBold`, `fontSize`, `typicalCharWidth` phrases, punctuation spacing) alongside two-column & glyph cleanup.
+  1. **Resolve font names & visual metadata (`src/lib/import/pdfResume.ts`):**
+     - Call `await page.getOperatorList()` before reading `page.commonObjs.get(item.fontName)?.name` (with safe `try/catch` fallback to `item.fontName`) to compute `isBold = /bold|semibold|demi|heavy|black/i.test(resolvedFontName)` and `fontSize = Math.hypot(transform[0], transform[1]) || item.height`.
+     - Strip Private Use Area icon glyphs (`[\uE000-\uF8FF]`), zero-width chars, and rejoin soft-hyphen/replacement-char line wraps (`\u00AD`, `\uFFFD`).
+  2. **Two-column gutter detection + `typicalCharWidth` phrase grouping (new `src/lib/import/pdfLayout.ts`):**
+     - Detect a clean vertical column gutter (full-width header above, left sidebar + right main column below) and order items top-to-bottom per column so two-column Canva PDFs never interleave.
+     - Compute `typicalCharWidth` from the mode body `fontName`/`fontSize` (OpenResume algorithm), merge adjacent items on a line only when `gap <= typicalCharWidth`, and apply OpenResume's `shouldAddSpaceBetweenText` rule around `:`, `,`, `|`, `.`, and bullets so merged tokens like `Skills:Python` or `SQL,SAP` never glue together.
+     - Return structured `PdfLine[]` (`{ y, text, phrases: PdfPhrase[], isBoldLine, maxFontSize }`) while keeping `extractPdfText` backwards-compatible for plain-text callers.
+  3. Add unit tests in `src/lib/import/pdfLayout.test.ts` covering bold font resolution, `typicalCharWidth` phrase splitting, `shouldAddSpaceBetweenText`, PUA glyph stripping, and two-column Canva coordinates.
+
+- [ ] P0: Add OpenResume-style weighted feature scoring, `getDescriptionsLineIdx`, and `isBold`/`lineGap` subsection splitting to `src/lib/import/pasteResume.ts` (new `src/lib/import/featureScoring.ts`).
+  1. **Create `src/lib/import/featureScoring.ts`:** Implement `scoreBestCandidate(items, featureSets)` modeled on OpenResume's weighted scoring tuples (`[predicate, weight]`) with mutual exclusion for:
+     - **Name:** `+3` letters/spaces/periods, `+3` largest `fontSize` in header, `+2` `isBold`, `-4` email/digits/punctuation.
+     - **Experience (`Company` vs `Job Title` vs `Date`):** score `Date` (ranges + single dates like `Completed in 2018`, `Apr 2026`), `Job Title` (`TITLE_WORDS` + `Company as Title` `/\s+as\s+/i` split), and `Company` (`+2 isBold`, `-4` if already matched `jobTitle` or `date`).
+     - **Education (`School` vs `Degree` vs `Grade` vs `Date`):** score `School` (`University`/`Institute`/`College`/`School`), `Degree` (`B.S.`/`MBA`/`Bachelor`/`Master`/`PhD`), `Grade` (`/[0-4]\.\d{1,2}/`, `CGPA`, `X.X/10`, `XX%` → `education.grade`), and `Date` (including `Completed in YYYY`).
+     - **Projects (`Name` vs `Date` vs `URL`):** score Project Name (`+2 isBold`, `-4` date/URL) and extract project URLs cleanly.
+  2. **Upgrade `src/lib/import/pasteResume.ts` to accept optional `PdfLine[]`:**
+     - **Section detection:** Match `SECTION_ALIASES` (expanded with `certifications & awards`, `courses & certifications`, `hard skills`, `soft skills`, `education background`, `internship`, `extra curricular`, `my contact`) PLUS OpenResume's `isBold && (ALL_CAPS || maxFontSize > bodyFontSize * 1.15)` heading signal.
+     - **Subsection & description splitting:** When `PdfLine[]` is present, split entries using **mode `lineGap × 1.4`** + **`!isBold(prev) && isBold(curr)`** non-bullet transitions + `dateAnchor`. Use OpenResume's `getDescriptionsLineIdx` (first bullet matching expanded Unicode glyphs `• ● ▪ ◦ ‣ ○ ■ ➢ - *`, or first non-bold line with `≥8` words) so un-bulleted description paragraphs never leak into `position`/`company`.
+     - **Wire all 13 sections + unlabeled summary:** Populate `projects`, `certifications`, `awards`, `languages`, `interests`, `volunteer`, `publications`, `references`, and `profiles` in `parsePastedResume`, split multi-bullet 3-column skill lines (`• A • B • C`), capture unlabeled opening paragraphs (`> 120` chars) into `summary.content`, scan fallback `My Contact` blocks, and broaden `LOCATION_PATTERN` for global/Indian cities.
+  3. Add unit tests in `src/lib/import/pasteResume.test.ts` & `featureScoring.test.ts` covering single-column with icons/certifications/awards, unlabeled summary + 3-column skills, GPA/CGPA extraction, and two-column Canva resumes (`Company as Title`, `Completed in YYYY`, `Hard Skills`/`Soft Skills`).
+
 
 
 ## Done
