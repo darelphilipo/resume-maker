@@ -21,6 +21,9 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
+- [ ] P0: Fix Preview shifting flush-left with blank gray space on the right after switching templates (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/useFitTransform.ts`).
+  1. **Re-apply horizontal centering (`fitOffsetX`) on template change & tab activation:** Pass `doc.metadata.template` (and `isActive` / container visibility) or initialize `TransformWrapper` with `initialPositionX={fitOffsetX}` and `initialScale={fitScale}` so switching templates or returning from the Design tab on mobile always centers the page symmetrically instead of resetting to `x = 0`.
+  2. **Unit test:** Add a test in `useFitTransform.test.ts` / `LiveCanvasViewport.test.tsx` verifying that switching `template` (with identical `fitScale` and `offsetX`) or remounting `<TransformWrapper>` preserves `x = fitOffsetX` rather than shifting to `x = 0`.
 
 ### P1 — Input Validation & Two-Column Layout Balance
 
