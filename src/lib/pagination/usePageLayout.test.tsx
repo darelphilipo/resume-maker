@@ -247,6 +247,32 @@ describe("usePageLayout", () => {
     expect(result.current.overflowPx).toBe(0);
   });
 
+  it("packs gengar Page 2+ at the measured full width so Awards stays on Page 2", () => {
+    const doc = createEmptyResume("gengar");
+    doc.metadata.page.gapY = 0;
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: {
+        experience: 900,
+        // Both are taller in the 63% main column than at the 100% width Page 2+
+        // actually renders, so Awards must not be pushed onto a third page.
+        education: 500,
+        awards: 600,
+        skills: 300,
+        [fullWidthMeasureId("education")]: 450,
+        [fullWidthMeasureId("awards")]: 450,
+      },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    expect(result.current.pages).toEqual([
+      ["__header", "experience", "skills"],
+      ["education", "awards"],
+    ]);
+    expect(result.current.overflowPx).toBe(0);
+  });
+
   it("does not charge gengar sidebar sections to Page 2's main-column budget", () => {
     // The default order interleaves skills/certifications between education
     // and awards, which used to push Awards onto an almost empty Page 3.

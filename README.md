@@ -193,10 +193,12 @@ in control of every line, and your data stays on your device.
   sections use their own Page 1 budget, so they never eat into the space that
   later main sections need — trailing sections such as Awards stay on the page
   with room instead of being pushed onto a nearly empty extra page, and a resume
-  whose main column already fits on Page 1 never grows a blank second page. Page
-  breaks are measured in the same two-column shape you see, and **Save as PDF**
-  prints each measured page inside an exact, clipped page box, so the PDF never
-  starts with a blank page holding only your name.
+  whose main column already fits on Page 1 never grows a blank second page.
+  Page 1 is measured in the two-column shape you see, while later pages are
+  measured at the full page width they actually use — so a section that only
+  clears the page once the sidebar is gone is not pushed to an extra page.
+  **Save as PDF** prints each measured page inside an exact, clipped page box,
+  so the PDF never starts with a blank page holding only your name.
 - **Accent, fonts, and density** in Design: pick an accent from seven curated
   colors (or plain monochrome) in one compact strip of round swatches — the
   selected color wears a crisp ring and checkmark, and its name appears on hover

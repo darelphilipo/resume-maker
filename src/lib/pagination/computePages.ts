@@ -20,10 +20,11 @@ export type ComputePagesInput = {
    */
   pinnedToFirstPage?: ReadonlySet<string>;
   /**
-   * Heights measured at the full content width for pinned blocks that do not
-   * fit Page 1's column. Those blocks render full-width in the main flow on
-   * Page 2+, so their sidebar-width height would otherwise over-report every
-   * later line wrap. Falls back to the normal height for missing ids.
+   * Heights measured at the full content width for blocks that do not render in
+   * Page 1's narrow column. Page 2+ collapses the Studio Sidebar's grid, so its
+   * blocks render full width there; a narrow-column height would otherwise
+   * over-report every later line wrap and strand a trailing section on an extra
+   * page. Falls back to the normal height for missing ids.
    */
   fullWidthHeights?: Readonly<Record<string, number>>;
 };
@@ -84,6 +85,11 @@ export function splitPinnedBlocks(
  * the rest join the main flow on Page 2+, where they render at full width. The
  * main column packs alone with the whole page budget, so Page 2 can still hold
  * a trailing section such as Awards.
+ *
+ * Page 1's main blocks are measured in the narrow `.studio-main` column, but
+ * Page 2+ collapses the grid (`studio-layout--full`). The full-width heights are
+ * therefore handed to `packPages`, which keeps Page 1's narrow heights and
+ * switches to the wider measurements once the first page is full.
  */
 function packWithPinnedBlocks(
   header: PackBlock,
@@ -115,24 +121,13 @@ function packWithPinnedBlocks(
     gapPx,
   );
 
-  // Spilled side-column blocks render full-width in the main flow, so use the
-  // width they will actually occupy. The sidebar-height fallback is
-  // conservative when the second measurement has not reported yet.
-  const overflowBlocks = overflow.map((block) => {
-    const fullWidthHeightPx = fullWidthHeights[block.id];
-
-    return typeof fullWidthHeightPx === "number" && fullWidthHeightPx >= 0
-      ? { ...block, heightPx: fullWidthHeightPx }
-      : block;
-  });
-
   const mainPacked = packPages([header, ...mainBlocks], contentHeightPx, gapPx);
   // If the main column already spilled, the overflow blocks simply continue
   // after it. If Page 1's main column still has room, force the spill onto
   // Page 2 so Page 1 keeps exactly the side column it was packed for.
   const startsOnNewPage =
-    overflowBlocks.length > 0 && mainPacked.pages.length === 1;
-  const flowBlocks = overflowBlocks.map((block, index) =>
+    overflow.length > 0 && mainPacked.pages.length === 1;
+  const flowBlocks = overflow.map((block, index) =>
     startsOnNewPage && index === 0
       ? { ...block, startOnNewPage: true }
       : block,
@@ -142,6 +137,7 @@ function packWithPinnedBlocks(
     [header, ...mainBlocks, ...flowBlocks],
     contentHeightPx,
     gapPx,
+    { fullWidthHeights },
   );
   const pages = packed.pages.map((page) => [...page]);
 

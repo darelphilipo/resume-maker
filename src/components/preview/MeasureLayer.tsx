@@ -222,13 +222,15 @@ export function MeasureLayer({
         ) : (
           <main className="page-stack">{blocks.map(renderBlock)}</main>
         )}
-        {/* Sidebar blocks that do not fit Page 1 spill into the main flow on
-            Page 2+, where they render at the full content width. Measure that
-            copy separately so a narrow sidebar-height over-estimate cannot
-            inflate every later page. */}
+        {/* Page 1 renders main blocks in the narrow `.studio-main` column and
+            sidebar blocks in `.studio-sidebar`. Page 2+ collapses the grid
+            (`studio-layout--full`), so every block that lands there occupies the
+            full content width. Measure that copy of each block too, otherwise a
+            narrow-column height over-reports later pages and can strand a
+            trailing section (such as Awards) on an extra page. */}
         {hasStudioSidebar ? (
           <div className="studio-main" data-measure-full-width="">
-            {sidebarBlocks.map((block) => (
+            {blocks.map((block) => (
               <div
                 key={block.key}
                 data-measure-id={fullWidthMeasureId(block.key)}

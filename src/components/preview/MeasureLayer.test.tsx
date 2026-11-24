@@ -248,7 +248,7 @@ describe("MeasureLayer", () => {
     }
   });
 
-  it("lays Studio Sidebar blocks out in their real main and sidebar columns", () => {
+  it("measures main and sidebar Studio blocks in their columns and full width", () => {
     const restore = mockLayoutWidth(700);
 
     try {
@@ -298,18 +298,28 @@ describe("MeasureLayer", () => {
       expect(
         main?.querySelector('[data-measure-id="skills"]'),
       ).toBeNull();
-      // Sidebar blocks that later spill to Page 2 render full-width, so the
-      // measure layer also reports a full-width copy under its own id.
-      const fullWidthCopy = content.querySelector(
+      // Page 2+ collapses the grid, so every block that lands there renders
+      // full-width. Both main and sidebar blocks report that second copy.
+      const fullWidthGroup = content.querySelector("[data-measure-full-width]");
+      const fullWidthExperience = content.querySelector(
+        `[data-measure-id="${fullWidthMeasureId("experience")}"]`,
+      );
+      const fullWidthSkills = content.querySelector(
         `[data-measure-id="${fullWidthMeasureId("skills")}"]`,
       );
 
-      expect(fullWidthCopy).not.toBeNull();
-      expect(content.querySelector("[data-measure-full-width]")).toContainElement(
-        fullWidthCopy as HTMLElement,
+      expect(fullWidthExperience).not.toBeNull();
+      expect(fullWidthSkills).not.toBeNull();
+      expect(fullWidthGroup).toContainElement(
+        fullWidthExperience as HTMLElement,
       );
+      expect(fullWidthGroup).toContainElement(fullWidthSkills as HTMLElement);
       expect(onMeasure).toHaveBeenCalledWith("experience", 0);
       expect(onMeasure).toHaveBeenCalledWith("skills", 0);
+      expect(onMeasure).toHaveBeenCalledWith(
+        fullWidthMeasureId("experience"),
+        0,
+      );
       expect(
         onMeasure,
       ).toHaveBeenCalledWith(fullWidthMeasureId("skills"), 0);

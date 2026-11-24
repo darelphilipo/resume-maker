@@ -1417,6 +1417,23 @@ rediscover.
        still stripped, and an all-letters field clears as before. Compare
        numerically — `"0000"` and `"9999"` must never pass a lexical check.
 
+   94. **Studio Sidebar Page 1 is narrow, Page 2+ is full width.** `MeasureLayer`
+       renders every Studio block twice: the real `.studio-layout` main/sidebar
+       columns and a `[data-measure-full-width]` copy under
+       `fullWidthMeasureId(<block id>)` (`FULL_WIDTH_MEASURE_PREFIX` in
+       `sidebarSections.ts`). Page 1 keeps the narrow `.studio-main` (~63%)
+       heights for main blocks and the `.studio-sidebar` heights for pinned
+       blocks; Page 2+ collapses the grid (`studio-layout--full`), so those
+       blocks render at 100% and must pack at the full-width heights. `packPages`
+       takes `options.fullWidthHeights` and swaps heights only once the first
+       page is full (`pages.length > 0`): a block that misses Page 1 in the
+       narrow column still moves, but a trailing section that merely looked tall
+       at 63% can share Page 2 instead of being stranded on Page 3. Page-1 fit
+       tests must keep using the narrow height, so never apply the override
+       before the first flush. Malformed/negative overrides fall back to the real
+       height. `computePages` forwards the map from `usePageLayout`; the old
+       `overflowBlocks` re-height mapping is gone because the packer owns it.
+
 ## Verification and tooling
 
 ```powershell
@@ -1477,6 +1494,27 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-24 — Studio Sidebar Page 2+ packs at full width
+- Task: In Progress was empty, so this run took the top Queue P0. Studio's
+  Page 2+ collapses the grid, but packing still used the narrow Page 1 main
+  heights, so `Awards` could be stranded on a third page.
+- Change: `MeasureLayer` now reports a full-width copy of **every** Studio block
+  (main + sidebar + entry fragments), not just sidebar blocks. `packPages` takes
+  `options.fullWidthHeights` and uses them only after Page 1 is full; Page 1
+  keeps the narrow column heights. `computePages` forwards the map and drops the
+  old per-overflow re-height mapping. Decision #94.
+- Tests: packPages narrow-Page-1 / full-width-Page-2 / malformed-override
+  cases, `computePages` Awards-stays-on-Page-2, a `usePageLayout` gengar wiring
+  case with `fullWidthMeasureId`, and MeasureLayer main-block full-width copies.
+  1014 pass.
+- Files: `src/lib/pagination/packPages.ts` (+ test),
+  `src/lib/pagination/computePages.ts` (+ test),
+  `src/lib/pagination/usePageLayout.test.tsx`,
+  `src/components/preview/MeasureLayer.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1014 pass), `npm run lint`.
+  Playwright remains blocked here, so the browser geometry is unverified.
 
 ### 2026-11-24 — MonthSelect rejects impossible years
 - Task: top Queue item. `MonthSelect` accepted `0000`/`9999` literally and
@@ -1683,36 +1721,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   five pre-existing `react-hooks/preserve-manual-memoization` errors in
   `LiveCanvasViewport.tsx` (reproduced with the original `onZoomChange` code);
   CI does not run lint.
-
-### 2026-11-23 — One-row Preview bar with Review-owned trim/fit tools
-- Task: the In Progress P1 item. The single-row Preview bar, Review utilities,
-  and lifted viewport state were already present in the checkpoint; this run
-  audited them, added the missing conditional-Reset regression, and moved the
-  item to Done.
-- Bar: `[data-preview-mode-header]` holds `Visual | ATS` (short label, full
-  `aria-label="ATS text"`), the quiet `1 page` label or one inline
-  `PageOverflowBanner` pill, a conditional `Reset` pill only while the canvas
-  is zoomed, and **Review**. `[data-preview-header]` / `[data-canvas-toolbar]`
-  no longer exist.
-- Review: `ReviewMenu` owns `Trim tips (N)` → `TrimTipsDialog`, `Fit to 1 Page`,
-  `Reset fit`, the trim-count badge, and the reduced-fit dot. Blocked-fit copy
-  and `Min 78%` come from `src/lib/pagination/fitCopy.ts`.
-- Viewport: `LiveCanvasViewport` reports `onBulletReport` / `onZoomChange` and
-  exposes `resetZoom` / `resetFit` through `LiveCanvasViewportHandle`; the
-  workspace owns the states and the one `applyFitScale` patch. Decisions
-  #84–#86.
-- Tests: new review/trim/fit/reset/badge, inline-pill, no-second-row, and
-  ref-reset cases; the workspace mock now reports zoom through
-  `onZoomChange` so the conditional Reset pill is guarded. 930 pass.
-- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/ReviewMenu.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/preview/PageOverflowBanner.tsx` (+ test),
-  `src/components/preview/TrimTipsDialog.tsx` (+ test, new),
-  `src/lib/pagination/fitCopy.ts` (new),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (930 pass), `npm run lint`.
-  Playwright remains blocked here, so the e2e case is browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

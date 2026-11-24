@@ -21,9 +21,6 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P0: Fix `Studio Sidebar` Page 2+ width mismatch so `AWARDS` packs into Page 2 instead of stranding on Page 3 (`src/components/preview/MeasureLayer.tsx`, `src/lib/pagination/computePages.ts`, `src/lib/pagination/usePageLayout.ts`).
-  1. In `MeasureLayer.tsx`, for `studio-sidebar` (`gengar`), measure every main block **twice** (or render a second hidden full-width `.studio-layout--full` measurement group for `mainBlocks`): use the 63% `.studio-main` heights when packing **Page 1**, and use the **100% full-width** heights when packing **Page 2+** (`computePages.ts`).
-  2. Add a unit test verifying that blocks which appear taller than Page 2 at 63% width but fit cleanly at 100% width stay on Page 2 (e.g. `AWARDS` stays under `EDUCATION` on Page 2 instead of spilling to Page 3).
 
 - [ ] P0: Fix zoomed mobile Preview freezing vertical scroll past page breaks (only allowing sideways pan) (`src/components/preview/TouchPanCanvas.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/lib/zoom/canvasGestures.ts`).
   1. Pass the exact `[data-canvas-scroll]` ref (`scrollRef`) directly from `LiveCanvasViewport.tsx` into `TouchPanCanvas.tsx` instead of relying on `findScrollableAncestor`.
@@ -65,6 +62,20 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — Fixed the `Studio Sidebar` Page 2+ width mismatch so
+  `AWARDS` packs into Page 2 instead of stranding on Page 3. Page 1 keeps the
+  narrow `.studio-main`/`.studio-sidebar` heights, while `MeasureLayer` now
+  reports a full-width copy of **every** Studio block (main + sidebar + entry
+  fragments). New `packPages` `options.fullWidthHeights` swaps to those heights
+  only once Page 1 is full, and `computePages` forwards the map (dropping the
+  old per-overflow re-height mapping). Verified `npm run typecheck`, `npm test`
+  (1014 pass), `npm run lint`. Files: `src/lib/pagination/packPages.ts`
+  (+ test), `src/lib/pagination/computePages.ts` (+ test),
+  `src/lib/pagination/usePageLayout.test.tsx`,
+  `src/components/preview/MeasureLayer.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains blocked here, so the browser
+  geometry is unverified.
 
 - [x] 2026-11-24 — `MonthSelect` now rejects impossible resume years instead of
   printing `0000`/`9999`. New pure `MIN_RESUME_YEAR` (1950), `MAX_RESUME_YEAR`

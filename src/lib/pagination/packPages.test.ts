@@ -263,3 +263,55 @@ describe("packPages with bullet fragments", () => {
     expect(result.pages).toEqual([["a", "entry"]]);
   });
 });
+
+describe("packPages with full-width heights after Page 1", () => {
+  it("keeps Page 1's narrow heights even when a wider copy is measured", () => {
+    const result = packPages(
+      blocks({ id: "a", heightPx: 900 }, { id: "b", heightPx: 200 }),
+      1000,
+      0,
+      { fullWidthHeights: { a: 300 } },
+    );
+
+    // Page 1 renders `a` in the narrow column, so the 900px height must not be
+    // replaced by its 300px full-width height.
+    expect(result.pages).toEqual([["a"], ["b"]]);
+  });
+
+  it("packs Page 2+ at the full-width height so a trailing block still fits", () => {
+    const result = packPages(
+      blocks(
+        { id: "experience", heightPx: 900 },
+        { id: "education", heightPx: 500 },
+        { id: "awards", heightPx: 600 },
+      ),
+      1000,
+      0,
+      { fullWidthHeights: { education: 450, awards: 450 } },
+    );
+
+    // At the narrow column width 500 + 600 would spill Awards to Page 3; at the
+    // full width the two blocks share Page 2 with room to spare.
+    expect(result.pages).toEqual([
+      ["experience"],
+      ["education", "awards"],
+    ]);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("falls back to the real height for a missing or malformed override", () => {
+    const result = packPages(
+      blocks(
+        { id: "a", heightPx: 950 },
+        { id: "b", heightPx: 600 },
+        { id: "c", heightPx: 600 },
+      ),
+      1000,
+      0,
+      { fullWidthHeights: { b: -10 } },
+    );
+
+    // `b` keeps its real 600px height, so `c` still starts Page 3.
+    expect(result.pages).toEqual([["a"], ["b"], ["c"]]);
+  });
+});

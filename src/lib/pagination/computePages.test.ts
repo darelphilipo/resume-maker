@@ -270,6 +270,34 @@ describe("computePages with sections pinned to Page 1", () => {
     ]);
     expect(result.overflowPx).toBe(0);
   });
+
+  it("packs Page 2+ main blocks at full width so Awards stays on Page 2", () => {
+    const result = computePages(
+      makeInput({
+        sectionIds: ["experience", "education", "skills", "awards"],
+        heights: {
+          experience: 900,
+          education: 500,
+          skills: 300,
+          awards: 600,
+        },
+        headerHeightPx: 100,
+        gapPx: 0,
+        contentHeightPx: 1000,
+        pinnedToFirstPage: new Set(["skills"]),
+        // Education and Awards are narrower/taller in Page 1's main column.
+        fullWidthHeights: { education: 450, awards: 450 },
+      }),
+    );
+
+    // At the 63% column width 500 + 600 overflowed Page 2 and stranded Awards on
+    // Page 3; at the 100% width Page 2+ actually uses, both fit under the header.
+    expect(result.pages).toEqual([
+      ["__header", "experience", "skills"],
+      ["education", "awards"],
+    ]);
+    expect(result.overflowPx).toBe(0);
+  });
 });
 
 function splitExperience(count: number) {
