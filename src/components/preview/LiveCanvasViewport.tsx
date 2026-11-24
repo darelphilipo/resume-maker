@@ -65,11 +65,13 @@ const useIsomorphicLayoutEffect =
 function FitTransform({
   fitScale,
   offsetX,
+  resetKey,
 }: {
   fitScale: number;
   offsetX: number;
+  resetKey: string;
 }) {
-  useFitTransform(fitScale, offsetX);
+  useFitTransform(fitScale, offsetX, resetKey);
 
   return null;
 }
@@ -179,6 +181,7 @@ function CanvasSurface({
   frame,
   fitScale,
   fitOffsetX,
+  fitResetKey,
   isCoarsePointer,
   hostRef,
   children,
@@ -186,6 +189,7 @@ function CanvasSurface({
   frame: CanvasFrame;
   fitScale: number;
   fitOffsetX: number;
+  fitResetKey: string;
   isCoarsePointer: boolean;
   hostRef: RefObject<HTMLDivElement | null>;
   children: ReactNode;
@@ -196,7 +200,11 @@ function CanvasSurface({
 
   return (
     <>
-      <FitTransform fitScale={fitScale} offsetX={fitOffsetX} />
+      <FitTransform
+        fitScale={fitScale}
+        offsetX={fitOffsetX}
+        resetKey={fitResetKey}
+      />
       <TouchPanCanvas
         hostRef={hostRef}
         fitScale={fitScale}
@@ -265,6 +273,14 @@ export function LiveCanvasViewport({
    * the observer would alternate between the two widths forever (Decision #69).
    */
   const widthStateRef = useRef<StableWidthState>(initialStableWidthState);
+  /**
+   * A hidden mobile tab (`display: none`) measures the stage at 0px. The zoom
+   * library clamps its stored position to those 0×0 bounds, so the next visible
+   * measurement must re-apply the fitted transform even though the scale and
+   * offset are unchanged. `fitEpoch` is the resetKey half that does it.
+   */
+  const wasHiddenRef = useRef(false);
+  const [fitEpoch, setFitEpoch] = useState(0);
   const [viewportWidth, setViewportWidth] = useState<{
     /** Root width, including its responsive padding (drives the fit scale). */
     stage: number;
@@ -321,6 +337,9 @@ export function LiveCanvasViewport({
       const width = element.clientWidth;
 
       if (width <= 0) {
+        // Inactive mobile tab: remember it so the next real measurement can
+        // restore the centred, fitted transform.
+        wasHiddenRef.current = true;
         return;
       }
 
@@ -343,6 +362,11 @@ export function LiveCanvasViewport({
         stage: result.width,
         scroller: Math.max(0, result.width - widthDelta),
       });
+
+      if (wasHiddenRef.current) {
+        wasHiddenRef.current = false;
+        setFitEpoch((epoch) => epoch + 1);
+      }
     };
 
     updateWidth();
@@ -393,6 +417,14 @@ export function LiveCanvasViewport({
     frame === null || viewportWidth === null
       ? 0
       : centeredCanvasOffsetX(viewportWidth.scroller, frame.width);
+
+  /**
+   * Re-applies the fitted transform when the fit values themselves cannot say
+   * that the applied transform is stale: a template switch changes the rendered
+   * document without necessarily changing the scale/offset, and a preview tab
+   * that was hidden had its position clamped to 0 by the zoom library.
+   */
+  const fitResetKey = `${doc.metadata.template}:${fitEpoch}`;
 
   /**
    * The floating reset pill lives outside `<TransformWrapper>`, so it cannot
@@ -560,6 +592,7 @@ export function LiveCanvasViewport({
               frame={frame!}
               fitScale={fitScale!}
               fitOffsetX={fitOffsetX}
+              fitResetKey={fitResetKey}
               isCoarsePointer={isCoarsePointer}
               hostRef={containerRef}
             >

@@ -1387,6 +1387,23 @@ rediscover.
        the raw `<style>` text but never applies `@page`, so only a real browser
        print validates final page geometry.
 
+   92. **The fitted transform has a reset key, because the fit values alone can
+       lie.** `useFitTransform(fitScale, offsetX, resetKey)` folds the key into
+       its applied-fit guard, and `LiveCanvasViewport` passes
+       `` `${doc.metadata.template}:${fitEpoch}` ``. Two cases need it: switching
+       templates changes the rendered document without necessarily changing the
+       scale or offset, and an inactive mobile tab is `display: none` — the zoom
+       library measures that stage as 0×0 and clamps its stored position to
+       `x = 0`, so the paper stays flush-left with a gray gap on the right when
+       the tab returns. The viewport's width observer therefore records
+       `clientWidth === 0` as hidden and bumps `fitEpoch` on the next real
+       measurement, which re-applies `setTransform(fitOffsetX, 0, fitScale, 0)`.
+       Do not drop the reset key and do not fold it into `fitScale`/`fitOffsetX`
+       (that would churn the numbers and lose the "re-fit once per target"
+       protection from #39). jsdom cannot reproduce the clamp (the library reads
+       `offsetWidth`, which is always 0 there), so the wiring test mocks the
+       hook and the real check is the browser tab/template switch.
+
 ## Verification and tooling
 
 ```powershell
@@ -1447,6 +1464,30 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-24 — Preview re-centres after template switches and tab returns
+- Task: In Progress was empty, so this run took the top Queue item (P0). The
+  fitted paper stayed flush-left with a gray strip on the right after switching
+  templates or returning to Preview from the Design tab on mobile.
+- Cause: the fit effect only re-applied when `fitScale`/`fitOffsetX` changed,
+  but an inactive mobile tab is `display: none`: the zoom library measures a
+  0×0 stage and clamps its stored position to `x = 0`. A template switch can
+  keep the same scale/offset too, so the guard suppressed the needed re-fit.
+- Fix: `useFitTransform` takes a `resetKey`; `LiveCanvasViewport` passes
+  `${doc.metadata.template}:${fitEpoch}`, records a 0-width measurement as
+  hidden, and bumps `fitEpoch` on the next real measurement. Decision #92.
+- Tests: hook re-applies for a template key change and a visibility epoch
+  change, and stays quiet when the key is unchanged; a new viewport test
+  mocks `useFitTransform` and asserts the template/visibility key wiring.
+  A tall-tablet Playwright case switches template from Design and polls for
+  equal left/right gaps after returning. 985 pass.
+- Files: `src/components/preview/useFitTransform.ts` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx`,
+  `src/components/preview/LiveCanvasViewport.fitReset.test.tsx` (new),
+  `e2e/layout-consistency.spec.ts`.
+- Verified: `npm run typecheck`, `npm test` (985 pass), `npm run lint`.
+  Playwright remains blocked here, so the browser tab/template switch is
+  browser-unverified.
 
 ### 2026-11-24 — Print dialog paper size follows the Design choice
 - Task: In Progress was empty, so this run took the top Queue item (P0):
@@ -1672,32 +1713,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/lib/print/printDocument.ts` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (931 pass), `npm run lint`.
-
-### 2026-11-23 — Calm Preview chrome and a centred canvas
-- Task: the In Progress P1 item. The implementation was already present in the
-  checkpoint (ReviewMenu, the slim strip, canvas padding/gutter, and scroller
-  width centring); this run re-verified it (`npm run typecheck`, `npm test`,
-  `npm run lint` all pass) and moved the item to Done with the session record.
-- Mode bar: only `Visual | ATS text`, a quiet **"1 page"** label when
-  `layout.pages.length <= 1`, and the **Review** pill. `ReviewMenu` opens a
-  `CenteredModal` with `role="switch"` 6s Scan / Anonymize toggles and an
-  `aria-hidden` dot while either lens is active. Decisions #84.
-- Slim strip: spilled resumes render one `[data-preview-header]` row combining
-  `PageOverflowBanner` (count, `~N lines`, Fit/blocked copy) with `CanvasToolbar`
-  (Trim tips, Reset fit, Reset zoom). The yellow box and duplicate count pill are
-  gone; the count appears in exactly one place.
-- Canvas: `[data-canvas-scroll]` has `py-3` and `lg:[scrollbar-gutter:stable]`;
-  `centeredCanvasOffsetX` uses the stabilized scroller content width, so an A/B
-  scrollbar oscillation cannot re-enter through `fitOffsetX`. Decisions #85.
-- Regressions: ReviewMenu dialog/dot, one-page label, single-strip, desktop-only
-  gutter + padding, and scroller-width centring. 930 pass. The updated docked
-  chrome e2e case remains browser-unverified here.
-- Files: `src/components/editor/ReviewMenu.tsx` (+ test, new),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/preview/PageOverflowBanner.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (930 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

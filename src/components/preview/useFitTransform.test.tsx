@@ -16,13 +16,15 @@ import { useFitTransform } from "./useFitTransform";
 function Harness({
   fitScale,
   offsetX = 0,
+  resetKey = "",
   tick = 0,
 }: {
   fitScale: number;
   offsetX?: number;
+  resetKey?: string;
   tick?: number;
 }) {
-  useFitTransform(fitScale, offsetX);
+  useFitTransform(fitScale, offsetX, resetKey);
 
   return <span data-testid="tick">{tick}</span>;
 }
@@ -78,6 +80,47 @@ describe("useFitTransform", () => {
 
     expect(controls.setTransform).toHaveBeenCalledTimes(1);
     expect(controls.setTransform).toHaveBeenCalledWith(72, 0, 1, 0);
+  });
+
+  it("re-applies the fitted X offset when a template resets the fit", () => {
+    const view = render(
+      <Harness fitScale={1} offsetX={72} resetKey="onyx:0" />,
+    );
+
+    controls.setTransform.mockClear();
+    // A template switch keeps the same scale and offset, so only the reset key
+    // can tell the hook that the library's clamped position must be restored.
+    view.rerender(<Harness fitScale={1} offsetX={72} resetKey="gengar:0" />);
+
+    expect(controls.setTransform).toHaveBeenCalledTimes(1);
+    expect(controls.setTransform).toHaveBeenCalledWith(72, 0, 1, 0);
+  });
+
+  it("re-applies the fitted X offset when the hidden preview reappears", () => {
+    const view = render(
+      <Harness fitScale={1} offsetX={72} resetKey="onyx:0" />,
+    );
+
+    controls.setTransform.mockClear();
+    // Returning from another mobile tab bumps the visibility epoch; without a
+    // re-fit the paper stayed at x = 0 with a gray gap on the right.
+    view.rerender(<Harness fitScale={1} offsetX={72} resetKey="onyx:1" />);
+
+    expect(controls.setTransform).toHaveBeenCalledTimes(1);
+    expect(controls.setTransform).toHaveBeenCalledWith(72, 0, 1, 0);
+  });
+
+  it("does not re-fit when the reset key is unchanged", () => {
+    const view = render(
+      <Harness fitScale={1} offsetX={72} resetKey="onyx:0" />,
+    );
+
+    controls.setTransform.mockClear();
+    view.rerender(
+      <Harness fitScale={1} offsetX={72} resetKey="onyx:0" tick={1} />,
+    );
+
+    expect(controls.setTransform).not.toHaveBeenCalled();
   });
 
   it("ignores a non-finite fit scale", () => {

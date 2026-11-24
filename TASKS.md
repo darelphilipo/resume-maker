@@ -21,9 +21,6 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P0: Fix Preview shifting flush-left with blank gray space on the right after switching templates (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/useFitTransform.ts`).
-  1. **Re-apply horizontal centering (`fitOffsetX`) on template change & tab activation:** Pass `doc.metadata.template` (and `isActive` / container visibility) or initialize `TransformWrapper` with `initialPositionX={fitOffsetX}` and `initialScale={fitScale}` so switching templates or returning from the Design tab on mobile always centers the page symmetrically instead of resetting to `x = 0`.
-  2. **Unit test:** Add a test in `useFitTransform.test.ts` / `LiveCanvasViewport.test.tsx` verifying that switching `template` (with identical `fitScale` and `offsetX`) or remounting `<TransformWrapper>` preserves `x = fitOffsetX` rather than shifting to `x = 0`.
 
 ### P1 — Input Validation & Two-Column Layout Balance
 
@@ -66,6 +63,24 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — The Preview canvas no longer sticks flush-left with a gray
+  gap on the right after switching templates or returning from another mobile
+  tab. `useFitTransform` now takes a `resetKey` as part of its applied-fit key,
+  so a template switch (same fit scale/offset) or a visibility epoch bump
+  re-applies `setTransform(fitOffsetX, 0, fitScale, 0)`. `LiveCanvasViewport`
+  passes `${doc.metadata.template}:${fitEpoch}`, records a `clientWidth === 0`
+  measurement as hidden, and bumps the epoch when the stage is measured again —
+  the zoom library clamps its stored position to 0 while the `display: none`
+  panel is 0×0. Added hook reset-key/hidden/template cases and a viewport wiring
+  test (template switch + hidden tab). Added a tall-tablet Playwright case that
+  switches template from Design and asserts the equal left/right gaps on return.
+  Verified `npm run typecheck`, `npm test` (985 pass), `npm run lint`. Files:
+  `src/components/preview/useFitTransform.ts` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx`,
+  `src/components/preview/LiveCanvasViewport.fitReset.test.tsx` (new),
+  `e2e/layout-consistency.spec.ts`, `CONTEXT.md`, `TASKS.md`. Playwright remains
+  blocked here, so the real browser geometry is browser-unverified.
 
 - [x] 2026-11-24 — The print dialog now uses the paper size picked in **Design**.
   New pure `printPageSizeCss` / `printPageSizeLabel` helpers in `printDocument.ts`

@@ -908,4 +908,45 @@ test.describe("tall tablet preview", () => {
       1,
     );
   });
+
+  test("keeps the paper centred after switching templates on another tab", async ({
+    page,
+  }) => {
+    await createPresetResume(page);
+    await showPreview(page);
+
+    // The template picker lives on Design, which hides the Preview panel
+    // (`display: none`). The zoom library measures that stage as 0×0 and clamps
+    // its position to x = 0; returning must re-apply the fitted centring offset.
+    await showTab(page, "Design");
+    await page.getByRole("radio", { name: /Modern Accent/ }).click();
+    await showPreview(page);
+
+    const gapDifference = () =>
+      page.evaluate(() => {
+        const scroll = document.querySelector<HTMLElement>(
+          "[data-canvas-scroll]",
+        );
+        const canvas = document.querySelector<HTMLElement>(
+          ".react-transform-component",
+        );
+
+        if (!scroll || !canvas) {
+          return Number.POSITIVE_INFINITY;
+        }
+
+        const scrollRect = scroll.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+        const leftGap = canvasRect.left - scrollRect.left;
+        const rightGap = scrollRect.right - canvasRect.right;
+
+        // A left-hugging canvas reports 0 on the left, so this catches the
+        // regression even before the gap difference is considered.
+        return leftGap <= 1
+          ? Number.POSITIVE_INFINITY
+          : Math.abs(leftGap - rightGap);
+      });
+
+    await expect.poll(gapDifference).toBeLessThanOrEqual(2);
+  });
 });
