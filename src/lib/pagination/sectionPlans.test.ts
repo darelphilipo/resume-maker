@@ -3,8 +3,14 @@ import { describe, expect, it } from "vitest";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import { ExperienceItemSchema } from "@/lib/schema/resume.schema";
 
-import { decodeBlock } from "./blockIds";
-import { buildPackBlocks, getSectionPlans, planBlockKeys } from "./sectionPlans";
+import { decodeBlock, encodeEntryFragment } from "./blockIds";
+import {
+  buildPackBlocks,
+  getSectionPlans,
+  planBlockKeys,
+  planFragmentKeys,
+  planMeasureKeys,
+} from "./sectionPlans";
 
 function experienceDoc(count: number) {
   const doc = createEmptyResume();
@@ -17,6 +23,9 @@ function experienceDoc(count: number) {
   );
   return doc;
 }
+
+const THREE_BULLETS =
+  "<ul><li><p>One</p></li><li><p>Two</p></li><li><p>Three</p></li></ul>";
 
 describe("getSectionPlans", () => {
   it("keeps a single-entry section atomic", () => {
@@ -142,5 +151,127 @@ describe("getSectionPlans", () => {
     expect(buildPackBlocks([plan], { experience: 240 })).toEqual([
       { id: "experience", heightPx: 240, startOnNewPage: false },
     ]);
+  });
+});
+
+describe("bullet fragment plans", () => {
+  it("measures bullets for a single tall entry while keeping it atomic", () => {
+    const doc = experienceDoc(1);
+    doc.sections.experience.items[0].summary = THREE_BULLETS;
+    const [plan] = getSectionPlans(doc, ["experience"]);
+
+    expect(plan.atomic).toBe(true);
+    expect(planBlockKeys(plan)).toEqual(["experience"]);
+    expect(planFragmentKeys(plan)).toHaveLength(3);
+    expect(planMeasureKeys(plan)).toEqual(["experience", ...planFragmentKeys(plan)]);
+
+    const fragments = planFragmentKeys(plan).map((key) => {
+      const decoded = decodeBlock(key);
+
+      expect(decoded.kind).toBe("section");
+      return decoded.kind === "section" ? decoded : null;
+    });
+
+    expect(fragments[0]).toMatchObject({
+      entryIds: ["e1"],
+      withHeading: true,
+      fragment: { entryId: "e1", start: 0, end: 0 },
+    });
+    expect(fragments[2]).toMatchObject({
+      withHeading: false,
+      fragment: { entryId: "e1", start: 2, end: 2 },
+    });
+  });
+
+  it("only fuses the section heading to the first entry's first bullet", () => {
+    const doc = experienceDoc(2);
+    doc.sections.experience.items[0].summary = THREE_BULLETS;
+    doc.sections.experience.items[1].summary = THREE_BULLETS;
+    const [plan] = getSectionPlans(doc, ["experience"]);
+    const fragments = plan.bulletFragments ?? [];
+
+    expect(fragments).toHaveLength(2);
+    expect(fragments[0].withHeading).toBe(true);
+    expect(decodeBlock(fragments[0].keys[0])).toMatchObject({
+      withHeading: true,
+    });
+    expect(fragments[1].withHeading).toBe(false);
+    expect(
+      fragments[1].keys.some((key) => {
+        const decoded = decodeBlock(key);
+
+        return decoded.kind === "section" && decoded.withHeading;
+      }),
+    ).toBe(false);
+  });
+
+  it("keeps grouped promotions and keep-together sections atomic", () => {
+    const grouped = experienceDoc(2);
+    grouped.sections.experience.items[0].summary = THREE_BULLETS;
+    grouped.sections.experience.groupSameCompany = true;
+    expect(getSectionPlans(grouped, ["experience"])[0].bulletFragments).toBeUndefined();
+
+    const keepTogether = experienceDoc(1);
+    keepTogether.sections.experience.items[0].summary = THREE_BULLETS;
+    keepTogether.sections.experience.keepTogether = true;
+    expect(
+      getSectionPlans(keepTogether, ["experience"])[0].bulletFragments,
+    ).toBeUndefined();
+
+    const twoColumns = experienceDoc(1);
+    twoColumns.sections.experience.items[0].summary = THREE_BULLETS;
+    twoColumns.sections.experience.columns = 2;
+    expect(
+      getSectionPlans(twoColumns, ["experience"])[0].bulletFragments,
+    ).toBeUndefined();
+  });
+
+  it("attaches measured fragments to the whole entry packing block", () => {
+    const doc = experienceDoc(1);
+    doc.sections.experience.items[0].summary = THREE_BULLETS;
+    const [plan] = getSectionPlans(doc, ["experience"]);
+    const keys = planFragmentKeys(plan);
+    const heights = {
+      experience: 900,
+      [keys[0]]: 220,
+      [keys[1]]: 340,
+      [keys[2]]: 340,
+    };
+
+    const [block] = buildPackBlocks([plan], heights);
+
+    expect(block.id).toBe("experience");
+    expect(block.fragments?.map((fragment) => fragment.id)).toEqual(keys);
+    expect(block.fragments?.map((fragment) => fragment.heightPx)).toEqual([
+      220, 340, 340,
+    ]);
+  });
+
+  it("does not attach a partial fragment list when a measurement is missing", () => {
+    const doc = experienceDoc(1);
+    doc.sections.experience.items[0].summary = THREE_BULLETS;
+    const [plan] = getSectionPlans(doc, ["experience"]);
+    const keys = planFragmentKeys(plan);
+
+    const [block] = buildPackBlocks([plan], {
+      experience: 900,
+      [keys[0]]: 220,
+      [keys[1]]: 340,
+    });
+
+    expect(block.fragments).toBeUndefined();
+  });
+
+  it("ignores an entry with a single bullet", () => {
+    const doc = experienceDoc(1);
+    doc.sections.experience.items[0].summary = "<ul><li>Only one</li></ul>";
+
+    expect(getSectionPlans(doc, ["experience"])[0].bulletFragments).toBeUndefined();
+  });
+
+  it("encodes fragments through the shared helper", () => {
+    expect(
+      encodeEntryFragment("experience", "e1", false, 1, 1),
+    ).toBe("__fragment:experience:e1:0:1:1");
   });
 });

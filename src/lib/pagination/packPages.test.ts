@@ -151,3 +151,115 @@ describe("packPages", () => {
     expect(input).toEqual(before);
   });
 });
+
+describe("packPages with bullet fragments", () => {
+  it("fills the remaining page at a bullet boundary", () => {
+    const result = packPages(
+      blocks(
+        { id: "a", heightPx: 300 },
+        {
+          id: "entry",
+          heightPx: 900,
+          fragments: [
+            { id: "f0", heightPx: 250 },
+            { id: "f1", heightPx: 250 },
+            { id: "f2", heightPx: 250 },
+            { id: "f3", heightPx: 250 },
+          ],
+        },
+      ),
+      1000,
+    );
+
+    expect(result.pages).toEqual([
+      ["a", "f0", "f1"],
+      ["f2", "f3"],
+    ]);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("does not charge the page gap between fragments of one entry", () => {
+    const result = packPages(
+      blocks(
+        { id: "a", heightPx: 400 },
+        {
+          id: "entry",
+          heightPx: 900,
+          fragments: [
+            { id: "f0", heightPx: 200 },
+            { id: "f1", heightPx: 200 },
+            { id: "f2", heightPx: 200 },
+            { id: "f3", heightPx: 200 },
+          ],
+        },
+      ),
+      1000,
+      40,
+    );
+
+    // Only the first fragment is charged the 40px gap after `a`; the next
+    // fragment continues the same entry and follows directly.
+    expect(result.pages).toEqual([
+      ["a", "f0", "f1"],
+      ["f2", "f3"],
+    ]);
+  });
+
+  it("splits an entry taller than a page", () => {
+    const result = packPages(
+      blocks({
+        id: "entry",
+        heightPx: 1200,
+        fragments: [
+          { id: "f0", heightPx: 300 },
+          { id: "f1", heightPx: 300 },
+          { id: "f2", heightPx: 300 },
+          { id: "f3", heightPx: 300 },
+        ],
+      }),
+      1000,
+    );
+
+    expect(result.pages).toEqual([["f0", "f1", "f2"], ["f3"]]);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("moves a short entry whole instead of splitting it for a few lines", () => {
+    const result = packPages(
+      blocks(
+        { id: "a", heightPx: 850 },
+        {
+          id: "entry",
+          heightPx: 200,
+          fragments: [
+            { id: "f0", heightPx: 70 },
+            { id: "f1", heightPx: 65 },
+            { id: "f2", heightPx: 65 },
+          ],
+        },
+      ),
+      1000,
+    );
+
+    expect(result.pages).toEqual([["a"], ["entry"]]);
+  });
+
+  it("keeps a whole entry on one page when it fits", () => {
+    const result = packPages(
+      blocks(
+        { id: "a", heightPx: 100 },
+        {
+          id: "entry",
+          heightPx: 400,
+          fragments: [
+            { id: "f0", heightPx: 150 },
+            { id: "f1", heightPx: 250 },
+          ],
+        },
+      ),
+      1000,
+    );
+
+    expect(result.pages).toEqual([["a", "entry"]]);
+  });
+});

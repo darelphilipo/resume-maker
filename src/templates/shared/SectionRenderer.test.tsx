@@ -2,7 +2,11 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { parsePastedResume } from "@/lib/import/pasteResume";
-import { encodeEntryBlock, encodeEntryGroup } from "@/lib/pagination/blockIds";
+import {
+  encodeEntryBlock,
+  encodeEntryFragment,
+  encodeEntryGroup,
+} from "@/lib/pagination/blockIds";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
   ExperienceItemSchema,
@@ -520,6 +524,89 @@ Python`);
     expect(container.querySelector(".resume-company-group")).toBeNull();
     expect(screen.queryByText("Senior Engineer")).toBeNull();
     expect(screen.getByText("Engineer")).toBeInTheDocument();
+  });
+
+  it("renders only the bullets a fragment owns and keeps the header on the first", () => {
+    const doc = createEmptyResume();
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+        summary:
+          "<ul><li><p>First bullet</p></li><li><p>Second bullet</p></li><li><p>Third bullet</p></li></ul>",
+      }),
+    ];
+
+    const { container, rerender } = render(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={[encodeEntryFragment("experience", "e1", true, 0, 0)]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Experience" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Engineer" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("First bullet")).toBeInTheDocument();
+    expect(screen.queryByText("Second bullet")).toBeNull();
+    expect(container.querySelector(".resume-entry-continuation")).toBeNull();
+
+    rerender(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={[encodeEntryFragment("experience", "e1", false, 1, 2)]}
+      />,
+    );
+
+    // A continuation page repeats neither the section heading nor the entry
+    // header; it only carries the remaining bullets.
+    expect(
+      screen.queryByRole("heading", { level: 2, name: "Experience" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("heading", { level: 3, name: "Engineer" }),
+    ).toBeNull();
+    expect(screen.queryByText("First bullet")).toBeNull();
+    expect(screen.getByText("Second bullet")).toBeInTheDocument();
+    expect(screen.getByText("Third bullet")).toBeInTheDocument();
+    expect(container.querySelector(".resume-entry-continuation")).not.toBeNull();
+  });
+
+  it("merges consecutive fragments of one entry into one continuous entry", () => {
+    const doc = createEmptyResume();
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+        summary:
+          "<ul><li><p>First bullet</p></li><li><p>Second bullet</p></li><li><p>Third bullet</p></li></ul>",
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={[
+          encodeEntryFragment("experience", "e1", true, 0, 0),
+          encodeEntryFragment("experience", "e1", false, 1, 1),
+        ]}
+      />,
+    );
+
+    expect(container.querySelectorAll(".resume-section")).toHaveLength(1);
+    expect(container.querySelectorAll(".resume-entry")).toHaveLength(1);
+    expect(
+      screen.getAllByRole("heading", { level: 3, name: "Engineer" }),
+    ).toHaveLength(1);
+    expect(screen.getByText("First bullet")).toBeInTheDocument();
+    expect(screen.getByText("Second bullet")).toBeInTheDocument();
+    expect(screen.queryByText("Third bullet")).toBeNull();
+    expect(container.querySelector(".resume-entry-continuation")).toBeNull();
   });
 
   it("wraps numeric metrics only when the recruiter scan is active", () => {

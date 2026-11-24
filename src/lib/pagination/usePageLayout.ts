@@ -23,7 +23,7 @@ import type { PackBlock } from "./packPages";
 import {
   buildPackBlocks,
   getSectionPlans,
-  planBlockKeys,
+  planMeasureKeys,
   type SectionPlan,
 } from "./sectionPlans";
 
@@ -143,7 +143,7 @@ export function usePageLayout(
     [doc, order],
   );
   const expectedKeys = useMemo(
-    () => plans.flatMap(planBlockKeys),
+    () => plans.flatMap(planMeasureKeys),
     [plans],
   );
 

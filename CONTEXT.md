@@ -1349,6 +1349,28 @@ rediscover.
       resize changes the fit target. Do not reintroduce `useCallback` unless the
       lint rule changes.
 
+  90. **A tall entry splits at bullet boundaries, never at an arbitrary line.**
+       `parseEntryBulletSlices` (`src/lib/richtext/bulletSlices.ts`) is a
+       string-only (no DOMParser) splitter for a rich-text field with exactly one
+       top-level `<ul>/<ol>` and 2+ non-empty bullets. Multiple lists or mixed
+       list/prose stay atomic because dropping the prose between lists would lose
+       content. `getSectionPlans` emits a `bulletFragments` plan for every such
+       entry in a single-column, non-`keepTogether` section (including the
+       single-entry case that used to be atomic), with one encoded
+       `__fragment:<section>:<entry>:<heading>:<start>:<end>` id per bullet.
+       `MeasureLayer` renders the whole entry *and* every fragment (so packing
+       can choose), `planMeasureKeys` feeds `expectedKeys`, and `buildPackBlocks`
+       attaches a complete fragment list to the whole-entry `PackBlock`.
+       `packPages` splits only when the whole block cannot fit and is at least
+       `FRAGMENT_SPLIT_MIN_PAGE_RATIO` (0.35) of a page — or taller than a page —
+       so a short entry that misses the remaining space still moves whole. The
+       first fragment carries the entry header (and the section heading for the
+       section's first entry), later fragments render as
+       `.resume-entry-continuation` with no header, and consecutive fragments on
+       one page are merged by `SectionRenderer` into one entry. Keep the prefix
+       on the first fragment and the suffix on the last. Grouped promotions stay
+       atomic: their company header belongs to the whole group.
+
 ## Verification and tooling
 
 ```powershell
@@ -1409,6 +1431,54 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-24 — Finalized the oversized-entry split checkpoint
+- Task: In Progress was empty, so this run picked the top Queue item — the
+  oversized-entry bullet split. A prior checkpoint had left the full
+  implementation uncommitted in the working tree (new `bulletSlices` splitter,
+  `__fragment:` ids, fragment plans/measurement, `packPages` split logic,
+  `SectionRenderer` continuation merge, plus tests and CONTEXT/README notes),
+  but TASKS.md was never updated and the checkpoint had not actually passed
+  typecheck.
+- Fix: `sectionPlans.test.ts` called `decodeBlock(key)` twice in one predicate,
+  so TypeScript could not narrow the union to read `withHeading`; bound the
+  result to a local in the `.some()` callback. No production code changed.
+- Verified: `npm run typecheck` (clean), `npm test` (972 pass),
+  `npm run lint` (clean). Moved the item to Done with the file list. Playwright
+  is still blocked here, so the real print/PDF split remains browser-unverified.
+- Files: `src/lib/pagination/sectionPlans.test.ts`, `TASKS.md`, `CONTEXT.md`.
+
+### 2026-11-24 — Oversized entries split at bullet boundaries
+- Task: Queue P0. A single Experience/Project entry with 15–18 bullets stayed
+  atomic, overflowed Page 1, and clipped at the fixed print page height.
+- Splitter: new pure `bulletSlices.ts` parses one top-level list into a prefix,
+  bullet list, and suffix. `blockIds.ts` gained `__fragment:` ids and an optional
+  `fragment` on decoded section blocks. `sectionPlans.ts` now emits
+  `bulletFragments` for single-column, non-keepTogether entries (including the
+  previously atomic single-entry case), attaches fragment heights to the whole
+  `PackBlock`, and exposes `planMeasureKeys`. `packPages.ts` splits a block only
+  when it cannot fit and is ≥35% of a page (or taller than a page), charging no
+  page gap between its fragments.
+- Render/measure: `MeasureLayer` measures the whole entry plus each fragment.
+  `SectionRenderer` merges consecutive fragments of one entry, fringes the
+  prefix/suffix onto the first/last fragment, keeps the entry header on the
+  first, and omits it with `.resume-entry-continuation` on later pages.
+- Tests: new bullet-slice helper cases, fragment id round-trips/validation,
+  fragment planning + buildPackBlocks attachment, packPages split/threshold/gap
+  cases, computePages Page-1-fill and short-entry-move cases, MeasureLayer
+  fragment reporting, and SectionRenderer first/continuation/merge rendering.
+- Files: `src/lib/richtext/bulletSlices.ts` (+ test, new),
+  `src/lib/pagination/blockIds.ts` (+ test),
+  `src/lib/pagination/sectionPlans.ts` (+ test),
+  `src/lib/pagination/packPages.ts` (+ test),
+  `src/lib/pagination/computePages.test.ts`,
+  `src/lib/pagination/usePageLayout.ts`, `src/lib/pagination/index.ts`,
+  `src/components/preview/MeasureLayer.tsx` (+ test),
+  `src/templates/shared/SectionRenderer.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (972 pass), `npm run lint`.
+  Playwright remains blocked here, so the real print/PDF split is
+  browser-unverified.
 
 ### 2026-11-23 — Lint debt cleared in the Preview viewport
 - Task: Inbox and Queue were both empty, so this run picked up the one clear
@@ -1616,54 +1686,7 @@ npx playwright test    # e2e; needs a dev server on :3000
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (922 pass), `npm run lint`.
 
-### 2026-11-23 — All remaining paste-import sections and heading aliases
-- Task: top P0 Queue item. `parsePastedResume` now populates every standard
-  section instead of dropping recognised content after `splitSections`.
-- Sections: new builders map projects, certifications, awards, languages,
-  interests, volunteer, publications, and references into their schema items,
-  and a `PROFILES` section is merged with the header links and de-duplicated.
-  Compact sections use
-  `splitCompactEntryBlocks` (blank blocks, all-bullet lists, then date/URL/
-  separator-led lines), and a small `extractSingleDate` handles their
-  `(2023)` / `Mar 2024` dates.
-- Aliases: added real-world variants for summary, experience/internships,
-  education backgrounds, certifications + `certifications & awards`,
-  awards, languages, interests, volunteer/extracurricular, publications,
-  references, and contact blocks. `contact` variants route to `parseHeader`.
-  `hard skills` / `soft skills` use internal keys so `parseSkills` keeps the
-  heading as the row category.
-- Skills: `splitKeywords` now treats every bullet glyph as a separator, so a
-  three-column `Python • SQL • Tableau` line becomes three keywords.
-- Tests: full multi-section fixture, hard/soft skills + inline bullets, and a
-  contact/internships/education-background/extracurricular alias case and a
-  Profiles-section merge case. 915 pass (was 911). Decision #18 expanded.
-- Files: `src/lib/import/pasteResume.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (915 pass), `npm run lint`.
-
-### 2026-11-23 — Two-column PDF import and glyph cleanup
-- Task: top P0 Queue item. `pdfResume.ts` now strips decorative glyphs and
-  rebuilds two-column pages column-by-column instead of interleaving a sidebar
-  with the main body.
-- Glyphs: every item drops Private Use Area icon characters and zero-width
-  characters; PUA-only items disappear. A trailing soft hyphen or replacement
-  glyph marks a wrapped word/URL, and `mergeWrappedLines` rejoins the next line
-  without inserting a space. Mid-word glyphs are simply removed.
-- Columns: `detectColumnGutter` scores candidate gutters from empty vertical
-  bands plus item end→next-start pairs (banners can cover the empty band). A
-  gutter survives only when each side owns ≥30% of lines, each side's line
-  starts are tightly clustered, and the right side's starts cluster at least as
-  tightly as its right edges (the last rule rejects right-aligned dates). Output order is
-  banner → left → right, and each group gets its own paragraph-gap pass.
-- Tests: added PUA/zero-width stripping, soft-hyphen/replacement-char rejoin,
-  a banner + two-column exact-order fixture, an unaligned-column fixture, and a
-  right-aligned-dates regression. Decision #20 rewritten.
-- Files: `src/lib/import/pdfResume.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (911 pass), `npm run lint`.
-
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
-     wrap + usePreservedScroll details (Decision #31/#41), the pinch-zoom fit
      guard (Decision #39), Playwright
      visual/layout spec (2026-11-17), preview-zoom
      toolbar (superseded by pinch + Reset, see Decisions #26), readable fit floor

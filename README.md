@@ -210,9 +210,12 @@ in control of every line, and your data stays on your device.
 - Live paginated preview that measures real content, not an estimate. Long
   sections fill the current page entry by entry — with each heading kept next
   to its first entry — instead of jumping wholesale to the next page and leaving
-  most of Page 1 blank. Prose and bullets wrap at natural word boundaries in
-  both the preview and the PDF, so words never split mid-word; only long links
-  break anywhere they need to.
+  most of Page 1 blank. A single very tall role or project also continues at a
+  clean bullet boundary on the next page: its header stays with the first
+  bullets, the remaining bullets print as a continuation, and the PDF never
+  clips the end of the entry or starts with a blank page. Prose and bullets wrap
+  at natural word boundaries in both the preview and the PDF, so words never
+  split mid-word; only long links break anywhere they need to.
 - **Three tidy columns on desktop**: on a wide window the editor fills the
   screen, and Content, Preview, and Design each scroll on their own instead of
   growing the page and leaving a second scrollbar at the right edge. Moving a

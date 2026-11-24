@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { decodeBlock, encodeEntryBlock, encodeEntryGroup } from "./blockIds";
+import {
+  decodeBlock,
+  encodeEntryBlock,
+  encodeEntryFragment,
+  encodeEntryGroup,
+} from "./blockIds";
 import { HEADER_BLOCK_ID } from "./constants";
 
 describe("entry block ids", () => {
@@ -67,5 +72,30 @@ describe("entry block ids", () => {
       kind: "unknown",
     });
     expect(decodeBlock("__entry::e1:1")).toEqual({ kind: "unknown" });
+  });
+
+  it("round-trips a bullet fragment with its inclusive range", () => {
+    const id = encodeEntryFragment("experience", "entry:1", true, 3, 5);
+
+    expect(decodeBlock(id)).toEqual({
+      kind: "section",
+      sectionId: "experience",
+      entryIds: ["entry:1"],
+      withHeading: true,
+      fragment: { entryId: "entry:1", start: 3, end: 5 },
+    });
+  });
+
+  it("rejects malformed bullet fragments", () => {
+    expect(decodeBlock("__fragment:experience:e1:1:0")).toEqual({
+      kind: "unknown",
+    });
+    expect(decodeBlock("__fragment:experience:e1:maybe:0:1")).toEqual({
+      kind: "unknown",
+    });
+    expect(decodeBlock("__fragment:experience:e1:1:2:1")).toEqual({
+      kind: "unknown",
+    });
+    expect(decodeBlock("__fragment::e1:1:0:1")).toEqual({ kind: "unknown" });
   });
 });

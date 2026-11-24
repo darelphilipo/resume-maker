@@ -5,7 +5,11 @@ import { ExperienceItemSchema } from "@/lib/schema/resume.schema";
 
 import { encodeEntryBlock } from "./blockIds";
 import { computePages, type ComputePagesInput } from "./computePages";
-import { getSectionPlans, planBlockKeys } from "./sectionPlans";
+import {
+  getSectionPlans,
+  planBlockKeys,
+  planFragmentKeys,
+} from "./sectionPlans";
 
 function makeInput(overrides: Partial<ComputePagesInput> = {}): ComputePagesInput {
   return {
@@ -346,5 +350,116 @@ describe("computePages with per-entry blocks", () => {
 
     expect(result.pages).toEqual([["__header"], [keys[0]]]);
     expect(result.overflowPx).toBeCloseTo(30);
+  });
+});
+
+const FOUR_BULLETS =
+  "<ul><li><p>One</p></li><li><p>Two</p></li><li><p>Three</p></li><li><p>Four</p></li></ul>";
+
+function oversizedEntryDoc() {
+  const doc = createEmptyResume();
+  doc.summary.content = "<p>Impact-driven engineer.</p>";
+  doc.sections.experience.items = [
+    ExperienceItemSchema.parse({
+      id: "e1",
+      company: "Acme",
+      position: "Engineer",
+      summary: FOUR_BULLETS,
+    }),
+  ];
+
+  return doc;
+}
+
+describe("computePages with split entries", () => {
+  it("fills Page 1 at a bullet boundary instead of moving the whole entry", () => {
+    const doc = oversizedEntryDoc();
+    const plans = getSectionPlans(doc, ["summary", "experience"]);
+    const fragments = planFragmentKeys(plans[1]);
+    const heights = {
+      summary: 250,
+      experience: 900,
+      [fragments[0]]: 180,
+      [fragments[1]]: 160,
+      [fragments[2]]: 160,
+      [fragments[3]]: 160,
+    };
+
+    const result = computePages(
+      makeInput({
+        sectionIds: ["summary", "experience"],
+        heights,
+        headerHeightPx: 50,
+        contentHeightPx: 700,
+        gapPx: 0,
+        plans,
+      }),
+    );
+
+    // Page 1 holds Summary plus the entry header and its first bullets; the
+    // header never travels to Page 2 without the first bullet.
+    expect(result.pages).toEqual([
+      ["__header", "summary", fragments[0], fragments[1]],
+      [fragments[2], fragments[3]],
+    ]);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("splits an entry that is taller than a whole page", () => {
+    const doc = oversizedEntryDoc();
+    const plans = getSectionPlans(doc, ["experience"]);
+    const fragments = planFragmentKeys(plans[0]);
+
+    const result = computePages(
+      makeInput({
+        sectionIds: ["experience"],
+        heights: {
+          experience: 1500,
+          [fragments[0]]: 300,
+          [fragments[1]]: 300,
+          [fragments[2]]: 300,
+          [fragments[3]]: 300,
+        },
+        headerHeightPx: 50,
+        contentHeightPx: 700,
+        gapPx: 0,
+        plans,
+      }),
+    );
+
+    expect(result.pages).toEqual([
+      ["__header", fragments[0], fragments[1]],
+      [fragments[2], fragments[3]],
+    ]);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("moves a short entry whole when splitting would only buy a line or two", () => {
+    const doc = oversizedEntryDoc();
+    const plans = getSectionPlans(doc, ["summary", "experience"]);
+    const fragments = planFragmentKeys(plans[1]);
+
+    const result = computePages(
+      makeInput({
+        sectionIds: ["summary", "experience"],
+        heights: {
+          summary: 850,
+          experience: 200,
+          [fragments[0]]: 70,
+          [fragments[1]]: 60,
+          [fragments[2]]: 60,
+          [fragments[3]]: 60,
+        },
+        headerHeightPx: 50,
+        contentHeightPx: 1000,
+        gapPx: 0,
+        plans,
+      }),
+    );
+
+    expect(result.pages).toEqual([
+      ["__header", "summary"],
+      ["experience"],
+    ]);
   });
 });

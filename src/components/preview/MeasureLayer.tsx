@@ -11,7 +11,7 @@ import {
 import { HEADER_BLOCK_ID } from "@/lib/pagination/constants";
 import {
   getSectionPlans,
-  planBlockKeys,
+  planMeasureKeys,
   type SectionPlan,
 } from "@/lib/pagination/sectionPlans";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
@@ -146,7 +146,7 @@ export function MeasureLayer({
   } as CSSProperties;
 
   const blocks = resolvedPlans.flatMap((plan) =>
-    planBlockKeys(plan).map((key) => ({
+    planMeasureKeys(plan).map((key) => ({
       key,
       sectionId: plan.sectionId,
     })),

@@ -24,12 +24,6 @@ _empty
 
 ### P0 — Pagination & Print Export Integrity
 
-- [ ] **Split oversized single entries at bullet boundaries so they never clip in PDF print or leave Page 1 blank.**
-  Currently `sectionPlans.ts` / `computePages.ts` keep each entry atomic, and `@media print .resume-page` enforces `height`/`max-height: var(--page-height)` with `overflow: hidden`. A single Experience or Project entry with 15–18+ bullets jumps off Page 1 (leaving ~75–80% of Page 1 blank below Summary), stretches Page 2 past A4 height in preview, and silently clips at `297mm` on PDF export.
-  - Extend `blockIds.ts`, `sectionPlans.ts`, `MeasureLayer.tsx`, `computePages.ts`, and `SectionRenderer.tsx` so that when an individual entry's measured height exceeds a single page's content budget (or cannot fit in remaining Page 1 space above a split threshold), it splits cleanly at `<li>` bullet boundaries—keeping the entry header fused (`keep-with-next`) to its first bullet(s) and rendering remaining bullets as a continuation block on the next page.
-  - Ensure preview and `@media print` render identical page boundaries with zero clipped bullets.
-  - Add unit tests in `blockIds.test.ts`, `sectionPlans.test.ts`, `computePages.test.ts`, `MeasureLayer.test.tsx`, and `SectionRenderer.test.tsx`. Verify `npm run typecheck`, `npm test`, `npm run lint`.
-
 - [ ] **Dynamically sync `@page` size with the selected Paper Size (A4 vs. Letter) and add mobile paper-size print guidance.**
   `src/styles/print.css` currently hardcodes `@page { size: A4 portrait; margin: 0mm; }` while `.resume-page` sizes via `--page-width` / `--page-height`. When Letter is selected, `@page` still declares A4; conversely, on Android (which defaults its print dialog to Letter, 18mm shorter than A4), nearly-full A4 pages risk clipping the bottom 18mm due to `overflow: hidden`.
   - Inject a dynamic runtime `<style data-print-page-size>` rule (in `PrintPortal` or `printDocument.ts`) that sets `@page { size: A4 portrait; margin: 0mm; }` for `a4` and `@page { size: letter portrait; margin: 0mm; }` for `letter`, keeping `src/styles/print.css` aligned as fallback only.
@@ -69,6 +63,28 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — Tall single Experience/Project entries now split at bullet
+  boundaries instead of overflowing Page 1 and clipping in PDF print. A pure
+  `bulletSlices` parser splits one top-level rich-text list into prefix/bullets/
+  suffix; `__fragment:` block ids, `bulletFragments` plans, and `planMeasureKeys`
+  let `MeasureLayer` measure every fragment and `buildPackBlocks` attach them to
+  the whole entry. `packPages` splits only when a block cannot fit and is ≥35% of
+  a page (or taller than a page), keeping the first fragment's header (and the
+  section heading) and charging no page gap between fragments. `SectionRenderer`
+  merges consecutive fragments, fringes the prefix/suffix, and renders later
+  pages as headerless `.resume-entry-continuation` blocks. Preview and
+  `@media print` share the same measured pages, so no bullet is clipped and Page
+  1 never starts blank. Added fragment parser/id/planner/packer/computePages/
+  MeasureLayer/SectionRenderer regressions. This run finalized the prior
+  checkpoint by fixing one test-only TypeScript narrowing error in
+  `sectionPlans.test.ts`. Verified `npm run typecheck`, `npm test` (972 pass),
+  `npm run lint`. Files: `src/lib/richtext/bulletSlices.ts` (new, + test),
+  `src/lib/pagination/{blockIds,sectionPlans,packPages,computePages,index,usePageLayout}.ts`
+  (+ tests), `src/components/preview/MeasureLayer.tsx` (+ test),
+  `src/templates/shared/SectionRenderer.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains blocked here, so the real
+  print/PDF split is browser-unverified.
 
 - [x] 2026-11-23 — Cleared the last standing lint debt in the Preview viewport.
   Both Inbox and Queue were empty, so this run picked up the five

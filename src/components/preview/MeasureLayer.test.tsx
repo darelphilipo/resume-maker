@@ -2,6 +2,10 @@ import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { encodeEntryBlock } from "@/lib/pagination/blockIds";
+import {
+  getSectionPlans,
+  planFragmentKeys,
+} from "@/lib/pagination/sectionPlans";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
   ExperienceItemSchema,
@@ -136,6 +140,45 @@ describe("MeasureLayer", () => {
         0,
       );
       expect(onMeasure).not.toHaveBeenCalledWith("experience", 0);
+    } finally {
+      restore();
+    }
+  });
+
+  it("measures bullet fragments for a single tall entry", () => {
+    const restore = mockLayoutWidth(700);
+
+    try {
+      const doc = createEmptyResume();
+      doc.sections.experience.items = [
+        ExperienceItemSchema.parse({
+          id: "e1",
+          company: "Acme",
+          position: "Engineer",
+          summary:
+            "<ul><li><p>One</p></li><li><p>Two</p></li><li><p>Three</p></li></ul>",
+        }),
+      ];
+      const [plan] = getSectionPlans(doc, ["experience"]);
+      const fragments = planFragmentKeys(plan);
+      const onMeasure = vi.fn();
+
+      render(
+        <MeasureLayer
+          doc={doc}
+          order={["experience"]}
+          contentWidthPx={700}
+          onMeasure={onMeasure}
+        />,
+      );
+
+      // The atomic whole-entry block is still measured for the normal case…
+      expect(onMeasure).toHaveBeenCalledWith("experience", 0);
+      // …and each bullet reports so packing can split at a page boundary.
+      for (const key of fragments) {
+        expect(onMeasure).toHaveBeenCalledWith(key, 0);
+      }
+      expect(fragments).toHaveLength(3);
     } finally {
       restore();
     }

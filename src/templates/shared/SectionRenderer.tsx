@@ -9,8 +9,15 @@ import {
   profilesPromotedToHeader,
   websiteLabelFromUrl,
 } from "@/lib/links/contactLinks";
-import { decodeBlock } from "@/lib/pagination/blockIds";
+import {
+  decodeBlock,
+  type BlockFragment,
+} from "@/lib/pagination/blockIds";
 import { highlightScanMetrics } from "@/lib/preview/scanMetrics";
+import {
+  parseEntryBulletSlices,
+  sliceEntryBullets,
+} from "@/lib/richtext/bulletSlices";
 import { stripEmptyListItems } from "@/lib/richtext/stripEmptyListItems";
 import type { ResumeDocument, SectionId } from "@/lib/schema/resume.schema";
 
@@ -62,6 +69,28 @@ function richTextHtml(html: string, scanHighlight: boolean): string {
   return scanHighlight ? highlightScanMetrics(cleaned) : cleaned;
 }
 
+/**
+ * Renders only the bullets a page owns. Fragments are created only for a
+ * single-list field, so an unparseable value falls back to the whole entry
+ * rather than dropping prose.
+ */
+function slicedRichText(
+  html: string,
+  fragment: BlockFragment | undefined,
+): string {
+  if (!fragment) {
+    return html;
+  }
+
+  const slices = parseEntryBulletSlices(html);
+
+  return slices ? sliceEntryBullets(slices, fragment.start, fragment.end) : html;
+}
+
+function isContinuation(fragment: BlockFragment | undefined): boolean {
+  return fragment !== undefined && fragment.start > 0;
+}
+
 function EntryShell({
   title,
   subtitle,
@@ -71,6 +100,7 @@ function EntryShell({
   summary,
   compact = false,
   keepTogether = false,
+  continuation = false,
 }: {
   title: string;
   subtitle?: ReactNode;
@@ -80,35 +110,41 @@ function EntryShell({
   summary?: string;
   compact?: boolean;
   keepTogether?: boolean;
+  continuation?: boolean;
 }) {
   const className = [
     "resume-entry",
     compact ? "resume-entry-compact" : "",
     keepTogether ? "resume-entry-keep-together" : "",
+    continuation ? "resume-entry-continuation" : "",
   ]
     .filter(Boolean)
     .join(" ");
   const scanHighlight = useScanHighlight();
+  const showHeader =
+    !continuation && (title !== "" || Boolean(subtitle) || Boolean(extra) || Boolean(aside) || Boolean(date));
 
   return (
     <article className={className}>
-      <div className="resume-entry-header">
-        <div className="resume-entry-leading">
-          {title !== "" ? (
-            <h3 className="resume-entry-title">{title}</h3>
-          ) : null}
-          {subtitle ? (
-            <p className="resume-entry-subtitle">{subtitle}</p>
-          ) : null}
-          {extra}
-        </div>
-        {aside || date ? (
-          <div className="resume-entry-aside">
-            {aside}
-            {date}
+      {showHeader ? (
+        <div className="resume-entry-header">
+          <div className="resume-entry-leading">
+            {title !== "" ? (
+              <h3 className="resume-entry-title">{title}</h3>
+            ) : null}
+            {subtitle ? (
+              <p className="resume-entry-subtitle">{subtitle}</p>
+            ) : null}
+            {extra}
           </div>
-        ) : null}
-      </div>
+          {aside || date ? (
+            <div className="resume-entry-aside">
+              {aside}
+              {date}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       {summary && summary.trim() !== "" ? (
         <div
           className="resume-rich-text"
@@ -134,7 +170,13 @@ function dateNode(item: ItemRecord): ReactNode {
   );
 }
 
-function ExperienceEntry({ item }: { item: ItemRecord }) {
+function ExperienceEntry({
+  item,
+  fragment,
+}: {
+  item: ItemRecord;
+  fragment?: BlockFragment;
+}) {
   const company = text(item, "company");
   const position = text(item, "position");
   const location = text(item, "location");
@@ -146,8 +188,9 @@ function ExperienceEntry({ item }: { item: ItemRecord }) {
         .filter(Boolean)
         .join(" · ")}
       date={dateNode(item)}
-      summary={text(item, "summary")}
+      summary={slicedRichText(text(item, "summary"), fragment)}
       keepTogether
+      continuation={isContinuation(fragment)}
     />
   );
 }
@@ -218,7 +261,13 @@ function renderExperienceItems(items: ItemRecord[]): ReactNode[] {
   );
 }
 
-function EducationEntry({ item }: { item: ItemRecord }) {
+function EducationEntry({
+  item,
+  fragment,
+}: {
+  item: ItemRecord;
+  fragment?: BlockFragment;
+}) {
   const school = text(item, "school");
   const degree = text(item, "degree");
   const area = text(item, "area");
@@ -232,12 +281,19 @@ function EducationEntry({ item }: { item: ItemRecord }) {
         .filter(Boolean)
         .join(" · ")}
       date={dateNode(item)}
-      summary={text(item, "summary")}
+      summary={slicedRichText(text(item, "summary"), fragment)}
+      continuation={isContinuation(fragment)}
     />
   );
 }
 
-function ProjectEntry({ item }: { item: ItemRecord }) {
+function ProjectEntry({
+  item,
+  fragment,
+}: {
+  item: ItemRecord;
+  fragment?: BlockFragment;
+}) {
   const keywords = keywordList(item);
 
   return (
@@ -247,8 +303,9 @@ function ProjectEntry({ item }: { item: ItemRecord }) {
         .filter(Boolean)
         .join(" · ")}
       date={dateNode(item)}
-      summary={text(item, "description")}
+      summary={slicedRichText(text(item, "description"), fragment)}
       keepTogether
+      continuation={isContinuation(fragment)}
     />
   );
 }
@@ -292,10 +349,12 @@ function GenericEntry({
   doc,
   kind,
   item,
+  fragment,
 }: {
   doc: ResumeDocument;
   kind: GenericKind;
   item: ItemRecord;
+  fragment?: BlockFragment;
 }) {
   let title = "";
   let subtitle: ReactNode = "";
@@ -343,7 +402,7 @@ function GenericEntry({
     case "awards":
       title = text(item, "title");
       subtitle = text(item, "awarder");
-      summary = text(item, "summary");
+      summary = slicedRichText(text(item, "summary"), fragment);
       if (text(item, "date").trim() !== "") {
         date = <DateRange start={text(item, "date")} end="" />;
       }
@@ -370,7 +429,7 @@ function GenericEntry({
       subtitle = [text(item, "position"), text(item, "location")]
         .filter(Boolean)
         .join(" · ");
-      summary = text(item, "summary");
+      summary = slicedRichText(text(item, "summary"), fragment);
       date = dateNode(item);
       break;
     case "publications": {
@@ -378,7 +437,7 @@ function GenericEntry({
 
       title = text(item, "title");
       subtitle = text(item, "publisher");
-      summary = text(item, "summary");
+      summary = slicedRichText(text(item, "summary"), fragment);
       if (text(item, "date").trim() !== "") {
         date = <DateRange start={text(item, "date")} end="" />;
       }
@@ -400,14 +459,14 @@ function GenericEntry({
         .filter(Boolean)
         .join(" · ");
       extra = extra !== "" ? <p className="resume-entry-extra">{extra}</p> : null;
-      summary = text(item, "summary");
+      summary = slicedRichText(text(item, "summary"), fragment);
       break;
     case "custom":
       title = text(item, "name");
       subtitle = [text(item, "location"), text(item, "url")]
         .filter(Boolean)
         .join(" · ");
-      summary = text(item, "description");
+      summary = slicedRichText(text(item, "description"), fragment);
       if (text(item, "date").trim() !== "") {
         date = <DateRange start={text(item, "date")} end="" />;
       }
@@ -422,6 +481,7 @@ function GenericEntry({
       aside={aside}
       extra={extra}
       summary={summary}
+      continuation={isContinuation(fragment)}
     />
   );
 }
@@ -431,25 +491,33 @@ function renderItem(
   kind: ListKind,
   item: ItemRecord,
   index: number,
+  fragment?: BlockFragment,
 ): ReactNode {
   const id = itemId(item, index);
   let entry: ReactNode;
 
   switch (kind) {
     case "experience":
-      entry = <ExperienceEntry item={item} />;
+      entry = <ExperienceEntry item={item} fragment={fragment} />;
       break;
     case "education":
-      entry = <EducationEntry item={item} />;
+      entry = <EducationEntry item={item} fragment={fragment} />;
       break;
     case "projects":
-      entry = <ProjectEntry item={item} />;
+      entry = <ProjectEntry item={item} fragment={fragment} />;
       break;
     case "skills":
       entry = <SkillEntry doc={doc} item={item} />;
       break;
     default:
-      entry = <GenericEntry doc={doc} kind={kind} item={item} />;
+      entry = (
+        <GenericEntry
+          doc={doc}
+          kind={kind}
+          item={item}
+          fragment={fragment}
+        />
+      );
       break;
   }
 
@@ -462,6 +530,8 @@ type BlockGroup = {
   /** `null` means every visible entry (a plain, atomic section id). */
   entryIds: string[] | null;
   withHeading: boolean;
+  /** Inclusive bullet range owned by this page for a split entry. */
+  fragments: Record<string, BlockFragment>;
 };
 
 /**
@@ -495,6 +565,19 @@ function groupBlocks(
           }
         }
       }
+
+      if (block.fragment) {
+        const current = last.fragments[block.fragment.entryId];
+
+        last.fragments[block.fragment.entryId] = current
+          ? {
+              entryId: block.fragment.entryId,
+              start: Math.min(current.start, block.fragment.start),
+              end: Math.max(current.end, block.fragment.end),
+            }
+          : { ...block.fragment };
+      }
+
       last.withHeading = last.withHeading || block.withHeading;
       continue;
     }
@@ -510,6 +593,9 @@ function groupBlocks(
       resolved,
       entryIds: block.entryIds ? [...block.entryIds] : null,
       withHeading: block.withHeading,
+      fragments: block.fragment
+        ? { [block.fragment.entryId]: { ...block.fragment } }
+        : {},
     });
   }
 
@@ -584,7 +670,13 @@ export function SectionRenderer({
                 doc.sections.experience.groupSameCompany === true
                   ? renderExperienceItems(items)
                   : items.map((item, index) =>
-                      renderItem(doc, resolved.kind, item, index),
+                      renderItem(
+                        doc,
+                        resolved.kind,
+                        item,
+                        index,
+                        group.fragments[itemId(item, index)],
+                      ),
                     )}
               </div>
             )}
