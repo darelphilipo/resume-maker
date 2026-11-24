@@ -4,7 +4,7 @@ import { Info, Printer } from "@phosphor-icons/react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
-import { printResume } from "@/lib/print/printDocument";
+import { printPageSizeLabel, printResume } from "@/lib/print/printDocument";
 
 import { PrintPortal } from "./PrintPortal";
 
@@ -25,6 +25,7 @@ export function PrintTriggerButton({
   const startedJobRef = useRef<PrintJob | null>(null);
   const tipContainerRef = useRef<HTMLDivElement | null>(null);
   const tipId = useId();
+  const paperSize = printPageSizeLabel(doc.metadata.page.format);
 
   useEffect(() => {
     if (!job) {
@@ -121,8 +122,8 @@ export function PrintTriggerButton({
           role="tooltip"
           className={`${tipOpen ? "visible opacity-100" : "invisible opacity-0"} pointer-events-none absolute right-0 top-full z-30 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-line bg-surface p-3 text-left text-xs leading-snug text-text shadow-lg transition-opacity pointer-fine:group-hover:visible pointer-fine:group-hover:opacity-100 pointer-fine:group-focus-within:visible pointer-fine:group-focus-within:opacity-100`}
         >
-          Turn off “Headers and footers” in the print dialog so the page URL and
-          date stay out of the PDF.
+          Set Paper size to {paperSize} and turn off “Headers and footers” in
+          the print dialog so the page URL and date stay out of the PDF.
         </p>
       </div>
 

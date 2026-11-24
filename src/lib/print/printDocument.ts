@@ -1,5 +1,24 @@
+import type { PaperFormat } from "@/lib/units/pageGeometry";
+
 const PRINT_TIMEOUT_MS = 60_000;
 const TOUCH_TITLE_RESTORE_DELAY_MS = 1_200;
+
+/**
+ * The `@page` rule that matches the selected paper format. `print.css` keeps an
+ * A4 rule as a static fallback, but a saved Letter document must tell the print
+ * dialog `letter` or Chrome silently prints on A4 and clips the shorter page.
+ * Unknown/legacy values fall back to A4 (the schema default).
+ */
+export function printPageSizeCss(format: PaperFormat): string {
+  return format === "letter"
+    ? "@page { size: letter portrait; margin: 0mm; }"
+    : "@page { size: A4 portrait; margin: 0mm; }";
+}
+
+/** Short paper-size name for the print-dialog reminder on touch devices. */
+export function printPageSizeLabel(format: PaperFormat): string {
+  return format === "letter" ? "Letter" : "A4";
+}
 
 export type PrintResumeOptions = {
   pages: string[][];

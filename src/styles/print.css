@@ -1,4 +1,8 @@
-/* Force exact paper geometry and strip browser URL/date/page-number headers & footers */
+/* Fallback paper geometry. PrintPortal injects a runtime
+   <style data-print-page-size> @page rule that matches the selected paper size
+   (A4 or Letter); it wins over this rule because it comes later in the document.
+   Keep this in sync as the no-JS default. Zero @page margin disables
+   browser-injected headers/footers; .resume-page owns the internal padding. */
 @page {
   size: A4 portrait;
   margin: 0mm;

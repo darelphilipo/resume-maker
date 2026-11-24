@@ -22,8 +22,9 @@ describe("PrintTriggerButton", () => {
     const button = screen.getByRole("button", { name: "Save PDF" });
     const tip = screen.getByRole("tooltip");
 
+    expect(tip).toHaveTextContent("Set Paper size to A4");
     expect(tip).toHaveTextContent(
-      "Turn off “Headers and footers” in the print dialog",
+      "turn off “Headers and footers” in the print dialog",
     );
     expect(tip).toHaveClass("absolute", "invisible", "opacity-0");
     expect(tip).toHaveClass("pointer-fine:group-hover:visible");
@@ -35,6 +36,17 @@ describe("PrintTriggerButton", () => {
       "text-white",
       "min-w-10",
       "shrink-0",
+    );
+  });
+
+  it("matches the print tip paper size to the selected format", () => {
+    const doc = createEmptyResume();
+    doc.metadata.page.format = "letter";
+
+    render(<PrintTriggerButton doc={doc} pages={PAGES} />);
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Set Paper size to Letter",
     );
   });
 

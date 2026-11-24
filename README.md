@@ -21,7 +21,7 @@ in control of every line, and your data stays on your device.
   The resume name, undo/redo, JSON export, and a solid **Save PDF** button share
   one compact header row, so the preview keeps the height.
 - **Honest PDF output.** Preview the exact pages before printing, then use your
-  browser's print dialog to save a sharp PDF.
+  browser's print dialog to save a sharp PDF at your chosen A4 or Letter size.
 
 ## Key features
 
@@ -341,10 +341,11 @@ in control of every line, and your data stays on your device.
 3. Choose **Save PDF**.
 4. In the browser print dialog, choose **Save as PDF**.
 
-For the cleanest result, turn off browser headers and footers in the print
-dialog so the page URL and date do not appear in the PDF. Hover or focus
-**Save PDF** to see the reminder, or tap the info button beside it on a touch
-device.
+The PDF uses the paper size you picked in **Design** (A4 or Letter). Some mobile
+print dialogs still open on the other size, so set **Paper size** to the value
+named in the reminder and nothing will be clipped. Turn off browser headers and
+footers as well so the page URL and date do not appear. Hover or focus **Save
+PDF** to see both reminders, or tap the info button beside it on a touch device.
 
 ## Run it locally
 

@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { PaperFormat } from "@/lib/units/pageGeometry";
+
 import {
   printDateStamp,
+  printPageSizeCss,
+  printPageSizeLabel,
   printResume,
   printTitle,
   resumeDocumentTitle,
@@ -158,6 +162,37 @@ describe("resumeDocumentTitle", () => {
   it("falls back to the app name when no resume name is set", () => {
     expect(resumeDocumentTitle("")).toBe("Resume Maker");
     expect(resumeDocumentTitle("   ")).toBe("Resume Maker");
+  });
+});
+
+describe("printPageSizeCss", () => {
+  it("declares A4 for the default paper format", () => {
+    expect(printPageSizeCss("a4")).toBe(
+      "@page { size: A4 portrait; margin: 0mm; }",
+    );
+  });
+
+  it("declares Letter for the letter paper format", () => {
+    expect(printPageSizeCss("letter")).toBe(
+      "@page { size: letter portrait; margin: 0mm; }",
+    );
+  });
+
+  it("falls back to A4 for an unknown legacy value", () => {
+    expect(printPageSizeCss("legacy" as PaperFormat)).toBe(
+      printPageSizeCss("a4"),
+    );
+  });
+});
+
+describe("printPageSizeLabel", () => {
+  it("names the active format for the print-dialog reminder", () => {
+    expect(printPageSizeLabel("a4")).toBe("A4");
+    expect(printPageSizeLabel("letter")).toBe("Letter");
+  });
+
+  it("falls back to A4 for an unknown legacy value", () => {
+    expect(printPageSizeLabel("legacy" as PaperFormat)).toBe("A4");
   });
 });
 

@@ -3,6 +3,7 @@
 import { useMemo, type CSSProperties, type ReactPortal } from "react";
 import { createPortal } from "react-dom";
 
+import { printPageSizeCss } from "@/lib/print/printDocument";
 import { sanitizeResumeDocument } from "@/lib/richtext/sanitize";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { pageGeometry } from "@/lib/units/pageGeometry";
@@ -37,6 +38,11 @@ export function PrintPortal({
 
   return createPortal(
     <div id="print-portal" style={pageVariables}>
+      {/* Runtime @page rule wins over the A4 fallback in print.css so the
+          browser print dialog uses the paper size selected in Design. */}
+      <style data-print-page-size>
+        {printPageSizeCss(safeDoc.metadata.page.format)}
+      </style>
       <div className="resume-print-root resume-pages">
         {pages.map((_, index) => (
           <div

@@ -22,14 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-### P0 — Pagination & Print Export Integrity
-
-- [ ] **Dynamically sync `@page` size with the selected Paper Size (A4 vs. Letter) and add mobile paper-size print guidance.**
-  `src/styles/print.css` currently hardcodes `@page { size: A4 portrait; margin: 0mm; }` while `.resume-page` sizes via `--page-width` / `--page-height`. When Letter is selected, `@page` still declares A4; conversely, on Android (which defaults its print dialog to Letter, 18mm shorter than A4), nearly-full A4 pages risk clipping the bottom 18mm due to `overflow: hidden`.
-  - Inject a dynamic runtime `<style data-print-page-size>` rule (in `PrintPortal` or `printDocument.ts`) that sets `@page { size: A4 portrait; margin: 0mm; }` for `a4` and `@page { size: letter portrait; margin: 0mm; }` for `letter`, keeping `src/styles/print.css` aligned as fallback only.
-  - Extend the coarse-pointer print tip in `PrintTriggerButton.tsx` to include a short paper-size reminder matching the active format (e.g., `"Set Paper size to A4 and turn off 'Headers and footers' in the print dialog"`).
-  - Add unit tests in `PrintPortal.test.tsx`, `printDocument.test.ts`, and `PrintTriggerButton.test.tsx`. Verify `npm run typecheck`, `npm test`, `npm run lint`.
-
 ### P1 — Input Validation & Two-Column Layout Balance
 
 - [ ] **Enforce sane year bounds (`1950–2100`) in `MonthSelect` so `0000` and `9999` cannot render on the resume.**
@@ -71,6 +63,21 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — The print dialog now uses the paper size picked in **Design**.
+  New pure `printPageSizeCss` / `printPageSizeLabel` helpers in `printDocument.ts`
+  map `a4` → A4 and `letter` → Letter. `PrintPortal` injects a runtime
+  `<style data-print-page-size>` inside `#print-portal` so its `@page { size: …;
+  margin: 0mm; }` rule wins over the A4 fallback left in `print.css`; the
+  coarse-pointer **Save PDF** tip now says `Set Paper size to A4/Letter` alongside
+  the headers-and-footers reminder, covering Android dialogs that default to
+  Letter and would clip a nearly-full A4 page. Added helper, portal-rule, and
+  tooltip regressions plus README print guidance. Verified `npm run typecheck`,
+  `npm test` (980 pass), `npm run lint`. Files: `src/lib/print/printDocument.ts`
+  (+ test), `src/components/preview/PrintPortal.tsx` (+ test),
+  `src/components/preview/PrintTriggerButton.tsx` (+ test),
+  `src/styles/print.css`, `README.md`, `CONTEXT.md`, `TASKS.md`. The real
+  print-dialog geometry is browser-unverified here (Playwright blocked).
 
 - [x] 2026-11-24 — Tall single Experience/Project entries now split at bullet
   boundaries instead of overflowing Page 1 and clipping in PDF print. A pure

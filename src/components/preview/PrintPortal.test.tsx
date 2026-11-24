@@ -22,6 +22,37 @@ describe("PrintPortal", () => {
     view.unmount();
   });
 
+  it("injects an A4 @page rule inside the portal for the default paper size", () => {
+    const view = render(
+      <PrintPortal doc={createEmptyResume()} pages={[["__header"]]} />,
+    );
+    const portal = document.getElementById("print-portal");
+    const style = portal?.querySelector("style[data-print-page-size]");
+
+    expect(style).not.toBeNull();
+    expect(style?.textContent).toBe("@page { size: A4 portrait; margin: 0mm; }");
+
+    view.unmount();
+
+    expect(document.querySelector("style[data-print-page-size]")).toBeNull();
+  });
+
+  it("switches the injected @page rule to Letter when that size is selected", () => {
+    const doc = createEmptyResume();
+    doc.metadata.page.format = "letter";
+
+    const view = render(<PrintPortal doc={doc} pages={[["__header"]]} />);
+    const portal = document.getElementById("print-portal");
+    const style = portal?.querySelector("style[data-print-page-size]");
+
+    expect(style?.textContent).toBe(
+      "@page { size: letter portrait; margin: 0mm; }",
+    );
+    expect(portal?.getAttribute("style")).toContain("--page-width: 215.9mm");
+
+    view.unmount();
+  });
+
   it("omits empty trailing bullet items from the printed pages", () => {
     const doc = createEmptyResume();
     doc.summary.content = "<ul><li>Safe</li><li><p></p></li></ul>";

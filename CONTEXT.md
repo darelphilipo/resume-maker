@@ -1371,6 +1371,22 @@ rediscover.
        on the first fragment and the suffix on the last. Grouped promotions stay
        atomic: their company header belongs to the whole group.
 
+   91. **`@page` size is a runtime rule, not a static stylesheet.** `print.css`
+       declares A4 only as a fallback; `PrintPortal` renders a
+       `<style data-print-page-size>` *inside* `#print-portal` with
+       `printPageSizeCss(doc.metadata.page.format)` (`a4` → A4, `letter` →
+       letter). It must live inside the portal: the print rule
+       `body > *:not(#print-portal) { display: none }` would hide a body-level
+       `<style>`, and being later in document order than the linked `print.css`
+       is what makes its `@page` rule win the cascade. Both rules keep
+       `margin: 0mm` so browser headers/footers stay off. `printPageSizeLabel`
+       feeds the same format into the touch print tip because Android's print
+       dialog defaults to Letter (18mm shorter than A4) and can ignore the
+       stylesheet — a nearly-full A4 page then clips at the fixed
+       `overflow: hidden` page box (#88). Keep both helpers pure; jsdom retains
+       the raw `<style>` text but never applies `@page`, so only a real browser
+       print validates final page geometry.
+
 ## Verification and tooling
 
 ```powershell
@@ -1431,6 +1447,23 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-24 — Print dialog paper size follows the Design choice
+- Task: In Progress was empty, so this run took the top Queue item (P0):
+  `print.css` hardcoded `@page { size: A4 }` even for Letter documents, and
+  Android's Letter-defaulting print dialog clipped nearly-full A4 pages.
+- Change: pure `printPageSizeCss` / `printPageSizeLabel` in `printDocument.ts`;
+  `PrintPortal` injects `<style data-print-page-size>` inside `#print-portal`;
+  `PrintTriggerButton`'s coarse-pointer tip now names the active size.
+  `print.css` keeps A4 as a documented fallback. Decision #91.
+- Tests: helper cases for both formats + legacy fallback, portal rule A4/Letter
+  + unmount cleanup, tooltip reminder for both formats. 980 pass.
+- Files: `src/lib/print/printDocument.ts` (+ test),
+  `src/components/preview/PrintPortal.tsx` (+ test),
+  `src/components/preview/PrintTriggerButton.tsx` (+ test),
+  `src/styles/print.css`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (980 pass), `npm run lint`. The real
+  print-dialog page geometry remains browser-unverified here (Playwright blocked).
 
 ### 2026-11-24 — Finalized the oversized-entry split checkpoint
 - Task: In Progress was empty, so this run picked the top Queue item — the
@@ -1665,26 +1698,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/preview/PageOverflowBanner.tsx` (+ test),
   `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (930 pass), `npm run lint`.
-
-### 2026-11-23 — Header, contact, date, location and entry-block heuristics
-- Task: top P0 Queue item (the stale "wire all sections" checkbox had already
-  been completed and was removed from the Queue).
-- Header: a wrapped, unlabelled >120-char multi-sentence opening paragraph is
-  now the summary when no Summary heading exists; missing email/phone/profile
-  URLs are recovered from anywhere in the pasted text, not just the top block.
-- Entries: blank PDF paragraph gaps between bullets no longer split one role;
-  `isDateAnchor` splits undated multi-role blocks, `Company as Title` wins over
-  the generic title/company order, and single dates (`Completed in 2018`,
-  `Expected May 2027`, `Apr 2026`, `2014`) are parsed with the right start/end
-  field. Locations accept `Bengaluru, Karnataka, India` and standalone cities.
-- Regressions: three archetype fixtures (Reactive Resume icon column, unlabeled
-  summary + three-column skills, reconstructed two-page two-column Canva),
-  contact fallback, paragraph-gap folding, expected/bare single dates, plus the
-  `Bengaluru` degree-abbreviation and `+44` phone-prefix fixes. 922 pass.
-- Decision #18 expanded.
-- Files: `src/lib/import/pasteResume.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (922 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright
