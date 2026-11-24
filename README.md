@@ -106,11 +106,14 @@ in control of every line, and your data stays on your device.
   username, and icon are filled in automatically. Visible profiles also appear
   inline in the resume header beside your website, as clean clickable links with
   GitHub, LinkedIn, and other common resume-network marks (a globe for anything
-  else), so recruiters can reach them without scrolling. When every profile has
-  a link, that header line is the only place they print — no repeated Profiles
-  section. Tap **Manage profiles** in Basics to expand and jump straight to the
-  same list. A row with only a URL still counts, so pasted links are never
-  silently dropped.
+  else), so recruiters can reach them without scrolling. You can skip the URL
+  entirely: enter just a Network and Username and a known network gets its real
+  address (`GitHub` + `ada` → `github.com/ada`, `LinkedIn` + `ada` →
+  `linkedin.com/in/ada`); an unfamiliar network prints inline as
+  `Network: username` instead of disappearing. When every profile has a header
+  entry, that line is the only place they print — no repeated Profiles section.
+  Tap **Manage profiles** in Basics to expand and jump straight to the same list.
+  A row with only a URL still counts, so pasted links are never silently dropped.
 - **Everything you type makes it into the resume.** Your website, profile links,
   certification links, and publication links appear as clickable links in the
   preview and PDF — even if you pasted a bare address such as `github.com/you` —
@@ -169,7 +172,9 @@ in control of every line, and your data stays on your device.
   a two-column grid with even-sized buttons, so labels and arrows stay inside
   the card even in the narrow desktop Content column.
   Awards, Languages, Interests, Volunteer, Publications, and References stay
-  tucked behind **Add optional section** until you need them.
+  tucked behind **Add optional section** until you need them. Several sections
+  can stay open at once; when two or more are expanded, a quiet **Collapse all**
+  button closes them together.
 - On a phone, **Open section editor** opens that section in a single full editor
   sheet, so switching between sections stays quick even on a long resume. The
   sheet has an **X** in the top-right corner to close it, as well as the familiar

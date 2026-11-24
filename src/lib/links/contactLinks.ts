@@ -15,6 +15,8 @@ type NetworkDefinition = {
   icon: string;
   /** Path segments that are route prefixes, not the username. */
   skip?: readonly string[];
+  /** Path prefix before a username in a canonical profile URL. */
+  profilePath?: string;
 };
 
 const NETWORKS = new Map<string, NetworkDefinition>([
@@ -27,25 +29,34 @@ const NETWORKS = new Map<string, NetworkDefinition>([
       network: "LinkedIn",
       icon: "linkedin",
       skip: ["in", "pub", "company", "school", "showcase"],
+      profilePath: "in/",
     },
   ],
   ["twitter.com", { network: "Twitter", icon: "twitter" }],
   ["x.com", { network: "X", icon: "x" }],
   [
     "stackoverflow.com",
-    { network: "Stack Overflow", icon: "stack-overflow", skip: ["users"] },
+    {
+      network: "Stack Overflow",
+      icon: "stack-overflow",
+      skip: ["users"],
+      profilePath: "users/",
+    },
   ],
   ["dev.to", { network: "DEV Community", icon: "dev" }],
-  ["medium.com", { network: "Medium", icon: "medium" }],
+  [
+    "medium.com",
+    { network: "Medium", icon: "medium", profilePath: "@" },
+  ],
   ["dribbble.com", { network: "Dribbble", icon: "dribbble" }],
   ["behance.net", { network: "Behance", icon: "behance" }],
   ["instagram.com", { network: "Instagram", icon: "instagram" }],
   ["facebook.com", { network: "Facebook", icon: "facebook" }],
-  ["youtube.com", { network: "YouTube", icon: "youtube" }],
+  ["youtube.com", { network: "YouTube", icon: "youtube", profilePath: "@" }],
   ["mastodon.social", { network: "Mastodon", icon: "mastodon" }],
   ["fosstodon.org", { network: "Mastodon", icon: "mastodon" }],
   ["hachyderm.io", { network: "Mastodon", icon: "mastodon" }],
-  ["npmjs.com", { network: "npm", icon: "npm" }],
+  ["npmjs.com", { network: "npm", icon: "npm", profilePath: "~" }],
   ["kaggle.com", { network: "Kaggle", icon: "kaggle" }],
   ["huggingface.co", { network: "Hugging Face", icon: "hugging-face" }],
   ["codepen.io", { network: "CodePen", icon: "codepen" }],
@@ -56,10 +67,38 @@ const NETWORKS = new Map<string, NetworkDefinition>([
   ["orcid.org", { network: "ORCID", icon: "orcid" }],
 ]);
 
+/**
+ * Display name → canonical host, derived from the one host table above so a
+ * network never has two sources of truth. The first host wins for a name shared
+ * by several instances (Mastodon); those are still promoted with the derived
+ * link rather than being dropped.
+ */
+const NETWORK_BY_NAME = new Map<string, { host: string; pathPrefix: string }>();
+
+for (const [host, definition] of NETWORKS) {
+  const name = definition.network.toLowerCase();
+
+  if (!NETWORK_BY_NAME.has(name)) {
+    NETWORK_BY_NAME.set(name, {
+      host,
+      pathPrefix: definition.profilePath ?? "",
+    });
+  }
+}
+
+/** Friendly spellings users type into the free-text Network field. */
+const NETWORK_NAME_ALIASES: Record<string, string> = {
+  dev: "dev community",
+  "dev.to": "dev community",
+  stackoverflow: "stack overflow",
+  huggingface: "hugging face",
+};
+
 const PROTOCOL_PATTERN = /^[a-z][a-z0-9+.-]*:\/\//i;
 const SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
 const WWW_PATTERN = /^www\./;
 const LEADING_USERNAME_MARKS = /^[@~]+/;
+const LEADING_SLASHES = /^\/+/;
 const TRAILING_SLASHES = /\/+$/;
 
 function parseLink(input: string): URL | null {
@@ -180,6 +219,7 @@ const HEADER_PROFILE_ICONS = new Set<HeaderProfileIcon>([
 export type HeaderProfileLink = {
   id: string;
   label: string;
+  /** Empty for an inline `Network: username` row with no derivable URL. */
   href: string;
   icon: HeaderProfileIcon;
 };
@@ -188,6 +228,8 @@ type HeaderProfileSource = {
   id?: unknown;
   url?: unknown;
   icon?: unknown;
+  network?: unknown;
+  username?: unknown;
 };
 
 function stringField(value: unknown): string {
@@ -218,11 +260,61 @@ export function headerProfileIcon(
   return isHeaderProfileIcon(derived) ? derived : "globe";
 }
 
+/** Strip the marks people paste before a handle (`@ada`, `~ada`, `/ada/`). */
+function cleanProfileUsername(value: string): string {
+  return value
+    .trim()
+    .replace(LEADING_USERNAME_MARKS, "")
+    .replace(LEADING_SLASHES, "")
+    .replace(TRAILING_SLASHES, "");
+}
+
+function networkNameFromIcon(value: string): string {
+  const icon = value.trim().toLowerCase();
+
+  for (const [, definition] of NETWORKS) {
+    if (definition.icon === icon) {
+      return definition.network.toLowerCase();
+    }
+  }
+
+  return "";
+}
+
 /**
- * Turn a saved Profiles row into one inline header link. Rows without a usable
- * http(s) URL stay out of the header (they still render in the Profiles
- * section), and the visible label is the cleaned URL so `https://` / `www.`
- * never clutter the contact line.
+ * Canonical URL for a `Network` + `Username` pair with no stored URL. Known
+ * networks get their real profile path (`LinkedIn` → `/in/`, `Medium` → `/@`);
+ * unknown networks return `""` so the row falls back to inline text instead of
+ * inventing a host. A stored icon is only a hint when the Network field is blank.
+ */
+export function canonicalProfileUrl(
+  network: unknown,
+  username: unknown,
+  icon: unknown = "",
+): string {
+  const handle = cleanProfileUsername(stringField(username));
+  const name =
+    stringField(network).trim().toLowerCase() ||
+    networkNameFromIcon(stringField(icon));
+
+  if (name === "" || handle === "") {
+    return "";
+  }
+
+  const canonical = NETWORK_BY_NAME.get(NETWORK_NAME_ALIASES[name] ?? name);
+
+  if (!canonical) {
+    return "";
+  }
+
+  return `https://${canonical.host}/${canonical.pathPrefix}${handle}`;
+}
+
+/**
+ * Turn a saved Profiles row into one inline header link. A stored http(s) URL
+ * wins; otherwise a known `Network` + `Username` pair gets a canonical URL, and
+ * an unknown pair still renders as `Network: username` so Basics' "shown in the
+ * header" copy stays true. Only a row with nothing usable stays in the body.
  */
 export function profileHeaderLink(
   item: HeaderProfileSource,
@@ -230,17 +322,44 @@ export function profileHeaderLink(
 ): HeaderProfileLink | null {
   const url = stringField(item.url);
   const href = externalLinkHref(url);
+  const id = stringField(item.id) || `profile-${index}`;
+  const network = stringField(item.network).trim();
+  const username = cleanProfileUsername(stringField(item.username));
 
-  if (href === "") {
-    return null;
+  if (href !== "") {
+    return {
+      id,
+      label: websiteLabelFromUrl(url) || url.trim(),
+      href,
+      icon: headerProfileIcon(item.icon, url),
+    };
   }
 
-  return {
-    id: stringField(item.id) || `profile-${index}`,
-    label: websiteLabelFromUrl(url) || url.trim(),
-    href,
-    icon: headerProfileIcon(item.icon, url),
-  };
+  const canonical = canonicalProfileUrl(
+    network,
+    username,
+    item.icon,
+  );
+
+  if (canonical !== "") {
+    return {
+      id,
+      label: websiteLabelFromUrl(canonical),
+      href: canonical,
+      icon: headerProfileIcon(item.icon, canonical),
+    };
+  }
+
+  if (network !== "" && username !== "") {
+    return {
+      id,
+      label: `${network}: ${username}`,
+      href: "",
+      icon: headerProfileIcon(item.icon, ""),
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -259,9 +378,10 @@ export function headerProfileLinks(
 }
 
 /**
- * True when every visible profile is represented by a header link, so the
- * separate Profiles section would only repeat the contact line. A row without
- * a usable URL keeps the section (and its remaining rows) visible.
+ * True when every visible profile is represented by a header link — a stored
+ * URL, a derived canonical URL, or an inline `Network: username` row — so the
+ * separate Profiles section would only repeat the contact line. A row with
+ * nothing usable (for example a network-only draft) keeps the section visible.
  */
 export function profilesPromotedToHeader(
   items: readonly HeaderProfileSource[],

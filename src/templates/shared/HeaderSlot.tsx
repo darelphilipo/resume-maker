@@ -138,8 +138,9 @@ function buildContactEntries(doc: ResumeDocument): ContactEntry[] {
 
   // Profiles are promoted into the contact line from the existing Profiles
   // section — there is no second `basics.links` array. The section renderer and
-  // ATS text read the same `headerProfileLinks` list, so only usable URLs become
-  // header links and the body section is omitted when every row is promoted.
+  // ATS text read the same `headerProfileLinks` list, so a row with a stored or
+  // canonical URL becomes a link, a `Network: username` row becomes plain text,
+  // and the body section is omitted only when every row is promoted.
   const profiles = resolveSection(doc, "profiles");
 
   if (profiles?.kind === "profiles") {

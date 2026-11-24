@@ -391,4 +391,32 @@ describe("SectionList", () => {
     ).not.toContain(custom.id);
     expect(screen.queryByRole("button", { name: /Speaking/ })).toBeNull();
   });
+
+  it("keeps several sections open and collapses them all in one click", () => {
+    render(<SectionList />);
+
+    const summaryToggle = () =>
+      screen.getByRole("button", { name: /^Professional Summary/ });
+    const experienceToggle = () =>
+      screen.getByRole("button", { name: /^Experience/ });
+
+    expect(screen.queryByRole("button", { name: "Collapse all" })).toBeNull();
+
+    fireEvent.click(summaryToggle());
+    expect(summaryToggle()).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByRole("button", { name: "Collapse all" })).toBeNull();
+
+    fireEvent.click(experienceToggle());
+    expect(experienceToggle()).toHaveAttribute("aria-expanded", "true");
+    expect(summaryToggle()).toHaveAttribute("aria-expanded", "true");
+
+    const collapseAll = screen.getByRole("button", { name: "Collapse all" });
+    expect(collapseAll).toHaveAttribute("data-collapse-all");
+
+    fireEvent.click(collapseAll);
+
+    expect(summaryToggle()).toHaveAttribute("aria-expanded", "false");
+    expect(experienceToggle()).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: "Collapse all" })).toBeNull();
+  });
 });

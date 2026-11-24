@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canonicalProfileUrl,
   detectProfileLink,
   externalLinkHref,
   headerProfileIcon,
@@ -111,6 +112,89 @@ describe("profileHeaderLink", () => {
     expect(profileHeaderLink({ url: "   " })).toBeNull();
     expect(profileHeaderLink({ url: "javascript:alert(1)" })).toBeNull();
     expect(profileHeaderLink({ url: "data:text/html,hello" })).toBeNull();
+  });
+
+  it("derives a canonical link from a known Network + Username without a URL", () => {
+    expect(
+      profileHeaderLink({
+        id: "p1",
+        network: "GitHub",
+        username: "ada",
+        url: "",
+      }),
+    ).toEqual({
+      id: "p1",
+      label: "github.com/ada",
+      href: "https://github.com/ada",
+      icon: "github",
+    });
+    expect(
+      profileHeaderLink({
+        network: "LinkedIn",
+        username: "@ada",
+        url: "",
+      }),
+    ).toEqual({
+      id: "profile-0",
+      label: "linkedin.com/in/ada",
+      href: "https://linkedin.com/in/ada",
+      icon: "linkedin",
+    });
+  });
+
+  it("keeps an unknown Network + Username inline instead of dropping it", () => {
+    expect(
+      profileHeaderLink({
+        id: "p2",
+        network: "Portfolio",
+        username: "ada",
+        url: "",
+      }),
+    ).toEqual({
+      id: "p2",
+      label: "Portfolio: ada",
+      href: "",
+      icon: "globe",
+    });
+  });
+
+  it("leaves network-only drafts out of the header", () => {
+    expect(
+      profileHeaderLink({ network: "GitHub", username: "", url: "" }),
+    ).toBeNull();
+  });
+});
+
+describe("canonicalProfileUrl", () => {
+  it("builds canonical URLs for well-known networks", () => {
+    expect(canonicalProfileUrl("GitHub", "ada")).toBe(
+      "https://github.com/ada",
+    );
+    expect(canonicalProfileUrl("linkedin", "ada")).toBe(
+      "https://linkedin.com/in/ada",
+    );
+    expect(canonicalProfileUrl("Stack Overflow", "123")).toBe(
+      "https://stackoverflow.com/users/123",
+    );
+    expect(canonicalProfileUrl("Medium", "@ada")).toBe(
+      "https://medium.com/@ada",
+    );
+  });
+
+  it("cleans pasted handles and accepts a stored icon when Network is blank", () => {
+    expect(canonicalProfileUrl("GitHub", "/ada/")).toBe(
+      "https://github.com/ada",
+    );
+    expect(canonicalProfileUrl("", "ada", "github")).toBe(
+      "https://github.com/ada",
+    );
+    expect(canonicalProfileUrl("DEV", "ada")).toBe("https://dev.to/ada");
+  });
+
+  it("returns an empty string for unknown networks or missing handles", () => {
+    expect(canonicalProfileUrl("Portfolio", "ada")).toBe("");
+    expect(canonicalProfileUrl("GitHub", "")).toBe("");
+    expect(canonicalProfileUrl("", "", "")).toBe("");
   });
 });
 

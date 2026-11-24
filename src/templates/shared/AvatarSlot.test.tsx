@@ -229,7 +229,7 @@ describe("HeaderSlot", () => {
     ).not.toBeNull();
   });
 
-  it("keeps hidden profiles, hidden sections, and URL-less rows out of the header", () => {
+  it("keeps hidden profiles, hidden sections, and network-only drafts out of the header", () => {
     const doc = createEmptyResume();
     doc.sections.profiles.items = [
       {
@@ -241,10 +241,10 @@ describe("HeaderSlot", () => {
         icon: "github",
       },
       {
-        id: "no-url",
+        id: "network-only",
         hidden: false,
         network: "LinkedIn",
-        username: "ada",
+        username: "",
         url: "",
         icon: "linkedin",
       },
@@ -272,6 +272,64 @@ describe("HeaderSlot", () => {
     rerender(<HeaderSlot doc={doc} />);
 
     expect(screen.queryByRole("link", { name: "gitlab.com/ada" })).toBeNull();
+  });
+
+  it("derives a canonical header link when only Network and Username are filled", () => {
+    const doc = createEmptyResume();
+    doc.sections.profiles.items = [
+      {
+        id: "github",
+        hidden: false,
+        network: "GitHub",
+        username: "ada",
+        url: "",
+        icon: "",
+      },
+      {
+        id: "linkedin",
+        hidden: false,
+        network: "LinkedIn",
+        username: "ada",
+        url: "",
+        icon: "",
+      },
+    ];
+
+    render(<HeaderSlot doc={doc} />);
+
+    expect(screen.getByRole("link", { name: "github.com/ada" })).toHaveAttribute(
+      "href",
+      "https://github.com/ada",
+    );
+    expect(
+      screen.getByRole("link", { name: "linkedin.com/in/ada" }),
+    ).toHaveAttribute("href", "https://linkedin.com/in/ada");
+    expect(
+      screen.getByRole("link", { name: "github.com/ada" }).closest(
+        "[data-profile-icon]",
+      ),
+    ).toHaveAttribute("data-profile-icon", "github");
+  });
+
+  it("renders an unknown Network + Username as inline header text", () => {
+    const doc = createEmptyResume();
+    doc.sections.profiles.items = [
+      {
+        id: "portfolio",
+        hidden: false,
+        network: "Portfolio",
+        username: "ada",
+        url: "",
+        icon: "",
+      },
+    ];
+
+    const { container } = render(<HeaderSlot doc={doc} />);
+
+    expect(screen.getByText("Portfolio: ada")).toBeInTheDocument();
+    expect(container.querySelectorAll(".resume-contact-item a")).toHaveLength(
+      0,
+    );
   });
 
   it("keeps promoted profile links when header icons are hidden", () => {

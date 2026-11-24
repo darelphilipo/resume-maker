@@ -292,6 +292,35 @@ describe("buildAtsText", () => {
     expect(text).toContain("example.com/ada");
   });
 
+  it("promotes Network + Username profiles without a URL to the ATS contact line", () => {
+    const doc = createEmptyResume();
+
+    doc.metadata.layout.pages = [
+      { fullWidth: false, main: ["profiles"], sidebar: [] },
+    ];
+    doc.sections.profiles.items = [
+      ProfileItemSchema.parse({
+        id: "profile-1",
+        network: "GitHub",
+        username: "ada",
+        url: "",
+      }),
+      ProfileItemSchema.parse({
+        id: "profile-2",
+        network: "Portfolio",
+        username: "ada",
+        url: "",
+      }),
+    ];
+
+    const text = buildAtsText(doc);
+
+    expect(text).toContain("github.com/ada");
+    expect(text).toContain("Portfolio: ada");
+    // Both rows are in the contact line, so the body section is not repeated.
+    expect(text).not.toContain("PROFILES");
+  });
+
   it("prints education grades and certification/publication URLs", () => {
     const doc = createEmptyResume();
 

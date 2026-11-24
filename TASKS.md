@@ -28,13 +28,24 @@ _empty
 ### P2 — Extreme-Case Regression Gate & Test Hygiene
 
 
-- [ ] P2: Fix `Profiles` header rendering when only `Network` + `Username` are filled, and add a `Collapse all` button in the Content panel (`src/templates/shared/HeaderSlot.tsx`, `src/lib/links/contactLinks.ts`, `src/templates/shared/SectionRenderer.tsx`, `src/components/editor/SectionList.tsx`).
-  1. **`Profiles` header consistency:** When a user enters a `Network` + `Username` without a full `url`, derive the canonical URL for known networks (e.g. `GitHub` → `https://github.com/{username}`, `LinkedIn` → `https://linkedin.com/in/{username}`) or still render `Network: username` inline in `HeaderSlot` (omitting the redundant `PROFILES` body section) so `Basics`' *"shown in the header"* copy always matches reality.
-  2. **Content panel `Collapse all`:** Show a subtle `"Collapse all"` text button in the Content panel header/list whenever 2 or more section accordions are expanded at once so users can tidy the left sidebar in one click.
 
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — `Profiles` rows with only a Network and Username now match the
+  Basics "shown in the header" copy: known networks get a derived canonical link
+  (`GitHub` + `ada` → `github.com/ada`, `LinkedIn` → `linkedin.com/in/ada`), an
+  unknown pair renders inline as `Network: username`, and a network-only draft
+  stays in the body. The shared `headerProfileLinks` decision keeps the header,
+  ATS contact line, and omitted `PROFILES` section in sync. The Content list also
+  allows several open accordions and shows a subtle **Collapse all** text button
+  once 2+ are expanded. Verified `npm run typecheck`, `npm test` (1045 pass).
+  Files: `src/lib/links/contactLinks.ts` (+ test),
+  `src/templates/shared/HeaderSlot.tsx`, `src/templates/shared/AvatarSlot.test.tsx`,
+  `src/templates/shared/SectionRenderer.test.tsx`, `src/lib/ats/atsText.test.ts`,
+  `src/components/editor/SectionList.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-24 — Removed two stacked duplicates in the Preview tools: the
   `Review tools` dialog no longer repeats the *"Review mode is on..."* notice

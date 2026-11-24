@@ -191,7 +191,7 @@ export function SectionList({
 }: SectionListProps) {
   const doc = useResumeStore((state) => state.doc);
   const patchDoc = useResumeStore((state) => state.patchDoc);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [revealedOptional, setRevealedOptional] = useState<string[]>([]);
   const [optionalMenuOpen, setOptionalMenuOpen] = useState(false);
   const [customFormOpen, setCustomFormOpen] = useState(false);
@@ -206,7 +206,9 @@ export function SectionList({
   // shortcut again after collapsing the card still works.
   if (focusSection && focusSection.nonce !== lastFocusNonce) {
     setLastFocusNonce(focusSection.nonce);
-    setExpandedId(focusSection.id);
+    setExpandedIds((current) =>
+      current.includes(focusSection.id) ? current : [...current, focusSection.id],
+    );
   }
 
   useEffect(() => {
@@ -231,11 +233,25 @@ export function SectionList({
   const visibleRows = rows.filter((row) => !isOptionalTucked(row));
   const tuckedRows = rows.filter(isOptionalTucked);
 
+  function expandRow(id: string): void {
+    setExpandedIds((current) =>
+      current.includes(id) ? current : [...current, id],
+    );
+  }
+
+  function toggleRow(id: string): void {
+    setExpandedIds((current) =>
+      current.includes(id)
+        ? current.filter((expanded) => expanded !== id)
+        : [...current, id],
+    );
+  }
+
   function addOptionalSection(row: SectionRow): void {
     setRevealedOptional((current) =>
       current.includes(row.id) ? current : [...current, row.id],
     );
-    setExpandedId(row.id);
+    expandRow(row.id);
     setOptionalMenuOpen(false);
   }
 
@@ -344,7 +360,7 @@ export function SectionList({
 
     setCustomTitle("");
     setCustomFormOpen(false);
-    setExpandedId(section.id);
+    expandRow(section.id);
   }
 
   function deleteCustomSection(row: SectionRow): void {
@@ -364,14 +380,28 @@ export function SectionList({
     });
 
     setConfirmDeleteId(null);
-    setExpandedId(null);
+    setExpandedIds((current) => current.filter((id) => id !== row.id));
   }
 
   return (
     <div className="flex flex-col gap-2">
+      {/* Several sections can stay open at once; keep one quiet way to tidy the
+          column instead of tapping every caret individually. */}
+      {expandedIds.length >= 2 ? (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            data-collapse-all=""
+            onClick={() => setExpandedIds([])}
+            className="inline-flex min-h-9 items-center rounded px-2 text-xs font-medium text-muted transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:min-h-11"
+          >
+            Collapse all
+          </button>
+        </div>
+      ) : null}
       <ul className="flex flex-col gap-2">
         {visibleRows.map((row, index) => {
-          const isExpanded = expandedId === row.id;
+          const isExpanded = expandedIds.includes(row.id);
           const isCustomRow = !isSectionId(row.id) && row.id !== "summary";
           const atStart = index === 0;
           const atEnd = index === visibleRows.length - 1;
@@ -387,7 +417,7 @@ export function SectionList({
                 type="button"
                 aria-expanded={isExpanded}
                 aria-controls={bodyId}
-                onClick={() => setExpandedId(isExpanded ? null : row.id)}
+                onClick={() => toggleRow(row.id)}
                 className="flex min-h-11 w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 {isExpanded ? (

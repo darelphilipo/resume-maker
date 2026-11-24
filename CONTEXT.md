@@ -1461,6 +1461,32 @@ rediscover.
        keeps every per-entry button. Do not widen the guard: the other buttons
        copy genuinely different text.
 
+   96. **A `Network` + `Username` row is promoted without a stored URL.**
+       `canonicalProfileUrl` (`src/lib/links/contactLinks.ts`) derives
+       `https://{host}/{pathPrefix}{handle}` from the **same** `NETWORKS` host
+       table used by `detectProfileLink` (with a small alias/prefix layer:
+       LinkedIn `in/`, Stack Overflow `users/`, Medium/npm/YouTube `@`/`~`), so
+       there is still one source of truth for hosts. Known networks get a real
+       link; an unknown network with both fields keeps the row in the header as
+       plain `Network: username` text (`href === ""`, rendered as a `<span>` by
+       `HeaderSlot`); a network-only draft stays in the body. `profileHeaderLink`
+       is the single promotion decision shared by `HeaderSlot`, `atsText` and
+       `SectionRenderer` through `headerProfileLinks` / `profilesPromotedToHeader`
+       — do not add a second visibility rule there, or Basics' "shown in the
+       header" copy drifts from the PDF again. ATS prints the derived *clean*
+       label (no invented scheme in plain text), matching the visual header.
+
+   97. **The Content list is a multi-accordion with one Collapse all.**
+       `SectionList` holds `expandedIds: string[]` rather than one `expandedId`,
+       so two or more section cards can be open at once; a subtle text button
+       appears only at `>= 2` and clears the whole array. `focusSection`
+       (Manage profiles) and `addOptionalSection` append/dedupe instead of
+       replacing, and deleting a custom section removes its id. Keep the
+       button's fine-pointer target small but reach `min-h-11` on coarse
+       pointers; it sits above the `<ul>` (not in the clipped 22rem header row)
+       and collapses only section rows, not the sibling Basics accordion owned
+       by `EditorWorkspace`.
+
 ## Verification and tooling
 
 ```powershell
@@ -1525,6 +1551,28 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-24 — Profiles promote without a URL; Content Collapse all
+- Task: top (only) Queue item, P2: `Profiles` rows filled with just Network +
+  Username, plus a `Collapse all` control in the Content panel.
+- Change: added `canonicalProfileUrl` and extended `profileHeaderLink` in
+  `src/lib/links/contactLinks.ts` so a known network derives a real URL, an
+  unknown pair renders inline (`Network: username`), and a network-only draft
+  stays in the body. `HeaderSlot`, `SectionRenderer` and `atsText` already read
+  the one `headerProfileLinks` list, so promotion/omission stayed consistent;
+  only a clarifying comment changed in `HeaderSlot`. `SectionList` now keeps an
+  `expandedIds` array (multi-accordion) and shows a subtle `Collapse all` text
+  button once 2+ rows are open. Decisions #96/#97; README Key features updated.
+- Tests: contactLinks canonical/fallback/draft cases, HeaderSlot canonical-link
+  + inline-text cases, SectionRenderer promotion case, ATS contact-line case,
+  and a SectionList multi-expand/Collapse-all case. 1045 pass.
+- Files: `src/lib/links/contactLinks.ts` (+ test),
+  `src/templates/shared/HeaderSlot.tsx`,
+  `src/templates/shared/AvatarSlot.test.tsx`,
+  `src/templates/shared/SectionRenderer.test.tsx`,
+  `src/lib/ats/atsText.test.ts`, `src/components/editor/SectionList.tsx`
+  (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1045 pass).
 
 ### 2026-11-24 — Review dialog and ATS Copy buttons deduplicated
 - Task: top Queue item (P2): duplicate Anonymize notice in `Review tools` and
@@ -1714,38 +1762,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `npm run lint` (clean). Moved the item to Done with the file list. Playwright
   is still blocked here, so the real print/PDF split remains browser-unverified.
 - Files: `src/lib/pagination/sectionPlans.test.ts`, `TASKS.md`, `CONTEXT.md`.
-
-### 2026-11-24 — Oversized entries split at bullet boundaries
-- Task: Queue P0. A single Experience/Project entry with 15–18 bullets stayed
-  atomic, overflowed Page 1, and clipped at the fixed print page height.
-- Splitter: new pure `bulletSlices.ts` parses one top-level list into a prefix,
-  bullet list, and suffix. `blockIds.ts` gained `__fragment:` ids and an optional
-  `fragment` on decoded section blocks. `sectionPlans.ts` now emits
-  `bulletFragments` for single-column, non-keepTogether entries (including the
-  previously atomic single-entry case), attaches fragment heights to the whole
-  `PackBlock`, and exposes `planMeasureKeys`. `packPages.ts` splits a block only
-  when it cannot fit and is ≥35% of a page (or taller than a page), charging no
-  page gap between its fragments.
-- Render/measure: `MeasureLayer` measures the whole entry plus each fragment.
-  `SectionRenderer` merges consecutive fragments of one entry, fringes the
-  prefix/suffix onto the first/last fragment, keeps the entry header on the
-  first, and omits it with `.resume-entry-continuation` on later pages.
-- Tests: new bullet-slice helper cases, fragment id round-trips/validation,
-  fragment planning + buildPackBlocks attachment, packPages split/threshold/gap
-  cases, computePages Page-1-fill and short-entry-move cases, MeasureLayer
-  fragment reporting, and SectionRenderer first/continuation/merge rendering.
-- Files: `src/lib/richtext/bulletSlices.ts` (+ test, new),
-  `src/lib/pagination/blockIds.ts` (+ test),
-  `src/lib/pagination/sectionPlans.ts` (+ test),
-  `src/lib/pagination/packPages.ts` (+ test),
-  `src/lib/pagination/computePages.test.ts`,
-  `src/lib/pagination/usePageLayout.ts`, `src/lib/pagination/index.ts`,
-  `src/components/preview/MeasureLayer.tsx` (+ test),
-  `src/templates/shared/SectionRenderer.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (972 pass), `npm run lint`.
-  Playwright remains blocked here, so the real print/PDF split is
-  browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

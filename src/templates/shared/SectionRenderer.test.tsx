@@ -76,7 +76,7 @@ describe("SectionRenderer", () => {
     expect(screen.queryByText("Profiles")).toBeNull();
   });
 
-  it("keeps a URL-less Profiles row visible in the body", () => {
+  it("keeps a network-only Profiles draft visible in the body", () => {
     const doc = createEmptyResume();
     doc.sections.profiles.items = [
       ProfileItemSchema.parse({
@@ -88,7 +88,7 @@ describe("SectionRenderer", () => {
       ProfileItemSchema.parse({
         id: "p2",
         network: "Portfolio",
-        username: "ada",
+        username: "",
         url: "",
       }),
     ];
@@ -97,6 +97,31 @@ describe("SectionRenderer", () => {
 
     expect(screen.getByText("Profiles")).toBeInTheDocument();
     expect(screen.getByText("Portfolio")).toBeInTheDocument();
+  });
+
+  it("omits the Profiles section when a Network + Username row is promoted without a URL", () => {
+    const doc = createEmptyResume();
+    doc.sections.profiles.items = [
+      ProfileItemSchema.parse({
+        id: "p1",
+        network: "GitHub",
+        username: "ada",
+        url: "",
+      }),
+      ProfileItemSchema.parse({
+        id: "p2",
+        network: "Portfolio",
+        username: "ada",
+        url: "",
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer doc={doc} pageSectionIds={["profiles"]} />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByText("Profiles")).toBeNull();
   });
 
   it("skips hidden individual items", () => {
