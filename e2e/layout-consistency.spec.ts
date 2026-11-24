@@ -3,8 +3,10 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   createPresetResume,
   readPersistedDocument,
+  readPrintCalls,
   showPreview,
   showTab,
+  stubPrint,
 } from "./helpers";
 
 test.describe.configure({ timeout: 120_000 });
@@ -948,5 +950,276 @@ test.describe("tall tablet preview", () => {
       });
 
     await expect.poll(gapDifference).toBeLessThanOrEqual(2);
+  });
+});
+
+/**
+ * Permanent extreme-QA gate. The Vitest suite in
+ * `src/lib/extremeCases/extremeCases.test.tsx` locks down the pure/DOM half of
+ * these scenarios; this block locks down the browser geometry jsdom cannot see.
+ */
+test.describe("extreme QA gate", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  type EditableResume = {
+    basics: {
+      name: string;
+      headline?: string;
+      email?: string;
+      website?: { url: string; label: string };
+    };
+    metadata: { page: { format: string }; template?: string };
+    sections: Record<
+      string,
+      { hidden?: boolean; items: Array<Record<string, unknown>> }
+    >;
+  };
+
+  async function importEditedResume(
+    page: Page,
+    name: string,
+    edit: (doc: EditableResume) => void,
+  ): Promise<void> {
+    const persisted = (await readPersistedDocument(page)) as EditableResume | null;
+
+    if (persisted === null) {
+      throw new Error("The preset resume was not persisted.");
+    }
+
+    edit(persisted);
+
+    await page.goto("/");
+    await page.locator("#resume-json-input").setInputFiles({
+      name,
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(persisted)),
+    });
+
+    await page.waitForURL(/\/editor\/?\?id=/);
+    await expect(page.getByRole("button", { name: "Save PDF" })).toBeVisible();
+  }
+
+  function pageGeometry(page: Page) {
+    return page.evaluate(() => {
+      const paper = document.querySelector<HTMLElement>(
+        "#panel-preview .resume-page",
+      );
+      const style = paper ? getComputedStyle(paper) : null;
+
+      return {
+        width: Number.parseFloat(style?.width ?? "0"),
+        height: Number.parseFloat(style?.height ?? "0"),
+      };
+    });
+  }
+
+  test("an 18-bullet single entry fills Page 1 and prints without clipping", async ({
+    page,
+  }) => {
+    await stubPrint(page, false);
+    await createPresetResume(page);
+    await importEditedResume(page, "18-bullets.json", (doc) => {
+      const template = doc.sections.experience.items[0];
+
+      doc.sections.experience.items = [
+        {
+          ...template,
+          id: "exp-eighteen",
+          summary: `<ul>${Array.from(
+            { length: 18 },
+            (_, index) =>
+              `<li><p>Extreme bullet ${index + 1} measurable impact across the platform.</p></li>`,
+          ).join("")}</ul>`,
+        },
+      ];
+    });
+    await showPreview(page);
+
+    await expect
+      .poll(
+        async () => page.locator("#panel-preview .resume-page").count(),
+        { timeout: 20_000 },
+      )
+      .toBeGreaterThanOrEqual(2);
+
+    const split = await page.evaluate(() => {
+      const pages = Array.from(
+        document.querySelectorAll<HTMLElement>("#panel-preview .resume-page"),
+      );
+      const text = pages.map((paper) => paper.textContent ?? "").join("\n");
+
+      return {
+        pageCount: pages.length,
+        firstBullets:
+          pages[0]?.querySelectorAll(".resume-rich-text li").length ?? 0,
+        firstHasHeading: Boolean(
+          pages[0]?.querySelector(
+            '[data-section-id="experience"] .resume-section-heading',
+          ),
+        ),
+        bulletCount: (text.match(/Extreme bullet \d+/g) ?? []).length,
+      };
+    });
+
+    expect(split.pageCount).toBeGreaterThanOrEqual(2);
+    // Page 1 starts with the section heading and bullets; it is not blank.
+    expect(split.firstHasHeading).toBe(true);
+    expect(split.firstBullets).toBeGreaterThan(0);
+    // Every bullet survives the split onto one of the printed pages.
+    expect(split.bulletCount).toBe(18);
+
+    // Keep the print portal up (stubPrint never dispatches afterprint) and
+    // measure each fixed-height page in print media: a packed page must not
+    // hide content behind `overflow: hidden`.
+    await page.getByRole("button", { name: "Save PDF" }).click();
+    await expect
+      .poll(async () => (await readPrintCalls(page)).length)
+      .toBe(1);
+    await page.emulateMedia({ media: "print" });
+
+    const clipped = await page.evaluate(() => {
+      const portal = document.getElementById("print-portal");
+
+      return Array.from(
+        portal?.querySelectorAll<HTMLElement>(".resume-page") ?? [],
+      ).map((paper) => paper.scrollHeight - paper.clientHeight);
+    });
+
+    expect(clipped.length).toBeGreaterThanOrEqual(2);
+    expect(clipped.every((overflow) => overflow <= 2)).toBe(true);
+  });
+
+  test("A4 ↔ Letter changes the paper box and the active @page rule", async ({
+    page,
+  }) => {
+    await stubPrint(page, false);
+    await createPresetResume(page);
+    await showPreview(page);
+
+    const a4 = await pageGeometry(page);
+    expect(a4.width).toBeGreaterThan(700);
+
+    await showTab(page, "Design");
+    // The radio is `sr-only`; the segmented card body is the real hit target.
+    await page.getByText("8.5 × 11 in", { exact: true }).click();
+    await expect(page.locator("#page-format-letter")).toBeChecked();
+    await showPreview(page);
+
+    const letter = await pageGeometry(page);
+    expect(letter.width).toBeGreaterThan(a4.width);
+    expect(letter.height).toBeLessThan(a4.height);
+
+    await page.getByRole("button", { name: "Save PDF" }).click();
+    await expect
+      .poll(async () => (await readPrintCalls(page)).length)
+      .toBe(1);
+
+    const rule = await page
+      .locator('#print-portal style[data-print-page-size]')
+      .textContent();
+    expect(rule).toContain("size: letter portrait");
+
+    await page.emulateMedia({ media: "print" });
+    const printed = await page.evaluate(() => {
+      const paper = document.querySelector<HTMLElement>(
+        "#print-portal .resume-page",
+      );
+      const style = paper ? getComputedStyle(paper) : null;
+
+      return {
+        width: Number.parseFloat(style?.width ?? "0"),
+        height: Number.parseFloat(style?.height ?? "0"),
+      };
+    });
+
+    expect(Math.abs(printed.width - 816)).toBeLessThan(2);
+    expect(Math.abs(printed.height - 1056)).toBeLessThan(2);
+  });
+
+  test("stress content never overflows any of the six templates", async ({
+    page,
+  }) => {
+    await createPresetResume(page);
+    await importEditedResume(page, "stress.json", (doc) => {
+      doc.basics.website = {
+        url: `https://example.com/${"a".repeat(90)}`,
+        label: "",
+      };
+      doc.sections.skills.items = Array.from({ length: 4 }, (_, row) => ({
+        id: `skill-${row}`,
+        name: `Category ${row + 1}`,
+        keywords: Array.from(
+          { length: 9 },
+          (_, index) => `Keyword${row * 9 + index + 1}`,
+        ),
+        level: 0,
+        hidden: false,
+      }));
+      doc.sections.certifications.items = Array.from(
+        { length: 6 },
+        (_, index) => ({
+          id: `cert-${index}`,
+          name: `Certification ${index + 1} with a deliberately long descriptive title`,
+          issuer: "Example Institute",
+          date: "2024-01",
+          url: "",
+          hidden: false,
+        }),
+      );
+    });
+
+    const templates = [
+      { id: "onyx", name: /Engineering Classic/ },
+      { id: "persian", name: /Ivy\/Executive/ },
+      { id: "bronzor", name: /Modern Accent/ },
+      { id: "chikorita", name: /Compact 1-Pager/ },
+      { id: "azurill", name: /Hybrid Skills-First/ },
+      { id: "gengar", name: /Studio Sidebar/ },
+    ] as const;
+
+    for (const template of templates) {
+      await showTab(page, "Design");
+      await page.getByRole("radio", { name: template.name }).click();
+      await showPreview(page);
+
+      const metrics = await page.evaluate(() => {
+        const paper = document.querySelector<HTMLElement>(
+          "#panel-preview .resume-page",
+        );
+        const root = paper?.querySelector<HTMLElement>(".onyx");
+
+        if (!paper || !root) {
+          return null;
+        }
+
+        const box = paper.getBoundingClientRect();
+        const style = getComputedStyle(paper);
+        const contentRight =
+          box.right - Number.parseFloat(style.paddingRight || "0");
+        const dates = Array.from(
+          paper.querySelectorAll<HTMLElement>(".resume-date-range"),
+        );
+
+        return {
+          paperOverflowX: paper.scrollWidth - paper.clientWidth,
+          rootOverflowX: root.scrollWidth - root.clientWidth,
+          dates: dates.length,
+          clippedDates: dates.filter(
+            (date) => date.getBoundingClientRect().right > contentRight + 1,
+          ).length,
+          hasLongUrl: Array.from(paper.querySelectorAll("a")).some((link) =>
+            link.getAttribute("href")?.includes("a".repeat(90)),
+          ),
+        };
+      });
+
+      expect(metrics, template.id).not.toBeNull();
+      const result = metrics as NonNullable<typeof metrics>;
+      expect(result.hasLongUrl, template.id).toBe(true);
+      expect(result.dates, template.id).toBeGreaterThan(0);
+      expect(result.paperOverflowX, template.id).toBeLessThanOrEqual(2);
+      expect(result.rootOverflowX, template.id).toBeLessThanOrEqual(2);
+      expect(result.clippedDates, template.id).toBe(0);
+    }
   });
 });

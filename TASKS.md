@@ -27,14 +27,6 @@ _empty
 
 ### P2 — Extreme-Case Regression Gate & Test Hygiene
 
-- [ ] **Add permanent extreme-edge-case regression tests covering stress layouts, blank states, and malformed inputs.**
-  Lock in the five extreme QA scenarios so future autonomous runs cannot regress them:
-  1. Oversized 18-bullet single entry splits across pages without blank Page 1 or clipped print content.
-  2. Switching A4 ↔ Letter updates both `.resume-page` dimensions and the active `@page` rule.
-  3. 90-char unbroken URL + 35+ skills + 6+ certifications render across all 6 templates with zero horizontal overflow and unclipped right-aligned dates.
-  4. Completely blank / all-sections-hidden resume handles Match JD (empty + sample JD, `0%` / no `NaN%`), Bullet polish, 6s Scan, Anonymize, ATS text, and JSON export without crashing.
-  5. Malformed inputs (`0000`/`99999`/`abcd` in `MonthSelect`, `--- !!! ???` in Launcher Paste, broken Picture URL with `Hide picture` unchecked) fail gracefully.
-  - Add Vitest coverage where DOM/pure logic applies and extend `e2e/layout-consistency.spec.ts` (keeping Playwright assertions typechecked even when browser execution is sandbox-blocked). Verify `npm run typecheck`, `npm test`, `npm run lint`.
 
 - [ ] **Clean up stray `src/components/editor/__explore.test.tsx` test file.**
   Merge the live-name regression test from `src/components/editor/__explore.test.tsx` (left behind on 2026-11-20) into `src/components/editor/BasicsForm.test.tsx` and remove `__explore.test.tsx` if file deletion is available in the runner environment (otherwise empty/deprecate cleanly). Verify `npm run typecheck`, `npm test`, `npm run lint`.
@@ -50,6 +42,23 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-24 — Locked in all five extreme-QA scenarios with a permanent
+  regression gate. New `src/lib/extremeCases/extremeCases.test.tsx` covers the
+  A4↔Letter page box + `@page` switch, a 90-char URL / 36 skills / 6
+  certifications stress doc rendered through all six templates, blank and
+  all-sections-hidden resumes (ATS, JD `0%`/no `NaN%`, bullet polish, scan,
+  anonymize, JSON export), and malformed years/paste/broken picture URL.
+  `computePages.test.ts` gained an 18-bullet single-entry split case that
+  asserts Page 1 is filled, all bullets appear exactly once and `overflowPx`
+  is zero. `e2e/layout-consistency.spec.ts` gained three browser-geometry
+  cases (18-bullet split + print-portal clipping, A4↔Letter paper box/rule,
+  stress overflow across all six templates) whose assertions are typechecked
+  but browser-unverified here (Playwright sandbox-blocked). Verified
+  `npm run typecheck`, `npm test` (1031 pass), `npm run lint`. Files:
+  `src/lib/extremeCases/extremeCases.test.tsx` (new),
+  `src/lib/pagination/computePages.test.ts`, `e2e/layout-consistency.spec.ts`,
+  `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-24 — Filled `Studio Sidebar`'s wasted Page 1 lower-left gap when
   the first Experience role is mid-size. Finishing the prior In Progress

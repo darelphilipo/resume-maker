@@ -462,6 +462,57 @@ describe("computePages with split entries", () => {
     expect(result.overflowPx).toBe(0);
   });
 
+  it("splits an 18-bullet single entry across pages without blanking Page 1 or losing bullets", () => {
+    // Extreme-QA case: one Experience role with 18 bullets must fill the rest of
+    // Page 1 at a bullet boundary, continue on Page 2, and report every bullet
+    // exactly once. A blank Page 1 or a dropped continuation would clip in the
+    // fixed-height print page (Decision #88).
+    const doc = createEmptyResume();
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+        summary: `<ul>${Array.from(
+          { length: 18 },
+          (_, index) => `<li><p>Bullet ${index + 1}</p></li>`,
+        ).join("")}</ul>`,
+      }),
+    ];
+    const plans = getSectionPlans(doc, ["experience"]);
+    const blocks = planBlockKeys(plans[0]);
+    const fragments = planFragmentKeys(plans[0]);
+
+    expect(fragments).toHaveLength(18);
+
+    const result = computePages(
+      makeInput({
+        sectionIds: ["experience"],
+        heights: {
+          [blocks[0]]: 1900,
+          ...Object.fromEntries(
+            fragments.map((key, index) => [key, index === 0 ? 180 : 100]),
+          ),
+        },
+        headerHeightPx: 100,
+        contentHeightPx: 1000,
+        gapPx: 0,
+        plans,
+      }),
+    );
+
+    expect(result.pages.length).toBeGreaterThanOrEqual(2);
+    expect(result.pages[0][0]).toBe("__header");
+    expect(result.pages[0]).toContain(fragments[0]);
+    expect(result.pages[0]).not.toContain(blocks[0]);
+    // Every bullet lands on exactly one page, in reading order.
+    expect(result.pages.flat().filter((id) => fragments.includes(id))).toEqual(
+      fragments,
+    );
+    // Nothing overflows the fixed print page box.
+    expect(result.overflowPx).toBe(0);
+  });
+
   it("moves a short entry whole when splitting would only buy a line or two", () => {
     const doc = oversizedEntryDoc();
     const plans = getSectionPlans(doc, ["summary", "experience"]);

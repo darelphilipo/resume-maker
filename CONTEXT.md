@@ -1510,6 +1510,28 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-24 — Permanent extreme-QA regression gate
+- Task: top Queue item. The five extreme QA cases were covered piecemeal (8
+  bullets max, no blank-doc 0% assertion, no stress fixture, no literal
+  `--- !!! ???` paste) but no single gate stopped a future run dropping one.
+- Change: new `src/lib/extremeCases/extremeCases.test.tsx` gathers the pure/DOM
+  half — A4↔Letter page box + injected `@page`, a 90-char URL / 36 skills / 6
+  certifications doc rendered through all six templates, blank and
+  all-sections-hidden output (ATS/JD/lint/scan/anonymize/JSON), and malformed
+  years/paste/broken picture URL. `computePages.test.ts` gained an 18-bullet
+  single-entry split case asserting Page 1 is filled, every fragment appears
+  once, and `overflowPx === 0`. `e2e/layout-consistency.spec.ts` gained three
+  typechecked browser-geometry cases; the print-portal case keeps the portal
+  mounted with `stubPrint(page, false)` and checks `scrollHeight <= clientHeight`
+  under `emulateMedia({ media: "print" })`.
+- Tests: 1031 pass. Verified `npm run typecheck`, `npm test`, `npm run lint`.
+- Files: `src/lib/extremeCases/extremeCases.test.tsx` (new),
+  `src/lib/pagination/computePages.test.ts`, `e2e/layout-consistency.spec.ts`,
+  `TASKS.md`, `CONTEXT.md`.
+- Note: Playwright remains sandbox-blocked, so the new geometry cases are
+  typechecked but browser-unverified. `getByText(/Jan 2024/)` matched the six
+  certification dates too — query the experience date-range node directly.
+
 ### 2026-11-24 — Studio Sidebar Page 1 fills a wasted lower-left gap
 - Task: the In Progress P1 item. A prior run had already committed the
   `packPages` wasted-gap rule and most of its regressions, but left the suite
@@ -1708,39 +1730,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/components/preview/LiveCanvasViewport.tsx`, `CONTEXT.md`,
   `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (947 pass), `npm run lint`.
-
-### 2026-11-23 — Studio Sidebar caps Page 1's sidebar and prints exactly its pages
-- Task: Queue P0. A tall side column grew `.studio-layout` past one printable
-  page, so Chrome's print layout pushed the whole grid to Page 2 and `Save as
-  PDF` produced a blank Page 1 with only the header. The same side column also
-  had no height budget on Page 1.
-- Packing: `splitPinnedBlocks` packs pinned blocks against
-  `contentHeight - header - gap`. Only the fitting blocks stay in `pages[0]`;
-  the rest join the main flow on Page 2+ (forced off Page 1 when the main
-  column left room). `fullWidthHeights` lets a spilled block be packed at the
-  width it will render. Decision #62 rewritten.
-- Template: the aside reads `pages[0]` only (not `pages.flat()`), so spilled
-  sidebar blocks render full-width in a later page's main column instead of
-  re-growing Page 1.
-- Measure/fit: `MeasureLayer` renders a hidden full-width copy of every sidebar
-  block under `FULL_WIDTH_MEASURE_PREFIX`; `usePageLayout` forwards those
-  heights and computes the fit height as `header + max(mainColumn,
-  sidebarColumn)` instead of the sum.
-- Print: `@media print .resume-page` now has fixed
-  `height`/`max-height: var(--page-height)` and `overflow: hidden`, so mm/pt
-  rounding cannot fragment a packed page. Decision #88 explains why
-  `break-inside: avoid-page` is not used.
-- Tests: computePages capping/overflow/full-width cases; usePageLayout fit-max
-  and spill cases; MeasureLayer full-width-copy case; Studio template aside
-  ownership and full-width spill; print-page CSS contract. 947 pass.
-- Files: `src/lib/pagination/computePages.ts` (+ test),
-  `src/lib/pagination/usePageLayout.ts` (+ test),
-  `src/components/preview/MeasureLayer.tsx` (+ test),
-  `src/templates/studio/StudioSidebarTemplate.tsx` (+ test),
-  `src/templates/studio/sidebarSections.ts`, `src/styles/print.css`,
-  `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (947 pass). Playwright remains
-  blocked here, so the visual/PDF check is browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright
