@@ -31,16 +31,65 @@ export type PackPagesOptions = {
  */
 export const FRAGMENT_SPLIT_MIN_PAGE_RATIO = 0.35;
 
+/**
+ * Below `FRAGMENT_SPLIT_MIN_PAGE_RATIO`, an entry is still split when moving it
+ * whole would waste at least this share of the current page and at least
+ * `FRAGMENT_SPLIT_MIN_FITTING_FRAGMENTS` fragments fit in the gap. The Studio
+ * Sidebar's narrow Page 1 main column makes entries taller there, so a mid-size
+ * entry can miss the remaining space yet fall under the 35% bar; moving it whole
+ * then leaves a quarter-page hole beside a full sidebar.
+ */
+export const FRAGMENT_SPLIT_WASTED_PAGE_RATIO = 0.25;
+
+export const FRAGMENT_SPLIT_MIN_FITTING_FRAGMENTS = 2;
+
+function countFittingFragments(
+  fragments: readonly PackBlock[],
+  availableHeightPx: number,
+  heightOf: (block: PackBlock) => number,
+): number {
+  let usedHeightPx = 0;
+  let count = 0;
+
+  for (const fragment of fragments) {
+    const heightPx = heightOf(fragment);
+
+    if (usedHeightPx + heightPx > availableHeightPx) {
+      break;
+    }
+
+    usedHeightPx += heightPx;
+    count += 1;
+  }
+
+  return count;
+}
+
 function isSplittable(
   block: PackBlock,
   contentHeightPx: number,
   heightPx: number,
+  availableHeightPx: number,
+  heightOf: (block: PackBlock) => number,
 ): block is PackBlock & { fragments: readonly PackBlock[] } {
+  if (!Array.isArray(block.fragments) || block.fragments.length === 0) {
+    return false;
+  }
+
+  if (
+    heightPx > contentHeightPx ||
+    heightPx >= contentHeightPx * FRAGMENT_SPLIT_MIN_PAGE_RATIO
+  ) {
+    return true;
+  }
+
+  if (availableHeightPx < contentHeightPx * FRAGMENT_SPLIT_WASTED_PAGE_RATIO) {
+    return false;
+  }
+
   return (
-    Array.isArray(block.fragments) &&
-    block.fragments.length > 0 &&
-    (heightPx > contentHeightPx ||
-      heightPx >= contentHeightPx * FRAGMENT_SPLIT_MIN_PAGE_RATIO)
+    countFittingFragments(block.fragments, availableHeightPx, heightOf) >=
+    FRAGMENT_SPLIT_MIN_FITTING_FRAGMENTS
   );
 }
 
@@ -113,7 +162,17 @@ export function packPages(
       continue;
     }
 
-    if (isSplittable(block, contentHeightPx, blockHeightPx)) {
+    const availableHeightPx = contentHeightPx - currentHeight - gap;
+
+    if (
+      isSplittable(
+        block,
+        contentHeightPx,
+        blockHeightPx,
+        availableHeightPx,
+        heightOnCurrentPage,
+      )
+    ) {
       let firstFragment = true;
 
       for (const fragment of block.fragments) {

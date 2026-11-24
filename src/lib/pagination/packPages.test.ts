@@ -244,6 +244,51 @@ describe("packPages with bullet fragments", () => {
     expect(result.pages).toEqual([["a"], ["entry"]]);
   });
 
+  it("splits a mid-size entry when moving it whole would waste a quarter page", () => {
+    const result = packPages(
+      blocks(
+        { id: "a", heightPx: 720 },
+        {
+          id: "entry",
+          heightPx: 320,
+          fragments: [
+            { id: "f0", heightPx: 90 },
+            { id: "f1", heightPx: 80 },
+            { id: "f2", heightPx: 80 },
+            { id: "f3", heightPx: 70 },
+          ],
+        },
+      ),
+      1000,
+    );
+
+    // The entry is only 32% of a page (under the 35% split bar) but moving it
+    // whole would leave the last 28% of Page 1 blank, so it fills the gap.
+    expect(result.pages).toEqual([
+      ["a", "f0", "f1", "f2"],
+      ["f3"],
+    ]);
+  });
+
+  it("keeps the entry whole when only one fragment fits the wasted gap", () => {
+    const result = packPages(
+      blocks(
+        { id: "a", heightPx: 700 },
+        {
+          id: "entry",
+          heightPx: 340,
+          fragments: [
+            { id: "f0", heightPx: 260 },
+            { id: "f1", heightPx: 80 },
+          ],
+        },
+      ),
+      1000,
+    );
+
+    expect(result.pages).toEqual([["a"], ["entry"]]);
+  });
+
   it("keeps a whole entry on one page when it fits", () => {
     const result = packPages(
       blocks(

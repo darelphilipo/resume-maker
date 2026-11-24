@@ -18,18 +18,13 @@ _empty
 
 ## In Progress (OpenCode Updates This)
 
-_empty
+- [ ] **Keep `Studio Sidebar` (`gengar`) Page 1 left column balanced when the first Experience entry is oversized.** (Merged with the condensed P1 note about the ~40% blank lower-left hole, which describes the same bug.)
+  Plan: a tall entry that misses Page 1's remaining space is currently moved whole when it is under 35% of a page, leaving a quarter-page hole in `gengar`'s narrow main column. Make `packPages` split at bullet boundaries when the wasted gap is at least 25% of the page and at least two fragments fit, keeping Page 1 narrow heights and Page 2+ full-width heights. Add multi-page regressions in `computePages.test.ts` and `StudioSidebarTemplate.test.tsx`.
+  Files: `src/lib/pagination/packPages.ts` (+ test), `src/lib/pagination/computePages.ts` (+ test), `src/templates/studio/StudioSidebarTemplate.test.tsx`.
 
 ## Queue (Ready for Next Run)
 
 ### P1 — Input Validation & Two-Column Layout Balance
-
-- [ ] **Keep `Studio Sidebar` (`gengar`) Page 1 left column balanced when the first Experience entry is oversized.**
-  Depends on the P0 oversized-entry bullet-splitting task. When a tall first Experience entry overflows in `Studio Sidebar`, Page 1's left column below Summary should accept the entry header + fitting bullets while Skills/Certifications occupy the right sidebar, spilling continuation bullets to Page 2 full-width instead of leaving the Page 1 left column empty.
-  - Verify and adjust `computePages.ts`, `MeasureLayer.tsx`, and `StudioSidebarTemplate.tsx` so split entry continuation blocks respect `gengar`'s narrow Page 1 main column width and full-width Page 2+ flow.
-  - Add multi-page oversized-entry regressions in `computePages.test.ts` and `StudioSidebarTemplate.test.tsx`. Verify `npm run typecheck`, `npm test`, `npm run lint`.
-- [ ] P1: Prevent `Studio Sidebar` from leaving a ~40% blank lower-left hole on Page 1 when Experience Entry 1 is tall (`src/lib/pagination/computePages.ts`, `src/templates/studio/StudioSidebarTemplate.tsx`, `src/templates/shared/SectionRenderer.tsx`).
-  1. When the first Experience entry in `Studio Sidebar`'s narrower Page 1 main column exceeds the remaining column height below `Summary` (leaving >25% of Page 1's left column blank), allow the entry to start on Page 1 and split across Page 1 → Page 2 at bullet boundaries (or avoid kicking the entire `EXPERIENCE` section to Page 2 when ≥2 bullets fit on Page 1), eliminating the empty lower-left gap and cascading 3rd-page spill.
 
 
 ### P2 — Extreme-Case Regression Gate & Test Hygiene

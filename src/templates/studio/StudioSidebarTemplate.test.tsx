@@ -7,6 +7,10 @@ import { describe, expect, it } from "vitest";
 import { encodeEntryBlock } from "@/lib/pagination/blockIds";
 import { HEADER_BLOCK_ID } from "@/lib/pagination/constants";
 import {
+  getSectionPlans,
+  planFragmentKeys,
+} from "@/lib/pagination/sectionPlans";
+import {
   usePageLayout,
   type MeasureFn,
 } from "@/lib/pagination/usePageLayout";
@@ -20,6 +24,7 @@ import {
 } from "@/lib/schema/resume.schema";
 import { pageGeometry } from "@/lib/units/pageGeometry";
 
+import { fullWidthMeasureId } from "./sidebarSections";
 import { StudioSidebarTemplate } from "./StudioSidebarTemplate";
 
 function buildDoc() {
@@ -282,6 +287,120 @@ describe("StudioSidebarTemplate", () => {
     ).toBeInTheDocument();
     expect(within(secondMain as HTMLElement).getByText("Best Paper")).toBeInTheDocument();
     expect(second.queryByText("Cloud Architect")).toBeNull();
+  });
+
+  it("renders an oversized first entry's header and first bullets on Page 1", () => {
+    const doc = createEmptyResume("gengar");
+    doc.metadata.page.gapY = 0;
+    doc.summary.content = "<p>Impact-driven engineer.</p>";
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "exp-1",
+        company: "Acme",
+        position: "Engineer",
+        summary:
+          "<ul><li><p>One</p></li><li><p>Two</p></li><li><p>Three</p></li><li><p>Four</p></li></ul>",
+      }),
+    ];
+    doc.sections.skills.items = [
+      SkillItemSchema.parse({
+        id: "skill-1",
+        name: "Languages",
+        keywords: ["TypeScript"],
+      }),
+    ];
+
+    const plans = getSectionPlans(doc, ["summary", "experience", "skills"]);
+    const experiencePlan = plans.find((plan) => plan.sectionId === "experience");
+
+    expect(experiencePlan).toBeDefined();
+
+    const fragments = planFragmentKeys(experiencePlan!);
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: {
+        summary: 620,
+        experience: 320,
+        skills: 200,
+        [fragments[0]]: 90,
+        [fragments[1]]: 80,
+        [fragments[2]]: 80,
+        [fragments[3]]: 70,
+        [fullWidthMeasureId("experience")]: 200,
+        [fullWidthMeasureId(fragments[0])]: 60,
+        [fullWidthMeasureId(fragments[1])]: 50,
+        [fullWidthMeasureId(fragments[2])]: 50,
+        [fullWidthMeasureId(fragments[3])]: 40,
+      },
+    });
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+    const pages = result.current.pages;
+
+    // Page 1 packs the entry header and the first three bullets in the narrow
+    // main column; the last bullet continues on the full-width Page 2.
+    expect(pages).toEqual([
+      [
+        HEADER_BLOCK_ID,
+        "summary",
+        fragments[0],
+        fragments[1],
+        fragments[2],
+        "skills",
+      ],
+      [fragments[3]],
+    ]);
+
+    const first = render(
+      <StudioSidebarTemplate doc={doc} pages={pages} pageIndex={0} />,
+    );
+    const firstMain = first.container.querySelector<HTMLElement>(".studio-main");
+    const firstSidebar =
+      first.container.querySelector<HTMLElement>(".studio-sidebar");
+
+    expect(first.container.querySelector(".studio-layout")).not.toHaveClass(
+      "studio-layout--full",
+    );
+    expect(firstSidebar).not.toBeNull();
+    expect(
+      within(firstSidebar as HTMLElement).getByRole("heading", {
+        name: "Skills",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(firstMain as HTMLElement).getByRole("heading", {
+        name: "Experience",
+      }),
+    ).toBeInTheDocument();
+    expect(within(firstMain as HTMLElement).getByText("Acme")).toBeInTheDocument();
+    expect(within(firstMain as HTMLElement).getByText("One")).toBeInTheDocument();
+    expect(within(firstMain as HTMLElement).getByText("Three")).toBeInTheDocument();
+    expect(within(firstMain as HTMLElement).queryByText("Four")).toBeNull();
+
+    first.unmount();
+
+    const second = render(
+      <StudioSidebarTemplate doc={doc} pages={pages} pageIndex={1} />,
+    );
+    const secondMain =
+      second.container.querySelector<HTMLElement>(".studio-main");
+
+    expect(second.container.querySelector(".studio-layout")).toHaveClass(
+      "studio-layout--full",
+    );
+    expect(second.container.querySelector(".studio-sidebar")).toBeNull();
+    expect(secondMain).not.toBeNull();
+    // Continuation pages repeat neither the section heading nor the entry
+    // header; only the remaining bullet renders.
+    expect(
+      within(secondMain as HTMLElement).queryByRole("heading", {
+        name: "Experience",
+      }),
+    ).toBeNull();
+    expect(
+      second.container.querySelector(".resume-entry-continuation"),
+    ).not.toBeNull();
+    expect(within(secondMain as HTMLElement).getByText("Four")).toBeInTheDocument();
+    expect(within(secondMain as HTMLElement).queryByText("Acme")).toBeNull();
   });
 
   it("renders a single full-width column when there are no sidebar sections", () => {

@@ -491,3 +491,99 @@ describe("computePages with split entries", () => {
     ]);
   });
 });
+
+describe("computePages with split entries in the Studio Sidebar's narrow Page 1", () => {
+  it("fills the lower-left gap when a tall first entry misses the split ratio", () => {
+    const doc = oversizedEntryDoc();
+    const plans = getSectionPlans(doc, ["summary", "experience", "skills"]);
+    const fragments = planFragmentKeys(plans[1]);
+
+    // Page 1's narrow main column is ~63% as wide as Page 2+, so an entry can
+    // miss the remaining space while still being under 35% of the page. Leaving
+    // this one whole blanked the last ~28% of the left column while the sidebar
+    // stayed full.
+    const result = computePages(
+      makeInput({
+        sectionIds: ["summary", "experience", "skills"],
+        heights: {
+          summary: 620,
+          experience: 320,
+          skills: 200,
+          [fragments[0]]: 90,
+          [fragments[1]]: 80,
+          [fragments[2]]: 80,
+          [fragments[3]]: 70,
+        },
+        headerHeightPx: 100,
+        contentHeightPx: 1000,
+        gapPx: 0,
+        plans,
+        pinnedToFirstPage: new Set(["skills"]),
+        fullWidthHeights: {
+          experience: 200,
+          [fragments[0]]: 60,
+          [fragments[1]]: 50,
+          [fragments[2]]: 50,
+          [fragments[3]]: 40,
+        },
+      }),
+    );
+
+    // The entry header and its first three bullets fill Page 1 beside the
+    // sidebar; the last bullet continues on the full-width Page 2.
+    expect(result.pages).toEqual([
+      ["__header", "summary", fragments[0], fragments[1], fragments[2], "skills"],
+      [fragments[3]],
+    ]);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("keeps a later entry's continuation on Page 2 after the first entry splits", () => {
+    const doc = oversizedEntryDoc();
+    doc.sections.experience.items.push(
+      ExperienceItemSchema.parse({
+        id: "e2",
+        company: "Globex",
+        position: "Maintainer",
+      }),
+    );
+    const plans = getSectionPlans(doc, ["summary", "experience", "skills"]);
+    const blocks = planBlockKeys(plans[1]);
+    const fragments = planFragmentKeys(plans[1]);
+
+    const result = computePages(
+      makeInput({
+        sectionIds: ["summary", "experience", "skills"],
+        heights: {
+          summary: 620,
+          skills: 200,
+          [blocks[0]]: 320,
+          [blocks[1]]: 120,
+          [fragments[0]]: 90,
+          [fragments[1]]: 80,
+          [fragments[2]]: 80,
+          [fragments[3]]: 70,
+        },
+        headerHeightPx: 100,
+        contentHeightPx: 1000,
+        gapPx: 0,
+        plans,
+        pinnedToFirstPage: new Set(["skills"]),
+        fullWidthHeights: {
+          [blocks[0]]: 200,
+          [blocks[1]]: 110,
+          [fragments[0]]: 60,
+          [fragments[1]]: 50,
+          [fragments[2]]: 50,
+          [fragments[3]]: 40,
+        },
+      }),
+    );
+
+    expect(result.pages).toEqual([
+      ["__header", "summary", fragments[0], fragments[1], fragments[2], "skills"],
+      [fragments[3], blocks[1]],
+    ]);
+    expect(result.overflowPx).toBe(0);
+  });
+});
