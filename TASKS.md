@@ -22,7 +22,47 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+### P0 — Pagination & Print Export Integrity
+
+- [ ] **Split oversized single entries at bullet boundaries so they never clip in PDF print or leave Page 1 blank.**
+  Currently `sectionPlans.ts` / `computePages.ts` keep each entry atomic, and `@media print .resume-page` enforces `height`/`max-height: var(--page-height)` with `overflow: hidden`. A single Experience or Project entry with 15–18+ bullets jumps off Page 1 (leaving ~75–80% of Page 1 blank below Summary), stretches Page 2 past A4 height in preview, and silently clips at `297mm` on PDF export.
+  - Extend `blockIds.ts`, `sectionPlans.ts`, `MeasureLayer.tsx`, `computePages.ts`, and `SectionRenderer.tsx` so that when an individual entry's measured height exceeds a single page's content budget (or cannot fit in remaining Page 1 space above a split threshold), it splits cleanly at `<li>` bullet boundaries—keeping the entry header fused (`keep-with-next`) to its first bullet(s) and rendering remaining bullets as a continuation block on the next page.
+  - Ensure preview and `@media print` render identical page boundaries with zero clipped bullets.
+  - Add unit tests in `blockIds.test.ts`, `sectionPlans.test.ts`, `computePages.test.ts`, `MeasureLayer.test.tsx`, and `SectionRenderer.test.tsx`. Verify `npm run typecheck`, `npm test`, `npm run lint`.
+
+- [ ] **Dynamically sync `@page` size with the selected Paper Size (A4 vs. Letter) and add mobile paper-size print guidance.**
+  `src/styles/print.css` currently hardcodes `@page { size: A4 portrait; margin: 0mm; }` while `.resume-page` sizes via `--page-width` / `--page-height`. When Letter is selected, `@page` still declares A4; conversely, on Android (which defaults its print dialog to Letter, 18mm shorter than A4), nearly-full A4 pages risk clipping the bottom 18mm due to `overflow: hidden`.
+  - Inject a dynamic runtime `<style data-print-page-size>` rule (in `PrintPortal` or `printDocument.ts`) that sets `@page { size: A4 portrait; margin: 0mm; }` for `a4` and `@page { size: letter portrait; margin: 0mm; }` for `letter`, keeping `src/styles/print.css` aligned as fallback only.
+  - Extend the coarse-pointer print tip in `PrintTriggerButton.tsx` to include a short paper-size reminder matching the active format (e.g., `"Set Paper size to A4 and turn off 'Headers and footers' in the print dialog"`).
+  - Add unit tests in `PrintPortal.test.tsx`, `printDocument.test.ts`, and `PrintTriggerButton.test.tsx`. Verify `npm run typecheck`, `npm test`, `npm run lint`.
+
+### P1 — Input Validation & Two-Column Layout Balance
+
+- [ ] **Enforce sane year bounds (`1950–2100`) in `MonthSelect` so `0000` and `9999` cannot render on the resume.**
+  `MonthSelect` currently strips letters (`abcd`) and caps input at 4 digits (`99999` → `9999`), but accepts and renders `0000` and `9999` literally in preview and PDF.
+  - Add a pure year-range validator (`MIN_RESUME_YEAR = 1950`, `MAX_RESUME_YEAR = 2100`) in `src/lib/date/month.ts`.
+  - In `MonthSelect` (`src/components/editor/SectionFormControls.tsx`), block committing out-of-range 4-digit years to the store/preview, display an inline `aria-describedby` warning (e.g., `"Enter a year between 1950 and 2100"`), and restore the previous valid year on blur or Enter.
+  - Add unit tests in `src/lib/date/month.test.ts` and `src/components/editor/SectionFormControls.test.tsx` covering `0000`, `9999`, `99999`, `abcd`, and valid boundary years. Verify `npm run typecheck`, `npm test`, `npm run lint`.
+
+- [ ] **Keep `Studio Sidebar` (`gengar`) Page 1 left column balanced when the first Experience entry is oversized.**
+  Depends on the P0 oversized-entry bullet-splitting task. When a tall first Experience entry overflows in `Studio Sidebar`, Page 1's left column below Summary should accept the entry header + fitting bullets while Skills/Certifications occupy the right sidebar, spilling continuation bullets to Page 2 full-width instead of leaving the Page 1 left column empty.
+  - Verify and adjust `computePages.ts`, `MeasureLayer.tsx`, and `StudioSidebarTemplate.tsx` so split entry continuation blocks respect `gengar`'s narrow Page 1 main column width and full-width Page 2+ flow.
+  - Add multi-page oversized-entry regressions in `computePages.test.ts` and `StudioSidebarTemplate.test.tsx`. Verify `npm run typecheck`, `npm test`, `npm run lint`.
+
+### P2 — Extreme-Case Regression Gate & Test Hygiene
+
+- [ ] **Add permanent extreme-edge-case regression tests covering stress layouts, blank states, and malformed inputs.**
+  Lock in the five extreme QA scenarios so future autonomous runs cannot regress them:
+  1. Oversized 18-bullet single entry splits across pages without blank Page 1 or clipped print content.
+  2. Switching A4 ↔ Letter updates both `.resume-page` dimensions and the active `@page` rule.
+  3. 90-char unbroken URL + 35+ skills + 6+ certifications render across all 6 templates with zero horizontal overflow and unclipped right-aligned dates.
+  4. Completely blank / all-sections-hidden resume handles Match JD (empty + sample JD, `0%` / no `NaN%`), Bullet polish, 6s Scan, Anonymize, ATS text, and JSON export without crashing.
+  5. Malformed inputs (`0000`/`99999`/`abcd` in `MonthSelect`, `--- !!! ???` in Launcher Paste, broken Picture URL with `Hide picture` unchecked) fail gracefully.
+  - Add Vitest coverage where DOM/pure logic applies and extend `e2e/layout-consistency.spec.ts` (keeping Playwright assertions typechecked even when browser execution is sandbox-blocked). Verify `npm run typecheck`, `npm test`, `npm run lint`.
+
+- [ ] **Clean up stray `src/components/editor/__explore.test.tsx` test file.**
+  Merge the live-name regression test from `src/components/editor/__explore.test.tsx` (left behind on 2026-11-20) into `src/components/editor/BasicsForm.test.tsx` and remove `__explore.test.tsx` if file deletion is available in the runner environment (otherwise empty/deprecate cleanly). Verify `npm run typecheck`, `npm test`, `npm run lint`.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
