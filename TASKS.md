@@ -42,6 +42,9 @@ _empty
   Depends on the P0 oversized-entry bullet-splitting task. When a tall first Experience entry overflows in `Studio Sidebar`, Page 1's left column below Summary should accept the entry header + fitting bullets while Skills/Certifications occupy the right sidebar, spilling continuation bullets to Page 2 full-width instead of leaving the Page 1 left column empty.
   - Verify and adjust `computePages.ts`, `MeasureLayer.tsx`, and `StudioSidebarTemplate.tsx` so split entry continuation blocks respect `gengar`'s narrow Page 1 main column width and full-width Page 2+ flow.
   - Add multi-page oversized-entry regressions in `computePages.test.ts` and `StudioSidebarTemplate.test.tsx`. Verify `npm run typecheck`, `npm test`, `npm run lint`.
+- [ ] P1: Prevent `Studio Sidebar` from leaving a ~40% blank lower-left hole on Page 1 when Experience Entry 1 is tall (`src/lib/pagination/computePages.ts`, `src/templates/studio/StudioSidebarTemplate.tsx`, `src/templates/shared/SectionRenderer.tsx`).
+  1. When the first Experience entry in `Studio Sidebar`'s narrower Page 1 main column exceeds the remaining column height below `Summary` (leaving >25% of Page 1's left column blank), allow the entry to start on Page 1 and split across Page 1 → Page 2 at bullet boundaries (or avoid kicking the entire `EXPERIENCE` section to Page 2 when ≥2 bullets fit on Page 1), eliminating the empty lower-left gap and cascading 3rd-page spill.
+
 
 ### P2 — Extreme-Case Regression Gate & Test Hygiene
 
@@ -60,6 +63,11 @@ _empty
 - [ ] P2: Remove duplicate `Anonymize` notice in `Review tools` and stacked `Copy` buttons on single-item `ATS` sections (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/AtsTextView.tsx`).
   1. **Single `Anonymize` notice:** Remove the duplicate *"Review mode is on..."* notice from inside the `Review tools` modal so the active banner only appears once in the Preview pane (keeping the modal clean).
   2. **Deduplicate `ATS` Copy buttons:** In `AtsTextView.tsx`, omit the inner per-entry `Copy` button on single-block sections like `SUMMARY` (or any section with only 1 entry whose text is identical to the section's Copy output) so two identical `Copy` buttons never stack right above each other.
+
+- [ ] P2: Fix `Profiles` header rendering when only `Network` + `Username` are filled, and add a `Collapse all` button in the Content panel (`src/templates/shared/HeaderSlot.tsx`, `src/lib/links/contactLinks.ts`, `src/templates/shared/SectionRenderer.tsx`, `src/components/editor/SectionList.tsx`).
+  1. **`Profiles` header consistency:** When a user enters a `Network` + `Username` without a full `url`, derive the canonical URL for known networks (e.g. `GitHub` → `https://github.com/{username}`, `LinkedIn` → `https://linkedin.com/in/{username}`) or still render `Network: username` inline in `HeaderSlot` (omitting the redundant `PROFILES` body section) so `Basics`' *"shown in the header"* copy always matches reality.
+  2. **Content panel `Collapse all`:** Show a subtle `"Collapse all"` text button in the Content panel header/list whenever 2 or more section accordions are expanded at once so users can tidy the left sidebar in one click.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
