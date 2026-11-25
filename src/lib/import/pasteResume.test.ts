@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { PdfLine } from "./pdfLayout";
 import { parsePastedResume } from "./pasteResume";
 
 const SAMPLE = `Jane Doe
@@ -821,5 +822,296 @@ State University
     expect(doc?.sections.education.items[0]).toMatchObject({
       endDate: "2014-12",
     });
+  });
+});
+
+function pdfLine(
+  text: string,
+  options: {
+    isBold?: boolean;
+    maxFontSize?: number;
+    lineGap?: number;
+    breakBefore?: "page" | "column";
+  } = {},
+): PdfLine {
+  return {
+    y: 0,
+    text,
+    phrases: [],
+    isBoldLine: options.isBold ?? false,
+    maxFontSize: options.maxFontSize ?? 12,
+    ...(options.lineGap === undefined ? {} : { lineGap: options.lineGap }),
+    ...(options.breakBefore === undefined
+      ? {}
+      : { breakBefore: options.breakBefore }),
+  };
+}
+
+describe("parsePastedResume with PDF line metadata", () => {
+  it("accepts bold title-case headings and un-bulleted descriptions", () => {
+    const doc = parsePastedResume([
+      pdfLine("Jane Doe", { isBold: true, maxFontSize: 22 }),
+      pdfLine("Senior Software Engineer"),
+      pdfLine("jane@example.com | Seattle, WA", { maxFontSize: 10 }),
+      pdfLine("Experience", { isBold: true, maxFontSize: 14 }),
+      pdfLine("Senior Software Engineer", { isBold: true }),
+      pdfLine("Acme Corp"),
+      pdfLine("Jan 2020 - Present", { maxFontSize: 10 }),
+      pdfLine(
+        "Led the checkout platform team and shipped the billing rewrite for three regions.",
+        { maxFontSize: 10 },
+      ),
+      pdfLine("• Cut latency by 40%.", { maxFontSize: 10 }),
+      pdfLine("Education", { isBold: true, maxFontSize: 14 }),
+      pdfLine("B.S. in Computer Science"),
+      pdfLine("University of Washington"),
+      pdfLine("CGPA: 8.7/10", { maxFontSize: 10 }),
+    ]);
+
+    expect(doc?.basics).toMatchObject({
+      name: "Jane Doe",
+      headline: "Senior Software Engineer",
+      email: "jane@example.com",
+      location: "Seattle, WA",
+    });
+
+    const experience = doc?.sections.experience.items ?? [];
+    expect(experience).toHaveLength(1);
+    expect(experience[0]).toMatchObject({
+      position: "Senior Software Engineer",
+      company: "Acme Corp",
+      startDate: "2020-01",
+      current: true,
+    });
+    // The un-bulleted paragraph stays description copy instead of becoming a
+    // third header line.
+    expect(experience[0]?.summary).toContain(
+      "Led the checkout platform team and shipped the billing rewrite",
+    );
+    expect(experience[0]?.summary).toContain("Cut latency by 40%.");
+
+    expect(doc?.sections.education.items).toEqual([
+      expect.objectContaining({
+        school: "University of Washington",
+        degree: "B.S.",
+        area: "Computer Science",
+        grade: "8.7/10 CGPA",
+      }),
+    ]);
+  });
+
+  it("reads a percentage grade", () => {
+    const doc = parsePastedResume([
+      pdfLine("Ravi Shah", { isBold: true, maxFontSize: 22 }),
+      pdfLine("Data Analyst"),
+      pdfLine("EDUCATION", { isBold: true, maxFontSize: 14 }),
+      pdfLine("B.S. in Statistics"),
+      pdfLine("State University"),
+      pdfLine("85%", { maxFontSize: 10 }),
+    ]);
+
+    expect(doc?.sections.education.items[0]).toMatchObject({
+      school: "State University",
+      degree: "B.S.",
+      area: "Statistics",
+      grade: "85%",
+    });
+  });
+
+  it("keeps a non-bold body line that matches a section alias in its section", () => {
+    const doc = parsePastedResume([
+      pdfLine("Mona Reyes", { isBold: true, maxFontSize: 22 }),
+      pdfLine("Designer"),
+      pdfLine("EDUCATION", { isBold: true, maxFontSize: 14 }),
+      pdfLine("B.A. in Design"),
+      pdfLine("State University"),
+      pdfLine("Experience"),
+      pdfLine("2014", { maxFontSize: 10 }),
+    ]);
+
+    // "Experience" is neither bold nor larger than body copy, so it is a stray
+    // line inside Education, not a new section.
+    expect(doc?.sections.experience.items).toHaveLength(0);
+    expect(doc?.sections.education.items).toHaveLength(1);
+    expect(doc?.sections.education.items[0]).toMatchObject({
+      school: "State University",
+      degree: "B.A.",
+      area: "Design",
+      endDate: "2014-12",
+    });
+  });
+
+  it("uses a paragraph-sized line gap to split undated roles", () => {
+    const doc = parsePastedResume([
+      pdfLine("Sam Ito", { isBold: true, maxFontSize: 22 }),
+      pdfLine("Engineer"),
+      pdfLine("EXPERIENCE", { isBold: true, maxFontSize: 14 }),
+      pdfLine("Senior Engineer", { isBold: true }),
+      pdfLine("Acme Corp", { lineGap: 12 }),
+      pdfLine("• Built billing.", { lineGap: 12, maxFontSize: 10 }),
+      pdfLine("Junior Engineer", { isBold: true, lineGap: 30 }),
+      pdfLine("Beta Labs", { lineGap: 12 }),
+      pdfLine("• Fixed bugs.", { lineGap: 12, maxFontSize: 10 }),
+    ]);
+
+    expect(
+      doc?.sections.experience.items.map((item) => ({
+        position: item.position,
+        company: item.company,
+      })),
+    ).toEqual([
+      { position: "Senior Engineer", company: "Acme Corp" },
+      { position: "Junior Engineer", company: "Beta Labs" },
+    ]);
+  });
+
+  it("prefers a bold project name over a regular stack line", () => {
+    const doc = parsePastedResume([
+      pdfLine("Ada Kim", { isBold: true, maxFontSize: 22 }),
+      pdfLine("Product Engineer"),
+      pdfLine("PROJECTS", { isBold: true, maxFontSize: 14 }),
+      pdfLine("Revenue Dashboard", { isBold: true }),
+      pdfLine("React | TypeScript | D3", { maxFontSize: 10 }),
+      pdfLine(
+        "Built the dashboard that tracked pipeline health for the sales team.",
+        { maxFontSize: 10 },
+      ),
+    ]);
+
+    expect(doc?.sections.projects.items).toEqual([
+      expect.objectContaining({
+        name: "Revenue Dashboard",
+        keywords: ["React", "TypeScript", "D3"],
+      }),
+    ]);
+    expect(doc?.sections.projects.items[0]?.description).toContain(
+      "tracked pipeline health",
+    );
+  });
+
+  it("recognises title-case Hard Skills and Soft Skills headings", () => {
+    const doc = parsePastedResume([
+      pdfLine("Nina Torres", { isBold: true, maxFontSize: 22 }),
+      pdfLine("Data Analyst"),
+      pdfLine("Hard Skills", { isBold: true, maxFontSize: 14 }),
+      pdfLine("Docker • Kubernetes", { maxFontSize: 10 }),
+      pdfLine("Soft Skills", { isBold: true, maxFontSize: 14 }),
+      pdfLine("Mentoring • Communication", { maxFontSize: 10 }),
+    ]);
+
+    expect(doc?.sections.skills.items).toEqual([
+      expect.objectContaining({
+        name: "Hard skills",
+        keywords: ["Docker", "Kubernetes"],
+      }),
+      expect.objectContaining({
+        name: "Soft skills",
+        keywords: ["Mentoring", "Communication"],
+      }),
+    ]);
+  });
+
+  it("reads a two-column Canva resume with Company as Title and a single date", () => {
+    const doc = parsePastedResume([
+      pdfLine("Priya Nair", { isBold: true, maxFontSize: 24 }),
+      pdfLine("Senior Data Engineer", { maxFontSize: 14 }),
+      pdfLine("priya@example.com | Mumbai, India", { maxFontSize: 10 }),
+      pdfLine("EXPERIENCE", { isBold: true, maxFontSize: 13 }),
+      pdfLine("Acme Corp as Senior Data Engineer", { isBold: true }),
+      pdfLine("Completed in 2018", { maxFontSize: 10 }),
+      pdfLine("• Built the data platform.", { maxFontSize: 10 }),
+      pdfLine("EDUCATION", { isBold: true, maxFontSize: 13 }),
+      pdfLine("University of Mumbai"),
+      pdfLine("B.S. in Computer Science"),
+      pdfLine("GPA: 3.8", { maxFontSize: 10 }),
+      pdfLine("HARD SKILLS", {
+        isBold: true,
+        maxFontSize: 13,
+        breakBefore: "column",
+      }),
+      pdfLine("Python • SQL • Spark", { maxFontSize: 10 }),
+      pdfLine("SOFT SKILLS", { isBold: true, maxFontSize: 13 }),
+      pdfLine("Mentoring • Communication", { maxFontSize: 10 }),
+    ]);
+
+    expect(doc?.basics).toMatchObject({
+      name: "Priya Nair",
+      headline: "Senior Data Engineer",
+      email: "priya@example.com",
+      location: "Mumbai, India",
+    });
+    expect(doc?.sections.experience.items).toEqual([
+      expect.objectContaining({
+        company: "Acme Corp",
+        position: "Senior Data Engineer",
+        startDate: "2018-12",
+      }),
+    ]);
+    expect(doc?.sections.experience.items[0]?.summary).toContain(
+      "Built the data platform.",
+    );
+    expect(doc?.sections.education.items).toEqual([
+      expect.objectContaining({
+        school: "University of Mumbai",
+        degree: "B.S.",
+        area: "Computer Science",
+        grade: "3.8 GPA",
+      }),
+    ]);
+    expect(doc?.sections.skills.items).toEqual([
+      expect.objectContaining({
+        name: "Hard skills",
+        keywords: ["Python", "SQL", "Spark"],
+      }),
+      expect.objectContaining({
+        name: "Soft skills",
+        keywords: ["Mentoring", "Communication"],
+      }),
+    ]);
+  });
+
+  it("reads an unlabelled summary, certifications, awards, and column skills", () => {
+    const doc = parsePastedResume([
+      pdfLine("Lena Ortiz", { isBold: true, maxFontSize: 22 }),
+      pdfLine("Operations Lead", { maxFontSize: 14 }),
+      pdfLine("lena@example.com", { maxFontSize: 10 }),
+      pdfLine(
+        "I lead operations teams across three regions and build repeatable processes for fast-growing companies. I care about clear communication, measurable outcomes, and calm execution under pressure.",
+        { maxFontSize: 10 },
+      ),
+      pdfLine("CERTIFICATIONS", { isBold: true, maxFontSize: 13 }),
+      pdfLine("PMP | Project Management Institute | 2021", { maxFontSize: 10 }),
+      pdfLine("AWS Certified Cloud Practitioner | Amazon | 2020", {
+        maxFontSize: 10,
+      }),
+      pdfLine("AWARDS", { isBold: true, maxFontSize: 13 }),
+      pdfLine("Employee of the Year | Acme Corp | 2022", { maxFontSize: 10 }),
+      pdfLine("SKILLS", { isBold: true, maxFontSize: 13 }),
+      pdfLine("• Excel • SQL • Tableau", { maxFontSize: 10 }),
+    ]);
+
+    expect(doc?.summary.content).toContain("I lead operations teams");
+    expect(doc?.sections.certifications.items).toEqual([
+      expect.objectContaining({
+        name: "PMP",
+        issuer: "Project Management Institute",
+        date: "2021",
+      }),
+      expect.objectContaining({
+        name: "AWS Certified Cloud Practitioner",
+        issuer: "Amazon",
+        date: "2020",
+      }),
+    ]);
+    expect(doc?.sections.awards.items).toEqual([
+      expect.objectContaining({
+        title: "Employee of the Year",
+        awarder: "Acme Corp",
+        date: "2022",
+      }),
+    ]);
+    expect(doc?.sections.skills.items).toEqual([
+      expect.objectContaining({ keywords: ["Excel", "SQL", "Tableau"] }),
+    ]);
   });
 });

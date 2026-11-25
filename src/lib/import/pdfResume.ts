@@ -225,6 +225,9 @@ export async function parsePdfResume(
   return {
     text,
     lines,
-    doc: parsePastedResume(text),
+    // Prefer the structured lines: they carry bold/size/gap metadata that the
+    // paste parser uses for headings and entry boundaries. Plain text is the
+    // fallback for PDFs whose text layer produced no lines.
+    doc: parsePastedResume(lines.length > 0 ? lines : text),
   };
 }

@@ -22,21 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-
-### P0 — OpenResume-Grade PDF Parsing Upgrade (2-Step Pipeline)
-
-- [ ] P0: Add OpenResume-style weighted feature scoring, `getDescriptionsLineIdx`, and `isBold`/`lineGap` subsection splitting to `src/lib/import/pasteResume.ts` (new `src/lib/import/featureScoring.ts`).
-  1. **Create `src/lib/import/featureScoring.ts`:** Implement `scoreBestCandidate(items, featureSets)` modeled on OpenResume's weighted scoring tuples (`[predicate, weight]`) with mutual exclusion for:
-     - **Name:** `+3` letters/spaces/periods, `+3` largest `fontSize` in header, `+2` `isBold`, `-4` email/digits/punctuation.
-     - **Experience (`Company` vs `Job Title` vs `Date`):** score `Date` (ranges + single dates like `Completed in 2018`, `Apr 2026`), `Job Title` (`TITLE_WORDS` + `Company as Title` `/\s+as\s+/i` split), and `Company` (`+2 isBold`, `-4` if already matched `jobTitle` or `date`).
-     - **Education (`School` vs `Degree` vs `Grade` vs `Date`):** score `School` (`University`/`Institute`/`College`/`School`), `Degree` (`B.S.`/`MBA`/`Bachelor`/`Master`/`PhD`), `Grade` (`/[0-4]\.\d{1,2}/`, `CGPA`, `X.X/10`, `XX%` → `education.grade`), and `Date` (including `Completed in YYYY`).
-     - **Projects (`Name` vs `Date` vs `URL`):** score Project Name (`+2 isBold`, `-4` date/URL) and extract project URLs cleanly.
-  2. **Upgrade `src/lib/import/pasteResume.ts` to accept optional `PdfLine[]`:**
-     - **Section detection:** Match `SECTION_ALIASES` (expanded with `certifications & awards`, `courses & certifications`, `hard skills`, `soft skills`, `education background`, `internship`, `extra curricular`, `my contact`) PLUS OpenResume's `isBold && (ALL_CAPS || maxFontSize > bodyFontSize * 1.15)` heading signal.
-     - **Subsection & description splitting:** When `PdfLine[]` is present, split entries using **mode `lineGap × 1.4`** + **`!isBold(prev) && isBold(curr)`** non-bullet transitions + `dateAnchor`. Use OpenResume's `getDescriptionsLineIdx` (first bullet matching expanded Unicode glyphs `• ● ▪ ◦ ‣ ○ ■ ➢ - *`, or first non-bold line with `≥8` words) so un-bulleted description paragraphs never leak into `position`/`company`.
-     - **Wire all 13 sections + unlabeled summary:** Populate `projects`, `certifications`, `awards`, `languages`, `interests`, `volunteer`, `publications`, `references`, and `profiles` in `parsePastedResume`, split multi-bullet 3-column skill lines (`• A • B • C`), capture unlabeled opening paragraphs (`> 120` chars) into `summary.content`, scan fallback `My Contact` blocks, and broaden `LOCATION_PATTERN` for global/Indian cities.
-  3. Add unit tests in `src/lib/import/pasteResume.test.ts` & `featureScoring.test.ts` covering single-column with icons/certifications/awards, unlabeled summary + 3-column skills, GPA/CGPA extraction, and two-column Canva resumes (`Company as Title`, `Completed in YYYY`, `Hard Skills`/`Soft Skills`).
-
 ### P1 — Final Pre-Freeze UX & Bug Polish
 
 - [ ] P1: Fix `Save PDF` stuck-dimmed state, inline `1 page · Reset` symmetry, `Anonymize` cert domains, `ATS` duplicate `SUMMARY` Copy, and `⋮` Backup label (`src/components/preview/PrintTriggerButton.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/lib/privacy/anonymizeDoc.ts`, `src/components/preview/AtsTextView.tsx`, `src/components/editor/EditorWorkspace.tsx`).
@@ -64,6 +49,18 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-25 — Finished the OpenResume-grade PDF parsing upgrade: PDF import
+  now feeds structured `PdfLine[]` (bold text, font sizes, line gaps, column
+  breaks) into the paste parser, where pure weighted feature scoring picks the
+  name, job title vs company, school vs degree vs grade, and project name vs URL.
+  Bold/gap boundaries and `getDescriptionsLineIdx` keep unbulleted paragraphs and
+  bold metrics out of entry headers; all 13 sections, the unlabelled summary,
+  and single dates such as `Completed in 2018` are covered by new regressions.
+  Verified `npm run typecheck`, `npm test` (1100 pass), `npm run lint`. Files:
+  `src/lib/import/featureScoring.ts` (new, + test), `src/lib/import/pasteResume.ts`
+  (+ test), `src/lib/import/pdfResume.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  Playwright remains sandbox-blocked; the new cases are pure/unit-level.
 
 - [x] 2026-11-25 — Removed the `Min 78%` suffix from the Preview spill pill so
   the one-row bar cannot clip `Review ▾` at 390px. A blocked fit now shows only

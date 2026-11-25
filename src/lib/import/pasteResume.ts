@@ -11,6 +11,16 @@
 
 import { parseMonthInput } from "@/lib/date/month";
 import {
+  EDUCATION_HEADER_FEATURES,
+  EXPERIENCE_HEADER_FEATURES,
+  NAME_FEATURES,
+  PROJECT_HEADER_FEATURES,
+  getDescriptionsLineIdx,
+  scoreBestCandidate,
+  type ScorableText,
+} from "@/lib/import/featureScoring";
+import { mergeWrappedPdfLines, type PdfLine } from "@/lib/import/pdfLayout";
+import {
   detectProfileLink,
   websiteLabelFromUrl,
 } from "@/lib/links/contactLinks";
@@ -48,6 +58,21 @@ type SectionKey =
   | "volunteer"
   | "publications"
   | "references";
+
+/**
+ * One parser line. Plain pasted text carries no layout metadata; PDF import
+ * fills `isBold`/`maxFontSize`/`lineGap` so heading and subsection detection can
+ * use the same reading order the reader sees.
+ */
+type Line = {
+  text: string;
+  isBold: boolean;
+  maxFontSize: number;
+  /** True when the line came from `PdfLine[]` and carries visual metadata. */
+  hasLayout: boolean;
+  lineGap?: number;
+  breakBefore?: "page" | "column";
+};
 
 const SECTION_ALIASES: Record<string, SectionKey> = {
   summary: "summary",
@@ -286,28 +311,133 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function normalizeLines(input: string): string[] {
+function plainLine(text: string): Line {
+  return { text, isBold: false, maxFontSize: 0, hasLayout: false };
+}
+
+function isBlankLine(line: Line): boolean {
+  return line.text.trim() === "";
+}
+
+function normalizeTextLines(input: string): Line[] {
   const raw = input
     .replace(/\r\n?/g, "\n")
     .replace(/\u00a0/g, " ")
     .split("\n")
     .map((line) => collapseSpaces(line.replace(/\t/g, " ")));
 
-  const lines: string[] = [];
+  const lines: Line[] = [];
 
   for (const line of raw) {
-    if (line === "" && (lines.length === 0 || lines[lines.length - 1] === "")) {
+    if (line === "" && (lines.length === 0 || isBlankLine(lines[lines.length - 1]))) {
       continue;
     }
 
-    lines.push(line);
+    lines.push(plainLine(line));
   }
 
-  while (lines.length > 0 && lines[lines.length - 1] === "") {
+  while (lines.length > 0 && isBlankLine(lines[lines.length - 1])) {
     lines.pop();
   }
 
   return lines;
+}
+
+function modal(values: readonly number[]): number {
+  if (values.length === 0) {
+    return 0;
+  }
+
+  const counts = new Map<number, number>();
+
+  for (const value of values) {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+
+  let best = values[0];
+  let bestCount = 0;
+
+  for (const [value, count] of counts) {
+    if (count > bestCount) {
+      best = value;
+      bestCount = count;
+    }
+  }
+
+  return best;
+}
+
+/** OpenResume uses a paragraph gap of 1.4× the modal line spacing. */
+const PARAGRAPH_GAP_FACTOR = 1.4;
+
+function paragraphGapThreshold(
+  lines: readonly { lineGap?: number }[],
+): number {
+  const gaps = lines
+    .map((line) => line.lineGap)
+    .filter(
+      (gap): gap is number =>
+        typeof gap === "number" && Number.isFinite(gap) && gap > 0,
+    );
+  const typical = modal(gaps);
+
+  return typical > 0 ? typical * PARAGRAPH_GAP_FACTOR : Number.POSITIVE_INFINITY;
+}
+
+/**
+ * Turn reconstructed PDF lines into parser lines. Wrapped words are rejoined,
+ * page/column breaks and paragraph-sized gaps become blank separators, and the
+ * visual metadata is kept for heading and subsection detection.
+ */
+function linesFromPdf(input: readonly PdfLine[]): Line[] {
+  if (input.length === 0) {
+    return [];
+  }
+
+  const merged = mergeWrappedPdfLines([...input]);
+  const gapThreshold = paragraphGapThreshold(merged);
+  const lines: Line[] = [];
+
+  merged.forEach((line, index) => {
+    if (index > 0) {
+      const gap = line.lineGap;
+      const paragraphBreak =
+        typeof gap === "number" && gap >= gapThreshold;
+
+      if (line.breakBefore !== undefined || paragraphBreak) {
+        lines.push(plainLine(""));
+      }
+    }
+
+    const text = collapseSpaces(cleanLine(line.text));
+
+    if (text === "") {
+      return;
+    }
+
+    lines.push({
+      text,
+      isBold: line.isBoldLine,
+      maxFontSize: line.maxFontSize,
+      hasLayout: true,
+      lineGap: line.lineGap,
+      breakBefore: line.breakBefore,
+    });
+  });
+
+  while (lines.length > 0 && isBlankLine(lines[0])) {
+    lines.shift();
+  }
+
+  while (lines.length > 0 && isBlankLine(lines[lines.length - 1])) {
+    lines.pop();
+  }
+
+  return lines;
+}
+
+function normalizeLines(input: string | readonly PdfLine[]): Line[] {
+  return typeof input === "string" ? normalizeTextLines(input) : linesFromPdf(input);
 }
 
 function headingKey(value: string): SectionKey | null {
@@ -326,20 +456,50 @@ function headingKey(value: string): SectionKey | null {
   return SECTION_ALIASES[cleaned] ?? null;
 }
 
-function splitSections(lines: string[]): {
-  header: string[];
-  sections: Partial<Record<SectionKey, string[]>>;
+function modalFontSize(lines: readonly Line[]): number {
+  return modal(
+    lines
+      .filter((line) => line.hasLayout && line.maxFontSize > 0)
+      .map((line) => line.maxFontSize),
+  );
+}
+
+/**
+ * A section heading is an alias match. With PDF metadata it must also look like
+ * a heading — all caps, bold, or larger than body copy — so a body line that
+ * happens to read "Experience" cannot start a new section.
+ */
+function isHeadingLine(line: Line, bodyFontSize: number): boolean {
+  if (headingKey(line.text) === null) {
+    return false;
+  }
+
+  if (!line.hasLayout) {
+    return true;
+  }
+
+  const allCaps =
+    /\p{L}/u.test(line.text) && line.text === line.text.toUpperCase();
+  const larger = bodyFontSize > 0 && line.maxFontSize > bodyFontSize * 1.15;
+
+  return allCaps || line.isBold || larger;
+}
+
+function splitSections(lines: Line[]): {
+  header: Line[];
+  sections: Partial<Record<SectionKey, Line[]>>;
 } {
-  const header: string[] = [];
-  const sections: Partial<Record<SectionKey, string[]>> = {};
+  const header: Line[] = [];
+  const sections: Partial<Record<SectionKey, Line[]>> = {};
+  const bodyFontSize = modalFontSize(lines);
   let current: SectionKey = "header";
 
   for (const line of lines) {
-    let key = headingKey(line);
+    let key = isHeadingLine(line, bodyFontSize) ? headingKey(line.text) : null;
     let inlineContent: string | null = null;
 
     if (!key) {
-      const inline = INLINE_HEADING.exec(line);
+      const inline = INLINE_HEADING.exec(line.text);
       // Only all-caps headings carry inline content: "SKILLS: Python, SQL".
       // Title-case lines such as "Languages: TypeScript, Python" are skill
       // categories inside the current section, not new headings.
@@ -358,7 +518,7 @@ function splitSections(lines: string[]): {
       sections[key] = sections[key] ?? [];
 
       if (inlineContent !== null) {
-        sections[key]?.push(inlineContent);
+        sections[key]?.push({ ...line, text: inlineContent });
       }
 
       continue;
@@ -515,7 +675,7 @@ type HeaderResult = {
   openingSummary: string;
 };
 
-function parseHeader(lines: string[]): HeaderResult {
+function parseHeader(lines: Line[]): HeaderResult {
   const basics = {
     name: "",
     headline: "",
@@ -527,8 +687,8 @@ function parseHeader(lines: string[]): HeaderResult {
   const seenProfileUrls = new Set<string>();
   let website = { url: "", label: "" };
   let openingSummary = "";
-  const candidates: string[] = [];
-  const proseLines: string[] = [];
+  const candidates: ScorableText[] = [];
+  const proseLines: ScorableText[] = [];
 
   const splitSegments = (line: string): string[] =>
     line
@@ -536,8 +696,8 @@ function parseHeader(lines: string[]): HeaderResult {
       .map((segment) => segment.trim())
       .filter((segment) => segment !== "");
 
-  for (const line of lines) {
-    for (const segment of splitSegments(line)) {
+  for (const rawLine of lines) {
+    for (const segment of splitSegments(rawLine.text)) {
       let rest = segment;
       const label =
         /^(name|headline|title|role|email|e-?mail|phone|mobile|location|address|website|portfolio)\s*:\s*(.+)$/i.exec(
@@ -632,10 +792,16 @@ function parseHeader(lines: string[]): HeaderResult {
         continue;
       }
 
+      const candidate: ScorableText = {
+        text: rest,
+        isBold: rawLine.isBold,
+        maxFontSize: rawLine.maxFontSize,
+      };
+
       if (isProseLike(rest)) {
-        proseLines.push(rest);
+        proseLines.push(candidate);
       } else {
-        candidates.push(rest);
+        candidates.push(candidate);
       }
     }
   }
@@ -644,7 +810,7 @@ function parseHeader(lines: string[]): HeaderResult {
   // into one paragraph before deciding whether it is prose, otherwise each
   // wrapped line would be discarded separately. A long headline is returned
   // to the candidate list when the joined text is not multi-sentence prose.
-  const prose = collapseSpaces(proseLines.join(" "));
+  const prose = collapseSpaces(proseLines.map((line) => line.text).join(" "));
 
   if (isOpeningSummary(prose)) {
     openingSummary = prose;
@@ -652,14 +818,27 @@ function parseHeader(lines: string[]): HeaderResult {
     candidates.push(...proseLines);
   }
 
+  // Weighted scoring (not just reading order) picks the name: the largest,
+  // boldest name-shaped line wins, and an email/phone line never does.
+  const bestName =
+    basics.name === ""
+      ? scoreBestCandidate(
+          candidates.filter((candidate) => looksLikeName(candidate.text)),
+          [{ field: "name", predicates: NAME_FEATURES }],
+        )
+      : null;
+
+  if (bestName) {
+    basics.name = bestName.value.text;
+  }
+
   for (const candidate of candidates) {
-    if (basics.name === "" && looksLikeName(candidate)) {
-      basics.name = candidate;
+    if (bestName && candidate === bestName.value) {
       continue;
     }
 
-    if (basics.headline === "" && looksLikeHeadline(candidate)) {
-      basics.headline = candidate;
+    if (basics.headline === "" && looksLikeHeadline(candidate.text)) {
+      basics.headline = candidate.text;
     }
   }
 
@@ -890,8 +1069,8 @@ function extractEntryDates(
   };
 }
 
-function isDateAnchor(line: string): boolean {
-  const trimmed = line.trim();
+function isDateAnchor(line: Line): boolean {
+  const trimmed = line.text.trim();
 
   if (trimmed === "" || isBullet(trimmed) || trimmed.length > 90) {
     return false;
@@ -900,12 +1079,12 @@ function isDateAnchor(line: string): boolean {
   return extractEntryDates(trimmed, "end") !== null;
 }
 
-function splitOnBlankLines(lines: string[]): string[][] {
-  const blocks: string[][] = [];
-  let current: string[] = [];
+function splitOnBlankLines(lines: Line[]): Line[][] {
+  const blocks: Line[][] = [];
+  let current: Line[] = [];
 
   for (const line of lines) {
-    if (line.trim() === "") {
+    if (isBlankLine(line)) {
       if (current.length > 0) {
         blocks.push(current);
         current = [];
@@ -925,7 +1104,7 @@ function splitOnBlankLines(lines: string[]): string[][] {
 }
 
 /** Splits one blank-free block at each date anchor, keeping its title lines. */
-function splitOnDateAnchors(lines: string[], anchors: number[]): string[][] {
+function splitOnDateAnchors(lines: Line[], anchors: number[]): Line[][] {
   const starts: number[] = [];
   let floor = 0;
 
@@ -935,11 +1114,11 @@ function splitOnDateAnchors(lines: string[], anchors: number[]): string[][] {
     let taken = 0;
 
     while (back >= floor && taken < 2) {
-      const candidate = lines[back].trim();
+      const candidate = lines[back].text.trim();
 
       if (
         candidate === "" ||
-        isBullet(lines[back]) ||
+        isBullet(candidate) ||
         extractDateRange(candidate)
       ) {
         break;
@@ -958,14 +1137,14 @@ function splitOnDateAnchors(lines: string[], anchors: number[]): string[][] {
     floor = anchor + 1;
   }
 
-  const blocks: string[][] = [];
-  const preamble = lines.slice(0, starts[0]).filter((line) => line.trim());
+  const blocks: Line[][] = [];
+  const preamble = lines.slice(0, starts[0]).filter((line) => !isBlankLine(line));
 
   for (let index = 0; index < starts.length; index += 1) {
     const end = index + 1 < starts.length ? starts[index + 1] : lines.length;
     const block = lines
       .slice(starts[index], end)
-      .filter((line) => line.trim() !== "");
+      .filter((line) => !isBlankLine(line));
 
     if (index === 0 && preamble.length > 0) {
       block.unshift(...preamble);
@@ -984,19 +1163,19 @@ function splitOnDateAnchors(lines: string[], anchors: number[]): string[][] {
  * company, school, or location line of its own, is a paragraph gap inside the
  * previous entry — not a new role. PDFs insert these between bullets.
  */
-function isContinuationBlock(block: string[]): boolean {
-  const first = block.find((line) => line.trim() !== "");
+function isContinuationBlock(block: Line[]): boolean {
+  const first = block.find((line) => !isBlankLine(line));
 
   if (first === undefined) {
     return true;
   }
 
-  if (isBullet(first)) {
+  if (isBullet(first.text)) {
     return true;
   }
 
   return !block.some((line) => {
-    const trimmed = cleanLine(line);
+    const trimmed = cleanLine(line.text);
 
     if (trimmed === "" || isBullet(trimmed)) {
       return false;
@@ -1013,7 +1192,65 @@ function isContinuationBlock(block: string[]): boolean {
   });
 }
 
-function splitEntryBlocks(lines: string[]): string[][] {
+/**
+ * OpenResume-style subsection split for PDF lines: a non-bullet bold line after
+ * non-bold copy, or a paragraph-sized vertical gap, starts a new entry. Only
+ * the header region (before the first description line) is considered, so a
+ * bold metric inside a bullet list cannot invent a role.
+ */
+function splitLayoutSubsections(block: Line[]): Line[][] {
+  if (block.length < 2 || !block.some((line) => line.hasLayout)) {
+    return [block];
+  }
+
+  const gapThreshold = paragraphGapThreshold(block);
+  const descriptionIndex = getDescriptionsLineIdx(block);
+  const limit = descriptionIndex >= 0 ? descriptionIndex : block.length - 1;
+  const starts: number[] = [];
+
+  for (let index = 1; index <= limit; index += 1) {
+    const previous = block[index - 1];
+    const current = block[index];
+
+    if (isBullet(current.text) || isBullet(previous.text)) {
+      continue;
+    }
+
+    const bigGap =
+      typeof current.lineGap === "number" && current.lineGap >= gapThreshold;
+    const boldStart =
+      !previous.isBold &&
+      current.isBold &&
+      current.text.length <= 80 &&
+      !/[.!?]$/.test(current.text);
+
+    if (bigGap || boldStart) {
+      starts.push(index);
+    }
+  }
+
+  if (starts.length === 0) {
+    return [block];
+  }
+
+  const blocks: Line[][] = [];
+  let start = 0;
+
+  for (const next of starts) {
+    if (next <= start) {
+      continue;
+    }
+
+    blocks.push(block.slice(start, next));
+    start = next;
+  }
+
+  blocks.push(block.slice(start));
+
+  return blocks.filter((part) => part.length > 0);
+}
+
+function splitEntryBlocks(lines: Line[]): Line[][] {
   const blankSeparated = splitOnBlankLines(lines);
 
   if (blankSeparated.length === 0) {
@@ -1022,7 +1259,7 @@ function splitEntryBlocks(lines: string[]): string[][] {
 
   // Blank lines are a hint, not a boundary: fold paragraph gaps between
   // bullets back into the entry above them before looking for date anchors.
-  const blocks: string[][] = [];
+  const blocks: Line[][] = [];
 
   for (const block of blankSeparated) {
     if (blocks.length > 0 && isContinuationBlock(block)) {
@@ -1033,7 +1270,8 @@ function splitEntryBlocks(lines: string[]): string[][] {
   }
 
   // A single-column paste can put several roles in one block with no blank
-  // line. `isDateAnchor` then decides where each role actually begins.
+  // line. `isDateAnchor` then decides where each role actually begins, and
+  // PDF metadata can add bold/gap boundaries for undated entries.
   return blocks.flatMap((block) => {
     const anchors: number[] = [];
 
@@ -1043,27 +1281,30 @@ function splitEntryBlocks(lines: string[]): string[][] {
       }
     });
 
-    return anchors.length > 1 ? splitOnDateAnchors(block, anchors) : [block];
+    const dateSplit =
+      anchors.length > 1 ? splitOnDateAnchors(block, anchors) : [block];
+
+    return dateSplit.flatMap((part) => splitLayoutSubsections(part));
   });
 }
 
 type EntryLines = {
-  headers: string[];
+  headers: Line[];
   body: string[];
   dates: DateRange | null;
 };
 
 function splitEntryLines(
-  block: string[],
+  block: Line[],
   singleDateField: "start" | "end" = "end",
 ): EntryLines {
-  const headers: string[] = [];
+  const headers: Line[] = [];
   const body: string[] = [];
   let dates: DateRange | null = null;
   let inBody = false;
 
   for (const rawLine of block) {
-    const line = cleanLine(rawLine);
+    const line = cleanLine(rawLine.text);
 
     if (line === "") {
       continue;
@@ -1095,7 +1336,7 @@ function splitEntryLines(
     }
 
     if (withoutDate !== "") {
-      headers.push(withoutDate);
+      headers.push({ ...rawLine, text: withoutDate });
     }
 
     if (headers.length >= 3) {
@@ -1106,6 +1347,33 @@ function splitEntryLines(
   return { headers, body, dates };
 }
 
+/**
+ * Everything from `getDescriptionsLineIdx` on is description copy. Un-bulleted
+ * prose is marked with a bullet glyph so it lands in `body` (and therefore rich
+ * text) instead of leaking into `position`/`company`. Plain pasted text keeps
+ * its original lines: it has no font metadata to trust.
+ */
+function markDescriptionLines(
+  block: Line[],
+  allowUnbulletedProse: boolean,
+): Line[] {
+  if (!block.some((line) => line.hasLayout)) {
+    return block;
+  }
+
+  const index = getDescriptionsLineIdx(block, { allowUnbulletedProse });
+
+  if (index <= 0) {
+    return block;
+  }
+
+  return block.map((line, position) =>
+    position >= index && !isBullet(line.text)
+      ? { ...line, text: `• ${line.text}` }
+      : line,
+  );
+}
+
 function splitHeaderParts(value: string): string[] {
   // `as` is a compact synonym for `at`: `Acme Corp as Senior Engineer`.
   return value
@@ -1114,18 +1382,18 @@ function splitHeaderParts(value: string): string[] {
     .filter((part) => part !== "");
 }
 
-function parseExperienceHeader(headers: string[]): {
+function parseExperienceHeader(headers: Line[]): {
   position: string;
   company: string;
   location: string;
 } {
-  const parts: string[] = [];
+  const parts: ScorableText[] = [];
   let location = "";
   let explicitTitle = "";
   let explicitCompany = "";
 
   for (const header of headers) {
-    const split = splitTrailingLocation(header);
+    const split = splitTrailingLocation(header.text);
 
     if (split.location !== "" && location === "") {
       location = split.location;
@@ -1151,15 +1419,24 @@ function parseExperienceHeader(headers: string[]): {
         continue;
       }
 
-      parts.push(part);
+      parts.push({
+        text: part,
+        isBold: header.isBold,
+        maxFontSize: header.maxFontSize,
+      });
     }
   }
 
-  const merged: string[] = [];
+  const merged: ScorableText[] = [];
 
   for (const part of parts) {
-    if (COMPANY_SUFFIX_ONLY.test(part) && merged.length > 0) {
-      merged[merged.length - 1] = `${merged[merged.length - 1]}, ${part}`;
+    const previous = merged[merged.length - 1];
+
+    if (COMPANY_SUFFIX_ONLY.test(part.text) && previous) {
+      merged[merged.length - 1] = {
+        ...previous,
+        text: `${previous.text}, ${part.text}`,
+      };
     } else {
       merged.push(part);
     }
@@ -1176,30 +1453,45 @@ function parseExperienceHeader(headers: string[]): {
   }
 
   if (!second) {
-    return { position: first, company: "", location };
+    return { position: first.text, company: "", location };
   }
 
-  const firstTitle = TITLE_WORDS.test(first);
-  const secondTitle = TITLE_WORDS.test(second);
+  // Weighted scoring decides which line is the company and which is the role,
+  // so a bold company name is not mistaken for a job title.
+  const best = scoreBestCandidate(merged, EXPERIENCE_HEADER_FEATURES);
+
+  if (best) {
+    const rest = merged.find((value) => value !== best.value);
+
+    return best.field === "company"
+      ? { position: rest?.text ?? "", company: best.value.text, location }
+      : { position: best.value.text, company: rest?.text ?? "", location };
+  }
+
+  const firstTitle = TITLE_WORDS.test(first.text);
+  const secondTitle = TITLE_WORDS.test(second.text);
 
   if (secondTitle && !firstTitle) {
-    return { position: second, company: first, location };
+    return { position: second.text, company: first.text, location };
   }
 
   if (
     !firstTitle &&
     !secondTitle &&
-    COMPANY_WORDS.test(first) &&
-    !COMPANY_WORDS.test(second)
+    COMPANY_WORDS.test(first.text) &&
+    !COMPANY_WORDS.test(second.text)
   ) {
-    return { position: second, company: first, location };
+    return { position: second.text, company: first.text, location };
   }
 
-  return { position: first, company: second, location };
+  return { position: first.text, company: second.text, location };
 }
 
-function buildExperience(block: string[]): ExperienceItem | null {
-  const { headers, body, dates } = splitEntryLines(block, "start");
+function buildExperience(block: Line[]): ExperienceItem | null {
+  const { headers, body, dates } = splitEntryLines(
+    markDescriptionLines(block, true),
+    "start",
+  );
   const { position, company, location } = parseExperienceHeader(headers);
 
   if (position === "" && company === "" && !dates) {
@@ -1227,7 +1519,49 @@ type EducationHeader = {
   grade: string;
 };
 
-function parseEducationHeader(headers: string[]): EducationHeader {
+const CGPA_PATTERN =
+  /cgpa\s*:?\s*([0-9]+(?:\.[0-9]+)?)(?:\s*\/\s*([0-9.]+))?/i;
+const PERCENT_GRADE_PATTERN =
+  /(?:^|[\s,|•·])(\d{1,3}(?:\.\d{1,2})?)\s*%(?=$|[\s,|•·])/;
+
+/**
+ * Grade formats vary by region: `GPA: 3.8`, `CGPA: 8.7/10`, and `85%` all mean
+ * the same field, so they share one extractor and keep their original units.
+ */
+function gradeFromText(text: string): { grade: string; rest: string } {
+  const cgpa = CGPA_PATTERN.exec(text);
+
+  if (cgpa) {
+    const scale = cgpa[2] ? `/${cgpa[2]}` : "";
+
+    return {
+      grade: `${cgpa[1]}${scale} CGPA`,
+      rest: text.replace(cgpa[0], " "),
+    };
+  }
+
+  const gpa = GPA_PATTERN.exec(text);
+
+  if (gpa) {
+    return {
+      grade: `${gpa[1] ?? gpa[2]} GPA`,
+      rest: text.replace(GPA_PATTERN, " "),
+    };
+  }
+
+  const percent = PERCENT_GRADE_PATTERN.exec(text);
+
+  if (percent) {
+    return {
+      grade: `${percent[1]}%`,
+      rest: text.replace(PERCENT_GRADE_PATTERN, " "),
+    };
+  }
+
+  return { grade: "", rest: text };
+}
+
+function parseEducationHeader(headers: Line[]): EducationHeader {
   const result: EducationHeader = {
     school: "",
     degree: "",
@@ -1275,19 +1609,19 @@ function parseEducationHeader(headers: string[]): EducationHeader {
   };
 
   for (const header of headers) {
-    const segments = header
+    const segments = header.text
       .split(/\s*[|•·]\s*|\s+[–—]\s+|\s+-\s+/)
       .map(trimSeparators)
       .filter((segment) => segment !== "");
 
-    for (const rawSegment of segments.length > 0 ? segments : [header]) {
-      const gpa = GPA_PATTERN.exec(rawSegment);
+    for (const rawSegment of segments.length > 0 ? segments : [header.text]) {
+      const grade = gradeFromText(rawSegment);
 
-      if (gpa && result.grade === "") {
-        result.grade = `${gpa[1] ?? gpa[2]} GPA`;
+      if (grade.grade !== "" && result.grade === "") {
+        result.grade = grade.grade;
       }
 
-      const segment = trimSeparators(rawSegment.replace(GPA_PATTERN, " "));
+      const segment = trimSeparators(grade.rest);
 
       if (segment === "") {
         continue;
@@ -1334,7 +1668,17 @@ function parseEducationHeader(headers: string[]): EducationHeader {
   }
 
   if (result.school === "" && extras.length > 0) {
-    result.school = extras.shift() ?? "";
+    const scored = scoreBestCandidate(
+      extras.map((text) => ({ text, isBold: false, maxFontSize: 0 })),
+      EDUCATION_HEADER_FEATURES,
+    );
+
+    if (scored?.field === "school") {
+      result.school = scored.value.text;
+      extras.splice(scored.index, 1);
+    } else {
+      result.school = extras.shift() ?? "";
+    }
   }
 
   if (result.area === "" && extras.length > 0) {
@@ -1348,9 +1692,12 @@ function looksLikeSchool(value: string): boolean {
   return SCHOOL_WORDS.test(value);
 }
 
-function buildEducation(block: string[]): EducationItem | null {
+function buildEducation(block: Line[]): EducationItem | null {
   // A lone year on an education entry is the graduation date.
-  const { headers, body, dates } = splitEntryLines(block, "end");
+  const { headers, body, dates } = splitEntryLines(
+    markDescriptionLines(block, false),
+    "end",
+  );
   const { school, degree, area, location, grade } =
     parseEducationHeader(headers);
 
@@ -1571,6 +1918,30 @@ function isEntryDetailLine(line: string): boolean {
   );
 }
 
+function splitTextOnBlankLines(lines: string[]): string[][] {
+  const blocks: string[][] = [];
+  let current: string[] = [];
+
+  for (const line of lines) {
+    if (line.trim() === "") {
+      if (current.length > 0) {
+        blocks.push(current);
+        current = [];
+      }
+
+      continue;
+    }
+
+    current.push(line);
+  }
+
+  if (current.length > 0) {
+    blocks.push(current);
+  }
+
+  return blocks;
+}
+
 /**
  * Compact sections (certifications, awards, publications) are usually one
  * entry per line or one entry per bullet, with blank lines separating longer
@@ -1578,14 +1949,15 @@ function isEntryDetailLine(line: string): boolean {
  * line that carries its own date/issuer and attach bullets or bare title lines
  * to the entry above.
  */
-function splitCompactEntryBlocks(lines: string[]): string[][] {
-  const blankSeparated = splitOnBlankLines(lines);
+function splitCompactEntryBlocks(lines: Line[]): string[][] {
+  const texts = lines.map((line) => line.text);
+  const blankSeparated = splitTextOnBlankLines(texts);
 
   if (blankSeparated.length > 1) {
     return blankSeparated;
   }
 
-  const meaningful = lines.filter((line) => line.trim() !== "");
+  const meaningful = texts.filter((line) => line.trim() !== "");
 
   if (meaningful.length === 0) {
     return [];
@@ -1625,23 +1997,39 @@ function splitCompactEntryBlocks(lines: string[]): string[][] {
   return blocks;
 }
 
-function buildProject(block: string[]): ProjectItem | null {
-  const { headers, body, dates } = splitEntryLines(block, "start");
+function buildProject(block: Line[]): ProjectItem | null {
+  const { headers, body, dates } = splitEntryLines(
+    markDescriptionLines(block, true),
+    "start",
+  );
   let url = "";
-  const headerParts: string[] = [];
+  const segments: ScorableText[] = [];
 
   for (const header of headers) {
-    const extracted = extractEntryUrl(header);
+    const extracted = extractEntryUrl(header.text);
     url = url || extracted.url;
 
-    if (extracted.rest !== "") {
-      headerParts.push(extracted.rest);
+    for (const part of splitEntrySegments(extracted.rest)) {
+      segments.push({
+        text: part,
+        isBold: header.isBold,
+        maxFontSize: header.maxFontSize,
+      });
     }
   }
 
-  const segments = splitEntrySegments(headerParts.join(" | "));
-  const name = segments.shift() ?? "";
-  const keywords = splitKeywords(segments.join(", "));
+  // A bold project name beats a regular tech-stack line; without metadata the
+  // first segment still wins, exactly as before.
+  const bestName = scoreBestCandidate(segments, PROJECT_HEADER_FEATURES);
+  const nameEntry =
+    bestName?.field === "name" ? bestName.value : segments[0];
+  const name = nameEntry?.text ?? "";
+  const keywords = splitKeywords(
+    segments
+      .filter((segment) => segment !== nameEntry)
+      .map((segment) => segment.text)
+      .join(", "),
+  );
 
   if (name === "" && !dates && body.length === 0) {
     return null;
@@ -1850,8 +2238,11 @@ function buildInterests(lines: string[]): InterestItem[] {
   return items;
 }
 
-function buildVolunteer(block: string[]): VolunteerItem | null {
-  const { headers, body, dates } = splitEntryLines(block, "start");
+function buildVolunteer(block: Line[]): VolunteerItem | null {
+  const { headers, body, dates } = splitEntryLines(
+    markDescriptionLines(block, true),
+    "start",
+  );
   const { position, company, location } = parseExperienceHeader(headers);
 
   if (position === "" && company === "" && !dates) {
@@ -1946,19 +2337,20 @@ function buildReference(block: string[]): ReferenceItem | null {
     }
   }
 
-  const { headers, body } = splitEntryLines(cleanedLines);
+  const { headers, body } = splitEntryLines(cleanedLines.map(plainLine));
   let name = "";
   let position = "";
   let company = "";
   const [nameLine, ...otherHeaders] = headers;
 
   if (nameLine) {
-    const parts = splitEntrySegments(nameLine);
+    const parts = splitEntrySegments(nameLine.text);
     name = parts.shift() ?? "";
     position = parts.join(", ");
   }
 
-  for (const header of otherHeaders) {
+  for (const headerLine of otherHeaders) {
+    const header = headerLine.text;
     const at = /^(.+?)\s+(?:at|@)\s+(.+)$/i.exec(header);
 
     if (at) {
@@ -2008,7 +2400,9 @@ function hasContent(
   );
 }
 
-export function parsePastedResume(input: string): ResumeDocument | null {
+export function parsePastedResume(
+  input: string | readonly PdfLine[],
+): ResumeDocument | null {
   const lines = normalizeLines(input);
 
   if (lines.length === 0) {
@@ -2020,11 +2414,16 @@ export function parsePastedResume(input: string): ResumeDocument | null {
   const basics = { ...headerResult.basics };
   const profiles = [...headerResult.profiles];
   const seenProfiles = new Set(profiles.map((profile) => profile.url));
+  const sectionText = (key: SectionKey): string[] =>
+    (sections[key] ?? []).map((line) => line.text);
 
   // Contact details that landed outside the header (a sidebar after two-column
   // reconstruction, or a block with an unrecognised heading) are still useful.
   if (basics.email === "" || basics.phone === "" || profiles.length === 0) {
-    const fallback = scanContactFallback(lines, seenProfiles);
+    const fallback = scanContactFallback(
+      lines.map((line) => line.text),
+      seenProfiles,
+    );
     basics.email = basics.email || fallback.email;
     basics.phone = basics.phone || fallback.phone;
 
@@ -2038,7 +2437,7 @@ export function parsePastedResume(input: string): ResumeDocument | null {
     }
   }
 
-  for (const profile of parseProfileLinks(sections.profiles ?? [])) {
+  for (const profile of parseProfileLinks(sectionText("profiles"))) {
     if (seenProfiles.has(profile.url)) {
       continue;
     }
@@ -2050,7 +2449,7 @@ export function parsePastedResume(input: string): ResumeDocument | null {
   // An explicit Summary heading wins; otherwise use the unlabelled opening
   // paragraph from the header instead of throwing it away.
   const summary =
-    linesToRichText(sections.summary ?? []) ||
+    linesToRichText(sectionText("summary")) ||
     linesToRichText(
       headerResult.openingSummary === "" ? [] : [headerResult.openingSummary],
     );
@@ -2069,8 +2468,8 @@ export function parsePastedResume(input: string): ResumeDocument | null {
   const awards = splitCompactEntryBlocks(sections.awards ?? [])
     .map(buildAward)
     .filter((item): item is AwardItem => item !== null);
-  const languages = buildLanguages(sections.languages ?? []);
-  const interests = buildInterests(sections.interests ?? []);
+  const languages = buildLanguages(sectionText("languages"));
+  const interests = buildInterests(sectionText("interests"));
   const volunteer = splitEntryBlocks(sections.volunteer ?? [])
     .map(buildVolunteer)
     .filter((item): item is VolunteerItem => item !== null);
@@ -2078,12 +2477,13 @@ export function parsePastedResume(input: string): ResumeDocument | null {
     .map(buildPublication)
     .filter((item): item is PublicationItem => item !== null);
   const references = splitOnBlankLines(sections.references ?? [])
+    .map((block) => block.map((line) => line.text))
     .map(buildReference)
     .filter((item): item is ReferenceItem => item !== null);
   const skills = [
-    ...parseSkills(sections.skills ?? []),
-    ...parseSkills(sections.hardSkills ?? [], "Hard skills"),
-    ...parseSkills(sections.softSkills ?? [], "Soft skills"),
+    ...parseSkills(sectionText("skills")),
+    ...parseSkills(sectionText("hardSkills"), "Hard skills"),
+    ...parseSkills(sectionText("softSkills"), "Soft skills"),
   ];
 
   if (

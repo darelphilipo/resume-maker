@@ -1544,6 +1544,28 @@ rediscover.
         that constructs the result). Do not reintroduce DOM or PDF.js imports in
         `pdfLayout.ts`; it is the unit-tested layout contract.
 
+   100. **PDF lines are the parser's preferred input, not just their text.**
+       `parsePdfResume` calls `parsePastedResume(lines.length ? lines : text)`,
+       so bold/size/gap metadata reaches the same parser plain text uses.
+       `pasteResume.ts` normalizes both inputs into a `Line`
+       (`isBold`, `maxFontSize`, `lineGap`, `breakBefore`, `hasLayout`): wrapped
+       words are rejoined, page/column breaks and gaps ≥ 1.4× the modal line gap
+       become blank separators, and a heading is recognised by alias **plus**
+       all-caps/bold/larger-than-body signal (plain text keeps alias-only
+       matching). `src/lib/import/featureScoring.ts` owns the pure weighted
+       `[predicate, weight]` tables and `getDescriptionsLineIdx`: one field per
+       value (mutual exclusion), single best `(value, field)` across a header,
+       and the first bullet or ≥8-word non-bold line as the description start.
+       Experience/volunteer/projects mark that line and everything after it as
+       body copy (education, which has no bullets, does not), so an unbulleted
+       paragraph can never leak into `position`/`company`. `splitLayoutSubsections`
+       only looks before the description line, so a bold metric inside bullets
+       cannot invent a role. Education grades accept `GPA`, `CGPA: 8.7/10`, a
+       bare `3.8`, and `85%`; `Completed in 2018` is a start date for
+       experience/projects and an end date for education. Keep the scoring
+       tables and the line→`Line` normalization pure and framework-free; the
+       launcher needs no new UI because it already calls `parsePdfResume`.
+
 ## Verification and tooling
 
 ```powershell
@@ -1608,6 +1630,22 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-25 — Weighted PDF-line parsing finished
+- Task: the in-progress top Queue item (P0), resumed from an uncommitted
+  checkpoint: OpenResume-style feature scoring + PDF-line-aware paste parser.
+- Change: verified and kept the existing `featureScoring.ts`, `Line` metadata
+  normalization, heading/description/subsection heuristics, all 13 wired
+  sections, and `parsePdfResume`'s structured-lines-first call. Extended
+  `GRADE_TEXT` with a bare `0-4.x` grade so a lone `3.8` scores as a grade.
+  Added two-column Canva and unlabelled-summary/certifications/awards PDF-line
+  regressions plus scoring cases for `Company as Title`, `Completed in 2018`,
+  and bare grades. Decision #100; README PDF-import copy updated. 1100 pass.
+- Files: `src/lib/import/featureScoring.ts` (+ test),
+  `src/lib/import/pasteResume.test.ts`, `src/lib/import/pdfResume.ts`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1100 pass), `npm run lint` (clean).
+  Playwright remains sandbox-blocked; the new cases are pure/unit-level.
 
 ### 2026-11-25 — Blocked-fit reason moved out of the Preview bar
 - Task: top Queue item (P0). The spill pill appended `· Min 78%` when no
@@ -1802,27 +1840,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (1015 pass), `npm run lint`.
   Playwright remains blocked here, so the real touch geometry is
   browser-unverified.
-
-### 2026-11-24 — Studio Sidebar Page 2+ packs at full width
-- Task: In Progress was empty, so this run took the top Queue P0. Studio's
-  Page 2+ collapses the grid, but packing still used the narrow Page 1 main
-  heights, so `Awards` could be stranded on a third page.
-- Change: `MeasureLayer` now reports a full-width copy of **every** Studio block
-  (main + sidebar + entry fragments), not just sidebar blocks. `packPages` takes
-  `options.fullWidthHeights` and uses them only after Page 1 is full; Page 1
-  keeps the narrow column heights. `computePages` forwards the map and drops the
-  old per-overflow re-height mapping. Decision #94.
-- Tests: packPages narrow-Page-1 / full-width-Page-2 / malformed-override
-  cases, `computePages` Awards-stays-on-Page-2, a `usePageLayout` gengar wiring
-  case with `fullWidthMeasureId`, and MeasureLayer main-block full-width copies.
-  1014 pass.
-- Files: `src/lib/pagination/packPages.ts` (+ test),
-  `src/lib/pagination/computePages.ts` (+ test),
-  `src/lib/pagination/usePageLayout.test.tsx`,
-  `src/components/preview/MeasureLayer.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1014 pass), `npm run lint`.
-  Playwright remains blocked here, so the browser geometry is unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

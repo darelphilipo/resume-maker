@@ -61,10 +61,12 @@ in control of every line, and your data stays on your device.
   keep their sidebar and main body in the right order, decorative icon glyphs
   are dropped, and words split across lines are joined back together. Labels
   and comma-separated lists keep their spaces too, so contact lines and skills
-  read as `Skills: Python` and `SQL, SAP` instead of one glued token. If a PDF
-  is a scan, an image, or a Canva export with no selectable text, the upload
-  error links straight to the AI prompt rescue import (pasting the text yourself
-  still works too).
+  read as `Skills: Python` and `SQL, SAP` instead of one glued token. Bold text,
+  font sizes, and line spacing help tell headings, roles, grades, and project
+  names apart, so an unbulleted paragraph stays in the description instead of
+  turning into a job title. If a PDF is a scan, an image, or a Canva export with
+  no selectable text, the upload error links straight to the AI prompt rescue
+  import (pasting the text yourself still works too).
 - **AI prompt rescue import** for scanned or Canva PDFs: open **Import via AI
   prompt**, tap **Copy prompt**, and paste it into a chat assistant together
   with your resume text. Paste the assistant's JSON reply back into the app and
