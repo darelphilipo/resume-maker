@@ -232,15 +232,20 @@ describe("DesignPanel", () => {
   it("previews each font pairing name in its own family", () => {
     render(<DesignPanel />);
 
-    expect(screen.getByText("Sans")).toHaveStyle({
-      fontFamily: "var(--font-sans)",
-    });
-    expect(screen.getByText("Serif")).toHaveStyle({
-      fontFamily: "var(--font-serif)",
-    });
-    expect(screen.getByText("Classic")).toHaveStyle({
-      fontFamily: "var(--font-serif)",
-    });
+    const sans = screen.getByText("Sans");
+    const serif = screen.getByText("Serif");
+    const classic = screen.getByText("Classic");
+
+    expect(sans).toHaveStyle({ fontFamily: "var(--font-sans)" });
+    expect(serif).toHaveStyle({ fontFamily: "var(--font-serif)" });
+    expect(classic).toHaveStyle({ fontFamily: "var(--font-serif)" });
+
+    // The explicit class is what keeps `Sans` out of the serif heading face
+    // even if the inline family is not applied while the panel renders.
+    expect(sans).toHaveClass("font-sans");
+    expect(sans).not.toHaveClass("font-serif");
+    expect(serif).toHaveClass("font-serif");
+    expect(classic).toHaveClass("font-serif");
   });
 
   it("records the density choice and applies its spacing", () => {

@@ -117,9 +117,9 @@ export function AtsTextView({ doc }: { doc: ResumeDocument }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 pt-1">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <p className="px-1 text-xs text-muted">
+        <p className="px-1 text-xs leading-relaxed text-muted">
           Plain text in the order an ATS parser reads it. Paste it into Workday,
           Greenhouse, or Lever. Formatting, columns, and skill ratings are
           ignored.

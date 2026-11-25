@@ -519,7 +519,10 @@ rediscover.
     no pan range to fight the scroll. While zoomed, the hand-off target is the
     exact `[data-canvas-scroll]` box passed in as `scrollRef`, not an ancestor
     walk: it is a descendant of the touch host, so `findScrollableAncestor` only
-    serves the wide-tablet fallback.
+    serves the wide-tablet fallback. Switching into the `ATS` mode calls
+    `scrollToResumeTop` on that same scroller, because a paper scrolled down in
+    `Visual` mode otherwise opens the ATS view mid-paragraph with its intro
+    caption clipped at the top edge.
 
 38. **Drawer sheets shrink above the mobile keyboard.** `useVisualViewportOffset`
     reports the keyboard overlap as
@@ -1704,6 +1707,30 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-25 — Mobile micro-polish: Sans label, ATS top line, AI accordion label
+- Task: top Queue item (P1), the final device-review micro-polish, moved to In
+  Progress first. Sub-items 1 and 4 were already in the tree (the label carried
+  an inline family, and the `Min 78%` notice had become the disabled Fit row in
+  Review), so they were hardened/verified rather than re-implemented.
+- Change: `DesignPanel` gives every Font pairing label an explicit
+  `fontPairingLabelClass` utility (`font-sans` / `font-serif`) beside its inline
+  family, so `Sans` cannot inherit the serif Design heading. `LiveCanvasViewport`
+  returns the scroller to the top whenever `mode` becomes `ats` (a scrolled
+  paper used to open ATS mid-paragraph), and `AtsTextView` adds `pt-1` +
+  `leading-relaxed` to the intro caption. The AI accordion title is now
+  `Import via AI prompt`, with *For scanned or Canva PDFs.* as the first
+  sentence inside the panel (no mid-word `scanne…` ellipsis at 390px). README
+  already described the short label, so no feature copy changed.
+- Tests: 1131 pass (new Sans class assertions, ATS caption padding/leading,
+  mode-switch scroll reset, and the shortened accordion name + helper copy).
+  Verified `npm run typecheck`, `npm test`, `npm run lint`.
+- Files: `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `CONTEXT.md`, `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the 390px clipping is
+  browser-unverified.
+
 ### 2026-11-25 — Trim tips click-through, JD stemming, ATS/Review cues
 - Task: top Queue item (P1). The implementation was already present in HEAD
   (committed with its unit tests and README copy) but `TASKS.md`/`CONTEXT.md`
@@ -1871,28 +1898,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/preview/AtsTextView.tsx` (+ test), `README.md`,
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (1034 pass).
-
-### 2026-11-24 — Permanent extreme-QA regression gate
-- Task: top Queue item. The five extreme QA cases were covered piecemeal (8
-  bullets max, no blank-doc 0% assertion, no stress fixture, no literal
-  `--- !!! ???` paste) but no single gate stopped a future run dropping one.
-- Change: new `src/lib/extremeCases/extremeCases.test.tsx` gathers the pure/DOM
-  half — A4↔Letter page box + injected `@page`, a 90-char URL / 36 skills / 6
-  certifications doc rendered through all six templates, blank and
-  all-sections-hidden output (ATS/JD/lint/scan/anonymize/JSON), and malformed
-  years/paste/broken picture URL. `computePages.test.ts` gained an 18-bullet
-  single-entry split case asserting Page 1 is filled, every fragment appears
-  once, and `overflowPx === 0`. `e2e/layout-consistency.spec.ts` gained three
-  typechecked browser-geometry cases; the print-portal case keeps the portal
-  mounted with `stubPrint(page, false)` and checks `scrollHeight <= clientHeight`
-  under `emulateMedia({ media: "print" })`.
-- Tests: 1031 pass. Verified `npm run typecheck`, `npm test`, `npm run lint`.
-- Files: `src/lib/extremeCases/extremeCases.test.tsx` (new),
-  `src/lib/pagination/computePages.test.ts`, `e2e/layout-consistency.spec.ts`,
-  `TASKS.md`, `CONTEXT.md`.
-- Note: Playwright remains sandbox-blocked, so the new geometry cases are
-  typechecked but browser-unverified. `getByText(/Jan 2024/)` matched the six
-  certification dates too — query the experience date-range node directly.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

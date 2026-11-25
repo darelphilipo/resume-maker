@@ -571,6 +571,26 @@ describe("LiveCanvasViewport", () => {
     expect((ats as HTMLElement).className).not.toContain("max-h");
   });
 
+  it("returns the preview to the top when it switches to the ATS view", () => {
+    const doc = createEmptyResume();
+    const layout = createLayout(2);
+    const view = render(<LiveCanvasViewport doc={doc} layout={layout} />);
+    const scroll = view.container.querySelector<HTMLDivElement>(
+      "[data-canvas-scroll]",
+    );
+
+    expect(scroll).not.toBeNull();
+    scroll!.scrollTop = 420;
+
+    view.rerender(
+      <LiveCanvasViewport doc={doc} layout={layout} mode="ats" />,
+    );
+
+    // A scrolled paper must not leave the ATS intro caption clipped at the
+    // scroller's top edge on a 390px phone.
+    expect(scroll!.scrollTop).toBe(0);
+  });
+
   it("scrolls the paper in its own region with nothing above it", async () => {
     const { wrapper } = await renderCanvas(2);
 

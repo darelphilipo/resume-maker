@@ -304,6 +304,17 @@ export function LiveCanvasViewport({
    */
   usePreservedScroll(containerRef, layout.isMeasuring);
   /**
+   * Switching to the ATS view must start at its first line. The paper scroller
+   * keeps its offset when the mode changes, so a resume scrolled down in Visual
+   * mode used to open ATS mid-paragraph with the intro caption clipped at the
+   * top edge — most visible on a 390px phone where the preview panel is short.
+   */
+  useIsomorphicLayoutEffect(() => {
+    if (mode === "ats") {
+      scrollToResumeTop(scrollRef.current, containerRef.current);
+    }
+  }, [mode]);
+  /**
    * Zoom state is stamped with the fit scale it was observed at, so a resize
    * (which changes the fit target and re-fits the canvas) cannot leave a stale
    * "zoomed" toolbar behind without an extra effect.

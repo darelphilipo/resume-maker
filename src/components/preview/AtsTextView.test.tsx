@@ -79,6 +79,24 @@ describe("AtsTextView", () => {
     ).toBeTruthy();
   });
 
+  it("keeps the intro caption clear of the scroller's top edge", () => {
+    const doc = createEmptyResume();
+
+    doc.basics.name = "Ada Lovelace";
+
+    render(<AtsTextView doc={doc} />);
+
+    const caption = screen.getByText(
+      /Plain text in the order an ATS parser reads it/,
+    );
+    const root = caption.parentElement?.parentElement as HTMLElement;
+
+    // The root adds its own top breathing room on top of the scroller's `py-3`
+    // so the first line is never clipped at 390px.
+    expect(root).toHaveClass("pt-1");
+    expect(caption).toHaveClass("leading-relaxed");
+  });
+
   it("copies the full plain text and resets the Copied label after 1.5s", async () => {
     vi.useFakeTimers();
 

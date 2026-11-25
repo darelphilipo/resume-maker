@@ -1317,7 +1317,7 @@ export function Launcher() {
             <UtilityDisclosure
               id="launcher-ai-panel"
               icon={Copy}
-              title="Import via AI prompt (for scanned/Canva PDFs)"
+              title="Import via AI prompt"
               open={aiOpen}
               onToggle={() => {
                 setAiOpen((open) => !open);
@@ -1325,6 +1325,9 @@ export function Launcher() {
               }}
             >
               <p className="text-sm leading-relaxed text-[#5b6a7a]">
+                <span className="font-medium text-[#33465a]">
+                  For scanned or Canva PDFs.
+                </span>{" "}
                 Resume Maker does not send your resume to any AI. Copy this
                 prompt into a chat assistant you trust together with your resume
                 text, then paste the JSON reply here — it is parsed on this

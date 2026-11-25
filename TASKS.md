@@ -24,12 +24,6 @@ _empty
 
 ### P1 — Final Pre-Freeze UX & Bug Polish
 
-- [ ] P1: Final mobile micro-polish from device review (`src/components/editor/DesignPanel.tsx`, `src/components/preview/AtsTextView.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
-  1. **Fix `Sans` label typeface (`DesignPanel.tsx`):** Ensure the `Sans` option in the `Font pairing` segmented control renders with `font-sans` (currently inheriting serif styling on mobile).
-  2. **Fix `ATS` top-line clipping (`AtsTextView.tsx`):** Add top padding / check scroll-container flex alignment so the first line of the `ATS` intro caption is never clipped at the top edge on mobile (`390px`).
-  3. **Stop mid-word truncation in `Other ways to import` (`Launcher.tsx`):** Shorten the accordion label from `"Import via AI prompt (for scanned or Canva PDFs)"` to `"Import via AI prompt"` (keeping *"For scanned or Canva PDFs"* as helper copy inside the expanded panel) so it fits cleanly on `390px` with no `scanne...` ellipsis.
-  4. **Remove `78%` jargon inside `Review tools` (`LiveCanvasViewport.tsx`):** Update the yellow notice inside the `Review tools` modal from `"Min 78% · Too tall to fit on one page above 78% — trim a line or two."` to `"Too tall to fit on one page cleanly — trim a few lines or try Compact density."`
-
 - [ ] P1: Replace section header `↑` / `↓` buttons with a touch-friendly drag-and-drop handle (`⋮⋮`) + `Hide` icon, and match `BASICS` row height (`src/components/editor/SectionList.tsx`, `src/components/editor/BasicsForm.tsx`).
   1. **Touch + desktop drag-to-reorder (`SectionList.tsx`):** Replace the header `↑` and `↓` buttons with a single compact `GripVertical` (`⋮⋮`) drag handle on the left (or next to the `👁` Hide/Show icon) wired with **Pointer Events** (`onPointerDown` / `onPointerMove` / `onPointerUp` + `setPointerCapture` + `touch-action: none` strictly on the handle, NOT HTML5 `draggable` which fails on mobile). Show a subtle elevated shadow/drop-indicator while dragging and commit the new order via the existing Zustand/Zundo reorder action (keeping keyboard `ArrowUp`/`ArrowDown` reorder on the focused handle for accessibility).
   2. **Prevent title/count overlap:** With only the drag handle and `👁` icon on the row, ensure long titles like `Certifications` and the `4 items` pill have `min-w-0 truncate` / `shrink-0` spacing so they never overlap at `390px`.
@@ -37,6 +31,25 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-25 — Finished the final mobile micro-polish from the device review.
+  Every `Font pairing` label now carries an explicit `font-sans` / `font-serif`
+  class beside its inline family, so `Sans` can never inherit the serif Design
+  heading at 390px. The Preview scroller returns to the top when switching into
+  `ATS`, and the ATS intro caption gained its own `pt-1` + `leading-relaxed`, so
+  a scrolled paper can no longer leave the first line clipped at the scroller's
+  top edge. The `Other ways to import` AI accordion is now titled **Import via AI
+  prompt** (no `scanne…` ellipsis) with *For scanned or Canva PDFs* as the first
+  sentence inside the expanded panel. The old `Min 78%` notice was already gone
+  from `Review tools` (it is a disabled `Fit to 1 Page` row with plain-English
+  copy), so that sub-item was verified rather than re-changed. Verified
+  `npm run typecheck`, `npm test` (1131 pass), `npm run lint`. Files:
+  `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`. Playwright remains sandbox-blocked, so the 390px geometry is
+  browser-unverified.
 
 - [x] 2026-11-25 — Finished the `Trim tips` click-through, `Match JD` stemming,
   and `ATS` / `Review` discoverability polish (the implementation was already in

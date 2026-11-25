@@ -47,6 +47,16 @@ function segmentClass(isCurrent: boolean): string {
   }`;
 }
 
+/**
+ * Each pairing name previews its own heading typeface. The explicit utility
+ * class backs up the inline family: the Design panel heading is serif, and a
+ * label that only relied on the inherited face would render `Sans` in serif on
+ * phones (and anywhere an inline style is stripped).
+ */
+function fontPairingLabelClass(heading: string): string {
+  return heading === "var(--font-serif)" ? "font-serif" : "font-sans";
+}
+
 const ACCENT_GRID_CLASS = "mt-1 grid grid-cols-4 gap-1.5 sm:grid-cols-8";
 
 const ACCENT_TARGET_CLASS =
@@ -259,7 +269,9 @@ export function DesignPanel() {
                   className="sr-only"
                 />
                 <span
-                  className="whitespace-nowrap"
+                  className={`whitespace-nowrap ${fontPairingLabelClass(
+                    pairing.heading,
+                  )}`}
                   style={{ fontFamily: pairing.heading }}
                 >
                   {pairing.label}

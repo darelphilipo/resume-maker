@@ -77,7 +77,7 @@ function pasteToggle() {
 
 function aiToggle() {
   return screen.getByRole("button", {
-    name: "Import via AI prompt (for scanned/Canva PDFs)",
+    name: "Import via AI prompt",
   });
 }
 
@@ -132,7 +132,7 @@ describe("Launcher", () => {
     expect(within(utilities).getAllByRole("button").map((button) => button.textContent)).toEqual(
       expect.arrayContaining([
         expect.stringContaining("Paste resume text"),
-        expect.stringContaining("Import via AI prompt (for scanned/Canva PDFs)"),
+        expect.stringContaining("Import via AI prompt"),
         expect.stringContaining("Backup & Restore"),
       ]),
     );
@@ -260,6 +260,12 @@ describe("Launcher", () => {
     await openAiMenu(user);
 
     expect(aiToggle()).toHaveAttribute("aria-expanded", "true");
+    // The long "for scanned/Canva PDFs" suffix moved into the panel so the
+    // accordion label cannot truncate mid-word on a 390px phone.
+    expect(aiToggle()).toHaveTextContent(/^Import via AI prompt$/);
+    expect(
+      screen.getByText("For scanned or Canva PDFs."),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/does not send your resume to any AI/),
     ).toBeInTheDocument();
