@@ -397,6 +397,15 @@ describe("EditorWorkspace", () => {
     expect(screen.getByLabelText("Name")).toBeVisible();
   });
 
+  it("gives the collapsed Basics header the same 44px row height as a section", async () => {
+    await renderReadyWorkspace();
+
+    const toggle = screen.getByRole("button", { name: /^Basics/ });
+
+    expect(toggle).toHaveClass("min-h-11");
+    expect(toggle).not.toHaveClass("py-2");
+  });
+
   it("gives Bullet polish and Match JD matching quiet pill styling", async () => {
     await renderReadyWorkspace();
 

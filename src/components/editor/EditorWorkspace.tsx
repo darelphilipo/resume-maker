@@ -483,7 +483,7 @@ export function EditorWorkspace() {
                   onClick={() => {
                     setBasicsOpen((open) => !open);
                   }}
-                  className="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  className="flex min-h-11 w-full items-center gap-2 px-3 text-left transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   {basicsOpen ? (
                     <CaretUp

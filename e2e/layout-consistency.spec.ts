@@ -453,9 +453,74 @@ for (const viewport of VIEWPORTS) {
         return issues;
       });
 
-      // Hide / Move up / Move down / Open section editor must never clip off
-      // the right border at 390px or in the 22rem desktop column.
+      // The drag handle and Hide button (plus the footer's Open section editor)
+      // must never clip off the right border at 390px or in the 22rem desktop
+      // column.
       expect(overflow).toEqual([]);
+    });
+
+    test("section headers keep title, count, and icons on one 44px row", async ({
+      page,
+    }) => {
+      await createPresetResume(page);
+      await showTab(page, "Content");
+
+      const metrics = await page.evaluate(() => {
+        const rectOf = (element: Element | null | undefined) =>
+          element?.getBoundingClientRect() ?? null;
+        const basics = document.querySelector<HTMLElement>(
+          "[data-basics-toggle]",
+        );
+        const rows = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            '#panel-content li[id^="section-row-"]',
+          ),
+        );
+
+        return {
+          basicsHeight: rectOf(basics)?.height ?? 0,
+          rows: rows.map((row) => {
+            const toggle = row.querySelector<HTMLElement>(
+              "[data-section-toggle]",
+            );
+            const title = toggle?.querySelector<HTMLElement>("span[title]");
+            const count =
+              toggle?.querySelector<HTMLElement>("span.shrink-0");
+            const grip = row.querySelector<HTMLElement>(
+              '[data-section-action="grip"]',
+            );
+            const hide = row.querySelector<HTMLElement>(
+              '[data-section-action="hide"]',
+            );
+
+            return {
+              id: row.id,
+              height: rectOf(row)?.height ?? 0,
+              titleLeft: rectOf(title)?.left ?? 0,
+              titleRight: rectOf(title)?.right ?? 0,
+              countLeft: rectOf(count)?.left ?? 0,
+              countRight: rectOf(count)?.right ?? 0,
+              gripRight: rectOf(grip)?.right ?? 0,
+              hideLeft: rectOf(hide)?.left ?? 0,
+            };
+          }),
+        };
+      });
+
+      expect(metrics.basicsHeight).toBeGreaterThan(0);
+      expect(metrics.rows.length).toBeGreaterThan(0);
+
+      for (const row of metrics.rows) {
+        // Every collapsed section row is exactly as tall as the Basics header.
+        expect(Math.abs(row.height - metrics.basicsHeight)).toBeLessThanOrEqual(
+          2,
+        );
+        // Grip → title → count → Hide, with no overlap at any step.
+        expect(row.titleLeft).toBeGreaterThan(0);
+        expect(row.titleRight).toBeLessThanOrEqual(row.countLeft + 0.5);
+        expect(row.countRight).toBeLessThanOrEqual(row.hideLeft + 0.5);
+        expect(row.gripRight).toBeLessThanOrEqual(row.titleLeft + 0.5);
+      }
     });
 
     test("the page-count badge never overlaps the resume name", async ({

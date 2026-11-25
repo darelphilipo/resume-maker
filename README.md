@@ -195,11 +195,11 @@ in control of every line, and your data stays on your device.
   standard list does not cover, such as speaking, patents, or coursework.
   Custom sections can be deleted when you no longer need them.
 - Show, hide, and reorder whole sections; empty sections stay out of the PDF.
-  Compact Hide and ↑/↓ icon buttons sit right on each section's header, so you
-  can reorder or hide a section without expanding it and scrolling to the bottom
-  of its card. Only **Open section editor** and custom-section delete stay in
-  the card's two-column footer, keeping their labels inside the narrow desktop
-  Content column.
+  Drag the ⋮⋮ handle on a section's header to move it, or tap Hide without
+  expanding the card. On a keyboard, focus the handle and press the up or down
+  arrow to move that section one step. Only **Open section editor** and
+  custom-section delete stay in the card's two-column footer, keeping their
+  labels inside the narrow desktop Content column.
   Awards, Languages, Interests, Volunteer, Publications, and References stay
   tucked behind **Add optional section** until you need them. Several sections
   can stay open at once; when two or more are expanded, a quiet **Collapse all**

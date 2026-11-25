@@ -49,7 +49,7 @@ function sectionToggle(id: string): HTMLElement {
 
 function sectionAction(
   id: string,
-  action: "hide" | "up" | "down",
+  action: "hide" | "grip",
 ): HTMLElement {
   const row = sectionToggle(id).closest("li");
   const button = row?.querySelector<HTMLElement>(`[data-section-action="${action}"]`);
@@ -70,14 +70,17 @@ describe("SectionList", () => {
     setup();
   });
 
-  it("shows long titles in full without truncating", () => {
+  it("keeps long titles on one line without overlapping the count pill", () => {
     render(<SectionList />);
 
     const title = screen.getByText(LONG_TITLE);
     const toggle = sectionToggle("summary");
+    const row = toggle.closest("li");
+    const count = row?.querySelector("span.shrink-0.whitespace-nowrap");
 
-    expect(title).not.toHaveClass("truncate");
-    expect(title).toHaveClass("flex-1");
+    expect(title).toHaveClass("min-w-0", "flex-1", "truncate");
+    expect(title).toHaveAttribute("title", LONG_TITLE);
+    expect(count).toHaveClass("shrink-0", "whitespace-nowrap");
     expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
 
@@ -107,45 +110,50 @@ describe("SectionList", () => {
     expect(row).toHaveClass("min-w-0", "overflow-hidden");
   });
 
-  it("keeps compact hide and reorder icons on the header without expanding", () => {
+  it("keeps a drag handle and hide icon on a uniform 44px header", () => {
     render(<SectionList />);
 
+    const grip = sectionAction("summary", "grip");
     const hide = sectionAction("summary", "hide");
-    const moveUp = sectionAction("summary", "up");
-    const moveDown = sectionAction("summary", "down");
     const group = hide.parentElement;
+    const header = sectionToggle("summary").parentElement;
 
     expect(sectionToggle("summary")).toHaveAttribute("aria-expanded", "false");
-    expect(group).toHaveAttribute("aria-label", `${LONG_TITLE} section actions`);
+    expect(grip).toHaveAttribute("aria-label", `Reorder ${LONG_TITLE}`);
+    expect(grip).toHaveAttribute("aria-keyshortcuts", "ArrowUp ArrowDown");
+    expect(grip).toHaveClass(
+      "touch-none",
+      "cursor-grab",
+      "min-h-9",
+      "pointer-coarse:min-h-11",
+    );
+    expect(grip.querySelector("svg")).not.toBeNull();
     expect(hide).toHaveAttribute("aria-label", `Hide ${LONG_TITLE}`);
     expect(hide).toHaveAttribute("title", `Hide ${LONG_TITLE}`);
     expect(hide).toHaveAttribute("aria-pressed", "true");
-    expect(moveUp).toBeDisabled();
-    expect(moveDown).toBeEnabled();
+    expect(group).toHaveAttribute("aria-label", `${LONG_TITLE} section actions`);
     expect(
       Array.from(group?.children ?? []).map((button) =>
         button.getAttribute("data-section-action"),
       ),
-    ).toEqual(["hide", "up", "down"]);
-
-    for (const button of [hide, moveUp, moveDown]) {
-      expect(button).toHaveClass("min-h-9", "pointer-coarse:min-h-11");
-      expect(button.querySelector("svg")).not.toBeNull();
-      expect(button.closest("#section-body-summary")).toBeNull();
-    }
+    ).toEqual(["hide"]);
+    // The grip is a sibling of the title toggle, not a nested button, and the
+    // row keeps the same 44px height as the Basics card header.
+    expect(grip.closest("[data-section-toggle]")).toBeNull();
+    expect(header).toHaveClass("min-h-11");
+    expect(header).not.toHaveClass("py-1.5");
+    expect(grip.closest("#section-body-summary")).toBeNull();
   });
 
-  it("does not toggle expansion when a header icon is tapped", async () => {
+  it("does not toggle expansion when the grip or a header icon is tapped", async () => {
     const user = userEvent.setup();
 
     render(<SectionList />);
 
-    await user.click(sectionAction("summary", "down"));
+    await user.click(sectionAction("summary", "grip"));
+    await user.click(sectionAction("summary", "hide"));
 
     expect(sectionToggle("summary")).toHaveAttribute("aria-expanded", "false");
-    expect(
-      useResumeStore.getState().doc.metadata.layout.pages[0].main.slice(0, 2),
-    ).toEqual(["experience", "summary"]);
   });
 
   it("keeps the expanded footer to a two-column grid for labelled actions", async () => {
@@ -182,16 +190,64 @@ describe("SectionList", () => {
     expect(sectionToggle("summary")).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("moves a section down from the header", async () => {
-    const user = userEvent.setup();
-
+  it("reorders a section with ArrowDown on the focused drag handle", () => {
     render(<SectionList />);
 
-    await user.click(sectionAction("summary", "down"));
+    const grip = sectionAction("summary", "grip");
+
+    grip.focus();
+    expect(grip).toHaveFocus();
+
+    fireEvent.keyDown(grip, { key: "ArrowDown" });
 
     expect(
       useResumeStore.getState().doc.metadata.layout.pages[0].main.slice(0, 2),
     ).toEqual(["experience", "summary"]);
+    expect(sectionToggle("summary")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("reorders a section by dragging the handle onto another row", () => {
+    render(<SectionList />);
+
+    const rows = Array.from(
+      document.querySelectorAll<HTMLElement>("li[id^='section-row-']"),
+    );
+    const ids = rows.map((row) => row.id.replace("section-row-", ""));
+
+    // jsdom has no layout, so fake a 44px row every 48px.
+    rows.forEach((row, index) => {
+      vi.spyOn(row, "getBoundingClientRect").mockReturnValue({
+        top: index * 48,
+        bottom: index * 48 + 44,
+      } as DOMRect);
+    });
+
+    const grip = sectionAction(ids[0], "grip");
+    const targetY = 2 * 48 + 10;
+
+    fireEvent.pointerDown(grip, { pointerId: 1, clientY: 4 });
+    fireEvent.pointerMove(grip, { pointerId: 1, clientY: targetY });
+
+    expect(document.getElementById(`section-row-${ids[0]}`)).toHaveAttribute(
+      "data-dragging",
+      "true",
+    );
+    expect(document.getElementById(`section-row-${ids[2]}`)).toHaveAttribute(
+      "data-drop-target",
+      "true",
+    );
+
+    fireEvent.pointerUp(grip, { pointerId: 1, clientY: targetY });
+
+    const main = useResumeStore.getState().doc.metadata.layout.pages[0].main;
+
+    expect(main.indexOf(ids[0])).toBe(
+      main.indexOf(ids[2]) + 1,
+    );
+    expect(main.indexOf(ids[1])).toBeLessThan(main.indexOf(ids[2]));
+    expect(document.getElementById(`section-row-${ids[0]}`)).not.toHaveAttribute(
+      "data-dragging",
+    );
   });
 
   it("tucks empty optional sections behind Add optional section", () => {
@@ -255,16 +311,10 @@ describe("SectionList", () => {
     ).toBeInTheDocument();
   });
 
-  it("reorders visible rows without letting tucked sections absorb moves", async () => {
-    const user = userEvent.setup();
-
+  it("reorders visible rows without letting tucked sections absorb moves", () => {
     render(<SectionList />);
 
-    await expandRow(user, "certifications");
-    expect(sectionAction("certifications", "down")).toBeDisabled();
-
-    await expandRow(user, "skills");
-    await user.click(screen.getByRole("button", { name: "Move Skills down" }));
+    fireEvent.keyDown(sectionAction("skills", "grip"), { key: "ArrowDown" });
 
     const main = useResumeStore.getState().doc.metadata.layout.pages[0].main;
 

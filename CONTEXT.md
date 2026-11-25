@@ -1642,11 +1642,31 @@ rediscover.
         section or entry renderer, and keep the ids limited to plain text:
         jsdom has no layout, so only the browser verifies the final scroll.
 
+   106. **Section rows drag with pointer events, and tucked rows keep their
+        slot.** The header `↑`/`↓` buttons are gone: each row leads with one
+        `DotsSixVertical` handle wired with Pointer Events (not HTML5
+        `draggable`, which fails on touch). Only the handle carries
+        `touch-action: none`; `setPointerCapture` keeps moves flowing after the
+        finger leaves it. `src/lib/editor/sectionOrder.ts` owns the pure rules:
+        `reorderVisibleIds` moves the dragged id to the target's index,
+        `mergeVisibleOrder` writes that visible order back into the saved layout
+        while tucked optional rows keep their exact slot, and
+        `dropTargetForPointer` picks the first row whose midpoint is below the
+        pointer. `SectionList` tracks the live drag in a ref (pointer moves can
+        outpace React renders) and mirrors only the highlight into state;
+        `data-dragging` / `data-drop-target` drive the ring. Keyboard users focus
+        the handle and press `ArrowUp` / `ArrowDown`, which reuses the same
+        reorder path as the old buttons. Guard jsdom's missing
+        `setPointerCapture` with `typeof … === "function"` so component tests can
+        drive `fireEvent.pointerDown/Move/Up`. The collapsed section row and the
+        Basics header are both `min-h-11` with no extra vertical padding, and the
+        title/count pair is `min-w-0 truncate` + `shrink-0 whitespace-nowrap`.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~1118 tests
+npm test               # vitest, ~1142 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1706,6 +1726,40 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-25 — Closed the section-header drag-handle bookkeeping
+- Task: the lone In Progress item (P1: pointer drag handle + uniform 44px rows).
+  Its code, tests, README copy and Decision #106 were already in the tree from
+  the prior checkpoint, so this run verified them instead of rebuilding them.
+- Change: confirmed `src/lib/editor/sectionOrder.ts` owns the three pure reorder
+  rules, `SectionList` uses the `DotsSixVertical` handle (guarded pointer capture,
+  keyboard reorder, drag rings), and `EditorWorkspace`'s Basics header shares the
+  `min-h-11` row. Moved the item from In Progress to Done in `TASKS.md`; no code
+  or README changes were needed.
+- Tests: `npm run typecheck` clean; `npm test` 1142 pass.
+- Files: `TASKS.md`, `CONTEXT.md`.
+- Note: Playwright remains sandbox-blocked, so the 390px header geometry is
+  browser-unverified.
+
+### 2026-11-25 — Section headers: pointer drag handle + uniform 44px rows
+- Task: top Queue item (P1), moved to In Progress first.
+- Change: replaced the header `↑`/`↓` buttons with one `⋮⋮` drag handle plus the
+  existing Hide eye. The handle uses Pointer Events with `setPointerCapture` and
+  `touch-none` (no HTML5 `draggable`), shows a drag/drop ring, and keeps
+  `ArrowUp`/`ArrowDown` reorder on the focused handle. New pure
+  `src/lib/editor/sectionOrder.ts` reorders visible ids while tucked optional
+  rows keep their layout slot. Section rows and the Basics header now share one
+  44px height, and the title/count pair truncates instead of overlapping at
+  390px. README feature copy updated; Decision #106.
+- Tests: new ordering-helper cases, a pointer drag-drop case with stubbed row
+  rects, keyboard reorder cases, uniform-height/truncate assertions, and a
+  Playwright header-geometry case (browser-unverified: Playwright remains
+  sandbox-blocked). 1142 pass.
+- Files: `src/lib/editor/sectionOrder.ts` (new, + test),
+  `src/components/editor/SectionList.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1142 pass), `npm run lint` (clean).
 
 ### 2026-11-25 — Mobile micro-polish: Sans label, ATS top line, AI accordion label
 - Task: top Queue item (P1), the final device-review micro-polish, moved to In
@@ -1859,45 +1913,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/launcher/Launcher.tsx` (+ test), `src/app/page.test.tsx`,
   `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (1061 pass), `npm run lint` (clean).
-
-### 2026-11-24 — Profiles promote without a URL; Content Collapse all
-- Task: top (only) Queue item, P2: `Profiles` rows filled with just Network +
-  Username, plus a `Collapse all` control in the Content panel.
-- Change: added `canonicalProfileUrl` and extended `profileHeaderLink` in
-  `src/lib/links/contactLinks.ts` so a known network derives a real URL, an
-  unknown pair renders inline (`Network: username`), and a network-only draft
-  stays in the body. `HeaderSlot`, `SectionRenderer` and `atsText` already read
-  the one `headerProfileLinks` list, so promotion/omission stayed consistent;
-  only a clarifying comment changed in `HeaderSlot`. `SectionList` now keeps an
-  `expandedIds` array (multi-accordion) and shows a subtle `Collapse all` text
-  button once 2+ rows are open. Decisions #96/#97; README Key features updated.
-- Tests: contactLinks canonical/fallback/draft cases, HeaderSlot canonical-link
-  + inline-text cases, SectionRenderer promotion case, ATS contact-line case,
-  and a SectionList multi-expand/Collapse-all case. 1045 pass.
-- Files: `src/lib/links/contactLinks.ts` (+ test),
-  `src/templates/shared/HeaderSlot.tsx`,
-  `src/templates/shared/AvatarSlot.test.tsx`,
-  `src/templates/shared/SectionRenderer.test.tsx`,
-  `src/lib/ats/atsText.test.ts`, `src/components/editor/SectionList.tsx`
-  (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1045 pass).
-
-### 2026-11-24 — Review dialog and ATS Copy buttons deduplicated
-- Task: top Queue item (P2): duplicate Anonymize notice in `Review tools` and
-  stacked Copy buttons on single-item ATS sections.
-- Change: removed the `data-review-mode-note` paragraph from `ReviewMenu`, so
-  the `EditorWorkspace` Preview banner is the only "Review mode is on" notice.
-  Added the pure `shouldHideEntryCopy(section)` guard in `AtsTextView` to omit
-  the inner per-entry Copy button only when one entry's text equals the
-  section's own Copy output (e.g. a headingless Summary); the section button
-  still copies that text and all headed/multi-entry buttons stay. README's
-  Review/ATS feature copy updated. Decision #95.
-- Tests: dialog no-duplicate-notice case plus ATS cases for headingless
-  single-block, headed, and headingless multi-entry sections. 1034 pass.
-- Files: `src/components/editor/ReviewMenu.tsx` (+ test),
-  `src/components/preview/AtsTextView.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1034 pass).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

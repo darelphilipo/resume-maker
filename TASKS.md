@@ -22,15 +22,27 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-### P1 — Final Pre-Freeze UX & Bug Polish
-
-- [ ] P1: Replace section header `↑` / `↓` buttons with a touch-friendly drag-and-drop handle (`⋮⋮`) + `Hide` icon, and match `BASICS` row height (`src/components/editor/SectionList.tsx`, `src/components/editor/BasicsForm.tsx`).
-  1. **Touch + desktop drag-to-reorder (`SectionList.tsx`):** Replace the header `↑` and `↓` buttons with a single compact `GripVertical` (`⋮⋮`) drag handle on the left (or next to the `👁` Hide/Show icon) wired with **Pointer Events** (`onPointerDown` / `onPointerMove` / `onPointerUp` + `setPointerCapture` + `touch-action: none` strictly on the handle, NOT HTML5 `draggable` which fails on mobile). Show a subtle elevated shadow/drop-indicator while dragging and commit the new order via the existing Zustand/Zundo reorder action (keeping keyboard `ArrowUp`/`ArrowDown` reorder on the focused handle for accessibility).
-  2. **Prevent title/count overlap:** With only the drag handle and `👁` icon on the row, ensure long titles like `Certifications` and the `4 items` pill have `min-w-0 truncate` / `shrink-0` spacing so they never overlap at `390px`.
-  3. **Match `BASICS` row height (`BasicsForm.tsx`):** Apply the exact same vertical padding and `min-h` height to the collapsed `BASICS` card header as the other section rows so all stacked section pills have uniform height.
+_empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-25 — Replaced the section-header `↑` / `↓` buttons with a touch-first
+  `⋮⋮` drag handle plus the existing Hide eye, and matched the Basics header to
+  the same uniform 44px row. The handle uses Pointer Events with guarded
+  `setPointerCapture` and `touch-none`, shows drag/drop rings, and keeps
+  `ArrowUp`/`ArrowDown` reorder for keyboards. New pure `sectionOrder.ts` moves
+  visible ids while tucked optional rows keep their exact layout slot, so a drag
+  never lands on a hidden row; the title/count pair truncates instead of
+  overlapping at 390px. The implementation and tests were already in the tree
+  from the prior checkpoint, so this run verified them end to end and closed the
+  bookkeeping. Verified `npm run typecheck`, `npm test` (1142 pass). Files:
+  `src/lib/editor/sectionOrder.ts` (new, + test),
+  `src/components/editor/SectionList.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  Playwright remains sandbox-blocked, so the 390px header geometry is
+  browser-unverified.
 
 - [x] 2026-11-25 — Finished the final mobile micro-polish from the device review.
   Every `Font pairing` label now carries an explicit `font-sans` / `font-serif`

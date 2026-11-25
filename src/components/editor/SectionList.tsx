@@ -1,17 +1,27 @@
 "use client";
 
 import {
-  ArrowDown,
-  ArrowUp,
   CaretDown,
   CaretUp,
+  DotsSixVertical,
   Eye,
   EyeSlash,
   Plus,
   Trash,
 } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
+import {
+  dropTargetForPointer,
+  mergeVisibleOrder,
+  reorderVisibleIds,
+} from "@/lib/editor/sectionOrder";
 import { newId } from "@/lib/schema/defaults";
 import {
   CustomSectionSchema,
@@ -70,6 +80,22 @@ const SECTION_HEADER_ACTION_CLASS =
 /** Shared surface for the footer actions that still need a text label. */
 const SECTION_ACTION_CLASS =
   "flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-lg border border-black/10 px-2 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent";
+
+/**
+ * jsdom does not implement pointer capture, so every capture call is guarded.
+ * In a browser the handle keeps receiving moves after the finger leaves it.
+ */
+function capturePointer(element: HTMLElement, pointerId: number): void {
+  if (typeof element.setPointerCapture === "function") {
+    element.setPointerCapture(pointerId);
+  }
+}
+
+function releasePointer(element: HTMLElement, pointerId: number): void {
+  if (typeof element.releasePointerCapture === "function") {
+    element.releasePointerCapture(pointerId);
+  }
+}
 
 type SectionRow = {
   id: string;
@@ -207,6 +233,17 @@ export function SectionList({
   const [customTitle, setCustomTitle] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [lastFocusNonce, setLastFocusNonce] = useState<number | null>(null);
+  const [dragState, setDragState] = useState<{
+    id: string;
+    overId: string | null;
+  } | null>(null);
+  // Pointer moves can arrive faster than React re-renders, so the live drag is
+  // tracked in a ref and mirrored into state only for the visual highlight.
+  const dragRef = useRef<{
+    id: string;
+    pointerId: number;
+    overId: string | null;
+  } | null>(null);
   const rows = buildRows(doc);
 
   // "Manage profiles" in Basics asks this list to reveal its Profiles card.
@@ -288,27 +325,7 @@ export function SectionList({
     });
   }
 
-  function moveRow(row: SectionRow, direction: -1 | 1): void {
-    const visibleIds = visibleRows.map((candidate) => candidate.id);
-    const index = visibleIds.indexOf(row.id);
-    const nextIndex = index + direction;
-
-    if (index < 0 || nextIndex < 0 || nextIndex >= visibleIds.length) {
-      return;
-    }
-
-    const currentId = visibleIds[index];
-    const targetId = visibleIds[nextIndex];
-    visibleIds[index] = targetId;
-    visibleIds[nextIndex] = currentId;
-
-    let visibleCursor = 0;
-    const nextOrder = rows.map((candidate) =>
-      isOptionalTucked(candidate)
-        ? candidate.id
-        : visibleIds[visibleCursor++],
-    );
-
+  function commitOrder(order: string[]): void {
     const firstPage = doc.metadata.layout.pages[0] ?? {
       fullWidth: false,
       main: [...DEFAULT_SECTION_ORDER],
@@ -319,12 +336,133 @@ export function SectionList({
       metadata: {
         layout: {
           pages: [
-            { ...firstPage, main: nextOrder },
+            { ...firstPage, main: order },
             ...doc.metadata.layout.pages.slice(1),
           ],
         },
       },
     });
+  }
+
+  /** Writes a new visible order back to the layout, preserving tucked slots. */
+  function reorderVisible(dragId: string, targetId: string): void {
+    const visibleIds = visibleRows.map((row) => row.id);
+    const nextVisible = reorderVisibleIds(visibleIds, dragId, targetId);
+
+    if (nextVisible.every((id, index) => id === visibleIds[index])) {
+      return;
+    }
+
+    commitOrder(
+      mergeVisibleOrder(
+        rows.map((row) => row.id),
+        new Set(tuckedRows.map((row) => row.id)),
+        nextVisible,
+      ),
+    );
+  }
+
+  function moveRow(row: SectionRow, direction: -1 | 1): void {
+    const visibleIds = visibleRows.map((candidate) => candidate.id);
+    const index = visibleIds.indexOf(row.id);
+    const nextIndex = index + direction;
+
+    if (index < 0 || nextIndex < 0 || nextIndex >= visibleIds.length) {
+      return;
+    }
+
+    reorderVisible(row.id, visibleIds[nextIndex]);
+  }
+
+  function startRowDrag(
+    event: ReactPointerEvent<HTMLButtonElement>,
+    row: SectionRow,
+  ): void {
+    // Touch and pen are always primary; a right-click on desktop must not drag.
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    capturePointer(event.currentTarget, event.pointerId);
+    dragRef.current = { id: row.id, pointerId: event.pointerId, overId: null };
+    setDragState({ id: row.id, overId: null });
+  }
+
+  function updateRowDrag(
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ): void {
+    const drag = dragRef.current;
+
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const slots = visibleRows.flatMap((row) => {
+      const element = document.getElementById(`section-row-${row.id}`);
+      const rect = element?.getBoundingClientRect();
+
+      return rect
+        ? [{ id: row.id, top: rect.top, bottom: rect.bottom }]
+        : [];
+    });
+    const overId = dropTargetForPointer(slots, event.clientY);
+
+    if (overId === drag.overId) {
+      return;
+    }
+
+    drag.overId = overId;
+    setDragState({ id: drag.id, overId });
+  }
+
+  function finishRowDrag(
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ): void {
+    const drag = dragRef.current;
+
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    releasePointer(event.currentTarget, event.pointerId);
+    dragRef.current = null;
+    setDragState(null);
+
+    if (drag.overId && drag.overId !== drag.id) {
+      reorderVisible(drag.id, drag.overId);
+    }
+  }
+
+  function cancelRowDrag(
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ): void {
+    const drag = dragRef.current;
+
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    releasePointer(event.currentTarget, event.pointerId);
+    dragRef.current = null;
+    setDragState(null);
+  }
+
+  function handleRowKeyDown(
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    row: SectionRow,
+  ): void {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      moveRow(row, -1);
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      moveRow(row, 1);
+    }
   }
 
   function renameSection(row: SectionRow, title: string): void {
@@ -413,23 +551,48 @@ export function SectionList({
         </div>
       ) : null}
       <ul className="flex flex-col gap-2">
-        {visibleRows.map((row, index) => {
+        {visibleRows.map((row) => {
           const isExpanded = expandedIds.includes(row.id);
           const isCustomRow = !isSectionId(row.id) && row.id !== "summary";
-          const atStart = index === 0;
-          const atEnd = index === visibleRows.length - 1;
+          const isDragging = dragState?.id === row.id;
+          const isDropTarget =
+            dragState !== null && !isDragging && dragState.overId === row.id;
           const bodyId = `section-body-${row.id}`;
 
           return (
             <li
               key={row.id}
               id={`section-row-${row.id}`}
-              className="min-w-0 overflow-hidden rounded-xl border border-black/10 bg-background"
+              data-dragging={isDragging ? "true" : undefined}
+              data-drop-target={isDropTarget ? "true" : undefined}
+              className={`min-w-0 overflow-hidden rounded-xl border bg-background transition-colors ${
+                isDragging || isDropTarget
+                  ? "border-primary/40 ring-2 ring-primary/25"
+                  : "border-black/10"
+              } ${isDragging ? "bg-primary/[0.04]" : ""}`}
             >
-              <div className="flex min-h-11 w-full items-center gap-1 px-2 py-1.5 sm:px-3">
-                {/* Only the title toggles expansion; the icon actions beside it
-                    stay reachable without opening the card and scrolling to its
-                    footer on a phone. */}
+              <div className="flex min-h-11 w-full items-center gap-1 px-2 sm:px-3">
+                {/* The drag handle owns pointer capture and touch-action: none
+                    so a one-finger drag moves the row on a phone. Arrow keys on
+                    the focused handle reorder it without a pointer. */}
+                <button
+                  type="button"
+                  data-section-action="grip"
+                  aria-label={`Reorder ${row.title}`}
+                  title={`Drag or use the arrow keys to reorder ${row.title}`}
+                  aria-keyshortcuts="ArrowUp ArrowDown"
+                  onPointerDown={(event) => startRowDrag(event, row)}
+                  onPointerMove={updateRowDrag}
+                  onPointerUp={finishRowDrag}
+                  onPointerCancel={cancelRowDrag}
+                  onLostPointerCapture={cancelRowDrag}
+                  onKeyDown={(event) => handleRowKeyDown(event, row)}
+                  className={`${SECTION_HEADER_ACTION_CLASS} cursor-grab touch-none active:cursor-grabbing`}
+                >
+                  <DotsSixVertical size={18} aria-hidden />
+                </button>
+                {/* Only the title toggles expansion; the grip and hide icons
+                    beside it stay reachable without opening the card. */}
                 <button
                   type="button"
                   data-section-toggle={row.id}
@@ -443,11 +606,14 @@ export function SectionList({
                   ) : (
                     <CaretDown size={16} aria-hidden data-chevron="down" className="shrink-0 opacity-60" />
                   )}
-                  <span className="min-w-0 flex-1 text-sm font-medium leading-snug">
+                  <span
+                    title={row.title}
+                    className="min-w-0 flex-1 truncate text-sm font-medium leading-snug"
+                  >
                     {row.title}
                   </span>
                   <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
+                    className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-xs ${
                       row.hidden
                         ? "bg-amber-100 text-amber-900"
                         : "bg-black/5 opacity-70"
@@ -480,34 +646,6 @@ export function SectionList({
                     ) : (
                       <Eye size={18} aria-hidden />
                     )}
-                  </button>
-                  <button
-                    type="button"
-                    data-section-action="up"
-                    aria-label={`Move ${row.title} up`}
-                    title={`Move ${row.title} up`}
-                    disabled={atStart}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      moveRow(row, -1);
-                    }}
-                    className={SECTION_HEADER_ACTION_CLASS}
-                  >
-                    <ArrowUp size={18} aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    data-section-action="down"
-                    aria-label={`Move ${row.title} down`}
-                    title={`Move ${row.title} down`}
-                    disabled={atEnd}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      moveRow(row, 1);
-                    }}
-                    className={SECTION_HEADER_ACTION_CLASS}
-                  >
-                    <ArrowDown size={18} aria-hidden />
                   </button>
                 </div>
               </div>
