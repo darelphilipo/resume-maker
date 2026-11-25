@@ -116,14 +116,15 @@ export function ExportJsonButton() {
         ref={triggerRef}
         type="button"
         aria-label="Backup and export"
-        title="Backup & export"
+        title="Export / Backup"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? "export-json-menu" : undefined}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex min-h-11 min-w-10 shrink-0 items-center justify-center rounded-lg border border-transparent text-muted transition-colors hover:bg-black/5 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-w-11"
+        className="inline-flex min-h-11 min-w-10 shrink-0 items-center justify-center gap-1 rounded-lg border border-transparent text-muted transition-colors hover:bg-black/5 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-w-11"
       >
         <DotsThreeVertical size={20} weight="bold" aria-hidden />
+        <span className="hidden text-xs font-medium lg:inline">Backup</span>
       </button>
 
       {open ? (

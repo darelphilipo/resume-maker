@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
 
-import { PrintTriggerButton } from "./PrintTriggerButton";
+import { PRINT_JOB_RELEASE_MS, PrintTriggerButton } from "./PrintTriggerButton";
 
 const PAGES = [["__header"], ["summary", "experience"]];
 
@@ -119,6 +119,44 @@ describe("PrintTriggerButton", () => {
       expect(document.getElementById("print-portal")).toBeNull();
     });
     expect(print).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-enables Save PDF when the print dialog never fires afterprint", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      callback(0);
+      return 0;
+    });
+    const print = vi.spyOn(window, "print").mockImplementation(() => {});
+
+    try {
+      render(<PrintTriggerButton doc={createEmptyResume()} pages={PAGES} />);
+      const button = screen.getByRole("button", { name: "Save PDF" });
+
+      fireEvent.click(button);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10);
+      });
+      expect(print).toHaveBeenCalledTimes(1);
+      expect(button).toBeDisabled();
+
+      // printResume's safety timer is a minute long; the trigger's short
+      // fallback must release the button well before that.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(PRINT_JOB_RELEASE_MS);
+      });
+
+      expect(button).toBeEnabled();
+      expect(document.getElementById("print-portal")).toBeNull();
+
+      act(() => {
+        window.dispatchEvent(new Event("afterprint"));
+      });
+      await vi.advanceTimersByTimeAsync(0);
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
   });
 
   it("ignores clicks while a print job is pending", async () => {

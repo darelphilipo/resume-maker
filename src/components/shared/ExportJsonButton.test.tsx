@@ -35,6 +35,16 @@ describe("slugFileName", () => {
 });
 
 describe("ExportJsonButton", () => {
+  it("labels the menu trigger with an Export / Backup tooltip and desktop text", () => {
+    render(<ExportJsonButton />);
+
+    const trigger = screen.getByRole("button", { name: "Backup and export" });
+
+    expect(trigger).toHaveAttribute("title", "Export / Backup");
+    expect(trigger).toHaveTextContent("Backup");
+    expect(trigger.querySelector("span")).toHaveClass("hidden", "lg:inline");
+  });
+
   it("opens a menu with a backup and a JSON Resume choice", async () => {
     const user = userEvent.setup();
     render(<ExportJsonButton />);

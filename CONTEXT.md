@@ -1465,7 +1465,9 @@ rediscover.
        `section.text` — a headingless single-block section such as a hidden
        Summary heading — because the section-level button already copies that
        exact text. A shown heading (section text gains the title) or 2+ entries
-       keeps every per-entry button. Do not widen the guard: the other buttons
+       keeps every per-entry button — except a single-block **Summary**, which
+        hides its entry button even when the heading is shown (#103). Do not
+        widen the guard further: the other buttons
        copy genuinely different text.
 
    96. **A `Network` + `Username` row is promoted without a stored URL.**
@@ -1566,6 +1568,43 @@ rediscover.
        tables and the line→`Line` normalization pure and framework-free; the
        launcher needs no new UI because it already calls `parsePdfResume`.
 
+   101. **Save PDF releases its pending state without `afterprint`.**
+        `PrintTriggerButton` owns a `job` only to disable the button and keep the
+        captured `PrintPortal` mounted. `printResume` waits up to a full minute
+        for `afterprint`, so a browser that suppresses or cancels the dialog
+        left Save PDF dimmed for the rest of the session. The trigger now listens
+        for `afterprint` itself and arms a 2s fallback (`PRINT_JOB_RELEASE_MS`)
+        from `printResume`'s `beforePrint` hook — i.e. only after fonts/images
+        and the two pre-print frames, so a slow load cannot release the job
+        before `window.print()` runs. Both paths call one idempotent `release`
+        that clears the ref, timer, listener, and `job`; `printResume`'s own
+        promise can settle later without touching state. Tests use fake timers
+        around the timer advance (`act`) because the fallback calls `setState`.
+
+   102. **A fitted resume shows `1 page · Reset` in the same bar slot.**
+        Once `doc.metadata.page.fitScale < 1` and pagination reports one page,
+        `EditorWorkspace` renders the count as a small pill with an inline
+        **Reset** instead of the quiet `1 page` span, so undoing a fit does not
+        require opening Review. It calls the same `resetFit()` as Review: the
+        viewport handle also restores the paper scroll, with `applyFitScale(1)`
+        as the fallback when the canvas is not mounted (ATS tab / component
+        tests). The unfitted label keeps its old `text-xs text-muted` classes.
+
+   103. **Review mode keeps public certification issuers, and one Summary Copy.**
+        `anonymizeCertificationUrl` (`src/lib/privacy/anonymizeDoc.ts`) keeps the
+        scheme/host of a known public issuer (`credly.com`, `aws.amazon.com`,
+        `scrum.org`, `coursera.org`) plus at most one generic path segment from
+        `PUBLIC_CERTIFICATION_PATH_PREFIXES`, dropping deeper segments, query,
+        and fragment so a username cannot leak. Unknown hosts, non-http schemes,
+        and malformed URLs still use `ANONYMIZED_ENTRY_URL`; other entry URL
+        sections are unchanged. Separately, `shouldHideEntryCopy` now drops the
+        per-entry Copy for a **single-block Summary regardless of whether its
+        heading is shown** — the section button copies heading + body and the
+        inner one would stack directly beneath it. This narrows Decision #95's
+        "do not widen the guard" to other section types. The header `⋮` trigger
+        now has `title="Export / Backup"` and a desktop-only "Backup" label
+        while keeping the `Backup and export` accessible name used by tests.
+
 ## Verification and tooling
 
 ```powershell
@@ -1630,6 +1669,29 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-25 — Final pre-freeze UX/bug polish (Save PDF, fit reset, review)
+- Task: top Queue item (P1), the compound pre-freeze polish item, moved to In
+  Progress at the start of this run.
+- Change: `PrintTriggerButton` now releases its pending job on `afterprint` or
+  via a 2s fallback armed from `beforePrint`, so Save PDF cannot stay dimmed
+  when a dialog is suppressed. `EditorWorkspace` shows `1 page · Reset` inline
+  after a fit and shares one `resetFit()` with Review. `anonymizeCertificationUrl`
+  preserves public issuer domains (Credly/AWS/Scrum/Coursera) while stripping
+  personal badge paths. A single-block Summary no longer stacks a second Copy
+  in the ATS view. The header `⋮` gained an "Export / Backup" tooltip and a
+  desktop "Backup" label. Decisions #101–#103; README Key features updated.
+- Tests: fake-timer fallback regression, inline-fit-reset workspace case,
+  certification-domain/URL cases, a headed-Summary single-Copy case, and a
+  backup-trigger affordance case. 1105 pass.
+- Files: `src/components/preview/PrintTriggerButton.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/lib/privacy/anonymizeDoc.ts` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test),
+  `src/components/shared/ExportJsonButton.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1105 pass), `npm run lint` (clean).
+  Playwright remains sandbox-blocked, so the 390px bar geometry is unverified.
 
 ### 2026-11-25 — Weighted PDF-line parsing finished
 - Task: the in-progress top Queue item (P0), resumed from an uncommitted
@@ -1812,34 +1874,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Verified: `npm run typecheck`, `npm test` (1022 pass), `npm run lint`.
   Playwright remains blocked here and jsdom has no layout, so the injected
   heights are the contract and the real browser geometry is unverified.
-
-### 2026-11-24 — Zoomed mobile Preview keeps scrolling across page breaks
-- Task: the In Progress P0 item. Finishing a checkpoint: `TouchPanCanvas` already
-  required a `scrollRef` prop and took the pan position locally, but the viewport
-  never passed it, the `dampHandoffScroll` ramp tests still targeted a deleted
-  helper, and `scrollPageBy` did not accept an `undefined` preferred element.
-- Change: `LiveCanvasViewport` → `CanvasSurface` → `TouchPanCanvas` now passes the
-  exact `[data-canvas-scroll]` element. That box is a *descendant* of the touch
-  host, so the old ancestor walk resolved to a non-scrolling `<main>` and a
-  zoomed two-page resume froze at the page break. `scrollPageBy` prefers the
-  explicit box and keeps the ancestor walk as the wide-tablet fallback. The ramp
-  is gone: the full leftover `deltaY` reaches `scrollTop` on the first at-bound
-  move. Updated Decisions #26/#33/#37.
-- Tests: a phone-shape harness where the scroller is a descendant, a bottom-bound
-  2-page swipe sequence that advances `scrollTop` by exactly each leftover, a
-  lagging-library-position case, preferred-scroller + non-scrolling fallback
-  cases, and a `LiveCanvasViewport.touchWiring` case asserting the ref handed to
-  `TouchPanCanvas` is the `[data-canvas-scroll]` element. Obsolete ramp cases
-  removed. 1015 pass.
-- Files: `src/components/preview/LiveCanvasViewport.tsx`,
-  `src/components/preview/TouchPanCanvas.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.touchWiring.test.tsx` (new),
-  `src/lib/zoom/touchScroll.ts` (+ test),
-  `src/lib/zoom/canvasGestures.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1015 pass), `npm run lint`.
-  Playwright remains blocked here, so the real touch geometry is
-  browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

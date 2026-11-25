@@ -290,13 +290,15 @@ in control of every line, and your data stays on your device.
   shrinks the page below a readable size — if one page would need microscopic
   type, the preview says so instead. The fitted width keeps a little breathing
   room at the right edge, so right-aligned dates never lose their last pixels.
-  Whenever a reduced fit is active, **Reset fit** inside **Review** returns the
-  page to 100%.
+  Whenever a reduced fit is active, an inline **Reset** beside the `1 page`
+  label — or **Reset fit** inside **Review** — returns the page to 100%.
 - **A calm page count.** A resume that fits on one page just shows a quiet
   **1 page** label in the top bar, with no extra row stealing height from the
-  paper. When it spills, that same bar shows one compact pill such as
-  **2 pages · Fit**; if one page would need unreadable type, the pill keeps just
-  the page count and **Review** explains how to shorten the resume instead.
+  paper. After a fit, that same label reads `1 page · Reset` so you can undo the
+  shrink without opening **Review**. When the resume spills, the bar shows one
+  compact pill such as **2 pages · Fit**; if one page would need unreadable type,
+  the pill keeps just the page count and **Review** explains how to shorten the
+  resume instead.
   There is no second toolbar row, so the live resume keeps the reclaimed space.
 - **Trim tips** find the bullets that quietly cost you a line. When a bullet
   wraps and leaves only a word or two on its last line, or grows into a long
@@ -319,17 +321,18 @@ in control of every line, and your data stays on your device.
   the current template, so you can check section order and wording before you
   apply. **Copy all plain text** grabs the whole resume for Workday, Greenhouse,
   or Lever in one tap, and compact **Copy** buttons let you paste just one
-  section or one role. When a section is a single block with no heading, its
-  section button is the only one shown, so two identical buttons never stack
-  together. The copy bar and every section scroll together as one smooth page,
+  section or one role. A single-block **Summary** shows only its section button,
+  heading or not, so two Copy buttons never stack together. The copy bar and every section scroll together as one smooth page,
   with no nested box to fight against on a phone.
 - **Anonymize for review**: open **Review** in the preview bar and switch on
   **Anonymize** to replace your name, contact details, website, profile links,
   photo, and company or school names with neutral placeholders. Each role's,
   school's, volunteer entry's, and custom entry's location is replaced too, so
-  personal geography cannot give you away. Project, certification, publication,
+  personal geography cannot give you away. Project, publication,
   and custom-section links are replaced as well, so a username inside a URL
-  cannot leak. A dot on the **Review** pill and one note above the preview make
+  cannot leak; certification links keep a recognizable public issuer such as
+   Credly, AWS, Scrum, or Coursera while the personal badge path is stripped. A
+   dot on the **Review** pill and one note above the preview make
   review mode obvious; the Visual and ATS views and the PDF all use the hidden
   version, and your saved resume is never changed — switch it off again to
   return to the real details.
@@ -363,7 +366,8 @@ in control of every line, and your data stays on your device.
 
 - Automatic local saves while you edit.
 - Undo and redo from the header or with `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`.
-- Export from the header whenever you want a portable copy. Choose **Resume
+- Export from the header's **⋮ Export / Backup** menu ("Backup" on desktop)
+  whenever you want a portable copy. Choose **Resume
   Maker backup** for a complete file that reopens here with your layout, design,
   and hidden entries intact, or **JSON Resume** for the open standard format
   used by other resume tools. JSON Resume exports include the resume you see
@@ -382,6 +386,8 @@ print dialogs still open on the other size, so set **Paper size** to the value
 named in the reminder and nothing will be clipped. Turn off browser headers and
 footers as well so the page URL and date do not appear. Hover or focus **Save
 PDF** to see both reminders, or tap the info button beside it on a touch device.
+If the dialog is dismissed without a close event, **Save PDF** becomes available
+again after a moment instead of staying dimmed.
 
 ## Run it locally
 

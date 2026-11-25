@@ -24,12 +24,6 @@ _empty
 
 ### P1 — Final Pre-Freeze UX & Bug Polish
 
-- [ ] P1: Fix `Save PDF` stuck-dimmed state, inline `1 page · Reset` symmetry, `Anonymize` cert domains, `ATS` duplicate `SUMMARY` Copy, and `⋮` Backup label (`src/components/preview/PrintTriggerButton.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/lib/privacy/anonymizeDoc.ts`, `src/components/preview/AtsTextView.tsx`, `src/components/editor/EditorWorkspace.tsx`).
-  1. **`Save PDF` button state:** Ensure `Save PDF` never stays stuck in a dimmed/disabled state after clicking when the browser print dialog is dismissed or suppressed (reset any pending/printing state on `afterprint` + short fallback timeout).
-  2. **Inline `1 page · Reset`:** When `Fit` scales a 2-page resume onto 1 page (`fitScale < 1`), keep a compact inline `1 page · Reset` button right in the same Preview bar slot where `2 pages · Fit` appeared so users don't have to hunt inside `Review ▾`.
-  3. **`Anonymize` certification domains & `ATS` duplicate Copy:** Preserve generic public certification issuer domains (e.g. `credly.com`, `aws.amazon.com`, `scrum.org`, `coursera.org`) in `anonymizeResumeDoc` when no personal username is present (redacting only personal paths/profiles), and remove the duplicate stacked inner `Copy` button on single-block `SUMMARY` in `AtsTextView.tsx`.
-  4. **Clear `⋮` menu affordance:** Add a clear `"Export / Backup"` tooltip/`aria-label` (or compact `"Backup"` label on desktop) on the top-right `⋮` button so `Resume Maker backup` and `JSON Resume` are easy to find.
-
 - [ ] P1: Move section `Hide / ↑ / ↓` controls onto section headers, clean up `Profiles` form, and add global `"Clear sample data"` (`src/components/editor/SectionList.tsx`, `src/components/editor/sectionFields.ts`, `src/components/editor/EditorWorkspace.tsx`, `src/lib/store/`).
   1. **Compact header reorder/hide buttons:** Place compact `↑`, `↓`, and `Hide` icon buttons directly on each section's header row in `SectionList.tsx` (stopping click propagation so clicking them doesn't toggle expansion), removing the need to expand a section and scroll to the bottom just to reorder or hide it.
   2. **`Profiles` cleanup & auto-fill hint:** Remove the leftover `Section heading` input inside `Profiles` (since `Profiles` renders inline in the top contact bar) and update the `Profile URL` placeholder to `"Paste GitHub or LinkedIn URL — auto-fills below"`.
@@ -49,6 +43,23 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-25 — Finished the final pre-freeze UX/bug polish: Save PDF now
+  releases its pending state on `afterprint` or a short fallback timer instead
+  of staying dimmed when a print dialog is suppressed; a fitted resume shows
+  `1 page · Reset` inline in the Preview bar and shares one `resetFit()` with
+  Review; review mode keeps public certification issuer domains (Credly, AWS,
+  Scrum, Coursera) while stripping personal badge paths; a single-block Summary
+  shows only its section Copy in the ATS view; and the header `⋮` has an
+  "Export / Backup" tooltip plus a desktop "Backup" label. Verified
+  `npm run typecheck`, `npm test` (1105 pass), `npm run lint`. Files:
+  `src/components/preview/PrintTriggerButton.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/lib/privacy/anonymizeDoc.ts` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test),
+  `src/components/shared/ExportJsonButton.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains sandbox-blocked, so the 390px
+  bar geometry is browser-unverified.
 
 - [x] 2026-11-25 — Finished the OpenResume-grade PDF parsing upgrade: PDF import
   now feeds structured `PdfLine[]` (bold text, font sizes, line gaps, column

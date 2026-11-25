@@ -61,11 +61,17 @@ function CopyButton({
 }
 
 /**
- * A section with exactly one entry and no heading prints the same text in its
- * section Copy and its entry Copy. Skip the inner button so two identical
- * controls never stack above each other — the section button still copies it.
+ * A single-block Summary shows one prose block under its SUMMARY heading, so
+ * its per-entry Copy only repeats the section button (with or without the
+ * heading) and visibly stacks under it. Keep the section button as the single
+ * control. Other sections keep per-entry Copy because their entries copy
+ * genuinely different text.
  */
 export function shouldHideEntryCopy(section: AtsCopySection): boolean {
+  if (section.id === "summary") {
+    return section.entries.length === 1;
+  }
+
   return (
     section.entries.length === 1 && section.entries[0].text === section.text
   );

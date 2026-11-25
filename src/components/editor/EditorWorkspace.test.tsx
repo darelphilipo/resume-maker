@@ -656,6 +656,30 @@ describe("EditorWorkspace", () => {
       Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("offers an inline Reset beside 1 page once a fit is applied", async () => {
+    const doc = createEmptyResume();
+    doc.metadata.page.fitScale = 0.85;
+    useResumeStore.setState({ doc });
+
+    await renderReadyWorkspace();
+
+    const reset = screen.getByRole("button", { name: "Reset fit" });
+    const label = reset.closest<HTMLElement>("[data-preview-page-label]");
+
+    expect(label).toHaveTextContent("1 page");
+    expect(reset).toHaveTextContent("Reset");
+    expect(label).toContainElement(reset);
+
+    fireEvent.click(reset);
+
+    await waitFor(() => {
+      expect(useResumeStore.getState().doc.metadata.page.fitScale).toBe(1);
+    });
+    expect(
+      screen.queryByRole("button", { name: "Reset fit" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("marks the Review pill when a review tool is active", async () => {
     await renderReadyWorkspace();
 

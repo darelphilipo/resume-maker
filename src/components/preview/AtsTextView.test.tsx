@@ -139,7 +139,8 @@ describe("AtsTextView", () => {
     );
   });
 
-  it("keeps the per-entry Copy when the section adds a heading", () => {
+  it("omits the per-entry Copy on a single-block Summary even with its heading", async () => {
+    const writeText = stubClipboard();
     const doc = createEmptyResume();
 
     doc.basics.name = "Ada Lovelace";
@@ -147,10 +148,21 @@ describe("AtsTextView", () => {
 
     render(<AtsTextView doc={doc} />);
 
+    const sectionCopy = screen.getByRole("button", {
+      name: "Copy Summary section",
+    });
+
+    expect(sectionCopy).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Copy Summary section" }),
-    ).toBeVisible();
-    expect(screen.getByRole("button", { name: "Copy Summary" })).toBeVisible();
+      screen.queryByRole("button", { name: "Copy Summary" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(sectionCopy);
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        "Summary\nProduct-minded engineer.",
+      ),
+    );
   });
 
   it("keeps per-entry Copy buttons on a headingless multi-entry section", () => {

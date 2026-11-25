@@ -11,6 +11,76 @@ export const ANONYMIZED_PROFILE_URL = "https://example.com/alex-taylor";
 export const ANONYMIZED_ENTRY_URL = "https://example.com/alex-taylor";
 export const ANONYMIZED_ENTRY_LOCATION = "City, ST";
 
+/**
+ * Public certification issuers whose domain is not personal information. Keep
+ * the issuer recognisable in review mode; only the badge/profile path (which
+ * can carry a real name or username) is redacted.
+ */
+export const PUBLIC_CERTIFICATION_DOMAINS = [
+  "credly.com",
+  "aws.amazon.com",
+  "scrum.org",
+  "coursera.org",
+];
+
+/** Generic first path segments that never identify a candidate by themselves. */
+const PUBLIC_CERTIFICATION_PATH_PREFIXES = [
+  "badges",
+  "badge",
+  "certification",
+  "certifications",
+  "verify",
+  "validation",
+  "credentials",
+  "course",
+  "courses",
+  "learning",
+];
+
+/**
+ * Redacts a certification link without hiding the issuer. A known public
+ * domain keeps its scheme/host and at most one generic path segment; every
+ * deeper segment — and any query or fragment that could carry a username — is
+ * dropped. Unknown or malformed links fall back to the generic placeholder.
+ */
+export function anonymizeCertificationUrl(value: string): string {
+  const trimmed = value.trim();
+
+  if (trimmed === "") {
+    return value;
+  }
+
+  let url: URL;
+
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return ANONYMIZED_ENTRY_URL;
+  }
+
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return ANONYMIZED_ENTRY_URL;
+  }
+
+  const host = url.hostname.toLowerCase().replace(/^www\./, "");
+
+  if (!PUBLIC_CERTIFICATION_DOMAINS.includes(host)) {
+    return ANONYMIZED_ENTRY_URL;
+  }
+
+  const base = `${url.protocol}//${url.host}`;
+  const first = url.pathname.split("/").filter(Boolean)[0];
+
+  if (
+    first !== undefined &&
+    PUBLIC_CERTIFICATION_PATH_PREFIXES.includes(first.toLowerCase())
+  ) {
+    return `${base}/${first}/`;
+  }
+
+  return `${base}/`;
+}
+
 function replaceWhenPresent(value: string, replacement: string): string {
   return value.trim() === "" ? value : replacement;
 }
@@ -149,7 +219,7 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
         ...doc.sections.certifications,
         items: doc.sections.certifications.items.map((item) => ({
           ...item,
-          url: replaceWhenPresent(item.url, ANONYMIZED_ENTRY_URL),
+          url: anonymizeCertificationUrl(item.url),
         })),
       },
       publications: {

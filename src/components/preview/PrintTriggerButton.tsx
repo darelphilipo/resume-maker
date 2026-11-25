@@ -13,6 +13,13 @@ type PrintJob = {
   pages: string[][];
 };
 
+/**
+ * Grace period after `window.print()` for a browser that dismisses or suppresses
+ * the dialog without ever firing `afterprint`. `printResume`'s own safety timer
+ * is a full minute, which reads as a permanently dimmed Save PDF button.
+ */
+export const PRINT_JOB_RELEASE_MS = 2_000;
+
 export function PrintTriggerButton({
   doc,
   pages,
@@ -39,18 +46,52 @@ export function PrintTriggerButton({
 
     startedJobRef.current = job;
 
-    void printResume({
-      pages: job.pages,
-      name: job.doc.basics.name,
-      headline: job.doc.basics.headline,
-    }).finally(() => {
-      if (startedJobRef.current !== job) {
+    // Release the button as soon as the dialog closes, or after a short grace
+    // period if no `afterprint` arrives at all. The fallback is armed only once
+    // the pre-print work is done, so a slow font/image load cannot release the
+    // job before `window.print()` has even been called.
+    let released = false;
+    let fallbackTimer: number | null = null;
+
+    const release = (): void => {
+      if (released) {
         return;
+      }
+
+      released = true;
+      window.removeEventListener("afterprint", release);
+
+      if (fallbackTimer !== null) {
+        window.clearTimeout(fallbackTimer);
+        fallbackTimer = null;
       }
 
       startedJobRef.current = null;
       setJob(null);
-    });
+    };
+
+    const armFallback = (): void => {
+      if (!released && fallbackTimer === null) {
+        fallbackTimer = window.setTimeout(release, PRINT_JOB_RELEASE_MS);
+      }
+    };
+
+    window.addEventListener("afterprint", release);
+
+    void printResume({
+      pages: job.pages,
+      name: job.doc.basics.name,
+      headline: job.doc.basics.headline,
+      beforePrint: armFallback,
+    }).then(release, release);
+
+    return () => {
+      window.removeEventListener("afterprint", release);
+
+      if (fallbackTimer !== null) {
+        window.clearTimeout(fallbackTimer);
+      }
+    };
   }, [job]);
 
   useEffect(() => {

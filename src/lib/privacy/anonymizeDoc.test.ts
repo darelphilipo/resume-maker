@@ -24,6 +24,7 @@ import {
   ANONYMIZED_PROFILE_USERNAME,
   ANONYMIZED_WEBSITE_LABEL,
   ANONYMIZED_WEBSITE_URL,
+  anonymizeCertificationUrl,
   anonymizeResumeDoc,
 } from "./anonymizeDoc";
 
@@ -188,6 +189,64 @@ describe("anonymizeResumeDoc", () => {
     // An absent optional URL stays absent instead of growing fake content.
     expect(anonymized.customSections[0].items[1].url).toBeUndefined();
     expect(JSON.stringify(anonymized)).not.toContain("mayachen");
+  });
+
+  it("keeps public certification issuers while redacting personal badge paths", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.certifications.items = [
+      CertificationItemSchema.parse({
+        id: "cert-credly",
+        name: "Cloud Architect",
+        url: "https://www.credly.com/badges/jordan-alvarez/aws-architect",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-scrum",
+        name: "Scrum Master",
+        url: "https://scrum.org/certification/",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-aws",
+        name: "AWS",
+        url: "https://aws.amazon.com/certification/verify?name=jordan",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-coursera",
+        name: "Course",
+        url: "https://coursera.org/verify/JORDAN123",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-personal",
+        name: "Personal",
+        url: "https://github.com/jordan/certs",
+      }),
+      CertificationItemSchema.parse({ id: "cert-empty", name: "No link" }),
+    ];
+
+    const anonymized = anonymizeResumeDoc(doc);
+
+    expect(
+      anonymized.sections.certifications.items.map((item) => item.url),
+    ).toEqual([
+      "https://www.credly.com/badges/",
+      "https://scrum.org/certification/",
+      "https://aws.amazon.com/certification/",
+      "https://coursera.org/verify/",
+      ANONYMIZED_ENTRY_URL,
+      "",
+    ]);
+    expect(JSON.stringify(anonymized)).not.toContain("jordan");
+  });
+
+  it("anonymizes malformed, bare, and unknown certification URLs", () => {
+    expect(anonymizeCertificationUrl("https://credly.com")).toBe(
+      "https://credly.com/",
+    );
+    expect(anonymizeCertificationUrl("  ")).toBe("  ");
+    expect(anonymizeCertificationUrl("not a url")).toBe(ANONYMIZED_ENTRY_URL);
+    expect(anonymizeCertificationUrl("ftp://credly.com/badges/jordan")).toBe(
+      ANONYMIZED_ENTRY_URL,
+    );
   });
 
   it("keeps entry URLs out of the ATS text too", () => {

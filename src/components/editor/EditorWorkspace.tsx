@@ -161,6 +161,19 @@ export function EditorWorkspace() {
     patchDoc({ metadata: { page: { fitScale: scale } } });
   }
 
+  /**
+   * Reset fit from either Review or the inline `1 page · Reset` pill. The
+   * viewport also restores the paper scroll; the store patch is the fallback
+   * when the canvas is not mounted (e.g. the ATS tab on a phone).
+   */
+  function resetFit(): void {
+    if (canvasRef.current) {
+      canvasRef.current.resetFit();
+    } else {
+      applyFitScale(1);
+    }
+  }
+
   const liveName =
     liveEdit && liveEdit.base === doc.basics.name ? liveEdit.name : null;
 
@@ -576,6 +589,26 @@ export function EditorWorkspace() {
                     fitScale={layout.fitScale}
                     onFit={applyFitScale}
                   />
+                ) : doc.metadata.page.fitScale < 1 ? (
+                  <span
+                    data-preview-page-label=""
+                    className="flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-surface px-2.5 text-xs text-muted"
+                  >
+                    1 page
+                    <span aria-hidden className="text-line">
+                      ·
+                    </span>
+                    <button
+                      type="button"
+                      data-preview-reset-fit=""
+                      aria-label="Reset fit"
+                      title="Return the resume to its full size"
+                      onClick={resetFit}
+                      className="rounded-full px-1 py-0.5 font-semibold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                    >
+                      Reset
+                    </button>
+                  </span>
                 ) : (
                   <span
                     data-preview-page-label=""
@@ -598,9 +631,7 @@ export function EditorWorkspace() {
                   fitBlockedReason={layout.fitBlockedReason ?? null}
                   appliedFitScale={doc.metadata.page.fitScale}
                   onFit={applyFitScale}
-                  onResetFit={() => {
-                    canvasRef.current?.resetFit();
-                  }}
+                  onResetFit={resetFit}
                 />
               </div>
             </div>
