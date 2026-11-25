@@ -1,8 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { MIN_FIT_LABEL, fitBlockedCopy } from "@/lib/pagination/fitCopy";
-
 import { PageOverflowBanner } from "./PageOverflowBanner";
 
 describe("PageOverflowBanner", () => {
@@ -64,44 +62,24 @@ describe("PageOverflowBanner", () => {
     expect(screen.getByRole("status")).toHaveTextContent("2 pages");
   });
 
-  it("shows the readable floor, not a truncated sentence", () => {
+  it("shows only the page count when no readable fit exists", () => {
     render(
       <PageOverflowBanner
         overflowPx={420}
         pageCount={2}
         fitScale={null}
-        fitBlockedReason="too-tall"
         onFit={() => undefined}
       />,
     );
 
     const status = screen.getByRole("status");
-    const floor = screen.getByTitle(fitBlockedCopy("too-tall"));
 
-    expect(status).toHaveTextContent(
-      new RegExp(`2 pages\\s*·\\s*${MIN_FIT_LABEL}`),
-    );
-    expect(status).toHaveTextContent(fitBlockedCopy("too-tall"));
-    expect(floor).toHaveTextContent(MIN_FIT_LABEL);
-    expect(floor).not.toHaveClass("truncate");
-    expect(
-      screen.queryByRole("button", { name: "Fit to 1 Page" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("explains a forced page break instead of offering a fit", () => {
-    render(
-      <PageOverflowBanner
-        overflowPx={0}
-        pageCount={2}
-        fitBlockedReason="page-break"
-        onFit={() => undefined}
-      />,
-    );
-
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "A section is set to start on a new page",
-    );
+    expect(status).toHaveTextContent("2 pages");
+    // No percentage floor, no truncated sentence, and no disabled duplicate of
+    // the Fit action: the explanation lives in Review instead.
+    expect(status).not.toHaveTextContent("Min");
+    expect(status).not.toHaveTextContent("%");
+    expect(status).not.toHaveTextContent("trim");
     expect(
       screen.queryByRole("button", { name: "Fit to 1 Page" }),
     ).not.toBeInTheDocument();

@@ -15,7 +15,7 @@ import { TrimTipsDialog } from "@/components/preview/TrimTipsDialog";
 import { CenteredModal } from "@/components/shared/CenteredModal";
 import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
 import { MAX_LISTED_ISSUES } from "@/lib/lint/bulletMetrics";
-import { MIN_FIT_LABEL, fitBlockedCopy } from "@/lib/pagination/fitCopy";
+import { fitBlockedCopy } from "@/lib/pagination/fitCopy";
 import type { FitBlockedReason } from "@/lib/pagination/usePageLayout";
 
 /**
@@ -215,16 +215,17 @@ export function ReviewMenu({
                   }
                 }}
               />
-            ) : null}
-            {blockedCopy ? (
-              <p
-                data-review-fit-blocked=""
-                title={blockedCopy}
-                className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-snug text-amber-900"
-              >
-                <span className="font-semibold">{MIN_FIT_LABEL}</span> ·{" "}
-                {blockedCopy}
-              </p>
+            ) : blockedCopy ? (
+              // Keep the Fit control visible but disabled, with the plain-English
+              // reason directly beneath its label. The Preview bar itself shows
+              // only the page count so it never clips on a 390px phone.
+              <ReviewAction
+                label="Fit to 1 Page"
+                description={blockedCopy}
+                icon={<CornersIn size={18} aria-hidden />}
+                marker="data-review-fit-blocked"
+                disabled
+              />
             ) : null}
           </div>
         ) : null}
@@ -298,23 +299,40 @@ function ReviewAction({
   icon,
   marker,
   onClick,
+  disabled = false,
 }: {
   label: string;
   description: string;
   icon: React.ReactNode;
   marker: string;
-  onClick: () => void;
+  onClick?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       {...{ [marker]: "" }}
       onClick={onClick}
-      className="flex min-h-14 w-full items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+      disabled={disabled}
+      className={`flex min-h-14 w-full items-center gap-3 rounded-lg border border-line px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${
+        disabled
+          ? "cursor-not-allowed bg-surface-muted"
+          : "bg-surface hover:border-primary/40 hover:bg-primary/5"
+      }`}
     >
-      <span className="shrink-0 text-primary">{icon}</span>
+      <span
+        className={`shrink-0 ${disabled ? "text-muted" : "text-primary"}`}
+      >
+        {icon}
+      </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-text">{label}</span>
+        <span
+          className={`block text-sm font-semibold ${
+            disabled ? "text-muted" : "text-text"
+          }`}
+        >
+          {label}
+        </span>
         <span className="block text-[11px] leading-snug text-muted">
           {description}
         </span>

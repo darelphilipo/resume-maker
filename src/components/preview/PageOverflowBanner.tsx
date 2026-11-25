@@ -1,28 +1,24 @@
 "use client";
 
-import { MIN_FIT_LABEL, fitBlockedCopy } from "@/lib/pagination/fitCopy";
-import type { FitBlockedReason } from "@/lib/pagination/usePageLayout";
-
 /**
  * The one-line spill cue that lives in the Preview mode bar.
  *
  * A clean one-page resume keeps its quiet "1 page" label; once the resume
  * spills this pill replaces it (`2 pages · Fit`) and the compact **Fit** action
- * applies the computed scale. When no readable fit exists it shows the short
- * `Min 78%` floor instead, with the full explanation in the `title` and
- * screen-reader copy, so nothing is truncated with an ellipsis.
+ * applies the computed scale. When no readable fit exists it keeps only the
+ * page count, so `[Visual | ATS]`, the count, and **Review** fit on a 390px
+ * phone without clipping; the plain-English reason lives in Review under the
+ * disabled `Fit to 1 Page` control.
  */
 export function PageOverflowBanner({
   overflowPx = 0,
   pageCount,
   fitScale = null,
-  fitBlockedReason = null,
   onFit,
 }: {
   overflowPx?: number;
   pageCount: number;
   fitScale?: number | null;
-  fitBlockedReason?: FitBlockedReason | null;
   onFit?: (scale: number) => void;
 }) {
   if (overflowPx <= 0 && pageCount <= 1) {
@@ -30,7 +26,6 @@ export function PageOverflowBanner({
   }
 
   const canFit = fitScale !== null && onFit !== undefined;
-  const blockedCopy = canFit ? null : fitBlockedReason;
 
   return (
     <div
@@ -59,16 +54,6 @@ export function PageOverflowBanner({
           >
             Fit
           </button>
-        </>
-      ) : blockedCopy ? (
-        <>
-          <span aria-hidden className="text-line">
-            ·
-          </span>
-          <span className="text-muted" title={fitBlockedCopy(blockedCopy)}>
-            {MIN_FIT_LABEL}
-            <span className="sr-only">. {fitBlockedCopy(blockedCopy)}</span>
-          </span>
         </>
       ) : null}
     </div>

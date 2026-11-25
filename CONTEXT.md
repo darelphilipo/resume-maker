@@ -1271,8 +1271,9 @@ rediscover.
       quiet `[data-preview-page-label]` **"1 page"** while
       `layout.pages.length <= 1 && layout.overflowPx <= 0`, and the **Review**
       pill. Once the resume spills, the label is replaced by one compact
-      `PageOverflowBanner` pill in the same bar (`2 pages · Fit`, or
-      `2 pages · Min 78%` with the full reason in `title` + sr-only copy). A
+      `PageOverflowBanner` pill in the same bar (`2 pages · Fit`); when no
+      readable fit exists the pill keeps only `2 pages`, because the reason
+      lives in Review (#86) and any suffix clipped the bar at 390px. A
       conditional `CanvasResetButton` joins that row only while the canvas is
       zoomed. There is **no** `[data-preview-header]` / `[data-canvas-toolbar]`
       second row: the viewport's scroller starts at the stage top. Trim tips
@@ -1294,18 +1295,21 @@ rediscover.
       settled. The delta excludes the root's `px-2 lg:p-4` padding and the
       desktop gutter, so margins stay equal at every width.
 
-   86. **Trim tips and Fit/Reset fit live in the Review dialog, and the viewport
+  86. **Trim tips and Fit/Reset fit live in the Review dialog, and the viewport
        reports upward instead of owning chrome.** `ReviewMenu` gained
-       `Trim tips (N)`, `Fit to 1 Page`, `Reset fit`, and a blocked-fit note,
+       `Trim tips (N)`, `Fit to 1 Page`, `Reset fit`, and a blocked-fit state,
        plus two markers: `[data-review-trim-badge]` (count) and
-       `[data-review-fit-dot]` (reduced fit). `LiveCanvasViewport` no longer
-       renders `PreviewChrome` or `CanvasToolbar`; it calls
+       `[data-review-fit-dot]` (reduced fit). A blocked fit renders the same
+       `Fit to 1 Page` row as a disabled control (`[data-review-fit-blocked]`)
+       with the plain-language reason underneath it; no percentage floor or
+       truncated sentence appears in the Preview bar. `LiveCanvasViewport` no
+       longer renders `PreviewChrome` or `CanvasToolbar`; it calls
        `onBulletReport(scanBulletLint(root))` (or `null` outside canvas mode) and
        `onZoomChange(zoomed)`, and exposes `resetZoom` / `resetFit` through a
        `LiveCanvasViewportHandle` ref. `EditorWorkspace` owns those two states,
        the single `applyFitScale` patch, and the conditional zoom `Reset` pill.
        `TrimTipsDialog` (new) holds the list markup, shared copy lives in
-       `src/lib/pagination/fitCopy.ts` (`MIN_FIT_LABEL`, `FIT_BLOCKED_COPY`), and
+       `src/lib/pagination/fitCopy.ts` (`FIT_BLOCKED_COPY`), and
        `PageOverflowBanner` is now one inline `h-8 rounded-full` pill with no
        `lineHeightPx` estimate. Review still closes before the trim dialog opens,
        so only one `role="dialog"` is mounted at a time.
@@ -1605,6 +1609,31 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-25 — Blocked-fit reason moved out of the Preview bar
+- Task: top Queue item (P0). The spill pill appended `· Min 78%` when no
+  readable fit existed, pushing `Review ▾` into right-edge clipping at 390px.
+- Change: `PageOverflowBanner` now renders the page count plus `· Fit` only when
+  a fit target and handler exist; with a blocked fit it keeps just `2 pages`.
+  Its `fitBlockedReason` prop is gone (and `EditorWorkspace` stopped passing it).
+  `ReviewMenu` now renders a disabled `Fit to 1 Page` row
+  (`[data-review-fit-blocked]`) with the plain-English reason beneath the label
+  instead of a separate amber paragraph. `fitCopy.ts` dropped the now-unused
+  `MIN_FIT_LABEL` export and rewrote the `too-tall` copy as "Too long to shrink
+  to 1 page cleanly — trim a few lines or try Compact density." Decisions
+  #84/#86 updated; README's page-count bullet rewritten.
+- Tests: `PageOverflowBanner` asserts the blocked pill has no `Min`/`%`/`trim`
+  text and no Fit button; `ReviewMenu` asserts the disabled row carries the
+  label + explanation for both blocked reasons; `fitCopy` asserts no percentage
+  floor. 1075 pass.
+- Files: `src/components/preview/PageOverflowBanner.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx`,
+  `src/lib/pagination/fitCopy.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Verified: `npm run typecheck`, `npm test` (1075 pass), `npm run lint`.
+  Playwright remains sandbox-blocked, so the 390px right-edge geometry is
+  browser-unverified.
+
 ### 2026-11-24 — Rich PDF line metadata and a pure layout engine
 - Task: top Queue item (P0, step 1): preserve bold/size/phrase metadata in PDF
   import and move two-column/glyph cleanup into a testable layout module.
@@ -1794,21 +1823,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (1014 pass), `npm run lint`.
   Playwright remains blocked here, so the browser geometry is unverified.
-
-### 2026-11-24 — MonthSelect rejects impossible years
-- Task: top Queue item. `MonthSelect` accepted `0000`/`9999` literally and
-  rendered them in the preview and PDF.
-- Change: new pure `MIN_RESUME_YEAR` / `MAX_RESUME_YEAR` /
-  `isResumeYearInRange` in `src/lib/date/month.ts`; `MonthSelect` gates every
-  commit, shows an amber `aria-invalid` + described warning, and restores the
-  stored year and month on blur/Enter. Decision #93.
-- Tests: validator boundaries/malformed values plus MonthSelect cases for
-  `0000`, `9999`, `99999`, `abcd`, partial drafts, both valid boundaries, and
-  blur/Enter restore. 1009 pass.
-- Files: `src/lib/date/month.ts` (+ test),
-  `src/components/editor/SectionFormControls.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1009 pass), `npm run lint`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

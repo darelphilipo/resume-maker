@@ -574,7 +574,6 @@ export function EditorWorkspace() {
                     overflowPx={layout.overflowPx}
                     pageCount={layout.pages.length}
                     fitScale={layout.fitScale}
-                    fitBlockedReason={layout.fitBlockedReason ?? null}
                     onFit={applyFitScale}
                   />
                 ) : (

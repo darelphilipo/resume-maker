@@ -293,9 +293,9 @@ in control of every line, and your data stays on your device.
 - **A calm page count.** A resume that fits on one page just shows a quiet
   **1 page** label in the top bar, with no extra row stealing height from the
   paper. When it spills, that same bar shows one compact pill such as
-  **2 pages · Fit**; if one page would need unreadable type, the pill shows the
-  **Min 78%** floor instead of a truncated sentence. There is no second toolbar
-  row, so the live resume keeps the reclaimed space.
+  **2 pages · Fit**; if one page would need unreadable type, the pill keeps just
+  the page count and **Review** explains how to shorten the resume instead.
+  There is no second toolbar row, so the live resume keeps the reclaimed space.
 - **Trim tips** find the bullets that quietly cost you a line. When a bullet
   wraps and leaves only a word or two on its last line, or grows into a long
   block, the preview counts it. Open **Review** and tap **Trim tips (N)** to see a

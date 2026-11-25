@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { analyzeBulletLines, summarizeBulletIssues } from "@/lib/lint/bulletMetrics";
 import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
-import { MIN_FIT_LABEL } from "@/lib/pagination/fitCopy";
 import type { FitBlockedReason } from "@/lib/pagination/usePageLayout";
 
 import { ReviewMenu } from "./ReviewMenu";
@@ -202,7 +201,7 @@ describe("ReviewMenu", () => {
     expect(onResetFit).toHaveBeenCalledTimes(1);
   });
 
-  it("explains a blocked fit with the readable floor", () => {
+  it("moves a blocked fit's plain-English reason under the disabled control", () => {
     renderMenu({
       fitTarget: null,
       fitBlockedReason: "too-tall",
@@ -212,12 +211,26 @@ describe("ReviewMenu", () => {
 
     const blocked = document.querySelector("[data-review-fit-blocked]");
 
-    expect(blocked).toHaveTextContent(MIN_FIT_LABEL);
-    expect(blocked).toHaveTextContent("trim a line or two");
-    expect(blocked).not.toHaveClass("truncate");
-    expect(
-      screen.queryByRole("button", { name: "Fit to 1 Page" }),
-    ).not.toBeInTheDocument();
+    expect(blocked).toHaveTextContent("Fit to 1 Page");
+    expect(blocked).toHaveTextContent("Too long to shrink to 1 page cleanly");
+    expect(blocked).toHaveTextContent("trim a few lines");
+    expect(blocked).toHaveTextContent("Compact density");
+    expect(blocked).not.toHaveTextContent("Min 78%");
+    expect(blocked).toBeDisabled();
+  });
+
+  it("explains a forced page break under the same disabled control", () => {
+    renderMenu({
+      fitTarget: null,
+      fitBlockedReason: "page-break",
+      onFit: vi.fn(),
+    });
+    openMenu();
+
+    const blocked = document.querySelector("[data-review-fit-blocked]");
+
+    expect(blocked).toHaveTextContent("start on a new page");
+    expect(blocked).toBeDisabled();
   });
 
   it("closes on the X, the backdrop, and Escape", () => {

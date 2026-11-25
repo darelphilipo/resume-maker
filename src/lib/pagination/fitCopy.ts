@@ -1,22 +1,17 @@
-import { MIN_FIT_SCALE } from "./fitScale";
 import type { FitBlockedReason } from "./usePageLayout";
 
-/** The shortest honest label for the readable fit floor ("Min 78%"). */
-export const MIN_FIT_LABEL = `Min ${Math.round(MIN_FIT_SCALE * 100)}%`;
-
 /**
- * Why a fit is unavailable, in the same plain language the preview uses.
+ * Why a fit is unavailable, in plain language.
  *
- * The compact preview pill only has room for `Min 78%`; the full sentence lives
- * in its `title` and screen-reader copy, and in the Review dialog where there is
- * a whole row for it. Keep both surfaces reading from this one map.
+ * The Preview bar now shows only the page count when no readable fit exists;
+ * this sentence lives under the disabled `Fit to 1 Page` control in Review, so
+ * it can stay clear without clipping the bar at 390px.
  */
 export const FIT_BLOCKED_COPY: Record<FitBlockedReason, string> = {
   "page-break":
     "A section is set to start on a new page, so this can't fit on one page.",
-  "too-tall": `Too tall to fit on one page above ${Math.round(
-    MIN_FIT_SCALE * 100,
-  )}% — trim a line or two.`,
+  "too-tall":
+    "Too long to shrink to 1 page cleanly — trim a few lines or try Compact density.",
 };
 
 export function fitBlockedCopy(reason: FitBlockedReason): string {

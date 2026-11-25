@@ -22,10 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P0: Remove cryptic `Min 78%` text from the Preview bar so `Review ▾` never clips on mobile (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`).
-  1. When `fitBlockedReason` is active, show only `2 pages` (no `· Min 78%` suffix) in the Preview top bar so `[Visual | ATS]`, `2 pages`, and `[Review N ▾]` fit comfortably inside `390px` with zero right-edge clipping.
-  2. Move the plain-English explanation (*"Too long to shrink to 1 page cleanly — trim a few lines or try Compact density"*) inside the `Review ▾` menu under the disabled `Fit to 1 Page` control.
-
 
 ### P0 — OpenResume-Grade PDF Parsing Upgrade (2-Step Pipeline)
 
@@ -68,6 +64,19 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-25 — Removed the `Min 78%` suffix from the Preview spill pill so
+  the one-row bar cannot clip `Review ▾` at 390px. A blocked fit now shows only
+  `2 pages`, and `Review` renders a disabled `Fit to 1 Page` control with the
+  plain-English reason ("Too long to shrink to 1 page cleanly — trim a few lines
+  or try Compact density") beneath its label. Dropped the unused
+  `MIN_FIT_LABEL` helper. Verified `npm run typecheck`, `npm test` (1075 pass),
+  `npm run lint`. Files: `src/components/preview/PageOverflowBanner.tsx`
+  (+ test), `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx`,
+  `src/lib/pagination/fitCopy.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`. Playwright remains blocked here, so the 390px geometry is
+  browser-unverified.
 
 - [x] 2026-11-24 — Preserved rich PDF line metadata and moved layout into a
   pure, testable module. New `src/lib/import/pdfLayout.ts` owns
