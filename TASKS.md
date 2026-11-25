@@ -24,11 +24,6 @@ _empty
 
 ### P1 — Final Pre-Freeze UX & Bug Polish
 
-- [ ] P1: Move section `Hide / ↑ / ↓` controls onto section headers, clean up `Profiles` form, and add global `"Clear sample data"` (`src/components/editor/SectionList.tsx`, `src/components/editor/sectionFields.ts`, `src/components/editor/EditorWorkspace.tsx`, `src/lib/store/`).
-  1. **Compact header reorder/hide buttons:** Place compact `↑`, `↓`, and `Hide` icon buttons directly on each section's header row in `SectionList.tsx` (stopping click propagation so clicking them doesn't toggle expansion), removing the need to expand a section and scroll to the bottom just to reorder or hide it.
-  2. **`Profiles` cleanup & auto-fill hint:** Remove the leftover `Section heading` input inside `Profiles` (since `Profiles` renders inline in the top contact bar) and update the `Profile URL` placeholder to `"Paste GitHub or LinkedIn URL — auto-fills below"`.
-  3. **Global `"Clear sample data"`:** Add a one-click `"Clear sample data"` action (in the `⋮` menu or top of `Content` when using a starter preset, committed via Zustand/Zundo so it's undoable) that clears sample entries across all sections at once.
-
 - [ ] P1: Make `Trim tips` bullets clickable, add lightweight stemming to `Match JD`, and add discoverability hints on `ATS` & `Review ▾` (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/lib/keywords/jdMatch.ts`).
   1. **Clickable `Trim tips`:** Clicking any listed bullet in the `Trim tips` modal closes the modal, switches to the `Content` tab on mobile, expands that bullet's section (`Experience` / `Projects`), and scrolls smoothly to that entry so the user can trim the 1–2 words immediately.
   2. **`Match JD` stemming & stopword cleanup:** Add lightweight suffix normalization (`-ing`, `-ed`, `-s`/`-es`, e.g. `building` ↔ `build`, `managed` ↔ `manage`) and filter generic JD filler words (`high`, `improve`, `reduce`, `junior`, `looking`, `strong`) in `jdMatch.ts`.
@@ -43,6 +38,24 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-25 — Finished the section-header / Profiles / sample-clear polish:
+  compact `Hide` and `↑`/`↓` icon buttons now sit on every section header (with
+  `stopPropagation`, so they never toggle expansion) and the footer keeps only
+  the labelled drawer/delete actions. Profiles no longer shows a dead
+  `Section heading` input, and the `Profile URL` placeholder now says
+  `Paste GitHub or LinkedIn URL — auto-fills below`. Starter presets carry a
+  `metadata.sampleData` flag, so the editor's `⋮` menu offers a one-click
+  `Clear sample data` that empties sample basics, summary, and every standard or
+  custom section in a single undoable `patchDoc`. Verified `npm run typecheck`,
+  `npm test` (1118 pass), `npm run lint`. Files:
+  `src/components/editor/SectionList.tsx` (+ test),
+  `src/components/editor/sectionFields.ts`,
+  `src/components/editor/GenericSectionForm.test.tsx`,
+  `src/components/shared/ExportJsonButton.tsx` (+ test),
+  `src/lib/schema/resume.schema.ts`, `src/lib/presets/archetypes.ts` (+ test),
+  `src/lib/presets/clearSampleData.ts` (new, + test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-25 — Finished the final pre-freeze UX/bug polish: Save PDF now
   releases its pending state on `afterprint` or a short fallback timer instead

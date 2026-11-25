@@ -435,6 +435,12 @@ export const DesignSchema = z.object({
 export const ResumeMetadataSchema = z.object({
   schemaVersion: z.number().default(1),
   template: z.enum(TEMPLATE_IDS).default("onyx"),
+  /**
+   * True only for documents built from a starter preset. It powers the one-click
+   * "Clear sample data" action and is cleared once the sample content is wiped,
+   * so a restored backup keeps the same affordance.
+   */
+  sampleData: z.boolean().default(false),
   layout: LayoutSchema.default(() => LayoutSchema.parse({})),
   page: PageConfigSchema.default(() => PageConfigSchema.parse({})),
   typography: TypographySchema.default(() => TypographySchema.parse({})),

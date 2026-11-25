@@ -70,6 +70,13 @@ describe("ARCHETYPES", () => {
   );
 
   it.each(ARCHETYPES.map((archetype) => [archetype.id, archetype] as const))(
+    "%s marks its document as starter sample data",
+    (_id, archetype) => {
+      expect(archetype.build().metadata.sampleData).toBe(true);
+    },
+  );
+
+  it.each(ARCHETYPES.map((archetype) => [archetype.id, archetype] as const))(
     "%s groups skills into three keyword categories",
     (_id, archetype) => {
       const doc = archetype.build();

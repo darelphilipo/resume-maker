@@ -32,10 +32,34 @@ function setup() {
   return doc;
 }
 
-async function expandRow(user: UserEvent, title: string): Promise<void> {
-  await user.click(
-    screen.getByRole("button", { name: new RegExp(title) }),
+function sectionToggle(id: string): HTMLElement {
+  const button = document.querySelector<HTMLElement>(
+    `[data-section-toggle="${id}"]`,
   );
+
+  if (!button) {
+    throw new Error(`Missing section toggle for ${id}`);
+  }
+
+  return button;
+}
+
+function sectionAction(
+  id: string,
+  action: "hide" | "up" | "down",
+): HTMLElement {
+  const row = sectionToggle(id).closest("li");
+  const button = row?.querySelector<HTMLElement>(`[data-section-action="${action}"]`);
+
+  if (!button) {
+    throw new Error(`Missing ${action} action for ${id}`);
+  }
+
+  return button;
+}
+
+async function expandRow(user: UserEvent, id: string): Promise<void> {
+  await user.click(sectionToggle(id));
 }
 
 describe("SectionList", () => {
@@ -47,17 +71,17 @@ describe("SectionList", () => {
     render(<SectionList />);
 
     const title = screen.getByText(LONG_TITLE);
-    const row = screen.getByRole("button", { name: new RegExp(LONG_TITLE) });
+    const toggle = sectionToggle("summary");
 
     expect(title).not.toHaveClass("truncate");
     expect(title).toHaveClass("flex-1");
-    expect(row).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("points the section caret up when expanded and keeps move labels on one line", () => {
+  it("points the section caret up when expanded", () => {
     render(<SectionList />);
 
-    const toggle = screen.getByRole("button", { name: new RegExp(LONG_TITLE) });
+    const toggle = sectionToggle("summary");
 
     expect(toggle.querySelector('[data-chevron="down"]')).not.toBeNull();
     expect(toggle.querySelector('[data-chevron="up"]')).toBeNull();
@@ -66,20 +90,12 @@ describe("SectionList", () => {
 
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(toggle.querySelector('[data-chevron="up"]')).not.toBeNull();
-    expect(
-      screen.getByRole("button", { name: `Move ${LONG_TITLE} up` }),
-    ).toHaveClass("whitespace-nowrap");
-    expect(
-      screen.getByRole("button", { name: `Move ${LONG_TITLE} down` }),
-    ).toHaveClass("whitespace-nowrap");
   });
 
   it("keeps the expanded body and its cards from widening the section", () => {
     render(<SectionList />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: new RegExp(LONG_TITLE) }),
-    );
+    fireEvent.click(sectionToggle("summary"));
 
     const body = document.getElementById("section-body-summary");
     const row = body?.closest("li");
@@ -88,88 +104,87 @@ describe("SectionList", () => {
     expect(row).toHaveClass("min-w-0", "overflow-hidden");
   });
 
-  it("relocates hide and move actions into the expanded body", async () => {
+  it("keeps compact hide and reorder icons on the header without expanding", () => {
+    render(<SectionList />);
+
+    const hide = sectionAction("summary", "hide");
+    const moveUp = sectionAction("summary", "up");
+    const moveDown = sectionAction("summary", "down");
+    const group = hide.parentElement;
+
+    expect(sectionToggle("summary")).toHaveAttribute("aria-expanded", "false");
+    expect(group).toHaveAttribute("aria-label", `${LONG_TITLE} section actions`);
+    expect(hide).toHaveAttribute("aria-label", `Hide ${LONG_TITLE}`);
+    expect(hide).toHaveAttribute("title", `Hide ${LONG_TITLE}`);
+    expect(hide).toHaveAttribute("aria-pressed", "true");
+    expect(moveUp).toBeDisabled();
+    expect(moveDown).toBeEnabled();
+    expect(
+      Array.from(group?.children ?? []).map((button) =>
+        button.getAttribute("data-section-action"),
+      ),
+    ).toEqual(["hide", "up", "down"]);
+
+    for (const button of [hide, moveUp, moveDown]) {
+      expect(button).toHaveClass("min-h-9", "pointer-coarse:min-h-11");
+      expect(button.querySelector("svg")).not.toBeNull();
+      expect(button.closest("#section-body-summary")).toBeNull();
+    }
+  });
+
+  it("does not toggle expansion when a header icon is tapped", async () => {
     const user = userEvent.setup();
 
     render(<SectionList />);
 
+    await user.click(sectionAction("summary", "down"));
+
+    expect(sectionToggle("summary")).toHaveAttribute("aria-expanded", "false");
     expect(
-      screen.queryByRole("button", { name: `Hide ${LONG_TITLE}` }),
-    ).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: `Move ${LONG_TITLE} up` }),
-    ).toBeNull();
-
-    await expandRow(user, LONG_TITLE);
-
-    const hide = screen.getByRole("button", { name: `Hide ${LONG_TITLE}` });
-    const moveUp = screen.getByRole("button", {
-      name: `Move ${LONG_TITLE} up`,
-    });
-    const moveDown = screen.getByRole("button", {
-      name: `Move ${LONG_TITLE} down`,
-    });
-
-    expect(hide).toHaveAttribute("aria-pressed", "true");
-    expect(moveUp).toBeDisabled();
-    expect(moveDown).toBeEnabled();
+      useResumeStore.getState().doc.metadata.layout.pages[0].main.slice(0, 2),
+    ).toEqual(["experience", "summary"]);
   });
 
-  it("lays out section actions in one ordered two-column grid", async () => {
+  it("keeps the expanded footer to a two-column grid for labelled actions", async () => {
     const user = userEvent.setup();
 
     render(<SectionList onOpenSection={vi.fn()} />);
 
-    await expandRow(user, LONG_TITLE);
+    await expandRow(user, "summary");
 
-    const hide = screen.getByRole("button", { name: `Hide ${LONG_TITLE}` });
-    const moveUp = screen.getByRole("button", {
-      name: `Move ${LONG_TITLE} up`,
-    });
-    const moveDown = screen.getByRole("button", {
-      name: `Move ${LONG_TITLE} down`,
-    });
     const open = screen.getByRole("button", { name: "Open section editor" });
-    const grid = hide.parentElement;
+    const grid = open.parentElement;
 
-    // Two columns at every width: three cells in the 22rem desktop column
-    // clipped the "Move up"/"Move down" labels and arrows.
     expect(grid).toHaveClass("grid", "grid-cols-2", "min-w-0");
     expect(grid).not.toHaveClass("lg:grid-cols-3");
-    expect(moveUp.parentElement).toBe(grid);
-    expect(moveDown.parentElement).toBe(grid);
-    expect(open.parentElement).toBe(grid);
-    expect(Array.from(grid?.children ?? [])).toEqual([
-      hide,
-      moveUp,
-      moveDown,
-      open,
-    ]);
+    expect(Array.from(grid?.children ?? [])).toEqual([open]);
   });
 
-  it("toggles visibility from the expanded body", async () => {
+  it("toggles visibility from the header", async () => {
     const user = userEvent.setup();
 
     render(<SectionList />);
 
-    await expandRow(user, LONG_TITLE);
-    await user.click(screen.getByRole("button", { name: `Hide ${LONG_TITLE}` }));
+    await user.click(sectionAction("summary", "hide"));
 
     expect(useResumeStore.getState().doc.summary.hidden).toBe(true);
-    expect(
-      screen.getByRole("button", { name: `Show ${LONG_TITLE}` }),
-    ).toHaveAttribute("aria-pressed", "false");
+    expect(sectionAction("summary", "hide")).toHaveAttribute(
+      "aria-label",
+      `Show ${LONG_TITLE}`,
+    );
+    expect(sectionAction("summary", "hide")).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(sectionToggle("summary")).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("moves a section down from the expanded body", async () => {
+  it("moves a section down from the header", async () => {
     const user = userEvent.setup();
 
     render(<SectionList />);
 
-    await expandRow(user, LONG_TITLE);
-    await user.click(
-      screen.getByRole("button", { name: `Move ${LONG_TITLE} down` }),
-    );
+    await user.click(sectionAction("summary", "down"));
 
     expect(
       useResumeStore.getState().doc.metadata.layout.pages[0].main.slice(0, 2),
@@ -182,9 +197,7 @@ describe("SectionList", () => {
     expect(screen.queryByRole("button", { name: /^Awards/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Languages/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /^References/ })).toBeNull();
-    expect(
-      screen.getByRole("button", { name: /Experience/ }),
-    ).toBeInTheDocument();
+    expect(sectionToggle("experience")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Add optional section/ }),
     ).toHaveAttribute("aria-expanded", "false");
@@ -244,12 +257,10 @@ describe("SectionList", () => {
 
     render(<SectionList />);
 
-    await expandRow(user, "Certifications");
-    expect(
-      screen.getByRole("button", { name: "Move Certifications down" }),
-    ).toBeDisabled();
+    await expandRow(user, "certifications");
+    expect(sectionAction("certifications", "down")).toBeDisabled();
 
-    await expandRow(user, "Skills");
+    await expandRow(user, "skills");
     await user.click(screen.getByRole("button", { name: "Move Skills down" }));
 
     const main = useResumeStore.getState().doc.metadata.layout.pages[0].main;
@@ -263,7 +274,7 @@ describe("SectionList", () => {
 
     render(<SectionList />);
 
-    await expandRow(user, "Experience");
+    await expandRow(user, "experience");
     const heading = screen.getByLabelText("Section heading");
 
     await user.clear(heading);
@@ -280,6 +291,17 @@ describe("SectionList", () => {
     ).toHaveAttribute("aria-expanded", "true");
   });
 
+  it("does not offer a section heading for Profiles", async () => {
+    const user = userEvent.setup();
+
+    render(<SectionList />);
+
+    await expandRow(user, "profiles");
+
+    expect(screen.queryByLabelText("Section heading")).toBeNull();
+    expect(screen.getByRole("form", { name: "profiles" })).toBeInTheDocument();
+  });
+
   it("unmounts the inline form while the same section is open in the drawer", async () => {
     const user = userEvent.setup();
     const onOpenSection = vi.fn();
@@ -288,7 +310,7 @@ describe("SectionList", () => {
       <SectionList onOpenSection={onOpenSection} openSectionId="summary" />,
     );
 
-    await expandRow(user, LONG_TITLE);
+    await expandRow(user, "summary");
 
     // The drawer owns the editor, so the inline copy must not mount a second
     // form (and a second TipTap editor) behind the overlay.
@@ -309,7 +331,7 @@ describe("SectionList", () => {
 
     render(<SectionList onOpenSection={vi.fn()} openSectionId="summary" />);
 
-    await expandRow(user, "Experience");
+    await expandRow(user, "experience");
 
     expect(screen.getByRole("form", { name: "Experience" })).toBeInTheDocument();
   });
@@ -368,7 +390,7 @@ describe("SectionList", () => {
 
     render(<SectionList />);
 
-    await expandRow(user, "Speaking");
+    await expandRow(user, "custom-speaking");
     const deleteButton = screen.getByRole("button", {
       name: "Delete Speaking section",
     });

@@ -1,6 +1,14 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { buildArchetype } from "@/lib/presets/archetypes";
+import {
+  canUndo,
+  resetResumeStore,
+  undo,
+  useResumeStore,
+} from "@/lib/store/useResumeStore";
 
 import { ExportJsonButton, slugFileName } from "./ExportJsonButton";
 
@@ -8,6 +16,7 @@ const originalCreateObjectURL = URL.createObjectURL;
 const originalRevokeObjectURL = URL.revokeObjectURL;
 
 beforeEach(() => {
+  resetResumeStore();
   URL.createObjectURL = vi.fn(
     () => "blob:resume",
   ) as typeof URL.createObjectURL;
@@ -128,5 +137,52 @@ describe("ExportJsonButton", () => {
 
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
+  });
+
+  it("does not offer Clear sample data on a resume without a preset", async () => {
+    const user = userEvent.setup();
+    render(<ExportJsonButton />);
+
+    await user.click(screen.getByRole("button", { name: "Backup and export" }));
+
+    expect(
+      screen.queryByRole("menuitem", { name: /Clear sample data/ }),
+    ).toBeNull();
+  });
+
+  it("clears every sample entry in one undoable patch", async () => {
+    const sample = buildArchetype("software-engineer");
+
+    expect(sample).not.toBeNull();
+    useResumeStore.setState({ doc: sample! });
+
+    const user = userEvent.setup();
+    render(<ExportJsonButton />);
+    await user.click(screen.getByRole("button", { name: "Backup and export" }));
+
+    const trigger = screen.getByRole("button", { name: "Backup and export" });
+    const clear = screen.getByRole("menuitem", { name: /Clear sample data/ });
+
+    expect(clear).toHaveAttribute("data-clear-sample-data");
+
+    await user.click(clear);
+
+    const cleared = useResumeStore.getState().doc;
+
+    expect(cleared.metadata.sampleData).toBe(false);
+    expect(cleared.basics.name).toBe("");
+    expect(cleared.summary.content).toBe("");
+    expect(cleared.sections.experience.items).toEqual([]);
+    expect(cleared.sections.projects.items).toEqual([]);
+    expect(cleared.sections.skills.items).toEqual([]);
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(canUndo()).toBe(true);
+
+    act(() => {
+      undo();
+    });
+
+    expect(useResumeStore.getState().doc).toEqual(sample);
   });
 });

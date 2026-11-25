@@ -98,6 +98,9 @@ in control of every line, and your data stays on your device.
   Finance & Operations, Data Analyst, and Fresh Graduate, each with a complete,
   one-page editable sample including categorized skills you can adapt. The six
   cards fill the two-column grid evenly, so no role sits beside an empty slot.
+  If you started from a preset, **Clear sample data** in the editor's **⋮**
+  menu wipes the example names, summary, and entries across every section in one
+  tap, leaving your layout and design intact — and **Undo** brings it all back.
 - **Backup & Restore** lives in the **Other ways to import** strip at the bottom
   of the home page as a secondary option: restore a JSON backup you exported
   earlier, or a resume file from
@@ -134,7 +137,10 @@ in control of every line, and your data stays on your device.
   `Network: username` instead of disappearing. When every profile has a header
   entry, that line is the only place they print — no repeated Profiles section.
   Tap **Manage profiles** in Basics to expand and jump straight to the same list.
-  A row with only a URL still counts, so pasted links are never silently dropped.
+  The URL field itself says “Paste GitHub or LinkedIn URL — auto-fills below”,
+  and Profiles has no dead section heading to fill in because its links already
+  print in the header. A row with only a URL still counts, so pasted links are
+  never silently dropped.
 - **Everything you type makes it into the resume.** Your website, profile links,
   certification links, and publication links appear as clickable links in the
   preview and PDF — even if you pasted a bare address such as `github.com/you` —
@@ -189,9 +195,11 @@ in control of every line, and your data stays on your device.
   standard list does not cover, such as speaking, patents, or coursework.
   Custom sections can be deleted when you no longer need them.
 - Show, hide, and reorder whole sections; empty sections stay out of the PDF.
-  The Show/Hide, Move up, Move down, and Open section editor controls line up in
-  a two-column grid with even-sized buttons, so labels and arrows stay inside
-  the card even in the narrow desktop Content column.
+  Compact Hide and ↑/↓ icon buttons sit right on each section's header, so you
+  can reorder or hide a section without expanding it and scrolling to the bottom
+  of its card. Only **Open section editor** and custom-section delete stay in
+  the card's two-column footer, keeping their labels inside the narrow desktop
+  Content column.
   Awards, Languages, Interests, Volunteer, Publications, and References stay
   tucked behind **Add optional section** until you need them. Several sections
   can stay open at once; when two or more are expanded, a quiet **Collapse all**

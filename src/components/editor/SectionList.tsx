@@ -63,7 +63,11 @@ function defaultTitle(id: string): string {
   return isSectionId(id) ? DEFAULT_SECTION_TITLES[id] : "Custom section";
 }
 
-/** Shared surface so every section action fills one ordered grid cell. */
+/** Compact icon buttons live on the header so reorder/hide needs no expansion. */
+const SECTION_HEADER_ACTION_CLASS =
+  "flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-md text-muted transition-colors hover:bg-black/5 hover:text-primary active:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-40 disabled:hover:bg-transparent pointer-coarse:min-h-11 pointer-coarse:min-w-11";
+
+/** Shared surface for the footer actions that still need a text label. */
 const SECTION_ACTION_CLASS =
   "flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-lg border border-black/10 px-2 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent";
 
@@ -413,39 +417,101 @@ export function SectionList({
               id={`section-row-${row.id}`}
               className="min-w-0 overflow-hidden rounded-xl border border-black/10 bg-background"
             >
-              <button
-                type="button"
-                aria-expanded={isExpanded}
-                aria-controls={bodyId}
-                onClick={() => toggleRow(row.id)}
-                className="flex min-h-11 w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              >
-                {isExpanded ? (
-                  <CaretUp size={16} aria-hidden data-chevron="up" className="mt-0.5 shrink-0 text-primary" />
-                ) : (
-                  <CaretDown size={16} aria-hidden data-chevron="down" className="mt-0.5 shrink-0 opacity-60" />
-                )}
-                <span className="min-w-0 flex-1 text-sm font-medium leading-snug">
-                  {row.title}
-                </span>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
-                    row.hidden
-                      ? "bg-amber-100 text-amber-900"
-                      : "bg-black/5 opacity-70"
-                  }`}
+              <div className="flex min-h-11 w-full items-center gap-1 px-2 py-1.5 sm:px-3">
+                {/* Only the title toggles expansion; the icon actions beside it
+                    stay reachable without opening the card and scrolling to its
+                    footer on a phone. */}
+                <button
+                  type="button"
+                  data-section-toggle={row.id}
+                  aria-expanded={isExpanded}
+                  aria-controls={bodyId}
+                  onClick={() => toggleRow(row.id)}
+                  className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
-                  {row.hidden ? "Hidden" : countLabel(row.count)}
-                </span>
-              </button>
+                  {isExpanded ? (
+                    <CaretUp size={16} aria-hidden data-chevron="up" className="shrink-0 text-primary" />
+                  ) : (
+                    <CaretDown size={16} aria-hidden data-chevron="down" className="shrink-0 opacity-60" />
+                  )}
+                  <span className="min-w-0 flex-1 text-sm font-medium leading-snug">
+                    {row.title}
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
+                      row.hidden
+                        ? "bg-amber-100 text-amber-900"
+                        : "bg-black/5 opacity-70"
+                    }`}
+                  >
+                    {row.hidden ? "Hidden" : countLabel(row.count)}
+                  </span>
+                </button>
+                <div
+                  role="group"
+                  aria-label={`${row.title} section actions`}
+                  className="flex shrink-0 items-center gap-0.5"
+                >
+                  <button
+                    type="button"
+                    data-section-action="hide"
+                    aria-label={
+                      row.hidden ? `Show ${row.title}` : `Hide ${row.title}`
+                    }
+                    aria-pressed={!row.hidden}
+                    title={row.hidden ? `Show ${row.title}` : `Hide ${row.title}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleVisibility(row);
+                    }}
+                    className={`${SECTION_HEADER_ACTION_CLASS} ${row.hidden ? "text-amber-700" : ""}`}
+                  >
+                    {row.hidden ? (
+                      <EyeSlash size={18} aria-hidden />
+                    ) : (
+                      <Eye size={18} aria-hidden />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    data-section-action="up"
+                    aria-label={`Move ${row.title} up`}
+                    title={`Move ${row.title} up`}
+                    disabled={atStart}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      moveRow(row, -1);
+                    }}
+                    className={SECTION_HEADER_ACTION_CLASS}
+                  >
+                    <ArrowUp size={18} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    data-section-action="down"
+                    aria-label={`Move ${row.title} down`}
+                    title={`Move ${row.title} down`}
+                    disabled={atEnd}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      moveRow(row, 1);
+                    }}
+                    className={SECTION_HEADER_ACTION_CLASS}
+                  >
+                    <ArrowDown size={18} aria-hidden />
+                  </button>
+                </div>
+              </div>
 
               {isExpanded ? (
                 <div
                   id={bodyId}
                   className="flex min-w-0 flex-col gap-3 border-t border-black/10 px-4 py-3"
                 >
-                  {/* Custom section titles are edited inside CustomSectionForm. */}
-                  {isCustomRow ? null : (
+                  {/* Custom section titles are edited inside CustomSectionForm.
+                      Profiles render inline in the header contact line, so its
+                      section heading has no visible effect in the resume. */}
+                  {isCustomRow || row.id === "profiles" ? null : (
                     <SectionHeadingInput
                       row={row}
                       onCommit={(title) => renameSection(row, title)}
@@ -460,47 +526,10 @@ export function SectionList({
                   {row.id === openSectionId ? null : (
                     <SectionForm sectionId={row.id} />
                   )}
-                  {/* Two columns at every width: three ~90px cells in the
-                      22rem desktop column cannot fit "↑ Move up" plus
-                      "Move down", so the labels and arrows clipped off the
-                      card. Two columns keep every action inside the border. */}
+                  {/* Reorder/hide moved to the header; only the drawer trigger
+                      and custom-section delete still need a labelled row. Two
+                      columns keep their labels inside the 22rem column. */}
                   <div className="grid min-w-0 grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      aria-label={
-                        row.hidden ? `Show ${row.title}` : `Hide ${row.title}`
-                      }
-                      aria-pressed={!row.hidden}
-                      onClick={() => toggleVisibility(row)}
-                      className={SECTION_ACTION_CLASS}
-                    >
-                      {row.hidden ? (
-                        <EyeSlash size={16} aria-hidden />
-                      ) : (
-                        <Eye size={16} aria-hidden />
-                      )}
-                      <span>{row.hidden ? "Show" : "Hide"}</span>
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Move ${row.title} up`}
-                      disabled={atStart}
-                      onClick={() => moveRow(row, -1)}
-                      className={`${SECTION_ACTION_CLASS} whitespace-nowrap`}
-                    >
-                      <ArrowUp size={16} aria-hidden />
-                      <span>Move up</span>
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Move ${row.title} down`}
-                      disabled={atEnd}
-                      onClick={() => moveRow(row, 1)}
-                      className={`${SECTION_ACTION_CLASS} whitespace-nowrap`}
-                    >
-                      <ArrowDown size={16} aria-hidden />
-                      <span>Move down</span>
-                    </button>
                     {onOpenSection ? (
                       <button
                         type="button"

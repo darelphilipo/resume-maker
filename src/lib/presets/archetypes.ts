@@ -890,6 +890,25 @@ const FRESH_GRADUATE: Archetype = {
   },
 };
 
+/**
+ * Every starter preset is sample content by definition. Marking the built
+ * document is what makes the editor's one-click "Clear sample data" action
+ * available without guessing from names or emails the user may have edited.
+ */
+function withSampleFlag(archetype: Archetype): Archetype {
+  return {
+    ...archetype,
+    build() {
+      const doc = archetype.build();
+
+      return {
+        ...doc,
+        metadata: { ...doc.metadata, sampleData: true },
+      };
+    },
+  };
+}
+
 export const ARCHETYPES: Archetype[] = [
   SOFTWARE_ENGINEER,
   PRODUCT_MANAGER,
@@ -897,7 +916,7 @@ export const ARCHETYPES: Archetype[] = [
   FINANCE_OPERATIONS,
   DATA_ANALYST,
   FRESH_GRADUATE,
-];
+].map(withSampleFlag);
 
 export function buildArchetype(id: string): ResumeDocument | null {
   const archetype = ARCHETYPES.find((candidate) => candidate.id === id);

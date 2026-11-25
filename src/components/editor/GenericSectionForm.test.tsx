@@ -51,7 +51,10 @@ describe("GenericSectionForm profiles", () => {
   it("shows the URL and hides the manual icon field", () => {
     render(<GenericSectionForm sectionId="profiles" />);
 
-    expect(screen.getByLabelText("Profile URL")).toBeInTheDocument();
+    expect(screen.getByLabelText("Profile URL")).toHaveAttribute(
+      "placeholder",
+      "Paste GitHub or LinkedIn URL — auto-fills below",
+    );
     expect(screen.getByLabelText("Network")).toBeInTheDocument();
     expect(screen.queryByLabelText("Icon")).toBeNull();
   });

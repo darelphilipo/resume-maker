@@ -8,6 +8,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 
+import { clearSampleData } from "@/lib/presets/clearSampleData";
 import { serializeJsonResume } from "@/lib/schema/jsonResume";
 import { serializeResume } from "@/lib/schema/serialize";
 import { useResumeStore } from "@/lib/store/useResumeStore";
@@ -36,6 +37,7 @@ function downloadJson(text: string, fileName: string) {
 
 export function ExportJsonButton() {
   const doc = useResumeStore((state) => state.doc);
+  const patchDoc = useResumeStore((state) => state.patchDoc);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -82,6 +84,14 @@ export function ExportJsonButton() {
       downloadJson(serializeResume(doc), fileName);
     }
 
+    setOpen(false);
+    triggerRef.current?.focus();
+  }
+
+  function handleClearSampleData() {
+    // One store patch means one Zundo step: Undo restores every sample entry
+    // together instead of asking the user to undo section after section.
+    patchDoc(clearSampleData(doc));
     setOpen(false);
     triggerRef.current?.focus();
   }
@@ -161,6 +171,23 @@ export function ExportJsonButton() {
               Portable standard format for other resume tools.
             </span>
           </button>
+
+          {doc.metadata.sampleData === true ? (
+            <button
+              type="button"
+              role="menuitem"
+              data-clear-sample-data=""
+              onClick={handleClearSampleData}
+              className="flex w-full flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:bg-black/5 focus-visible:outline-none"
+            >
+              <span className="text-sm font-medium text-text">
+                Clear sample data
+              </span>
+              <span className="text-xs leading-snug text-muted">
+                Start from an empty resume. Undo brings the sample back.
+              </span>
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>

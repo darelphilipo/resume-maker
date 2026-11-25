@@ -1605,11 +1605,31 @@ rediscover.
         now has `title="Export / Backup"` and a desktop-only "Backup" label
         while keeping the `Backup and export` accessible name used by tests.
 
+    104. **Section controls live in the header; sample state is a document flag.**
+        `SectionList` renders compact icon-only `Hide` / `↑` / `↓` buttons beside
+        the title in each header row, with `stopPropagation()` so tapping one
+        never toggles the accordion; only the labelled drawer trigger and custom
+        delete stay in the two-column footer. Profiles skips the shared
+        `Section heading` input entirely (its links already print in the header)
+        and its URL field advertises the auto-fill with the placeholder
+        `Paste GitHub or LinkedIn URL — auto-fills below`. Global sample clearing
+        is opt-in through `metadata.sampleData` (default `false`): every
+        `ARCHETYPES.build()` marks its doc, and the pure
+        `clearSampleData(doc)` in `src/lib/presets/clearSampleData.ts` returns
+        the same reference for non-sample docs, otherwise empties basics,
+        summary, all 12 standard sections, and custom items while preserving
+        template/layout/design/headings and flipping the flag off. The `⋮`
+        menu (`ExportJsonButton`) commits that returned document through one
+        `patchDoc`, so a single Zundo undo restores every sample entry. Do not
+        guess sample status from names/emails (users edit those), and keep the
+        per-section `ClearSectionButton` unchanged — it clears any section's
+        entries, not just a starter preset's.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~1061 tests
+npm test               # vitest, ~1118 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000

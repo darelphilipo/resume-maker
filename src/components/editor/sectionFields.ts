@@ -38,7 +38,7 @@ export const GENERIC_SECTION_FIELDS: Record<
       kind: "url",
       inputMode: "url",
       autoComplete: "url",
-      placeholder: "https://github.com/ada",
+      placeholder: "Paste GitHub or LinkedIn URL — auto-fills below",
     },
     {
       key: "network",
