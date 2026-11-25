@@ -24,11 +24,6 @@ _empty
 
 ### P1 — Final Pre-Freeze UX & Bug Polish
 
-- [ ] P1: Make `Trim tips` bullets clickable, add lightweight stemming to `Match JD`, and add discoverability hints on `ATS` & `Review ▾` (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/lib/keywords/jdMatch.ts`).
-  1. **Clickable `Trim tips`:** Clicking any listed bullet in the `Trim tips` modal closes the modal, switches to the `Content` tab on mobile, expands that bullet's section (`Experience` / `Projects`), and scrolls smoothly to that entry so the user can trim the 1–2 words immediately.
-  2. **`Match JD` stemming & stopword cleanup:** Add lightweight suffix normalization (`-ing`, `-ed`, `-s`/`-es`, e.g. `building` ↔ `build`, `managed` ↔ `manage`) and filter generic JD filler words (`high`, `improve`, `reduce`, `junior`, `looking`, `strong`) in `jdMatch.ts`.
-  3. **Discoverability cues:** Add a clear tooltip/`title` on the `ATS` toggle (*"Plain text & one-click Workday copy"*) and on the `Review N ▾` badge (*"N trim tips available — click to review"*) so first-time users immediately understand both features.
-
 - [ ] P1: Final mobile micro-polish from device review (`src/components/editor/DesignPanel.tsx`, `src/components/preview/AtsTextView.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
   1. **Fix `Sans` label typeface (`DesignPanel.tsx`):** Ensure the `Sans` option in the `Font pairing` segmented control renders with `font-sans` (currently inheriting serif styling on mobile).
   2. **Fix `ATS` top-line clipping (`AtsTextView.tsx`):** Add top padding / check scroll-container flex alignment so the first line of the `ATS` intro caption is never clipped at the top edge on mobile (`390px`).
@@ -42,6 +37,34 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-25 — Finished the `Trim tips` click-through, `Match JD` stemming,
+  and `ATS` / `Review` discoverability polish (the implementation was already in
+  the tree; verified end to end and closed the bookkeeping). Every trim tip is
+  now a button that closes the dialog, switches to **Content**, expands the
+  owning section, and smooth-scrolls to the entry card; `BulletIssue` carries
+  `sectionId`/`entryId` read from the preview DOM (`data-section-id` /
+  `data-entry-id` on `SectionRenderer`), and every bullet-bearing form tags its
+  `EntryCard` with the matching `editor-entry-<id>`. `jdMatch` normalizes `-ing`/`-ed`/`-s`/`-es` roots (with
+  doubled-consonant and silent-e variants) only for plain alphabetic words and
+  adds `high`, `improve`, `reduce`, `junior`, `looking`, and `strong` to the
+  stoplist. The ATS toggle titles `Plain text & one-click Workday copy`, and the
+  Review pill titles its trim count. Verified `npm run typecheck`, `npm test`
+  (1129 pass). Files: `src/lib/lint/bulletMetrics.ts` (+ test),
+  `src/components/preview/TrimTipsDialog.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/SectionList.tsx` (+ test),
+  `src/components/editor/SectionFormControls.tsx`,
+  `src/components/editor/ExperienceForm.tsx`,
+  `src/components/editor/EducationForm.tsx`,
+  `src/components/editor/ProjectsForm.tsx`,
+  `src/components/editor/GenericSectionForm.tsx`,
+  `src/components/editor/SkillsForm.tsx`,
+  `src/components/editor/CustomSectionForm.tsx`,
+  `src/templates/shared/SectionRenderer.tsx`,
+  `src/lib/keywords/jdMatch.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-25 — Finished the section-header / Profiles / sample-clear polish:
   compact `Hide` and `↑`/`↓` icon buttons now sit on every section header (with

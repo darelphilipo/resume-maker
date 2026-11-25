@@ -1625,6 +1625,20 @@ rediscover.
         per-section `ClearSectionButton` unchanged — it clears any section's
         entries, not just a starter preset's.
 
+   105. **Trim tips jump through rendered ids, not a parallel lookup.**
+        `scanBulletLint` reads `data-section-id` and `data-entry-id` off the
+        nearest rendered ancestors, so `SectionRenderer` (shared by all six
+        templates) is the single source of the jump target; every
+        bullet-bearing form must pass its item id into `EntryCard.entryId`,
+        which renders `id="editor-entry-<id>"`. `ReviewMenu` closes its trim
+        dialog before calling `onSelectTrimIssue`, and
+        `EditorWorkspace.revealTrimIssue` switches to Content and bumps the
+        `SectionList` focus nonce with `entryId`; `SectionList` then expands the
+        section and smooth-scrolls the entry card (falling back to the section
+        row). Keep the id attributes on both sides in sync when adding a new
+        section or entry renderer, and keep the ids limited to plain text:
+        jsdom has no layout, so only the browser verifies the final scroll.
+
 ## Verification and tooling
 
 ```powershell
@@ -1689,6 +1703,20 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-25 — Trim tips click-through, JD stemming, ATS/Review cues
+- Task: top Queue item (P1). The implementation was already present in HEAD
+  (committed with its unit tests and README copy) but `TASKS.md`/`CONTEXT.md`
+  were stale, so this run verified the behavior, ran the gates, and finished the
+  bookkeeping instead of re-implementing it.
+- Change: confirmed each tip closes the dialog, switches to Content, expands the
+  owning section, and scrolls to `editor-entry-<id>`; confirmed the `-ing`/`-ed`/
+  `-s`/`-es` stemming, the expanded filler stoplist, and both tooltips. No code
+  changes were needed; Decision #105 records the rendered-id contract between
+  `SectionRenderer`, `EntryCard`, and `SectionList`.
+- Tests: 1129 pass (trim dialog/workspace/section-list jump, relative stemming,
+  and ATS/Review title cases). Verified `npm run typecheck`, `npm test`.
+- Files: `TASKS.md`, `CONTEXT.md`.
 
 ### 2026-11-25 — Final pre-freeze UX/bug polish (Save PDF, fit reset, review)
 - Task: top Queue item (P1), the compound pre-freeze polish item, moved to In
@@ -1865,35 +1893,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Note: Playwright remains sandbox-blocked, so the new geometry cases are
   typechecked but browser-unverified. `getByText(/Jan 2024/)` matched the six
   certification dates too — query the experience date-range node directly.
-
-### 2026-11-24 — Studio Sidebar Page 1 fills a wasted lower-left gap
-- Task: the In Progress P1 item. A prior run had already committed the
-  `packPages` wasted-gap rule and most of its regressions, but left the suite
-  red: the `StudioSidebarTemplate` case injected a 620px summary, which still
-  left 370px on a ~1090px A4 page and so let the whole 320px entry fit, and
-  `src/lib/pagination/__scratch.test.ts` was an exploration harness asserting
-  the actual result against `{}`.
-- Change: kept the rule — an entry under
-  `FRAGMENT_SPLIT_MIN_PAGE_RATIO` also splits at a bullet boundary when moving
-  it whole would waste at least `FRAGMENT_SPLIT_WASTED_PAGE_RATIO` (0.25) of the
-  page and `FRAGMENT_SPLIT_MIN_FITTING_FRAGMENTS` (2) fragments fit — and kept
-  Page 1 narrow / Page 2+ full-width measurement. Fixed the template regression
-  to a 700px summary so ~290px remains: too little for the whole 320px entry,
-  but enough for three of its four bullets. File deletion is unavailable in this
-  runner, so the scratch harness is now a live 8-bullet `gengar` regression
-  (single entry, plus a following entry that must share the continuation page)
-  with a note to fold it into `computePages.test.ts` when deletion is possible.
-- Tests: `packPages` mid-size split + one-fragment-stays-whole cases,
-  `computePages` gengar split cases, the corrected template render case, and the
-  repurposed scratch regressions. 1022 pass.
-- Files: `src/lib/pagination/packPages.ts` (+ test),
-  `src/lib/pagination/computePages.test.ts`,
-  `src/lib/pagination/__scratch.test.ts`,
-  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1022 pass), `npm run lint`.
-  Playwright remains blocked here and jsdom has no layout, so the injected
-  heights are the contract and the real browser geometry is unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright
