@@ -92,6 +92,7 @@ function isContinuation(fragment: BlockFragment | undefined): boolean {
 }
 
 function EntryShell({
+  entryId,
   title,
   subtitle,
   date,
@@ -102,6 +103,8 @@ function EntryShell({
   keepTogether = false,
   continuation = false,
 }: {
+  /** Rendered item id, used by the trim tips to jump to the editor entry. */
+  entryId?: string;
   title: string;
   subtitle?: ReactNode;
   date?: ReactNode;
@@ -125,7 +128,7 @@ function EntryShell({
     !continuation && (title !== "" || Boolean(subtitle) || Boolean(extra) || Boolean(aside) || Boolean(date));
 
   return (
-    <article className={className}>
+    <article className={className} data-entry-id={entryId}>
       {showHeader ? (
         <div className="resume-entry-header">
           <div className="resume-entry-leading">
@@ -172,9 +175,11 @@ function dateNode(item: ItemRecord): ReactNode {
 
 function ExperienceEntry({
   item,
+  entryId,
   fragment,
 }: {
   item: ItemRecord;
+  entryId: string;
   fragment?: BlockFragment;
 }) {
   const company = text(item, "company");
@@ -183,6 +188,7 @@ function ExperienceEntry({
 
   return (
     <EntryShell
+      entryId={entryId}
       title={position || company}
       subtitle={[position ? company : "", location]
         .filter(Boolean)
@@ -201,9 +207,16 @@ function ExperienceEntry({
  * dates, and its bullets. `keepTogether` keeps a single role from splitting
  * across pages.
  */
-function ExperienceRole({ item }: { item: ItemRecord }) {
+function ExperienceRole({
+  item,
+  entryId,
+}: {
+  item: ItemRecord;
+  entryId: string;
+}) {
   return (
     <EntryShell
+      entryId={entryId}
       title={text(item, "position")}
       date={dateNode(item)}
       summary={text(item, "summary")}
@@ -236,7 +249,7 @@ function ExperienceCompanyGroup({ group }: { group: ExperienceGroup }) {
       <div className="resume-company-roles">
         {group.items.map((item, index) => (
           <Fragment key={itemId(item, index)}>
-            <ExperienceRole item={item} />
+            <ExperienceRole item={item} entryId={itemId(item, index)} />
           </Fragment>
         ))}
       </div>
@@ -255,7 +268,10 @@ function renderExperienceItems(items: ItemRecord[]): ReactNode[] {
       <ExperienceCompanyGroup key={group.key} group={group} />
     ) : (
       <Fragment key={group.key}>
-        <ExperienceEntry item={group.items[0]} />
+        <ExperienceEntry
+          item={group.items[0]}
+          entryId={itemId(group.items[0], 0)}
+        />
       </Fragment>
     ),
   );
@@ -263,9 +279,11 @@ function renderExperienceItems(items: ItemRecord[]): ReactNode[] {
 
 function EducationEntry({
   item,
+  entryId,
   fragment,
 }: {
   item: ItemRecord;
+  entryId: string;
   fragment?: BlockFragment;
 }) {
   const school = text(item, "school");
@@ -276,6 +294,7 @@ function EducationEntry({
 
   return (
     <EntryShell
+      entryId={entryId}
       title={degree || school}
       subtitle={[degree ? school : "", area, location, grade]
         .filter(Boolean)
@@ -289,15 +308,18 @@ function EducationEntry({
 
 function ProjectEntry({
   item,
+  entryId,
   fragment,
 }: {
   item: ItemRecord;
+  entryId: string;
   fragment?: BlockFragment;
 }) {
   const keywords = keywordList(item);
 
   return (
     <EntryShell
+      entryId={entryId}
       title={text(item, "name")}
       subtitle={[text(item, "url"), keywords.join(", ")]
         .filter(Boolean)
@@ -349,11 +371,13 @@ function GenericEntry({
   doc,
   kind,
   item,
+  entryId,
   fragment,
 }: {
   doc: ResumeDocument;
   kind: GenericKind;
   item: ItemRecord;
+  entryId: string;
   fragment?: BlockFragment;
 }) {
   let title = "";
@@ -475,6 +499,7 @@ function GenericEntry({
 
   return (
     <EntryShell
+      entryId={entryId}
       title={title}
       subtitle={subtitle}
       date={date}
@@ -498,13 +523,15 @@ function renderItem(
 
   switch (kind) {
     case "experience":
-      entry = <ExperienceEntry item={item} fragment={fragment} />;
+      entry = (
+        <ExperienceEntry item={item} entryId={id} fragment={fragment} />
+      );
       break;
     case "education":
-      entry = <EducationEntry item={item} fragment={fragment} />;
+      entry = <EducationEntry item={item} entryId={id} fragment={fragment} />;
       break;
     case "projects":
-      entry = <ProjectEntry item={item} fragment={fragment} />;
+      entry = <ProjectEntry item={item} entryId={id} fragment={fragment} />;
       break;
     case "skills":
       entry = <SkillEntry doc={doc} item={item} />;
@@ -515,6 +542,7 @@ function renderItem(
           doc={doc}
           kind={kind}
           item={item}
+          entryId={id}
           fragment={fragment}
         />
       );

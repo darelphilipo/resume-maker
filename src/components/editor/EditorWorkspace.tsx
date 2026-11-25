@@ -21,7 +21,7 @@ import { InAppBrowserNotice } from "@/components/preview/InAppBrowserNotice";
 import { PageOverflowBanner } from "@/components/preview/PageOverflowBanner";
 import { PrintTriggerButton } from "@/components/preview/PrintTriggerButton";
 import { ExportJsonButton } from "@/components/shared/ExportJsonButton";
-import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
+import type { BulletIssue, BulletLintReport } from "@/lib/lint/bulletMetrics";
 import { usePageLayout } from "@/lib/pagination/usePageLayout";
 import { anonymizeResumeDoc } from "@/lib/privacy/anonymizeDoc";
 import { resumeDocumentTitle } from "@/lib/print/printDocument";
@@ -172,6 +172,26 @@ export function EditorWorkspace() {
     } else {
       applyFitScale(1);
     }
+  }
+
+  /**
+   * A trim tip names the rendered bullet's section and entry. Reveal the
+   * Content tab on phones, expand that section, and let SectionList smooth
+   * scroll to the entry card so the user can cut the stray words immediately.
+   */
+  function revealTrimIssue(issue: BulletIssue): void {
+    const sectionId = issue.sectionId;
+
+    if (!sectionId) {
+      return;
+    }
+
+    setActiveTab("content");
+    setSectionFocus((current) => ({
+      id: sectionId,
+      entryId: issue.entryId ?? null,
+      nonce: (current?.nonce ?? 0) + 1,
+    }));
   }
 
   const liveName =
@@ -566,6 +586,7 @@ export function EditorWorkspace() {
                   <button
                     type="button"
                     aria-label="ATS text"
+                    title="Plain text & one-click Workday copy"
                     aria-pressed={previewMode === "ats"}
                     onClick={() => {
                       setPreviewMode("ats");
@@ -627,6 +648,7 @@ export function EditorWorkspace() {
                     setAnonymizePreview((enabled) => !enabled);
                   }}
                   bulletReport={bulletReport}
+                  onSelectTrimIssue={revealTrimIssue}
                   fitTarget={layout.fitScale}
                   fitBlockedReason={layout.fitBlockedReason ?? null}
                   appliedFitScale={doc.metadata.page.fitScale}

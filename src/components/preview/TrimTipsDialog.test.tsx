@@ -80,4 +80,49 @@ describe("TrimTipsDialog", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(2);
   });
+
+  it("makes each tip a button that reports its issue", () => {
+    const onSelectIssue = vi.fn();
+
+    render(
+      <TrimTipsDialog
+        report={ORPHAN_REPORT}
+        titleId="trim-title"
+        hiddenCount={0}
+        onClose={() => undefined}
+        onSelectIssue={onSelectIssue}
+      />,
+    );
+
+    const tip = screen.getByRole("button", {
+      name: /Led the billing migration for the platform/,
+    });
+
+    expect(tip).toHaveAttribute("title", "Open this bullet in the editor");
+    expect(screen.getByText(/Tap a tip to open that bullet/)).toBeVisible();
+
+    fireEvent.click(tip);
+
+    expect(onSelectIssue).toHaveBeenCalledWith(
+      expect.objectContaining({ snippet: expect.stringContaining("Led the billing") }),
+    );
+  });
+
+  it("keeps the list read-only when no jump handler is provided", () => {
+    render(
+      <TrimTipsDialog
+        report={ORPHAN_REPORT}
+        titleId="trim-title"
+        hiddenCount={0}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(
+      screen.queryByText(/Tap a tip to open that bullet/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Led the billing migration/ }),
+    ).not.toBeInTheDocument();
+  });
 });

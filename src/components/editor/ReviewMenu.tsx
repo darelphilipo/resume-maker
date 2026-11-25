@@ -13,7 +13,7 @@ import { useId, useState } from "react";
 
 import { TrimTipsDialog } from "@/components/preview/TrimTipsDialog";
 import { CenteredModal } from "@/components/shared/CenteredModal";
-import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
+import type { BulletIssue, BulletLintReport } from "@/lib/lint/bulletMetrics";
 import { MAX_LISTED_ISSUES } from "@/lib/lint/bulletMetrics";
 import { fitBlockedCopy } from "@/lib/pagination/fitCopy";
 import type { FitBlockedReason } from "@/lib/pagination/usePageLayout";
@@ -32,6 +32,7 @@ export function ReviewMenu({
   onToggleScan,
   onToggleAnonymize,
   bulletReport = null,
+  onSelectTrimIssue,
   fitTarget = null,
   fitBlockedReason = null,
   appliedFitScale = 1,
@@ -43,6 +44,8 @@ export function ReviewMenu({
   onToggleScan: () => void;
   onToggleAnonymize: () => void;
   bulletReport?: BulletLintReport | null;
+  /** Opens the Content tab, expands the section, and scrolls to the entry. */
+  onSelectTrimIssue?: (issue: BulletIssue) => void;
   /** The computed scale that would fit the resume on one page, if any. */
   fitTarget?: number | null;
   fitBlockedReason?: FitBlockedReason | null;
@@ -72,6 +75,13 @@ export function ReviewMenu({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? titleId : undefined}
+        title={
+          trimCount > 0
+            ? `${trimCount} trim ${
+                trimCount === 1 ? "tip" : "tips"
+              } available — click to review`
+            : "Preview lenses and page helpers"
+        }
         onClick={() => {
           setOpen((current) => !current);
         }}
@@ -236,6 +246,14 @@ export function ReviewMenu({
           report={bulletReport}
           titleId={trimTitleId}
           hiddenCount={hiddenTrimCount}
+          onSelectIssue={
+            onSelectTrimIssue
+              ? (issue) => {
+                  setTrimOpen(false);
+                  onSelectTrimIssue(issue);
+                }
+              : undefined
+          }
           onClose={() => {
             setTrimOpen(false);
           }}

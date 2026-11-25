@@ -2,7 +2,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { analyzeBulletLines, summarizeBulletIssues } from "@/lib/lint/bulletMetrics";
-import type { BulletLintReport } from "@/lib/lint/bulletMetrics";
+import type {
+  BulletIssue,
+  BulletLintReport,
+} from "@/lib/lint/bulletMetrics";
 import type { FitBlockedReason } from "@/lib/pagination/usePageLayout";
 
 import { ReviewMenu } from "./ReviewMenu";
@@ -25,6 +28,7 @@ function renderMenu(
     onToggleScan?: () => void;
     onToggleAnonymize?: () => void;
     bulletReport?: BulletLintReport | null;
+    onSelectTrimIssue?: (issue: BulletIssue) => void;
     fitTarget?: number | null;
     fitBlockedReason?: FitBlockedReason | null;
     appliedFitScale?: number;
@@ -42,6 +46,7 @@ function renderMenu(
       onToggleScan={onToggleScan}
       onToggleAnonymize={onToggleAnonymize}
       bulletReport={overrides.bulletReport ?? null}
+      onSelectTrimIssue={overrides.onSelectTrimIssue}
       fitTarget={overrides.fitTarget ?? null}
       fitBlockedReason={overrides.fitBlockedReason ?? null}
       appliedFitScale={overrides.appliedFitScale ?? 1}
@@ -168,6 +173,36 @@ describe("ReviewMenu", () => {
     expect(screen.getByRole("dialog", { name: "Trim tips" })).toHaveTextContent(
       /Led the billing migration/,
     );
+  });
+
+  it("explains the trim count in the Review tooltip", () => {
+    renderMenu({ bulletReport: TRIM_REPORT });
+
+    expect(
+      screen.getByRole("button", { name: /Review/ }),
+    ).toHaveAttribute("title", "2 trim tips available — click to review");
+  });
+
+  it("closes the trim dialog and jumps to a tapped tip's issue", () => {
+    const onSelectTrimIssue = vi.fn();
+
+    renderMenu({ bulletReport: TRIM_REPORT, onSelectTrimIssue });
+    openMenu();
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Trim tips \(2\)/ }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /Led the billing migration/ }),
+    );
+
+    expect(onSelectTrimIssue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        snippet: expect.stringContaining("Led the billing"),
+      }),
+    );
+    expect(
+      screen.queryByRole("dialog", { name: "Trim tips" }),
+    ).not.toBeInTheDocument();
   });
 
   it("fits the resume to one page from the Review dialog", () => {

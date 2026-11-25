@@ -401,6 +401,7 @@ export function GenericSectionForm({
         <EntryCard
           key={stringValue(item.id)}
           index={index}
+          entryId={stringValue(item.id)}
           hidden={booleanValue(item.hidden)}
         >
           {fields.map((field) => renderField(item, index, field))}

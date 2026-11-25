@@ -44,6 +44,14 @@ describe("extractJobKeywords", () => {
       extractJobKeywords("We are hiring a Rust developer."),
     ).toEqual(["developer", "rust"]);
   });
+
+  it("drops generic filler such as high, improve, reduce, and junior", () => {
+    expect(
+      extractJobKeywords(
+        "High impact junior candidates who improve and reduce costs.",
+      ),
+    ).toEqual(["costs", "impact"]);
+  });
 });
 
 describe("matchJobKeywords", () => {
@@ -114,6 +122,42 @@ describe("matchJobKeywords", () => {
     expect(result.matched).toEqual([]);
     expect(result.missing).toEqual([".net"]);
     expect(result.coverage).toBe(0);
+  });
+
+  it("does not invent a stem for irregular past forms", () => {
+    const result = matchJobKeywords(
+      "Building a platform",
+      "Built a platform",
+    );
+
+    expect(result.matched).toEqual(["platform"]);
+    expect(result.missing).toEqual(["building"]);
+  });
+
+  it("matches a building/designing root in either direction", () => {
+    const forward = matchJobKeywords(
+      "building designing processes",
+      "build, design, process",
+    );
+    const reverse = matchJobKeywords(
+      "build design process",
+      "building, designing, processes",
+    );
+
+    expect(forward.matched).toEqual(["building", "designing", "processes"]);
+    expect(forward.missing).toEqual([]);
+    expect(reverse.matched).toEqual(["build", "design", "process"]);
+    expect(reverse.missing).toEqual([]);
+  });
+
+  it("does not stem dotted or tech tokens into unrelated words", () => {
+    const result = matchJobKeywords(
+      ".NET Node.js C++",
+      "Net income and node jobs",
+    );
+
+    expect(result.matched).toEqual([]);
+    expect(result.missing).toEqual([".net", "c++", "node.js"]);
   });
 
   it("reports zero coverage for an empty job description", () => {

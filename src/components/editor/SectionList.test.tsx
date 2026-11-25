@@ -4,7 +4,10 @@ import type { UserEvent } from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
-import { CustomSectionSchema } from "@/lib/schema/resume.schema";
+import {
+  CustomSectionSchema,
+  ExperienceItemSchema,
+} from "@/lib/schema/resume.schema";
 import {
   resetResumeStore,
   useResumeStore,
@@ -412,6 +415,44 @@ describe("SectionList", () => {
       useResumeStore.getState().doc.metadata.layout.pages[0].main,
     ).not.toContain(custom.id);
     expect(screen.queryByRole("button", { name: /Speaking/ })).toBeNull();
+  });
+
+  it("expands a focused section and scrolls to the requested entry", () => {
+    const doc = useResumeStore.getState().doc;
+    const item = ExperienceItemSchema.parse({
+      id: "exp-trim",
+      company: "Acme",
+      position: "Engineer",
+    });
+    const scrollIntoView = vi.spyOn(Element.prototype, "scrollIntoView");
+
+    useResumeStore.setState({
+      doc: {
+        ...doc,
+        sections: {
+          ...doc.sections,
+          experience: { ...doc.sections.experience, items: [item] },
+        },
+      },
+    });
+
+    render(
+      <SectionList
+        focusSection={{ id: "experience", entryId: "exp-trim", nonce: 1 }}
+      />,
+    );
+
+    expect(sectionToggle("experience")).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(document.getElementById("editor-entry-exp-trim")).not.toBeNull();
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "smooth",
+      block: "start",
+    });
+
+    scrollIntoView.mockRestore();
   });
 
   it("keeps several sections open and collapses them all in one click", () => {

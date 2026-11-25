@@ -269,4 +269,29 @@ describe("scanBulletLint", () => {
 
     expect(scanBulletLint(root).issues).toHaveLength(0);
   });
+
+  it("records the rendered section and entry ids for each issue", () => {
+    const root = document.createElement("div");
+
+    root.innerHTML = `
+      <section data-section-id="experience">
+        <article data-entry-id="exp-1">
+          <ul><li>${"Built ".repeat(60)}</li></ul>
+        </article>
+      </section>
+      <section data-section-id="summary">
+        <ul><li>${"Shipped ".repeat(60)}</li></ul>
+      </section>
+    `;
+
+    const report = scanBulletLint(root);
+
+    expect(report.issues).toHaveLength(2);
+    expect(report.issues[0]).toMatchObject({
+      sectionId: "experience",
+      entryId: "exp-1",
+    });
+    expect(report.issues[1]).toMatchObject({ sectionId: "summary" });
+    expect(report.issues[1].entryId).toBeUndefined();
+  });
 });

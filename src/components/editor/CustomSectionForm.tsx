@@ -169,7 +169,12 @@ export function CustomSectionForm({ sectionId }: { sectionId: string }) {
       />
 
       {watched.items.map((item, index) => (
-        <EntryCard key={item.id} index={index} hidden={item.hidden}>
+        <EntryCard
+          key={item.id}
+          index={index}
+          entryId={item.id}
+          hidden={item.hidden}
+        >
           <TextInput
             id={`custom-${sectionId}-${item.id}-name`}
             label="Name"

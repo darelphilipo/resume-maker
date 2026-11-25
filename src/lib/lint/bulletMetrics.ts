@@ -33,6 +33,13 @@ export type BulletIssue = {
   lastLineWords: number;
   /** Lines a trim would plausibly reclaim. */
   reclaimableLines: number;
+  /**
+   * Rendered section/entry ids, read from the preview DOM. They let the trim
+   * dialog jump straight to the editor form that owns the bullet. Optional
+   * because the pure line analyser never sees layout.
+   */
+  sectionId?: string;
+  entryId?: string;
 };
 
 export type BulletLintReport = {
@@ -338,7 +345,14 @@ export function scanBulletLint(root: ParentNode): BulletLintReport {
     const issue = analyzeBulletLines(measureBulletLines(item));
 
     if (issue) {
-      issues.push(issue);
+      const section = item.closest<HTMLElement>("[data-section-id]");
+      const entry = item.closest<HTMLElement>("[data-entry-id]");
+
+      issues.push({
+        ...issue,
+        sectionId: section?.dataset.sectionId,
+        entryId: entry?.dataset.entryId,
+      });
     }
   }
 

@@ -1,10 +1,17 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
+import { ExperienceItemSchema } from "@/lib/schema/resume.schema";
 import { ANONYMIZED_NAME } from "@/lib/privacy/anonymizeDoc";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
+import {
+  analyzeBulletLines,
+  summarizeBulletIssues,
+  type BulletLintReport,
+} from "@/lib/lint/bulletMetrics";
 import { putResume } from "@/lib/store/db";
 import {
   resetResumeStore,
@@ -17,6 +24,11 @@ const realLoadResume = useResumeStore.getState().loadResume;
 
 const searchParamsState = vi.hoisted(() => ({
   id: "resume-1" as string | null,
+}));
+
+/** Lets one test publish a synthetic trim report from the mocked canvas. */
+const previewState = vi.hoisted(() => ({
+  report: null as unknown,
 }));
 
 const storeFunctions = vi.hoisted(() => ({
@@ -48,19 +60,29 @@ vi.mock("@/components/preview/LiveCanvasViewport", () => ({
     mode,
     doc,
     scanHighlight,
+    onBulletReport,
   }: {
     mode?: string;
     doc: ResumeDocument;
     scanHighlight?: boolean;
-  }) => (
-    <div
-      data-testid="preview-canvas"
-      data-mode={mode}
-      data-scan-highlight={scanHighlight ? "true" : "false"}
-    >
-      <span data-testid="canvas-name">{doc.basics.name}</span>
-    </div>
-  ),
+    onBulletReport?: (report: BulletLintReport | null) => void;
+  }) => {
+    useEffect(() => {
+      if (previewState.report) {
+        onBulletReport?.(previewState.report as BulletLintReport);
+      }
+    }, [onBulletReport]);
+
+    return (
+      <div
+        data-testid="preview-canvas"
+        data-mode={mode}
+        data-scan-highlight={scanHighlight ? "true" : "false"}
+      >
+        <span data-testid="canvas-name">{doc.basics.name}</span>
+      </div>
+    );
+  },
 }));
 
 vi.mock("@/lib/store/useResumeStore", async (importOriginal) => {
@@ -83,6 +105,7 @@ const loadResumeMock = vi.fn();
 beforeEach(() => {
   vi.clearAllMocks();
   searchParamsState.id = "resume-1";
+  previewState.report = null;
   document.title = "Resume Maker";
   resetResumeStore();
   loadResumeMock.mockReset().mockResolvedValue(true);
@@ -505,6 +528,57 @@ describe("EditorWorkspace", () => {
     expect(screen.getByLabelText("Job description")).toBeInTheDocument();
   });
 
+  it("jumps from a trim tip to the offending entry in Content", async () => {
+    const doc = createEmptyResume();
+
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "exp-trim",
+        company: "Acme",
+        position: "Engineer",
+      }),
+    ];
+    useResumeStore.setState({ doc });
+
+    const issue = analyzeBulletLines([
+      "Led the billing migration for the platform and",
+      "saved 3 hours",
+    ])!;
+
+    previewState.report = summarizeBulletIssues([
+      { ...issue, sectionId: "experience", entryId: "exp-trim" },
+    ]);
+
+    await renderReadyWorkspace();
+
+    await waitFor(() => {
+      expect(
+        document.querySelector("[data-review-trim-badge]"),
+      ).toHaveTextContent("1");
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: "Preview" }));
+    fireEvent.click(screen.getByRole("button", { name: /Review/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Trim tips \(1\)/ }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /Led the billing migration/ }),
+    );
+
+    expect(screen.getByRole("tab", { name: "Content" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-section-toggle="experience"]'),
+      ).toHaveAttribute("aria-expanded", "true");
+      expect(document.getElementById("editor-entry-exp-trim")).not.toBeNull();
+    });
+  });
+
   it("calls undo from the top bar", async () => {
     const user = userEvent.setup();
 
@@ -605,6 +679,10 @@ describe("EditorWorkspace", () => {
     // the full "ATS text" wording.
     expect(screen.getByRole("button", { name: "ATS text" })).toHaveTextContent(
       /^ATS$/,
+    );
+    expect(screen.getByRole("button", { name: "ATS text" })).toHaveAttribute(
+      "title",
+      "Plain text & one-click Workday copy",
     );
     // There is no second preview toolbar row any more.
     expect(

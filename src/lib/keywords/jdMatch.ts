@@ -58,10 +58,15 @@ const STOPWORDS = new Set([
   "having",
   "help",
   "helping",
+  "high",
   "hiring",
   "how",
   "ideal",
   "ideally",
+  "improve",
+  "improved",
+  "improves",
+  "improving",
   "including",
   "in",
   "into",
@@ -71,6 +76,7 @@ const STOPWORDS = new Set([
   "job",
   "join",
   "joining",
+  "junior",
   "lead",
   "leading",
   "looking",
@@ -107,6 +113,10 @@ const STOPWORDS = new Set([
   "preferably",
   "preferred",
   "qualifications",
+  "reduce",
+  "reduced",
+  "reduces",
+  "reducing",
   "required",
   "requirements",
   "responsibilities",
@@ -210,9 +220,43 @@ function variants(token: string): string[] {
       values.add(base.slice(0, -1));
       values.add(token.slice(0, -1));
     }
+
+    // Lightweight stemming: `building` ↔ `build`, `managed` ↔ `manage`, and
+    // `processes` ↔ `process`. Only plain alphabetic words are stemmed so
+    // dotted/tech tokens (`node.js`, `.net`, `c++`) keep their exact forms.
+    if (/^[a-z]+$/.test(base) && base.length >= 5) {
+      if (base.endsWith("ing")) {
+        addStem(values, base.slice(0, -3));
+      } else if (base.endsWith("ed")) {
+        addStem(values, base.slice(0, -2));
+      }
+
+      if (base.endsWith("es") && base.length > 4) {
+        addStem(values, base.slice(0, -2));
+      }
+    }
   }
 
   return [...values];
+}
+
+/**
+ * Adds a plausible root plus its doubled-consonant (`running` → `run`) and
+ * silent-e (`manag` → `manage`) spellings. Very short roots are ignored so a
+ * suffix cannot turn a full word into a meaningless fragment.
+ */
+function addStem(values: Set<string>, stem: string): void {
+  if (stem.length < 3) {
+    return;
+  }
+
+  values.add(stem);
+
+  if (/([a-z])\1$/.test(stem)) {
+    values.add(stem.slice(0, -1));
+  }
+
+  values.add(`${stem}e`);
 }
 
 /**

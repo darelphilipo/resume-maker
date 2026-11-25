@@ -313,8 +313,10 @@ in control of every line, and your data stays on your device.
   block, the preview counts it. Open **Review** and tap **Trim tips (N)** to see a
   dismissible list with each bullet's opening words and a plain-language reason;
   it covers the preview only while open, so the resume stays fully readable on a
-  phone. Trimming those bullets can reclaim whole lines before you shrink the
-  font or spill onto a second page.
+  phone. Tap any tip to jump straight to that bullet: the editor opens
+  **Content**, expands the right section, and scrolls the entry into view so you
+  can cut the stray words immediately. Trimming those bullets can reclaim whole
+  lines before you shrink the font or spill onto a second page.
 - **Bullet polish** in the Content panel header flags the small consistency
   problems a recruiter notices first: bullets that mix ending periods,
   first-person pronouns, filler adverbs, and repeated opening verbs within one
@@ -354,8 +356,11 @@ in control of every line, and your data stays on your device.
 - **Job description keyword matcher**: tap **Match JD** in the Content panel
   header to open the matcher on any device, then paste a posting to see which
   of its keywords already appear in your resume and which are missing. Common
-  filler words such as “for”, “looking”, and “hiring” are ignored, and keywords
-  match whole words only — so “rust” never counts just because “trust” appears.
+  filler words such as “for”, “looking”, “hiring”, “high”, “improve”, “reduce”,
+  and “junior” are ignored, and keywords match whole words only — so “rust”
+  never counts just because “trust” appears. Simple word forms are treated as
+  the same keyword, so “building” matches “build” and “managed” matches
+  “manage”.
   Tech names such as C++, C#, Node.js, and .NET are recognised, including
   product forms like ASP.NET. On phones it opens as a bottom sheet; on desktop
   it opens as a centred modal. Either way one tap on the **X** (or the dimmed

@@ -175,7 +175,12 @@ export function ProjectsForm() {
         </div>
       ) : null}
       {watched.items.map((item, index) => (
-        <EntryCard key={item.id} index={index} hidden={item.hidden}>
+        <EntryCard
+          key={item.id}
+          index={index}
+          entryId={item.id}
+          hidden={item.hidden}
+        >
           <TextInput
             id={`projects-${item.id}-name`}
             label="Name"

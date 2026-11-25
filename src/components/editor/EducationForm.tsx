@@ -162,7 +162,12 @@ export function EducationForm() {
         </div>
       ) : null}
       {watched.items.map((item, index) => (
-        <EntryCard key={item.id} index={index} hidden={item.hidden}>
+        <EntryCard
+          key={item.id}
+          index={index}
+          entryId={item.id}
+          hidden={item.hidden}
+        >
           <TextInput
             id={`education-${item.id}-school`}
             label="School"

@@ -432,16 +432,21 @@ export function BooleanInput({
 
 export function EntryCard({
   index,
+  entryId,
   hidden = false,
   children,
 }: {
   index: number;
+  /** Stable item id, so Trim tips can scroll straight to this entry. */
+  entryId?: string;
   /** Dims an entry that is excluded from the preview and print, not deleted. */
   hidden?: boolean;
   children: ReactNode;
 }) {
   return (
     <fieldset
+      id={entryId ? `editor-entry-${entryId}` : undefined}
+      data-editor-entry-id={entryId}
       data-hidden={hidden ? "true" : undefined}
       className={`flex w-full min-w-0 max-w-full flex-col gap-3 rounded-xl border border-line bg-surface-muted p-3 transition-opacity ${
         hidden ? "opacity-60 focus-within:opacity-100 hover:opacity-100" : ""

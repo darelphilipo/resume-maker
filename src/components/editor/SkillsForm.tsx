@@ -141,7 +141,12 @@ export function SkillsForm() {
       className="flex flex-col gap-3"
     >
       {watched.items.map((item, index) => (
-        <EntryCard key={item.id} index={index} hidden={item.hidden}>
+        <EntryCard
+          key={item.id}
+          index={index}
+          entryId={item.id}
+          hidden={item.hidden}
+        >
           <TextInput
             id={`skills-${item.id}-name`}
             label="Category"

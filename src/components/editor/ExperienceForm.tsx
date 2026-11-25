@@ -184,7 +184,12 @@ export function ExperienceForm() {
         </div>
       ) : null}
       {watched.items.map((item, index) => (
-        <EntryCard key={item.id} index={index} hidden={item.hidden}>
+        <EntryCard
+          key={item.id}
+          index={index}
+          entryId={item.id}
+          hidden={item.hidden}
+        >
           <TextInput
             id={`experience-${item.id}-company`}
             label="Company"

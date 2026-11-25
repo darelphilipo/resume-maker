@@ -90,9 +90,14 @@ export type SectionListProps = {
   /**
    * A one-shot request to expand a section and scroll it into view. The nonce
    * lets the same section be focused again after the user collapses it (for
-   * example by tapping "Manage profiles" twice).
+   * example by tapping "Manage profiles" twice). `entryId` additionally scrolls
+   * to one entry card, which is how Trim tips jumps to the offending bullet.
    */
-  focusSection?: { id: string; nonce: number } | null;
+  focusSection?: {
+    id: string;
+    nonce: number;
+    entryId?: string | null;
+  } | null;
 };
 
 function countLabel(count: number): string {
@@ -220,9 +225,13 @@ export function SectionList({
       return;
     }
 
-    document
-      .getElementById(`section-row-${focusSection.id}`)
-      ?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    const row = document.getElementById(`section-row-${focusSection.id}`);
+    const target =
+      (focusSection.entryId
+        ? document.getElementById(`editor-entry-${focusSection.entryId}`)
+        : null) ?? row;
+
+    target?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   }, [focusSection]);
 
   function isOptionalTucked(row: SectionRow): boolean {
