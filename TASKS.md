@@ -35,6 +35,10 @@ _empty
   3. **Stop mid-word truncation in `Other ways to import` (`Launcher.tsx`):** Shorten the accordion label from `"Import via AI prompt (for scanned or Canva PDFs)"` to `"Import via AI prompt"` (keeping *"For scanned or Canva PDFs"* as helper copy inside the expanded panel) so it fits cleanly on `390px` with no `scanne...` ellipsis.
   4. **Remove `78%` jargon inside `Review tools` (`LiveCanvasViewport.tsx`):** Update the yellow notice inside the `Review tools` modal from `"Min 78% · Too tall to fit on one page above 78% — trim a line or two."` to `"Too tall to fit on one page cleanly — trim a few lines or try Compact density."`
 
+- [ ] P1: Replace section header `↑` / `↓` buttons with a touch-friendly drag-and-drop handle (`⋮⋮`) + `Hide` icon, and match `BASICS` row height (`src/components/editor/SectionList.tsx`, `src/components/editor/BasicsForm.tsx`).
+  1. **Touch + desktop drag-to-reorder (`SectionList.tsx`):** Replace the header `↑` and `↓` buttons with a single compact `GripVertical` (`⋮⋮`) drag handle on the left (or next to the `👁` Hide/Show icon) wired with **Pointer Events** (`onPointerDown` / `onPointerMove` / `onPointerUp` + `setPointerCapture` + `touch-action: none` strictly on the handle, NOT HTML5 `draggable` which fails on mobile). Show a subtle elevated shadow/drop-indicator while dragging and commit the new order via the existing Zustand/Zundo reorder action (keeping keyboard `ArrowUp`/`ArrowDown` reorder on the focused handle for accessibility).
+  2. **Prevent title/count overlap:** With only the drag handle and `👁` icon on the row, ensure long titles like `Certifications` and the `4 items` pill have `min-w-0 truncate` / `shrink-0` spacing so they never overlap at `390px`.
+  3. **Match `BASICS` row height (`BasicsForm.tsx`):** Apply the exact same vertical padding and `min-h` height to the collapsed `BASICS` card header as the other section rows so all stacked section pills have uniform height.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
