@@ -11,8 +11,14 @@ import {
 import { ProjectsForm } from "./ProjectsForm";
 
 vi.mock("./RichTextField", () => ({
-  RichTextField: ({ ariaLabel }: { ariaLabel: string }) => (
-    <div data-testid="rich-text" aria-label={ariaLabel} />
+  RichTextField: ({
+    ariaLabel,
+    label,
+  }: {
+    ariaLabel: string;
+    label?: string;
+  }) => (
+    <div data-testid="rich-text" aria-label={ariaLabel} data-label={label} />
   ),
 }));
 
@@ -47,6 +53,16 @@ describe("ProjectsForm", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("labels the project highlights field", () => {
+    setup([makeItem("project-1")]);
+    render(<ProjectsForm />);
+
+    expect(screen.getByTestId("rich-text")).toHaveAttribute(
+      "data-label",
+      "Highlights",
+    );
   });
 
   it("renders project dates with the shared month and year selector", () => {

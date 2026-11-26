@@ -11,8 +11,14 @@ import {
 import { EducationForm } from "./EducationForm";
 
 vi.mock("./RichTextField", () => ({
-  RichTextField: ({ ariaLabel }: { ariaLabel: string }) => (
-    <div data-testid="rich-text" aria-label={ariaLabel} />
+  RichTextField: ({
+    ariaLabel,
+    label,
+  }: {
+    ariaLabel: string;
+    label?: string;
+  }) => (
+    <div data-testid="rich-text" aria-label={ariaLabel} data-label={label} />
   ),
 }));
 
@@ -50,6 +56,16 @@ describe("EducationForm", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("labels the education summary field", () => {
+    setup([makeItem("edu-1")]);
+    render(<EducationForm />);
+
+    expect(screen.getByTestId("rich-text")).toHaveAttribute(
+      "data-label",
+      "Summary",
+    );
   });
 
   it("uses region-neutral location and grade placeholders", () => {

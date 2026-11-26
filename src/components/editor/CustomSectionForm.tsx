@@ -186,6 +186,7 @@ export function CustomSectionForm({ sectionId }: { sectionId: string }) {
             value={item.description}
             onChange={(html) => updateItem(index, "description", html)}
             ariaLabel={`Description for entry ${index + 1}`}
+            label="Description"
             placeholder="Describe this entry."
           />
           <MonthSelect

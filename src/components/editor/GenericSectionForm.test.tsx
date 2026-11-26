@@ -10,6 +10,16 @@ import {
 
 import { GenericSectionForm } from "./GenericSectionForm";
 
+vi.mock("./RichTextField", () => ({
+  RichTextField: ({
+    ariaLabel,
+    label,
+  }: {
+    ariaLabel: string;
+    label?: string;
+  }) => <div data-testid="rich-text" aria-label={ariaLabel}>{label}</div>,
+}));
+
 function makeItem(
   id: string,
   overrides: Partial<ProfileItem> = {},
@@ -46,6 +56,40 @@ describe("GenericSectionForm profiles", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("labels rich-text fields with their field descriptor", () => {
+    const doc = createEmptyResume();
+    doc.sections.awards.items = [
+      {
+        id: "award-1",
+        hidden: false,
+        title: "",
+        awarder: "",
+        date: "",
+        summary: "",
+      },
+    ];
+    doc.sections.references.items = [
+      {
+        id: "reference-1",
+        hidden: false,
+        name: "",
+        position: "",
+        company: "",
+        phone: "",
+        email: "",
+        summary: "",
+      },
+    ];
+    useResumeStore.setState({ doc });
+
+    const { unmount } = render(<GenericSectionForm sectionId="awards" />);
+    expect(screen.getByTestId("rich-text")).toHaveTextContent("Description");
+    unmount();
+
+    render(<GenericSectionForm sectionId="references" />);
+    expect(screen.getByTestId("rich-text")).toHaveTextContent("Notes");
   });
 
   it("shows the URL and hides the manual icon field", () => {

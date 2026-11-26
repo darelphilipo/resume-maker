@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   BULLET_FORMULAS,
   bulletFormulaInsertion,
+  shouldStartNewBullet,
 } from "./bulletFormulas";
 
 describe("BULLET_FORMULAS", () => {
@@ -40,5 +41,29 @@ describe("bulletFormulaInsertion", () => {
     expect(bulletFormulaInsertion(BULLET_FORMULAS[3], " ")).toBe(
       "Automated [workflow], saving [N] hrs/wk ",
     );
+  });
+});
+
+describe("shouldStartNewBullet", () => {
+  const input = {
+    inBulletList: true,
+    atEndOfItem: true,
+    itemText: "Shipped the payments API",
+  };
+
+  it("starts a new bullet only at the end of a non-empty bullet", () => {
+    expect(shouldStartNewBullet(input)).toBe(true);
+  });
+
+  it("stays inline outside a bullet list", () => {
+    expect(shouldStartNewBullet({ ...input, inBulletList: false })).toBe(false);
+  });
+
+  it("stays inline mid-bullet", () => {
+    expect(shouldStartNewBullet({ ...input, atEndOfItem: false })).toBe(false);
+  });
+
+  it("stays inline in an empty bullet", () => {
+    expect(shouldStartNewBullet({ ...input, itemText: "   " })).toBe(false);
   });
 });

@@ -154,19 +154,23 @@ in control of every line, and your data stays on your device.
   Certifications, with optional Awards, Languages, Interests, Volunteer,
   Publications, and References.
 - Rich-text descriptions with bold, italic, bullet/numbered lists, links, and
-  editor undo. All eight formatting controls share one tidy row, even in the
-  narrow desktop Content column. Experience and project bullets offer four
+  editor undo. All eight formatting controls stay on one tidy row: compact
+  targets on desktop, and a side-scrolling row on touch so Redo never ends up
+  alone on a second line. **Link** opens a small inline URL bar with **Apply**
+  and, for an existing link, **Remove link** — no browser prompt. Every
+  rich-text field has a visible label (**Highlights**, **Summary**,
+  **Description**, or **Notes**). Experience and project bullets offer four
   tappable fill-in formulas: **Reduced [metric] by [X%] by [action]**,
   **Built [feature/system] for [N] users, improving [outcome]**,
   **Led [team/project] to deliver [result]**, and
   **Automated [workflow], saving [N] hrs/wk**. Tap a formula to drop the whole
-  skeleton at your cursor, replace the bracketed parts with your own facts, and
-  keep the result. Each formula wraps neatly to its own left edge, and
-  everything inserts cleanly after the existing sentence with a leading space
-  when needed, so words never run together; tap **Writing helpers** to tuck the
-  strip away so your bullets stay in view. A blank bullet
-  left at the end of a list is ignored in the preview, PDF, and ATS text, so it
-  never prints as a stray dot.
+  skeleton at your cursor; at the end of a finished bullet it starts a new
+  bullet instead of running into the previous sentence, and everywhere else it
+  inserts cleanly with a leading space when needed so words never run together.
+  Each formula wraps neatly to its own left edge. **Writing helpers** starts
+  collapsed so your bullets stay in view — tap it when you want the formulas.
+  A blank bullet left at the end of a list is ignored in the preview, PDF, and
+  ATS text, so it never prints as a stray dot.
 - Skills grouped by an optional category with comma-separated keywords (for
   example `Languages: Python, SQL`), with no self-ratings to maintain. A
   keyword-only row stays visible without a blank category line, so pasted lists

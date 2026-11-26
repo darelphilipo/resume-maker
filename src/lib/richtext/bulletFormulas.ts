@@ -41,3 +41,21 @@ export function bulletFormulaInsertion(
 ): string {
   return textInsertion(`${formula.template} `, textBeforeCursor);
 }
+
+/**
+ * At the end of a non-empty bullet there is nothing left to finish: a formula
+ * tapped there should start the next bullet, not extend the previous sentence.
+ * Anywhere else (mid-bullet, in prose, or in an empty item) it inserts at the
+ * cursor with the normal spacing rule.
+ */
+export function shouldStartNewBullet(input: {
+  inBulletList: boolean;
+  atEndOfItem: boolean;
+  itemText: string;
+}): boolean {
+  return (
+    input.inBulletList &&
+    input.atEndOfItem &&
+    input.itemText.trim().length > 0
+  );
+}

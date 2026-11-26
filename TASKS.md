@@ -24,12 +24,6 @@ _empty
 
 ### P1 — Page 2 (Content Tab) Fixes & Consistency
 
-- [ ] P1: Upgrade `RichTextField` (inline Link popover, single-row toolbar, new-bullet formula insertion, collapsed `Writing helpers`, and field labels) (`src/components/editor/RichTextField.tsx`, `src/components/editor/ProjectsForm.tsx`, `src/components/editor/EducationForm.tsx`, `src/components/editor/GenericSectionForm.tsx`, `src/components/editor/CustomSectionForm.tsx`).
-  1. **Replace `window.prompt()` with an inline Link popover:** Clicking the Link toolbar button opens a compact inline input bar right below the toolbar (`URL` input + `Apply` + `Remove link` when editing an existing link) instead of a browser `window.prompt()`.
-  2. **Fit all 8 toolbar buttons on one row:** Slightly tighten toolbar button padding/gap (`gap-0.5` / `h-8 w-8` on desktop fine pointers, `h-10 w-10` on touch with `overflow-x-auto`) so `Redo` never wraps alone onto a 2nd row inside entry cards.
-  3. **Impact formula chips insert a new bullet & `Writing helpers` starts collapsed:** Default `Writing helpers` to **collapsed** on all sections (`Experience`, `Projects`, `Education`), and when clicking an Impact formula chip inside a bullet list at the end of a non-empty bullet, insert a **new bullet item** instead of gluing the formula onto the end of the previous sentence.
-  4. **Consistent field labels:** Add concise labels (`Description` / `Highlights` / `Summary` / `Notes`) above `RichTextField` in `Projects`, `Education`, `Awards`, `Volunteer`, `References`, and `Custom` so every form field has a visible label.
-
 - [ ] P1: Fix Page 2 section consistency (`Clear sample data`, URL stripping, `Projects` `Present`, `Collapse all`, `Match JD` dedup, placeholders) (`src/components/editor/SectionList.tsx`, `src/components/editor/ProjectsForm.tsx`, `src/components/editor/sectionFields.ts`, `src/templates/shared/SectionRenderer.tsx`, `src/lib/keywords/jdMatch.ts`).
   1. **Clean up `Clear sample data`:** Only show `Clear sample data` when the resume/section actually contains unedited preset sample data—never show it (enabled or disabled) on newly added optional sections, custom sections, or PDF-imported resumes.
   2. **Consistent URL display & `Projects` `Present`:** Strip `https://` / `www.` consistently across `Projects` and `Custom` URLs in `SectionRenderer.tsx` (matching `Certifications` & `Publications`), and add a `Present` checkbox to `Projects` `End date` (matching `Experience`, `Education`, and `Volunteer`).
@@ -39,6 +33,22 @@ _empty
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-26 — Upgraded `RichTextField`: Link now opens an inline URL bar
+  (Apply / Remove link, Enter/Escape) instead of `window.prompt`; all eight
+  toolbar buttons stay on one row (32px fine-pointer targets, 40px touch targets
+  in a nowrap scroll strip), `Writing helpers` starts collapsed, impact-formula
+  chips start a new bullet at the end of a finished bullet via the pure
+  `shouldStartNewBullet` guard plus `splitListItem("listItem")`, and every
+  rich-text field has a visible label. Verified `npm run typecheck`, `npm test`
+  (1163 pass, 106 files), `npm run lint`. Files:
+  `src/components/editor/RichTextField.tsx` (+ test),
+  `src/lib/richtext/bulletFormulas.ts` (+ test),
+  `src/components/editor/ProjectsForm.tsx` (+ test),
+  `src/components/editor/EducationForm.tsx` (+ test),
+  `src/components/editor/GenericSectionForm.tsx` (+ test),
+  `src/components/editor/CustomSectionForm.tsx` (+ new test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains sandbox-blocked, so the 390px
+  toolbar geometry and the real TipTap list split are browser-unverified.
 - [x] 2026-11-26 — Closed the bookkeeping for the P1 homepage (`/`) polish. All
   four sub-items were already implemented in the tree from the prior checkpoint
   (single dashed Backup dropzone with *"Restore a single-resume JSON backup"* /

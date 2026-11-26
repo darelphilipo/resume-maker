@@ -10,8 +10,9 @@ type Chain = {
   toggleBulletList: () => Chain;
   toggleOrderedList: () => Chain;
   extendMarkRange: () => Chain;
-  setLink: () => Chain;
+  setLink: (attributes: { href: string }) => Chain;
   unsetLink: () => Chain;
+  splitListItem: (type: string) => Chain;
   unsetAllMarks: () => Chain;
   clearNodes: () => Chain;
   undo: () => Chain;
@@ -23,7 +24,17 @@ type Chain = {
 const tiptapMock = vi.hoisted(() => {
   const chain = {} as Chain;
   const insertedContent: string[] = [];
-  const cursor = { before: "" };
+  const splitItems: string[] = [];
+  const linkedUrls: string[] = [];
+  const unlinkCalls: string[] = [];
+  const cursor = {
+    before: "",
+    itemText: "",
+    inBullet: false,
+    atEnd: true,
+    selectionEmpty: true,
+  };
+  const linkAttributes: { href?: string } = {};
 
   Object.assign(chain, {
     focus: () => chain,
@@ -32,8 +43,18 @@ const tiptapMock = vi.hoisted(() => {
     toggleBulletList: () => chain,
     toggleOrderedList: () => chain,
     extendMarkRange: () => chain,
-    setLink: () => chain,
-    unsetLink: () => chain,
+    setLink: (attributes: { href: string }) => {
+      linkedUrls.push(attributes.href);
+      return chain;
+    },
+    unsetLink: () => {
+      unlinkCalls.push("unset");
+      return chain;
+    },
+    splitListItem: (type: string) => {
+      splitItems.push(type);
+      return chain;
+    },
     unsetAllMarks: () => chain,
     clearNodes: () => chain,
     undo: () => chain,
@@ -48,15 +69,34 @@ const tiptapMock = vi.hoisted(() => {
   const editor = {
     isActive: vi.fn(() => false),
     getHTML: vi.fn(() => "<p><b>Bold</b></p>"),
-    getAttributes: vi.fn(() => ({})),
+    getAttributes: vi.fn(() => linkAttributes),
     chain: vi.fn(() => chain),
     can: vi.fn(() => ({ undo: () => true, redo: () => true })),
     state: {
       selection: {
+        get empty() {
+          return cursor.selectionEmpty;
+        },
         $from: {
-          parentOffset: 1,
+          get depth() {
+            return cursor.inBullet ? 3 : 1;
+          },
+          get parentOffset() {
+            return cursor.before.length;
+          },
+          node: (index: number) => ({
+            type: {
+              name: index === -1 ? "listItem" : "bulletList",
+            },
+          }),
           parent: {
             textBetween: () => cursor.before,
+            get content() {
+              return { size: cursor.itemText.length };
+            },
+            get textContent() {
+              return cursor.itemText;
+            },
           },
         },
       },
@@ -69,7 +109,11 @@ const tiptapMock = vi.hoisted(() => {
   return {
     editor,
     cursor,
+    linkAttributes,
     insertedContent,
+    splitItems,
+    linkedUrls,
+    unlinkCalls,
     options: {
       current: null as null | {
         onUpdate?: (props: { editor: typeof editor }) => void;
@@ -89,11 +133,24 @@ vi.mock("@tiptap/react", () => ({
   EditorContent: () => <div data-testid="tiptap-editor" />,
 }));
 
+function openHelpers(): void {
+  fireEvent.click(screen.getByRole("button", { name: "Writing helpers" }));
+}
+
 describe("RichTextField", () => {
   beforeEach(() => {
     tiptapMock.insertedContent.length = 0;
+    tiptapMock.splitItems.length = 0;
+    tiptapMock.linkedUrls.length = 0;
+    tiptapMock.unlinkCalls.length = 0;
     tiptapMock.cursor.before = "";
+    tiptapMock.cursor.itemText = "";
+    tiptapMock.cursor.inBullet = false;
+    tiptapMock.cursor.atEnd = true;
+    tiptapMock.cursor.selectionEmpty = true;
+    delete tiptapMock.linkAttributes.href;
     tiptapMock.editor.chain.mockClear();
+    tiptapMock.editor.getAttributes.mockClear();
   });
 
   it("renders the formatting toolbar", () => {
@@ -190,7 +247,7 @@ describe("RichTextField", () => {
     expect(shell).toHaveClass("bg-surface", "border-line", "text-text");
   });
 
-  it("lays out every formatting control on one row in the narrow sidebar", () => {
+  it("keeps all eight controls on one row, scrolling on touch instead of wrapping", () => {
     render(
       <RichTextField
         value=""
@@ -205,22 +262,49 @@ describe("RichTextField", () => {
     const bold = screen.getByRole("button", { name: "Bold" });
     const redo = screen.getByRole("button", { name: "Redo" });
 
-    // Eight compact 28px targets plus 2px gaps fit the ~270px usable width of
-    // the 22rem Content column. Coarse pointers keep 44px targets and wrap;
-    // wrapping is a safety net, never a hidden horizontal scroll strip.
-    expect(toolbar).toHaveClass("flex-wrap", "gap-0.5", "p-0.5");
-    expect(toolbar).not.toHaveClass("flex-nowrap");
-    expect(toolbar).not.toHaveClass("overflow-x-auto");
+    expect(toolbar).toHaveClass(
+      "flex-nowrap",
+      "gap-0.5",
+      "overflow-x-auto",
+      "p-0",
+    );
+    expect(toolbar).not.toHaveClass("flex-wrap");
     expect(toolbar).toContainElement(bold);
     expect(toolbar).toContainElement(redo);
     for (const button of toolbar.querySelectorAll("button")) {
-      expect(button).toHaveClass("min-h-9", "min-w-7", "shrink-0");
-      expect(button).toHaveClass(
-        "pointer-coarse:min-h-11",
-        "pointer-coarse:min-w-11",
-      );
-      expect(button).not.toHaveClass("min-h-11", "min-w-9");
+      // 32px on fine pointers (8 × 32 + gaps fit the 22rem column); 40px on
+      // touch, where the row scrolls rather than leaving Redo on a second row.
+      expect(button).toHaveClass("h-8", "w-8", "shrink-0");
+      expect(button).toHaveClass("pointer-coarse:h-10", "pointer-coarse:w-10");
+      expect(button).not.toHaveClass("min-h-9", "min-w-7");
     }
+  });
+
+  it("shows an optional visible label above the field", () => {
+    const { rerender } = render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Highlights for entry 1"
+        label="Highlights"
+      />,
+    );
+
+    expect(screen.getByText("Highlights")).toHaveClass(
+      "text-sm",
+      "font-medium",
+    );
+    expect(screen.getByText("Highlights").tagName).toBe("SPAN");
+
+    rerender(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description"
+      />,
+    );
+
+    expect(screen.queryByText("Highlights")).not.toBeInTheDocument();
   });
 
   it("renders tappable impact formulas in the helper strip", () => {
@@ -232,6 +316,7 @@ describe("RichTextField", () => {
         actionHelpers
       />,
     );
+    openHelpers();
 
     const group = screen.getByRole("group", {
       name: "Impact bullet formulas",
@@ -304,6 +389,7 @@ describe("RichTextField", () => {
         actionHelpers
       />,
     );
+    openHelpers();
 
     const formulas = screen.getByRole("group", {
       name: "Impact bullet formulas",
@@ -329,6 +415,7 @@ describe("RichTextField", () => {
         actionHelpers
       />,
     );
+    openHelpers();
 
     const group = screen.getByRole("group", {
       name: "Impact bullet formulas",
@@ -345,7 +432,7 @@ describe("RichTextField", () => {
     expect(built).not.toHaveClass("inline-flex");
   });
 
-  it("tucks the writing helpers away so the bullets stay visible", () => {
+  it("starts with Writing helpers collapsed and toggles them open", () => {
     render(
       <RichTextField
         value=""
@@ -356,17 +443,6 @@ describe("RichTextField", () => {
     );
 
     const toggle = screen.getByRole("button", { name: "Writing helpers" });
-    const formulaGroup = screen.getByRole("group", {
-      name: "Impact bullet formulas",
-    });
-
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(toggle).toHaveAttribute(
-      "aria-controls",
-      formulaGroup.parentElement?.id,
-    );
-
-    fireEvent.click(toggle);
 
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(
@@ -376,9 +452,17 @@ describe("RichTextField", () => {
     fireEvent.click(toggle);
 
     expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const formulaGroup = screen.getByRole("group", {
+      name: "Impact bullet formulas",
+    });
+    expect(toggle).toHaveAttribute("aria-controls", formulaGroup.parentElement?.id);
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(
-      screen.getByRole("group", { name: "Impact bullet formulas" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("group", { name: "Impact bullet formulas" }),
+    ).not.toBeInTheDocument();
   });
 
   it("inserts the chosen impact formula followed by a space", () => {
@@ -390,6 +474,7 @@ describe("RichTextField", () => {
         actionHelpers
       />,
     );
+    openHelpers();
 
     fireEvent.click(
       screen.getByRole("button", {
@@ -414,6 +499,7 @@ describe("RichTextField", () => {
         actionHelpers
       />,
     );
+    openHelpers();
 
     fireEvent.click(
       screen.getByRole("button", {
@@ -424,5 +510,173 @@ describe("RichTextField", () => {
     expect(tiptapMock.insertedContent).toEqual([
       " Led [team/project] to deliver [result] ",
     ]);
+  });
+
+  it("splits into a new bullet when a formula follows a finished bullet", () => {
+    tiptapMock.cursor.inBullet = true;
+    tiptapMock.cursor.before = "Shipped the payments API";
+    tiptapMock.cursor.itemText = "Shipped the payments API";
+
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description for entry 1"
+        actionHelpers
+      />,
+    );
+    openHelpers();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Insert impact formula Led [team/project] to deliver [result]",
+      }),
+    );
+
+    expect(tiptapMock.splitItems).toEqual(["listItem"]);
+    expect(tiptapMock.insertedContent).toEqual([
+      "Led [team/project] to deliver [result] ",
+    ]);
+  });
+
+  it("inserts inline when the cursor is mid-bullet or the bullet is empty", () => {
+    tiptapMock.cursor.inBullet = true;
+    tiptapMock.cursor.before = ".";
+    tiptapMock.cursor.itemText = "Half written bullet";
+
+    const { unmount } = render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description for entry 1"
+        actionHelpers
+      />,
+    );
+    openHelpers();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Insert impact formula Led [team/project] to deliver [result]",
+      }),
+    );
+
+    expect(tiptapMock.splitItems).toEqual([]);
+    expect(tiptapMock.insertedContent).toEqual([
+      " Led [team/project] to deliver [result] ",
+    ]);
+    unmount();
+
+    tiptapMock.insertedContent.length = 0;
+    tiptapMock.cursor.before = "";
+    tiptapMock.cursor.itemText = "";
+
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description for entry 1"
+        actionHelpers
+      />,
+    );
+    openHelpers();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Insert impact formula Led [team/project] to deliver [result]",
+      }),
+    );
+
+    expect(tiptapMock.splitItems).toEqual([]);
+    expect(tiptapMock.insertedContent).toEqual([
+      "Led [team/project] to deliver [result] ",
+    ]);
+  });
+
+  it("opens an inline Link bar instead of a browser prompt", () => {
+    const promptSpy = vi.spyOn(window, "prompt").mockReturnValue(null);
+
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description"
+      />,
+    );
+
+    const linkButton = screen.getByRole("button", { name: "Link" });
+    fireEvent.click(linkButton);
+
+    const panel = screen.getByRole("group", { name: "Link URL" });
+    const input = screen.getByRole("textbox", { name: "Link URL" });
+
+    expect(promptSpy).not.toHaveBeenCalled();
+    expect(linkButton).toHaveAttribute("aria-expanded", "true");
+    expect(linkButton).toHaveAttribute("aria-controls", panel.id);
+    expect(input).toHaveValue("https://");
+    expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: "Remove link" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: "https://example.com/cv" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    expect(tiptapMock.linkedUrls).toEqual(["https://example.com/cv"]);
+    expect(screen.queryByRole("group", { name: "Link URL" })).not.toBeInTheDocument();
+    promptSpy.mockRestore();
+  });
+
+  it("offers Remove link when editing an existing link and closes on Escape", () => {
+    tiptapMock.linkAttributes.href = "https://example.com/old";
+
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Link" }));
+
+    expect(screen.getByRole("textbox", { name: "Link URL" })).toHaveValue(
+      "https://example.com/old",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove link" }));
+
+    expect(tiptapMock.unlinkCalls).toEqual(["unset"]);
+    expect(screen.queryByRole("group", { name: "Link URL" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Link" }));
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Link URL" }), { key: "Escape" });
+
+    expect(screen.queryByRole("group", { name: "Link URL" })).not.toBeInTheDocument();
+    expect(tiptapMock.unlinkCalls).toHaveLength(1);
+  });
+
+  it("applies the link on Enter and removes it when the URL is cleared", () => {
+    render(
+      <RichTextField
+        value=""
+        onChange={vi.fn()}
+        ariaLabel="Description"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Link" }));
+    const input = screen.getByRole("textbox", { name: "Link URL" });
+    fireEvent.change(input, { target: { value: "mailto:ada@example.com" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(tiptapMock.linkedUrls).toEqual(["mailto:ada@example.com"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Link" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Link URL" }), {
+      target: { value: "   " },
+    });
+    expect(screen.getByRole("button", { name: "Apply" })).toBeDisabled();
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "Link URL" }), { key: "Enter" });
+
+    expect(tiptapMock.unlinkCalls).toEqual(["unset"]);
+    expect(screen.queryByRole("group", { name: "Link URL" })).not.toBeInTheDocument();
   });
 });

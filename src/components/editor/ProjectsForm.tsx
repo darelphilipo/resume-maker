@@ -192,6 +192,7 @@ export function ProjectsForm() {
             value={item.description}
             onChange={(html) => updateItem(index, "description", html)}
             ariaLabel={`Description for entry ${index + 1}`}
+            label="Highlights"
             placeholder="What the project does and your role"
             actionHelpers
           />

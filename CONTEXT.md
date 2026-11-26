@@ -274,7 +274,10 @@ rediscover.
     Each chip is a `block w-full text-left` button (not a two-column
     `inline-flex`), so a wrapped formula such as
     `Built … improving [outcome]` starts every line at the chip's left edge
-    instead of indenting behind the bold verb. Only achievement-style fields
+    instead of indenting behind the bold verb. At the end of a non-empty bullet
+    the chip now calls `splitListItem("listItem")` first, so a new bullet starts
+    instead of gluing the formula onto the last sentence (see #109). Only
+    achievement-style fields
     (Experience and Projects descriptions) pass the prop — Summary, award notes,
     and reference notes stay prose-only. Keep the helpers local and client-side:
     no AI suggestions, prompts, or network calls.
@@ -387,12 +390,12 @@ rediscover.
     in jsdom; only children *inside* `Drawer.Content` need `fireEvent.click`.
 31. **The 22rem Content sidebar is the layout budget.** Inside the
     `lg:grid-cols-[minmax(0,22rem)_...]` panel the toolbar has ≈270px of usable
-    width after card/entry-card/toolbar padding, so `RichTextField` uses eight
-    `min-h-9 min-w-7 shrink-0` buttons plus `gap-0.5 p-0.5` to keep all controls
-    on one row (≈242px). Coarse pointers keep `pointer-coarse:min-h-11
-    pointer-coarse:min-w-11` targets and wrap. `flex-wrap` stays as a safety net,
-    never `overflow-x-auto`: the old nowrap+overflow row hid Undo/Redo behind an
-    invisible horizontal scroll strip, so users could not see that Redo existed.
+    width after card/entry-card/toolbar padding. `RichTextField` now uses eight
+    `h-8 w-8` targets plus `gap-0.5 p-0` (≈270px exactly) so every control stays
+    on one row; coarse pointers use `pointer-coarse:h-10 pointer-coarse:w-10`
+    inside a nowrap `overflow-x-auto` row rather than wrapping Redo onto a
+    second line. This deliberately supersedes the old "never overflow-x-auto"
+    rule — see #109 for why wrapping was the worse trade-off.
     `EntryActions` is now `flex-wrap gap-1` (see #60): on fine pointers the four
     actions still share one row in the 22rem column, while coarse-pointer 44px
     targets wrap to a second row instead of widening the card. All shared inputs
@@ -742,9 +745,9 @@ rediscover.
     `whitespace-nowrap`; expanded section headers swap the rotated caret for an
     explicit `CaretUp` (`data-chevron="up"`). The `RichTextField` writing-helper
     strip is collapsible through a `Writing helpers` button
-    (`aria-expanded`/`aria-controls`, `data-helper-chevron` on the caret) so a
-    long bullet can stay in view; chips stay mounted when open and keep their
-    `aria-describedby` link to the prompt.
+    (`aria-expanded`/`aria-controls`, `data-helper-chevron` on the caret); it
+    now starts **collapsed** on every section so a long bullet stays in view,
+    and chips stay mounted while open.
 
  53. **Live name edits need a display override ahead of the debounce.** The
      2026-11-19 conclusion that `useDebouncedCommit` already pushed the name on
@@ -1696,6 +1699,28 @@ rediscover.
         existing `openingRecentId` state is the single-flight guard, so a second
         row or title tap cannot start another load while the spinner shows.
 
+   109. **Rich text is labelled, one-row, and prompt-free.** `RichTextField`
+        gained an optional `label` prop rendered above the outer shell with the
+        same `text-sm font-medium` as `TextInput`; Projects passes **Highlights**,
+        Education **Summary**, generic rich fields use their descriptor label
+        (Awards/Volunteer/Publications **Description**, References **Notes**), and
+        Custom passes **Description**. The editor keeps its `ariaLabel` for screen
+        readers. The toolbar is `flex-nowrap overflow-x-auto gap-0.5 p-0` with
+        eight `h-8 w-8` buttons (≈270px, exactly the 22rem column's budget); coarse
+        pointers use `h-10 w-10` and scroll sideways instead of leaving Redo on a
+        second row. That deliberately overturns the old "never overflow-x-auto"
+        rule in #31: wrapping was what stranded Redo inside entry cards. **Writing
+        helpers** starts collapsed (`useState(false)`) in every field. The Link
+        button no longer calls `window.prompt`: it toggles an `aria-controls`-
+        linked inline `role="group"` bar (URL input, Apply, and Remove link only
+        when an `href` exists), applies on Enter/click, and closes on Escape or a
+        second Link tap. Clearing the URL removes the mark. Formulas still insert
+        plain text, but the pure `shouldStartNewBullet` guard
+        (`src/lib/richtext/bulletFormulas.ts`) detects a collapsed caret at the end
+        of a non-empty bullet inside a bullet list; the component then runs
+        `splitListItem("listItem")` before `insertContent`, so the formula begins a
+        real new bullet. jsdom tests assert the commands, not real list geometry.
+
 ## Verification and tooling
 
 ```powershell
@@ -1760,6 +1785,35 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-26 — RichTextField: inline links, one-row toolbar, new-bullet formulas
+- Task: top Queue item (P1), moved to In Progress first; all four sub-items were
+  still open.
+- Change: `window.prompt` became an inline URL bar (URL input + Apply + Remove
+  link when an href exists, Enter/Escape support) below the toolbar. All eight
+  controls now stay on one row — 32px targets on fine pointers, 40px targets in
+  a nowrap horizontal-scroll strip on touch — and `Writing helpers` starts
+  collapsed everywhere. Impact-formula chips call `splitListItem("listItem")`
+  before inserting when tapped at the end of a finished bullet, via the pure
+  `shouldStartNewBullet` guard. A shared `label` prop gives Projects
+  **Highlights**, Education **Summary**, generic rich fields their descriptor
+  label, and Custom **Description** a visible label. Decision #109 supersedes
+  the old no-overflow toolbar rule in #31; README feature tour updated.
+- Tests: new cases for the link bar (no prompt, Apply/Remove/Enter/Escape),
+  one-row toolbar and collapsed helpers, new-bullet vs inline insertion, the
+  pure guard, and visible labels in Projects/Education/generic/Custom.
+  `npm run typecheck` clean; `npm test` 1163 pass across 106 files;
+  `npm run lint` clean.
+- Files: `src/components/editor/RichTextField.tsx` (+ test),
+  `src/lib/richtext/bulletFormulas.ts` (+ test),
+  `src/components/editor/ProjectsForm.tsx` (+ test),
+  `src/components/editor/EducationForm.tsx` (+ test),
+  `src/components/editor/GenericSectionForm.tsx` (+ test),
+  `src/components/editor/CustomSectionForm.tsx` (+ new test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the 390px toolbar geometry and
+  the real TipTap list split are browser-unverified; jsdom asserts the command
+  calls and pure guard instead.
 
 ### 2026-11-26 — Closed the home-page polish bookkeeping
 - Task: the lone In Progress item (P1 Homepage `/` polish). Its code, tests,
@@ -1941,22 +1995,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (1105 pass), `npm run lint` (clean).
   Playwright remains sandbox-blocked, so the 390px bar geometry is unverified.
-
-### 2026-11-25 — Weighted PDF-line parsing finished
-- Task: the in-progress top Queue item (P0), resumed from an uncommitted
-  checkpoint: OpenResume-style feature scoring + PDF-line-aware paste parser.
-- Change: verified and kept the existing `featureScoring.ts`, `Line` metadata
-  normalization, heading/description/subsection heuristics, all 13 wired
-  sections, and `parsePdfResume`'s structured-lines-first call. Extended
-  `GRADE_TEXT` with a bare `0-4.x` grade so a lone `3.8` scores as a grade.
-  Added two-column Canva and unlabelled-summary/certifications/awards PDF-line
-  regressions plus scoring cases for `Company as Title`, `Completed in 2018`,
-  and bare grades. Decision #100; README PDF-import copy updated. 1100 pass.
-- Files: `src/lib/import/featureScoring.ts` (+ test),
-  `src/lib/import/pasteResume.test.ts`, `src/lib/import/pdfResume.ts`,
-  `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1100 pass), `npm run lint` (clean).
-  Playwright remains sandbox-blocked; the new cases are pure/unit-level.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

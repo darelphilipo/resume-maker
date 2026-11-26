@@ -231,6 +231,7 @@ export function EducationForm() {
             value={item.summary}
             onChange={(html) => updateItem(index, "summary", html)}
             ariaLabel={`Description for entry ${index + 1}`}
+            label="Summary"
             placeholder="Thesis, honours, or relevant coursework"
           />
           <EntryActions

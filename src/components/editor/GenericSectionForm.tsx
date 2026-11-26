@@ -305,6 +305,7 @@ export function GenericSectionForm({
           value={stringValue(item[field.key])}
           onChange={(html) => updateItem(index, field.key, html)}
           ariaLabel={`${field.label} for entry ${index + 1}`}
+          label={field.label}
           placeholder={field.placeholder}
         />
       );
