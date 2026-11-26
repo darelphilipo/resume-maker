@@ -61,6 +61,12 @@ _empty
      - When Page 2+ begins with bullets before any new bold/dated role header, append them to the prior page's last Experience entry instead of starting an untitled role.
 
 
+- [ ] P2: Improve `Fit to 1 Page` scaling math so fitted resumes stay larger, fuller, and readable (`src/lib/pagination/fitScale.ts`, `src/lib/pagination/usePageLayout.ts`, `src/templates/shared/templateTheme.ts`, `src/components/preview/LiveCanvasViewport.tsx`).
+  1. **Damped scaling curve (`fitScale.ts`):** Replace the linear `contentHeightPx / totalHeightPx` ratio with a damped exponent (`Math.pow(contentHeightPx / totalHeightPx, 0.72) * currentFitScale * FIT_HEADROOM`) so prose-heavy resumes don't over-shrink and leave an unnecessary blank gap at the bottom of Page 1.
+  2. **Reclaim vertical margin gently & enforce an `8pt` body floor (`templateTheme.ts`, `fitScale.ts`):** When `fitScale < 1`, gently scale `--page-margin-y` proportionally down to a `32pt` minimum floor (keeping print margins clean while letting more resumes fit on 1 page without shrinking fonts as aggressively), and compute the minimum scale floor as `Math.max(MIN_FIT_SCALE, 8 / bodyFontSize)` so smaller-font templates (`Compact 1-Pager`) never drop below `8pt`.
+  3. **Surface current scale on `Reset`:** Show the active scale percentage in the `Reset` tooltip/title (e.g., `"Reset fit (86% → 100%)"`) and auto-reset `fitScale` back to `1` if the user deletes enough content that `totalHeightPx / fitScale` fits cleanly on 1 page at `100%`.
+
+
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
