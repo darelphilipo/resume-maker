@@ -52,6 +52,20 @@ describe("EducationForm", () => {
     vi.useRealTimers();
   });
 
+  it("uses region-neutral location and grade placeholders", () => {
+    setup([makeItem("edu-1")]);
+    render(<EducationForm />);
+
+    expect(screen.getByLabelText("Location")).toHaveAttribute(
+      "placeholder",
+      "City, Country",
+    );
+    expect(screen.getByLabelText("Grade")).toHaveAttribute(
+      "placeholder",
+      "3.8 GPA / 8.5 CGPA",
+    );
+  });
+
   it("sorts schools newest first and hides the button once ordered", () => {
     setup([
       makeItem("edu-1", {

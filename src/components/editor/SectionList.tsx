@@ -79,7 +79,7 @@ const SECTION_HEADER_ACTION_CLASS =
 
 /** Shared surface for the footer actions that still need a text label. */
 const SECTION_ACTION_CLASS =
-  "flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-lg border border-black/10 px-2 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent";
+  "flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-black/10 px-2 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent";
 
 /**
  * jsdom does not implement pointer capture, so every capture call is guarded.
@@ -683,7 +683,7 @@ export function SectionList({
                         onClick={() =>
                           onOpenSection({ id: row.id, title: row.title })
                         }
-                        className={`${SECTION_ACTION_CLASS} lg:hidden`}
+                        className={`${SECTION_ACTION_CLASS} col-span-2 lg:hidden`}
                       >
                         Open section editor
                       </button>

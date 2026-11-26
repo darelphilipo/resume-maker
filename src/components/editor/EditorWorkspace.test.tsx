@@ -401,9 +401,13 @@ describe("EditorWorkspace", () => {
     await renderReadyWorkspace();
 
     const toggle = screen.getByRole("button", { name: /^Basics/ });
+    const label = screen.getByText("Basics");
 
     expect(toggle).toHaveClass("min-h-11");
     expect(toggle).not.toHaveClass("py-2");
+    // The collapsed label reads like a section title, not a muted eyebrow.
+    expect(label).toHaveClass("text-sm", "font-medium");
+    expect(label).not.toHaveClass("uppercase", "text-muted", "text-xs");
   });
 
   it("gives Bullet polish and Match JD matching quiet pill styling", async () => {

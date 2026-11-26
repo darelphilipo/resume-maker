@@ -25,6 +25,7 @@ import {
   parseMonthInput,
   toMonthValue,
 } from "@/lib/date/month";
+import { useResumeStore } from "@/lib/store/useResumeStore";
 const INPUT_CLASS =
   "min-h-11 w-full min-w-0 max-w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-text caret-primary transition-colors placeholder:text-muted placeholder:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:bg-surface-muted disabled:text-muted";
 
@@ -615,44 +616,52 @@ export function EntryActions({
   }
 
   return (
-    <div ref={rootRef} className="flex min-w-0 flex-wrap items-center gap-1">
-      {onToggleHidden ? (
+    <div
+      ref={rootRef}
+      className="flex min-w-0 flex-nowrap items-center justify-between gap-1"
+    >
+      {/* Icon-only controls keep the eye/up/down group on one row at 390px,
+          leaving the labelled Delete action its own space on the right. */}
+      <div className="flex min-w-0 items-center gap-1">
+        {onToggleHidden ? (
+          <button
+            type="button"
+            aria-label={`${hidden ? "Show" : "Hide"} entry ${entryNumber}`}
+            aria-pressed={hidden}
+            title={hidden ? "Show this entry" : "Hide this entry"}
+            onClick={onToggleHidden}
+            className={ACTION_BUTTON_CLASS}
+          >
+            {hidden ? (
+              <EyeSlash size={16} aria-hidden />
+            ) : (
+              <Eye size={16} aria-hidden />
+            )}
+          </button>
+        ) : null}
         <button
+          ref={upRef}
           type="button"
-          aria-label={`${hidden ? "Show" : "Hide"} entry ${entryNumber}`}
-          aria-pressed={hidden}
-          onClick={onToggleHidden}
+          aria-label={`Move up entry ${entryNumber}`}
+          title="Move this entry up"
+          disabled={index === 0}
+          onClick={() => handleMove(-1)}
           className={ACTION_BUTTON_CLASS}
         >
-          {hidden ? (
-            <EyeSlash size={16} aria-hidden />
-          ) : (
-            <Eye size={16} aria-hidden />
-          )}
+          <ArrowUp size={16} aria-hidden />
         </button>
-      ) : null}
-      <button
-        ref={upRef}
-        type="button"
-        aria-label={`Move up entry ${entryNumber}`}
-        disabled={index === 0}
-        onClick={() => handleMove(-1)}
-        className={ACTION_BUTTON_CLASS}
-      >
-        <ArrowUp size={16} aria-hidden />
-        <span>Up</span>
-      </button>
-      <button
-        ref={downRef}
-        type="button"
-        aria-label={`Move down entry ${entryNumber}`}
-        disabled={index === total - 1}
-        onClick={() => handleMove(1)}
-        className={ACTION_BUTTON_CLASS}
-      >
-        <ArrowDown size={16} aria-hidden />
-        <span>Down</span>
-      </button>
+        <button
+          ref={downRef}
+          type="button"
+          aria-label={`Move down entry ${entryNumber}`}
+          title="Move this entry down"
+          disabled={index === total - 1}
+          onClick={() => handleMove(1)}
+          className={ACTION_BUTTON_CLASS}
+        >
+          <ArrowDown size={16} aria-hidden />
+        </button>
+      </div>
       <button
         type="button"
         aria-label={`Delete entry ${entryNumber}`}
@@ -660,7 +669,7 @@ export function EntryActions({
         className={DELETE_BUTTON_CLASS}
       >
         <Trash size={16} aria-hidden />
-        <span>Delete</span>
+        <span className="whitespace-nowrap">Delete</span>
       </button>
     </div>
   );
@@ -684,7 +693,7 @@ export function AddEntryButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+      className="inline-flex min-h-11 w-fit shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
     >
       <Plus size={16} aria-hidden />
       <span>Add entry</span>
@@ -699,12 +708,23 @@ export function ClearSectionButton({
   disabled: boolean;
   onClick: () => void;
 }) {
+  // Only starter presets carry sample content. Imported, restored, or blank
+  // resumes have nothing to clear, so this secondary action stays hidden
+  // instead of reading as a destructive "delete every entry" button.
+  const hasSampleData = useResumeStore(
+    (state) => state.doc.metadata.sampleData === true,
+  );
+
+  if (!hasSampleData) {
+    return null;
+  }
+
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent"
+      className="inline-flex min-h-11 w-fit shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-black/10 px-3 py-2 text-sm font-medium transition-colors hover:border-black/30 active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-30 disabled:hover:border-black/10 disabled:hover:bg-transparent"
     >
       <Trash size={16} aria-hidden />
       <span>Clear sample data</span>

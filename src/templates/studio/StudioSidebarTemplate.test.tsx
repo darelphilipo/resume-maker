@@ -8,7 +8,9 @@ import { encodeEntryBlock } from "@/lib/pagination/blockIds";
 import { HEADER_BLOCK_ID } from "@/lib/pagination/constants";
 import {
   getSectionPlans,
+  planBlockKeys,
   planFragmentKeys,
+  planMeasureKeys,
 } from "@/lib/pagination/sectionPlans";
 import {
   usePageLayout,
@@ -287,6 +289,114 @@ describe("StudioSidebarTemplate", () => {
     ).toBeInTheDocument();
     expect(within(secondMain as HTMLElement).getByText("Best Paper")).toBeInTheDocument();
     expect(second.queryByText("Cloud Architect")).toBeNull();
+  });
+
+  it("renders a two-item Awards section on Page 2 without dropping a block", () => {
+    const doc = createEmptyResume("gengar");
+    doc.metadata.page.gapY = 0;
+    doc.summary.content = "<p>Impact-driven engineer.</p>";
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "exp-1",
+        company: "Analytical Engines",
+        position: "Engineer",
+      }),
+    ];
+    doc.sections.education.items = [
+      EducationItemSchema.parse({
+        id: "edu-1",
+        school: "Analytical University",
+        degree: "BSc",
+      }),
+    ];
+    doc.sections.skills.items = [
+      SkillItemSchema.parse({
+        id: "skill-1",
+        name: "Languages",
+        keywords: ["TypeScript"],
+      }),
+    ];
+    doc.sections.certifications.items = [
+      CertificationItemSchema.parse({
+        id: "cert-1",
+        name: "Cloud Architect",
+        issuer: "Example Institute",
+      }),
+    ];
+    doc.sections.awards.items = [
+      AwardItemSchema.parse({
+        id: "award-1",
+        title: "Best Paper",
+        awarder: "ACM",
+      }),
+      AwardItemSchema.parse({
+        id: "award-2",
+        title: "Engineering Excellence",
+        awarder: "Analytical Engines",
+      }),
+    ];
+
+    const order = doc.metadata.layout.pages[0].main;
+    const plans = getSectionPlans(doc, order);
+    const awardsPlan = plans.find((plan) => plan.sectionId === "awards");
+
+    expect(awardsPlan).toBeDefined();
+
+    const awardsKeys = planBlockKeys(awardsPlan!);
+    const heights: Record<string, number> = {};
+
+    for (const key of plans.flatMap(planMeasureKeys)) {
+      heights[key] = 120;
+    }
+
+    // Summary + Experience fill Page 1's main column; Education then Awards
+    // continue on Page 2. Every injected height is positive, so a block that
+    // silently measured at 0 would be dropped by buildPackBlocks.
+    heights.summary = 300;
+    heights.experience = 420;
+    heights.education = 320;
+    heights.skills = 200;
+    heights.certifications = 200;
+
+    for (const key of awardsKeys) {
+      heights[key] = 110;
+    }
+
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights,
+    });
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+    const pages = result.current.pages;
+
+    expect(pages).toHaveLength(2);
+    expect(pages[0]).not.toContain("awards");
+
+    for (const key of awardsKeys) {
+      expect(heights[key]).toBeGreaterThan(0);
+      expect(pages[1]).toContain(key);
+    }
+
+    expect(pages.flat()).toEqual(expect.arrayContaining(awardsKeys));
+
+    const second = render(
+      <StudioSidebarTemplate doc={doc} pages={pages} pageIndex={1} />,
+    );
+    const secondMain =
+      second.container.querySelector<HTMLElement>(".studio-main");
+
+    expect(secondMain).not.toBeNull();
+    expect(
+      within(secondMain as HTMLElement).getByRole("heading", {
+        name: "Awards",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(secondMain as HTMLElement).getByText("Best Paper"),
+    ).toBeInTheDocument();
+    expect(
+      within(secondMain as HTMLElement).getByText("Engineering Excellence"),
+    ).toBeInTheDocument();
   });
 
   it("fills Page 1's lower-left gap with a tall first entry's first bullets", () => {

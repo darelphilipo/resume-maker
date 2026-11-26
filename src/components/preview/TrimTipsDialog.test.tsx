@@ -40,7 +40,7 @@ describe("TrimTipsDialog", () => {
     expect(screen.getByText(/trimming them can reclaim 3 lines/)).toBeVisible();
   });
 
-  it("caps the visible list and reports the remainder", () => {
+  it("caps the visible list behind a Show all toggle", () => {
     const issues = Array.from({ length: 7 }, (_, index) =>
       analyzeBulletLines([
         `Shipped the onboarding flow for customer segment ${index}`,
@@ -58,7 +58,20 @@ describe("TrimTipsDialog", () => {
       />,
     );
 
-    expect(screen.getByText("+2 more")).toBeVisible();
+    expect(screen.getAllByText("1-word line")).toHaveLength(5);
+
+    const showAll = screen.getByRole("button", { name: "Show all (7)" });
+
+    expect(showAll).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(showAll);
+
+    expect(screen.getAllByText("1-word line")).toHaveLength(7);
+    expect(
+      screen.getByRole("button", { name: "Show fewer" }),
+    ).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Show fewer" }));
+
     expect(screen.getAllByText("1-word line")).toHaveLength(5);
   });
 
@@ -99,6 +112,10 @@ describe("TrimTipsDialog", () => {
     });
 
     expect(tip).toHaveAttribute("title", "Open this bullet in the editor");
+    expect(tip).toHaveClass("hover:bg-black/5", "active:bg-black/10");
+    expect(
+      tip.querySelector("[data-trim-tip-chevron]"),
+    ).toHaveTextContent("›");
     expect(screen.getByText(/Tap a tip to open that bullet/)).toBeVisible();
 
     fireEvent.click(tip);

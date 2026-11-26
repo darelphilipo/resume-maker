@@ -87,7 +87,7 @@ describe("SectionFormControls", () => {
     expect(screen.getByText("Month is enough.")).toHaveClass("text-muted");
   });
 
-  it("keeps entry actions compact and wraps them instead of overflowing", () => {
+  it("keeps entry actions on one compact row with Delete on the right", () => {
     render(
       <EntryActions
         index={0}
@@ -101,12 +101,21 @@ describe("SectionFormControls", () => {
     const up = screen.getByRole("button", { name: "Move up entry 1" });
     const down = screen.getByRole("button", { name: "Move down entry 1" });
     const remove = screen.getByRole("button", { name: "Delete entry 1" });
-    const row = up.parentElement;
+    const row = remove.parentElement;
 
-    // Four 44px coarse-pointer targets do not fit the inner width of an entry
-    // card at 390px; wrapping keeps the card from widening past the viewport.
-    expect(row).toHaveClass("flex", "flex-wrap", "min-w-0", "items-center");
-    expect(row).not.toHaveClass("flex-nowrap");
+    // Icon-only Up/Down keep the eye/up/down group and the labelled Delete on
+    // one nowrap row at 390px instead of wrapping Delete alone onto row two.
+    expect(row).toHaveClass(
+      "flex",
+      "flex-nowrap",
+      "min-w-0",
+      "items-center",
+      "justify-between",
+    );
+    expect(row).not.toHaveClass("flex-wrap");
+    expect(screen.queryByText("Up")).not.toBeInTheDocument();
+    expect(screen.queryByText("Down")).not.toBeInTheDocument();
+    expect(remove).toHaveTextContent("Delete");
 
     for (const button of [up, down, remove]) {
       expect(button).toHaveClass(

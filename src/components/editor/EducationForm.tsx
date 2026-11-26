@@ -196,7 +196,7 @@ export function EducationForm() {
             value={item.location}
             onChange={(value) => updateItem(index, "location", value)}
             autoComplete="address-level2"
-            placeholder="Berlin, Germany"
+            placeholder="City, Country"
           />
           <div className="grid gap-3">
             <MonthSelect
@@ -225,7 +225,7 @@ export function EducationForm() {
             label="Grade"
             value={item.grade}
             onChange={(value) => updateItem(index, "grade", value)}
-            placeholder="1.3"
+            placeholder="3.8 GPA / 8.5 CGPA"
           />
           <RichTextField
             value={item.summary}

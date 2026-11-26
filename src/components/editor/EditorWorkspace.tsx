@@ -500,7 +500,7 @@ export function EditorWorkspace() {
                       className="shrink-0 opacity-60"
                     />
                   )}
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  <span className="min-w-0 truncate text-sm font-medium leading-snug">
                     Basics
                   </span>
                   <span className="ml-auto min-w-0 truncate text-xs font-normal text-muted">

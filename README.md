@@ -313,7 +313,9 @@ in control of every line, and your data stays on your device.
   block, the preview counts it. Open **Review** and tap **Trim tips (N)** to see a
   dismissible list with each bullet's opening words and a plain-language reason;
   it covers the preview only while open, so the resume stays fully readable on a
-  phone. Tap any tip to jump straight to that bullet: the editor opens
+  phone. If the list is long, **Show all** reveals every flagged bullet, and
+  **Show fewer** tucks the extras away again. Tap any tip to jump straight to
+  that bullet: the editor opens
   **Content**, expands the right section, and scrolls the entry into view so you
   can cut the stray words immediately. Trimming those bullets can reclaim whole
   lines before you shrink the font or spill onto a second page.

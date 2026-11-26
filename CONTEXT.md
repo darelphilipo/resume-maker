@@ -1624,9 +1624,9 @@ rediscover.
         template/layout/design/headings and flipping the flag off. The `⋮`
         menu (`ExportJsonButton`) commits that returned document through one
         `patchDoc`, so a single Zundo undo restores every sample entry. Do not
-        guess sample status from names/emails (users edit those), and keep the
-        per-section `ClearSectionButton` unchanged — it clears any section's
-        entries, not just a starter preset's.
+        guess sample status from names/emails (users edit those). The
+        per-section `ClearSectionButton` is now gated on the same flag (#107);
+        it is not a general "delete every entry" control.
 
    105. **Trim tips jump through rendered ids, not a parallel lookup.**
         `scanBulletLint` reads `data-section-id` and `data-entry-id` off the
@@ -1661,12 +1661,32 @@ rediscover.
         drive `fireEvent.pointerDown/Move/Up`. The collapsed section row and the
         Basics header are both `min-h-11` with no extra vertical padding, and the
         title/count pair is `min-w-0 truncate` + `shrink-0 whitespace-nowrap`.
+        The collapsed Basics label is Title Case at `text-sm font-medium`
+        (matching the section rows), not a muted uppercase eyebrow.
+
+   107. **Entry actions stay on one row, and sample clearing is preset-only.**
+        `EntryActions` keeps the eye/up/down group on the left as icon-only
+        buttons and the labelled `Delete` on the right inside a `flex-nowrap
+        justify-between` row, so a 390px card never wraps `Delete` alone onto a
+        second line. Up/Down still carry their full `aria-label`s and gain
+        `title` tooltips; do not restore the visible "Up"/"Down" words without
+        re-checking the 44px coarse-pointer targets. Footer buttons
+        (`AddEntryButton`, `ClearSectionButton`, `SECTION_ACTION_CLASS`) use
+        `whitespace-nowrap` so a narrow column wraps a whole button, never its
+        label mid-phrase; the mobile drawer trigger spans both footer columns.
+        `ClearSectionButton` renders only when `metadata.sampleData === true`
+        (#104), because an imported/restored/blank resume has no sample content
+        and the old label read as a destructive clear-all. Trim tips likewise
+        expose every flagged bullet: each clickable tip shows a muted `›`
+        chevron plus `active:bg-black/10`, and the capped list ends in a
+        `Show all (N)` / `Show fewer` toggle (`aria-expanded`) instead of the
+        non-interactive `+N more` line.
 
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~1142 tests
+npm test               # vitest, ~1145 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1726,6 +1746,35 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-26 — Final mobile UX polish (Basics, entry actions, trim tips)
+- Task: the lone Queue item (P1), moved to In Progress first. All five sub-items
+  were still open in the tree.
+- Change: the collapsed Basics header now reads Title Case at section-title
+  weight. `EntryActions` is one nowrap row — icon-only eye/up/down on the left,
+  labelled Delete on the right — and footer buttons never wrap their label
+  mid-phrase; the mobile drawer trigger spans both footer columns.
+  `ClearSectionButton` renders only for `metadata.sampleData` resumes, so
+  imported/blank resumes no longer show a misleading "Clear sample data".
+  Education uses `City, Country` / `3.8 GPA / 8.5 CGPA` placeholders. Trim tips
+  gained a muted `›` chevron, `active:bg-black/10`, and a `Show all (N)` /
+  `Show fewer` toggle instead of the dead `+N more` line. Decision #107; #104
+  updated. README Trim tips copy updated.
+- Tests: new nowrap/icon-only action row, preset-only clear, neutral Education
+  placeholders, Title Case Basics, Show-all toggle/chevron, and a two-item
+  Awards Page-2 Studio Sidebar case that asserts every awards block has a
+  positive injected height and lands in `pages[1]`. `npm run typecheck` clean;
+  `npm test` 1145 pass across 105 files.
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/SectionFormControls.tsx` (+ test),
+  `src/components/editor/SectionList.tsx`,
+  `src/components/editor/EducationForm.tsx` (+ test),
+  `src/components/editor/ExperienceForm.test.tsx`,
+  `src/components/preview/TrimTipsDialog.tsx` (+ test),
+  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the 390px row geometry is
+  browser-unverified.
 
 ### 2026-11-26 — Folded the scratch pagination harness into `computePages.test.ts`
 - Task: Inbox, In Progress, and Queue were all empty, so this run followed the
@@ -1904,15 +1953,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/lib/import/pdfResume.ts`, `src/components/launcher/launcher.test.tsx`,
   `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (1076 pass).
-
-### 2026-11-24 — Finalized the launcher/AI-rescue checkpoint
-- Task: resumed the In Progress launcher redesign. The code, tests, README, and
-  Decisions #21/#23/#40/#98 were already in the tree and correct; only the
-  task bookkeeping was stale.
-- Change: re-ran the gates instead of re-implementing, then moved the item to
-  Done with its file list and cleared the duplicated Queue entry.
-- Verified: `npm run typecheck`, `npm test` (1061 pass), `npm run lint` (clean).
-- Files: `TASKS.md`, `CONTEXT.md`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

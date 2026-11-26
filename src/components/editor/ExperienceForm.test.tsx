@@ -35,10 +35,14 @@ function makeItem(
   };
 }
 
-function setup(items: ExperienceItem[]): void {
+function setup(
+  items: ExperienceItem[],
+  options: { sampleData?: boolean } = {},
+): void {
   resetResumeStore();
   const doc = createEmptyResume();
   doc.sections.experience.items = items;
+  doc.metadata.sampleData = options.sampleData === true;
   useResumeStore.setState({ doc });
 }
 
@@ -187,10 +191,13 @@ describe("ExperienceForm", () => {
   });
 
   it("clears sample data and disables the button when empty", () => {
-    setup([
-      makeItem("exp-1", { company: "Acme" }),
-      makeItem("exp-2", { company: "Beta" }),
-    ]);
+    setup(
+      [
+        makeItem("exp-1", { company: "Acme" }),
+        makeItem("exp-2", { company: "Beta" }),
+      ],
+      { sampleData: true },
+    );
     render(<ExperienceForm />);
 
     const clear = screen.getByRole("button", { name: "Clear sample data" });
@@ -208,6 +215,18 @@ describe("ExperienceForm", () => {
     expect(
       screen.getByRole("button", { name: "Clear sample data" }),
     ).toBeDisabled();
+  });
+
+  it("hides Clear sample data on an imported or blank resume", () => {
+    setup([makeItem("exp-1", { company: "Acme" })]);
+    render(<ExperienceForm />);
+
+    expect(
+      screen.queryByRole("button", { name: "Clear sample data" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Add entry" }),
+    ).toBeInTheDocument();
   });
 
   it("hides an entry with the eye toggle instead of deleting it", () => {

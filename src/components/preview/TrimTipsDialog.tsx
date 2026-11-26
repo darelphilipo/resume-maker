@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "@phosphor-icons/react";
+import { useState } from "react";
 
 import { CenteredModal } from "@/components/shared/CenteredModal";
 import type { BulletIssue, BulletLintReport } from "@/lib/lint/bulletMetrics";
@@ -30,6 +31,11 @@ export function TrimTipsDialog({
   /** Jump to the editor entry that owns the bullet. Omit for a read-only list. */
   onSelectIssue?: (issue: BulletIssue) => void;
 }) {
+  const [showAll, setShowAll] = useState(false);
+  const visibleIssues = showAll
+    ? report.issues
+    : report.issues.slice(0, MAX_LISTED_ISSUES);
+
   return (
     <CenteredModal open onClose={onClose} titleId={titleId}>
       <div data-bullet-trim-tips="">
@@ -57,7 +63,7 @@ export function TrimTipsDialog({
           </p>
         ) : null}
         <ul className="mt-2 space-y-1.5">
-          {report.issues.slice(0, MAX_LISTED_ISSUES).map((issue, index) => {
+          {visibleIssues.map((issue, index) => {
             const content = (
               <>
                 <span className="mt-0.5 shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
@@ -80,9 +86,16 @@ export function TrimTipsDialog({
                     type="button"
                     title="Open this bullet in the editor"
                     onClick={() => onSelectIssue(issue)}
-                    className="flex w-full items-start gap-1.5 rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    className="flex w-full items-start gap-1.5 rounded-lg px-1 py-1 text-left transition-colors hover:bg-black/5 active:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:min-h-11"
                   >
                     {content}
+                    <span
+                      aria-hidden
+                      data-trim-tip-chevron=""
+                      className="ml-auto shrink-0 pl-1 text-base leading-none text-muted"
+                    >
+                      ›
+                    </span>
                   </button>
                 ) : (
                   <div className="flex items-start gap-1.5">{content}</div>
@@ -92,7 +105,16 @@ export function TrimTipsDialog({
           })}
         </ul>
         {hiddenCount > 0 ? (
-          <p className="mt-1.5 text-[11px] text-muted">+{hiddenCount} more</p>
+          <button
+            type="button"
+            aria-expanded={showAll}
+            onClick={() => setShowAll((open) => !open)}
+            className="mt-2 inline-flex min-h-9 items-center rounded-lg px-1.5 text-[11px] font-medium text-primary transition-colors hover:bg-black/5 active:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:min-h-11"
+          >
+            {showAll
+              ? "Show fewer"
+              : `Show all (${report.issues.length})`}
+          </button>
         ) : null}
       </div>
     </CenteredModal>
