@@ -97,7 +97,7 @@ describe("GenericSectionForm profiles", () => {
 
     expect(screen.getByLabelText("Profile URL")).toHaveAttribute(
       "placeholder",
-      "Paste GitHub or LinkedIn URL — auto-fills below",
+      "Paste GitHub or LinkedIn URL",
     );
     expect(screen.getByLabelText("Network")).toBeInTheDocument();
     expect(screen.queryByLabelText("Icon")).toBeNull();

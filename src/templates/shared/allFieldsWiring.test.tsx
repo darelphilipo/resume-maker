@@ -187,6 +187,7 @@ function buildWiringDocument(): ResumeDocument {
       url: SENTINEL.projects.url,
       startDate: "2015-05",
       endDate: "2016-06",
+      current: false,
       keywords: [SENTINEL.projects.keyword],
     },
   ];

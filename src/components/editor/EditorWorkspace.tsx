@@ -528,6 +528,8 @@ export function EditorWorkspace() {
               onOpenSection={setDrawerSection}
               openSectionId={drawerSection?.id ?? null}
               focusSection={sectionFocus}
+              basicsOpen={basicsOpen}
+              onCollapseBasics={() => setBasicsOpen(false)}
             />
           </div>
         </section>

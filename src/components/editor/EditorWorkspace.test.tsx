@@ -397,6 +397,25 @@ describe("EditorWorkspace", () => {
     expect(screen.getByLabelText("Name")).toBeVisible();
   });
 
+  it("closes Basics together with the sections from Collapse all", async () => {
+    await renderReadyWorkspace();
+
+    const basics = screen.getByRole("button", { name: /^Basics/ });
+    fireEvent.click(basics);
+    fireEvent.click(screen.getByRole("button", { name: /^Summary/ }));
+
+    const collapseAll = screen.getByRole("button", { name: "Collapse all" });
+    fireEvent.click(collapseAll);
+
+    expect(basics).toHaveAttribute("aria-expanded", "false");
+    expect(document.getElementById("basics-body")).toHaveAttribute("hidden");
+    expect(screen.getByRole("button", { name: /^Summary/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(screen.queryByRole("button", { name: "Collapse all" })).toBeNull();
+  });
+
   it("gives the collapsed Basics header the same 44px row height as a section", async () => {
     await renderReadyWorkspace();
 

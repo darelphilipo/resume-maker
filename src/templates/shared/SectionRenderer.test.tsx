@@ -9,6 +9,7 @@ import {
 } from "@/lib/pagination/blockIds";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
+  CustomSectionSchema,
   ExperienceItemSchema,
   ProfileItemSchema,
   ProjectItemSchema,
@@ -225,6 +226,52 @@ describe("SectionRenderer", () => {
     expect(
       container.querySelectorAll(".resume-entry-keep-together"),
     ).toHaveLength(2);
+  });
+
+  it("strips scheme and www from Project and custom URL labels", () => {
+    const doc = createEmptyResume();
+    doc.sections.projects.items = [
+      ProjectItemSchema.parse({
+        id: "p1",
+        name: "Ledger API",
+        url: "https://www.example.com/projects/ledger?ref=home#top",
+        keywords: ["TypeScript"],
+      }),
+    ];
+    doc.customSections = [
+      CustomSectionSchema.parse({
+        id: "custom-links",
+        title: "Links",
+        items: [
+          {
+            id: "c1",
+            hidden: false,
+            name: "Talk",
+            description: "",
+            date: "",
+            location: "Remote",
+            url: "https://www.example.com/talks/scaling/",
+          },
+        ],
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={["projects", "custom-links"]}
+      />,
+    );
+
+    const subtitles = Array.from(
+      container.querySelectorAll(".resume-entry-subtitle"),
+    ).map((node) => node.textContent);
+
+    expect(subtitles).toEqual([
+      "example.com/projects/ledger · TypeScript",
+      "Remote · example.com/talks/scaling",
+    ]);
+    expect(screen.queryByText(/https:\/\/|www\./)).not.toBeInTheDocument();
   });
 
   it("renders a split section's entries as one section with the heading on the first block", () => {

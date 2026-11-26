@@ -24,11 +24,6 @@ _empty
 
 ### P1 — Page 2 (Content Tab) Fixes & Consistency
 
-- [ ] P1: Fix Page 2 section consistency (`Clear sample data`, URL stripping, `Projects` `Present`, `Collapse all`, `Match JD` dedup, placeholders) (`src/components/editor/SectionList.tsx`, `src/components/editor/ProjectsForm.tsx`, `src/components/editor/sectionFields.ts`, `src/templates/shared/SectionRenderer.tsx`, `src/lib/keywords/jdMatch.ts`).
-  1. **Clean up `Clear sample data`:** Only show `Clear sample data` when the resume/section actually contains unedited preset sample data—never show it (enabled or disabled) on newly added optional sections, custom sections, or PDF-imported resumes.
-  2. **Consistent URL display & `Projects` `Present`:** Strip `https://` / `www.` consistently across `Projects` and `Custom` URLs in `SectionRenderer.tsx` (matching `Certifications` & `Publications`), and add a `Present` checkbox to `Projects` `End date` (matching `Experience`, `Education`, and `Volunteer`).
-  3. **Polish rough edges:** Shorten `Profiles` `Profile URL` placeholder so it doesn't truncate mid-sentence (`"Paste GitHub or LinkedIn URL"`), update `Volunteer` `Location` placeholder from `"Berlin, Germany"` to `"City, Country"`, include `Basics` in `Collapse all` (both count and action), deduplicate stemmed variants in `Match JD` (`build` / `building` shown once), and add subtle min/max labels (`None` — `Native`) on the `Languages` `0–5` `Level` slider.
-
 - [ ] P1: Fix `Anonymize` leaking `REFERENCES`, add desktop Preview zoom buttons, and scroll `Trim tips` to the exact bullet (`src/lib/privacy/anonymizeDoc.ts`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/lib/preview/scanHighlight.ts`).
   1. **Redact `REFERENCES` in `anonymizeResumeDoc`:** Replace reference `name` (`"Reference A"`), `company`, `position`, `phone` (`"+1 (555) 010-0101"`), and `email` (`"reference@example.com"`) in both Visual Preview and `ATS` view so personal contact details never leak.
   2. **Desktop zoom controls (`lg:` only):** Add a compact floating `- | 100% | +` zoom pill in the bottom-right corner of the Preview canvas on desktop (`hidden lg:flex`, with `Reset` when zoomed) so mouse-only and keyboard users can zoom without needing to discover `Ctrl + Wheel`, keeping mobile unchanged with pinch-to-zoom + floating `Reset`.
@@ -44,6 +39,27 @@ _empty
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-26 — Finished the Page 2 section-consistency sweep. `Clear sample
+  data` now requires both the `metadata.sampleData` flag and actual content in
+  that section, and is gone entirely from custom sections, so newly revealed
+  optional sections and imported/blank resumes never show a disabled clear-all.
+  `SectionRenderer` strips scheme/`www.` from Project and custom URL labels via
+  one shared `urlLabel` helper; Projects gained a `current` flag with an End-date
+  **Present** toggle (mirrored in Visual, ATS, and sorting). Placeholders are
+  now `Paste GitHub or LinkedIn URL` / `City, Country`, **Collapse all** counts
+  and closes the Basics accordion too, `Match JD` shows one keyword per stemmed
+  root, and the Languages level slider reads `None — Native`. Verified
+  `npm run typecheck`, `npm test` (1172 pass, 106 files), `npm run lint`. Files:
+  `src/components/editor/SectionFormControls.tsx` (+ test), `SectionList.tsx`
+  (+ test), `EditorWorkspace.tsx` (+ test), `ProjectsForm.tsx` (+ test),
+  `SummaryForm.tsx`, `ExperienceForm.tsx` (+ test), `EducationForm.tsx`,
+  `SkillsForm.tsx`, `GenericSectionForm.tsx` (+ test), `CustomSectionForm.tsx`,
+  `sectionFields.ts`, `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `allFieldsWiring.test.tsx`, `src/lib/schema/resume.schema.ts`,
+  `src/lib/presets/archetypes.ts`, `src/lib/schema/jsonResume.ts`,
+  `src/lib/import/pasteResume.ts`, `src/lib/keywords/jdMatch.ts` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`. Playwright remains sandbox-blocked, so
+  the 390px layout is browser-unverified.
 - [x] 2026-11-26 — Upgraded `RichTextField`: Link now opens an inline URL bar
   (Apply / Remove link, Enter/Escape) instead of `window.prompt`; all eight
   toolbar buttons stay on one row (32px fine-pointer targets, 40px touch targets

@@ -271,6 +271,7 @@ function importProject(value: unknown): ProjectItem | null {
     url: text(value.url),
     startDate: dates.startDate,
     endDate: dates.endDate,
+    current: false,
     keywords: textList(value.keywords),
   };
 }

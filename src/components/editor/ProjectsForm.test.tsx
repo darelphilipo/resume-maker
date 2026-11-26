@@ -34,6 +34,7 @@ function makeItem(
     url: "",
     startDate: "",
     endDate: "",
+    current: false,
     keywords: [],
     ...overrides,
   };
@@ -174,5 +175,49 @@ describe("ProjectsForm", () => {
     expect(
       screen.getByText("End date is earlier than start date"),
     ).toBeInTheDocument();
+  });
+
+  it("owns a Present toggle on End date that commits and disables the picker", () => {
+    setup([
+      makeItem("project-1", {
+        name: "Ledger API",
+        startDate: "2024-06",
+        endDate: "2024-02",
+      }),
+    ]);
+    render(<ProjectsForm />);
+
+    const present = screen.getByLabelText("Present");
+
+    expect(present).not.toBeChecked();
+    expect(
+      screen.getByText("End date is earlier than start date"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(present);
+
+    expect(present).toBeChecked();
+    expect(screen.getByLabelText("End date month")).toBeDisabled();
+    expect(screen.getByLabelText("End date year")).toBeDisabled();
+    expect(
+      screen.queryByText("End date is earlier than start date"),
+    ).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    expect(
+      useResumeStore.getState().doc.sections.projects.items[0].current,
+    ).toBe(true);
+  });
+
+  it("restores a stored Present project with the picker disabled", () => {
+    setup([makeItem("project-1", { name: "Ongoing", current: true })]);
+    render(<ProjectsForm />);
+
+    expect(screen.getByLabelText("Present")).toBeChecked();
+    expect(screen.getByLabelText("End date month")).toBeDisabled();
+    expect(screen.getByLabelText("End date year")).toBeDisabled();
   });
 });

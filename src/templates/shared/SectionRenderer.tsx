@@ -42,9 +42,21 @@ type GenericKind = Exclude<
   "experience" | "education" | "projects" | "skills"
 > | "custom";
 
+/**
+ * One display rule for every rendered URL: drop the scheme, `www.`, query,
+ * hash, and trailing slash. The same helper backs links and the plain-text
+ * URL labels in Projects and custom sections, so those never show a raw
+ * `https://` while Certifications and Publications look clean.
+ */
+function urlLabel(url: string): string {
+  const trimmed = url.trim();
+
+  return websiteLabelFromUrl(trimmed) || trimmed;
+}
+
 function ResumeLink({ url }: { url: string }) {
   const trimmed = url.trim();
-  const label = websiteLabelFromUrl(trimmed) || trimmed;
+  const label = urlLabel(trimmed);
 
   if (label === "") {
     return null;
@@ -321,7 +333,7 @@ function ProjectEntry({
     <EntryShell
       entryId={entryId}
       title={text(item, "name")}
-      subtitle={[text(item, "url"), keywords.join(", ")]
+      subtitle={[urlLabel(text(item, "url")), keywords.join(", ")]
         .filter(Boolean)
         .join(" · ")}
       date={dateNode(item)}
@@ -487,7 +499,7 @@ function GenericEntry({
       break;
     case "custom":
       title = text(item, "name");
-      subtitle = [text(item, "location"), text(item, "url")]
+      subtitle = [text(item, "location"), urlLabel(text(item, "url"))]
         .filter(Boolean)
         .join(" · ");
       summary = slicedRichText(text(item, "description"), fragment);

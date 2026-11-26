@@ -107,7 +107,7 @@ rediscover.
    partial drafts local, and clears on an empty month/year. Experience and
    Education end dates own the **Present** toggle and disable the picker while
    current; `GenericSectionForm` pairs Volunteer's `current` field the same way
-   (its standalone checkbox is skipped). Projects has no `current` flag. Keep
+   (its standalone checkbox is skipped). Projects now owns `current` too (#110), paired to its End date in `ProjectsForm`. Keep
    every future date field on `MonthSelect`; `MonthInput` remains the compact
    free-text fallback if a genuinely narrow cell needs one.
 10. **Fit-to-one-page is persisted in `metadata.page.fitScale`** (0.5–1,
@@ -132,7 +132,10 @@ rediscover.
     `src/lib/keywords/jdMatch.ts` extracts lowercase tokens from the pasted
     posting (drops boilerplate stopwords, ranks by frequency, tolerates trailing
     dots and simple plurals) and compares them with `buildAtsText(doc)`. Hidden
-    or empty sections therefore do not count as matches. Keep it pure and
+    or empty sections therefore do not count as matches. `extractJobKeywords`
+    groups stemmed forms by a deterministic root (#110), so `build` / `building`
+    and `process` / `processes` appear once in the displayed list; `hasKeywordMatch`
+    still compares against the full `variants()` set. Keep it pure and
     client-side: no network calls, no AI, no persistence of the job description.
 13. **`SectionList` tucks empty optional sections.** Awards, Languages,
     Interests, Volunteer, Publications, and References are hidden from the
@@ -878,7 +881,9 @@ rediscover.
       for URL-only profiles must stay in sync across `isVisibleItem`
       (`sectionData.ts`), `isDraft` (`selectors.ts`), and `visibleItems`
       (`atsText.ts`); links for profiles, certifications, and publications plus
-      Education `grade` now render in `SectionRenderer` too.
+      Education `grade` now render in `SectionRenderer` too. Project and custom
+      URL labels use the same `urlLabel` helper as `ResumeLink` (#110), so scheme
+      and `www.` never print there either.
 
   62. **Studio Sidebar's side column is packed apart and capped at Page 1.**
       The sidebar renders in Page 1's `<aside>`, so charging its height to the
@@ -1499,7 +1504,7 @@ rediscover.
        replacing, and deleting a custom section removes its id. Keep the
        button's fine-pointer target small but reach `min-h-11` on coarse
        pointers; it sits above the `<ul>` (not in the clipped 22rem header row)
-       and collapses only section rows, not the sibling Basics accordion owned
+       and, since #110, counts and closes the sibling Basics accordion owned
        by `EditorWorkspace`.
 
     98. **AI prompt rescue is a copy-and-paste path, not an in-app model.**
@@ -1617,8 +1622,8 @@ rediscover.
         never toggles the accordion; only the labelled drawer trigger and custom
         delete stay in the two-column footer. Profiles skips the shared
         `Section heading` input entirely (its links already print in the header)
-        and its URL field advertises the auto-fill with the placeholder
-        `Paste GitHub or LinkedIn URL — auto-fills below`. Global sample clearing
+        and its URL field advertises the auto-fill with the shortened placeholder
+        `Paste GitHub or LinkedIn URL` (#110). Global sample clearing
         is opt-in through `metadata.sampleData` (default `false`): every
         `ARCHETYPES.build()` marks its doc, and the pure
         `clearSampleData(doc)` in `src/lib/presets/clearSampleData.ts` returns
@@ -1628,8 +1633,9 @@ rediscover.
         menu (`ExportJsonButton`) commits that returned document through one
         `patchDoc`, so a single Zundo undo restores every sample entry. Do not
         guess sample status from names/emails (users edit those). The
-        per-section `ClearSectionButton` is now gated on the same flag (#107);
-        it is not a general "delete every entry" control.
+        per-section `ClearSectionButton` is now gated on the same flag **and**
+        on the section actually holding content (#110); custom sections never
+        render it. It is not a general "delete every entry" control.
 
    105. **Trim tips jump through rendered ids, not a parallel lookup.**
         `scanBulletLint` reads `data-section-id` and `data-entry-id` off the
@@ -1678,8 +1684,9 @@ rediscover.
         `whitespace-nowrap` so a narrow column wraps a whole button, never its
         label mid-phrase; the mobile drawer trigger spans both footer columns.
         `ClearSectionButton` renders only when `metadata.sampleData === true`
-        (#104), because an imported/restored/blank resume has no sample content
-        and the old label read as a destructive clear-all. Trim tips likewise
+        and `count > 0` (#104, #110), so imported/restored/blank resumes and
+        newly revealed empty optional sections never show a disabled clear-all;
+        custom sections omit it entirely. Trim tips likewise
         expose every flagged bullet: each clickable tip shows a muted `›`
         chevron plus `active:bg-black/10`, and the capped list ends in a
         `Show all (N)` / `Show fewer` toggle (`aria-expanded`) instead of the
@@ -1721,11 +1728,30 @@ rediscover.
         `splitListItem("listItem")` before `insertContent`, so the formula begins a
         real new bullet. jsdom tests assert the commands, not real list geometry.
 
+   110. **Section consistency: sample gating, shared URL labels, one `current`
+        flag, and one keyword per root.** `ClearSectionButton` takes a `count`
+        and renders only when `metadata.sampleData === true` and that section
+        actually holds content; custom sections omit it entirely, so an empty
+        optional row or a PDF import never shows a disabled clear-all (#104,
+        #107). `urlLabel` in `SectionRenderer` is the one display rule for every
+        URL — it wraps `websiteLabelFromUrl`, and Project subtitles and custom
+        entries use it instead of raw stored text; ATS still prints the raw URL
+        (#61). `ProjectItemSchema.current` is now a boolean defaulting to false
+        (#9), edited through the End-date **Present** checkbox in `ProjectsForm`;
+        the typed builders in `archetypes`, `jsonResume`, and `pasteResume` must
+        set it explicitly. `Collapse all` counts and closes Basics through props
+        from `EditorWorkspace` (#97). JD keyword *display* dedup uses
+        `canonicalKeyword` in `jdMatch.ts`: a deterministic suffix strip plus
+        doubled-consonant and silent-`e` normalization applied to **both** forms.
+        Do not key the grouping off the shortest `variants()` entry —
+        `processes` adds `proces` while `process` does not, which split one word
+        into two keywords. Matching still uses full `variants()` (#12).
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~1149 tests
+npm test               # vitest, ~1172 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1785,6 +1811,36 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-26 — Page 2 section-consistency sweep
+- Task: the lone In Progress item (P1), continued to completion. All three
+  sub-items (clear-sample gating, URL/Present consistency, rough edges) were
+  still open in the tree.
+- Change: `ClearSectionButton` now takes `count` and hides when the section is
+  empty; custom sections no longer render it at all. Project and custom URLs
+  print through the new shared `urlLabel` in `SectionRenderer`, and Projects
+  gained a schema `current` flag with an End-date **Present** toggle (Visual,
+  ATS, and newest-first sort all pick it up). Shortened the Profiles placeholder,
+  made Volunteer's location region-neutral, added `None`/`Native` ends to the
+  Languages slider, wired Basics into **Collapse all**, and deduped stemmed JD
+  keywords by a deterministic root. Decision #110; README tour updated.
+- Tests: new cases for preset-only/empty clear gating, URL labels, Present
+  toggle/disabled picker, slider labels, Basics-aware Collapse all in both
+  `SectionList` and `EditorWorkspace`, and JD root dedup. `npm run typecheck`
+  clean; `npm test` 1172 pass across 106 files; `npm run lint` clean.
+- Files: `src/components/editor/SectionFormControls.tsx` (+ test),
+  `SectionList.tsx` (+ test), `EditorWorkspace.tsx` (+ test),
+  `ProjectsForm.tsx` (+ test), `SummaryForm.tsx`, `ExperienceForm.tsx`
+  (+ test), `EducationForm.tsx`, `SkillsForm.tsx`, `GenericSectionForm.tsx`
+  (+ test), `CustomSectionForm.tsx`, `sectionFields.ts`,
+  `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `allFieldsWiring.test.tsx`, `src/lib/schema/resume.schema.ts`,
+  `src/lib/presets/archetypes.ts`, `src/lib/schema/jsonResume.ts`,
+  `src/lib/import/pasteResume.ts`, `src/lib/keywords/jdMatch.ts` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so 390px geometry is
+  browser-unverified; a `current: true` project with no end month still needs a
+  real browser print check.
 
 ### 2026-11-26 — RichTextField: inline links, one-row toolbar, new-bullet formulas
 - Task: top Queue item (P1), moved to In Progress first; all four sub-items were
@@ -1972,29 +2028,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Tests: 1129 pass (trim dialog/workspace/section-list jump, relative stemming,
   and ATS/Review title cases). Verified `npm run typecheck`, `npm test`.
 - Files: `TASKS.md`, `CONTEXT.md`.
-
-### 2026-11-25 — Final pre-freeze UX/bug polish (Save PDF, fit reset, review)
-- Task: top Queue item (P1), the compound pre-freeze polish item, moved to In
-  Progress at the start of this run.
-- Change: `PrintTriggerButton` now releases its pending job on `afterprint` or
-  via a 2s fallback armed from `beforePrint`, so Save PDF cannot stay dimmed
-  when a dialog is suppressed. `EditorWorkspace` shows `1 page · Reset` inline
-  after a fit and shares one `resetFit()` with Review. `anonymizeCertificationUrl`
-  preserves public issuer domains (Credly/AWS/Scrum/Coursera) while stripping
-  personal badge paths. A single-block Summary no longer stacks a second Copy
-  in the ATS view. The header `⋮` gained an "Export / Backup" tooltip and a
-  desktop "Backup" label. Decisions #101–#103; README Key features updated.
-- Tests: fake-timer fallback regression, inline-fit-reset workspace case,
-  certification-domain/URL cases, a headed-Summary single-Copy case, and a
-  backup-trigger affordance case. 1105 pass.
-- Files: `src/components/preview/PrintTriggerButton.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/lib/privacy/anonymizeDoc.ts` (+ test),
-  `src/components/preview/AtsTextView.tsx` (+ test),
-  `src/components/shared/ExportJsonButton.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1105 pass), `npm run lint` (clean).
-  Playwright remains sandbox-blocked, so the 390px bar geometry is unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

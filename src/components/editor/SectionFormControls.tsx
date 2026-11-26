@@ -380,7 +380,10 @@ export function LevelInput({ id, label, value, onChange }: LevelInputProps) {
       <label htmlFor={id} className="text-sm font-medium">
         {label}
       </label>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
+        <span aria-hidden className="shrink-0 text-xs text-muted">
+          None
+        </span>
         <input
           id={id}
           type="range"
@@ -389,10 +392,13 @@ export function LevelInput({ id, label, value, onChange }: LevelInputProps) {
           step={1}
           value={value}
           onChange={(event) => onChange(Number(event.currentTarget.value))}
-          className="min-h-11 flex-1 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="min-h-11 min-w-0 flex-1 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         />
-        <span aria-hidden className="w-6 text-right text-sm tabular-nums">
+        <span aria-hidden className="w-6 shrink-0 text-right text-sm tabular-nums">
           {value}
+        </span>
+        <span aria-hidden className="shrink-0 text-xs text-muted">
+          Native
         </span>
       </div>
     </div>
@@ -702,20 +708,26 @@ export function AddEntryButton({ onClick }: { onClick: () => void }) {
 }
 
 export function ClearSectionButton({
+  count,
   disabled,
   onClick,
 }: {
+  /** Entries or prose blocks this section would clear. */
+  count: number;
   disabled: boolean;
   onClick: () => void;
 }) {
   // Only starter presets carry sample content. Imported, restored, or blank
   // resumes have nothing to clear, so this secondary action stays hidden
-  // instead of reading as a destructive "delete every entry" button.
+  // instead of reading as a destructive "delete every entry" button. A section
+  // with no content — a freshly revealed optional section or one just cleared —
+  // is hidden too, never left as a disabled clear-all control. Custom sections
+  // do not render this control at all: their entries are always the user's own.
   const hasSampleData = useResumeStore(
     (state) => state.doc.metadata.sampleData === true,
   );
 
-  if (!hasSampleData) {
+  if (!hasSampleData || count === 0) {
     return null;
   }
 

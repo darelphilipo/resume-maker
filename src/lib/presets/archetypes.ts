@@ -86,6 +86,7 @@ function project(input: ProjectInput): ProjectItem {
     url: input.url,
     startDate: input.startDate,
     endDate: input.endDate,
+    current: false,
     keywords: input.keywords,
   };
 }

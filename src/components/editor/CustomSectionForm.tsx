@@ -12,7 +12,6 @@ import { useResumeStore } from "@/lib/store/useResumeStore";
 import { RichTextField } from "./RichTextField";
 import {
   AddEntryButton,
-  ClearSectionButton,
   EntryActions,
   EntryCard,
   FormActions,
@@ -144,10 +143,6 @@ export function CustomSectionForm({ sectionId }: { sectionId: string }) {
     });
   }
 
-  function clearItems(): void {
-    form.setValue("items", [], { shouldDirty: true });
-  }
-
   if (!section) {
     return null;
   }
@@ -225,10 +220,6 @@ export function CustomSectionForm({ sectionId }: { sectionId: string }) {
 
       <FormActions>
         <AddEntryButton onClick={addItem} />
-        <ClearSectionButton
-          disabled={watched.items.length === 0}
-          onClick={clearItems}
-        />
       </FormActions>
     </form>
   );

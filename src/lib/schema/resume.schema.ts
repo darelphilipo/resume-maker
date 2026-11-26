@@ -129,6 +129,7 @@ export const ProjectItemSchema = z.object({
   url: text(),
   startDate: text(),
   endDate: text(),
+  current: z.boolean().default(false),
   keywords: textList(),
 });
 

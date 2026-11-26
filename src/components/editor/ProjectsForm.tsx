@@ -36,6 +36,7 @@ const projectItemSchema = z.object({
   url: z.string(),
   startDate: z.string(),
   endDate: z.string(),
+  current: z.boolean(),
   keywords: z.string(),
 });
 
@@ -55,6 +56,7 @@ function createEmptyItem(): ProjectsFormItem {
     url: "",
     startDate: "",
     endDate: "",
+    current: false,
     keywords: "",
   };
 }
@@ -69,6 +71,7 @@ function toFormValues(items: ProjectItem[]): ProjectsFormValues {
       url: item.url,
       startDate: item.startDate,
       endDate: item.endDate,
+      current: item.current === true,
       keywords: formatKeywords(item.keywords),
     })),
   };
@@ -102,6 +105,7 @@ export function ProjectsForm() {
             url: item.url,
             startDate: item.startDate,
             endDate: item.endDate,
+            current: item.current,
             keywords: parseKeywords(item.keywords),
           })),
         },
@@ -226,7 +230,12 @@ export function ProjectsForm() {
               value={item.endDate}
               onChange={(value) => updateItem(index, "endDate", value)}
               warning={
-                dateRangeWarning(item.startDate, item.endDate) ?? undefined
+                dateRangeWarning(item.startDate, item.endDate, item.current) ??
+                undefined
+              }
+              present={item.current}
+              onPresentChange={(checked) =>
+                updateItem(index, "current", checked)
               }
             />
           </div>
@@ -245,6 +254,7 @@ export function ProjectsForm() {
       <FormActions>
         <AddEntryButton onClick={addItem} />
         <ClearSectionButton
+          count={watched.items.length}
           disabled={watched.items.length === 0}
           onClick={clearItems}
         />

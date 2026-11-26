@@ -190,7 +190,7 @@ describe("ExperienceForm", () => {
     );
   });
 
-  it("clears sample data and disables the button when empty", () => {
+  it("clears sample data and hides the button once the section is empty", () => {
     setup(
       [
         makeItem("exp-1", { company: "Acme" }),
@@ -213,8 +213,18 @@ describe("ExperienceForm", () => {
       useResumeStore.getState().doc.sections.experience.items,
     ).toHaveLength(0);
     expect(
-      screen.getByRole("button", { name: "Clear sample data" }),
-    ).toBeDisabled();
+      screen.queryByRole("button", { name: "Clear sample data" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides Clear sample data on a section with nothing to clear", () => {
+    setup([], { sampleData: true });
+    render(<ExperienceForm />);
+
+    expect(
+      screen.queryByRole("button", { name: "Clear sample data" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add entry" })).toBeInTheDocument();
   });
 
   it("hides Clear sample data on an imported or blank resume", () => {

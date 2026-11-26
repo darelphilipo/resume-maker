@@ -249,6 +249,7 @@ export function EducationForm() {
       <FormActions>
         <AddEntryButton onClick={addItem} />
         <ClearSectionButton
+          count={watched.items.length}
           disabled={watched.items.length === 0}
           onClick={clearItems}
         />

@@ -124,6 +124,9 @@ export type SectionListProps = {
     nonce: number;
     entryId?: string | null;
   } | null;
+  /** Basics is owned by EditorWorkspace but shares this list's Collapse all. */
+  basicsOpen?: boolean;
+  onCollapseBasics?: () => void;
 };
 
 function countLabel(count: number): string {
@@ -223,6 +226,8 @@ export function SectionList({
   onOpenSection,
   openSectionId,
   focusSection,
+  basicsOpen = false,
+  onCollapseBasics,
 }: SectionListProps) {
   const doc = useResumeStore((state) => state.doc);
   const patchDoc = useResumeStore((state) => state.patchDoc);
@@ -245,6 +250,9 @@ export function SectionList({
     overId: string | null;
   } | null>(null);
   const rows = buildRows(doc);
+  // Basics is a sibling accordion above this list, so it counts toward the
+  // "Collapse all" affordance even though EditorWorkspace owns its state.
+  const openCount = expandedIds.length + (basicsOpen ? 1 : 0);
 
   // "Manage profiles" in Basics asks this list to reveal its Profiles card.
   // Adjust state during render (the same pattern as a controlled input) so the
@@ -538,12 +546,15 @@ export function SectionList({
     <div className="flex flex-col gap-2">
       {/* Several sections can stay open at once; keep one quiet way to tidy the
           column instead of tapping every caret individually. */}
-      {expandedIds.length >= 2 ? (
+      {openCount >= 2 ? (
         <div className="flex justify-end">
           <button
             type="button"
             data-collapse-all=""
-            onClick={() => setExpandedIds([])}
+            onClick={() => {
+              setExpandedIds([]);
+              onCollapseBasics?.();
+            }}
             className="inline-flex min-h-9 items-center rounded px-2 text-xs font-medium text-muted transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:min-h-11"
           >
             Collapse all

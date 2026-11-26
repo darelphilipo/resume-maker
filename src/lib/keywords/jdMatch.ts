@@ -284,27 +284,89 @@ function hasKeywordMatch(
   return false;
 }
 
+/**
+ * Grouping key for the keyword list. Plain words collapse to one normalized
+ * root — `build`, `builds`, and `building` all key to `build`, and `process`
+ * and `processes` both key to `proces` — so a posting that uses two forms
+ * shows the keyword once. Dotted/tech tokens (`node.js`, `.net`, `c++`) keep
+ * their exact spelling. This only affects the displayed list: matching still
+ * uses the full `variants()` set in `hasKeywordMatch`.
+ */
+function canonicalKeyword(token: string): string {
+  if (!/^[a-z]+$/.test(token)) {
+    return token;
+  }
+
+  let root = token;
+
+  if (root.length > 4 && root.endsWith("ing")) {
+    root = root.slice(0, -3);
+  } else if (root.length > 4 && root.endsWith("ed")) {
+    root = root.slice(0, -2);
+  }
+
+  if (root.length > 4 && root.endsWith("es")) {
+    root = root.slice(0, -2);
+  } else if (root.length > 3 && root.endsWith("s") && !root.endsWith("ss")) {
+    root = root.slice(0, -1);
+  }
+
+  // Normalize a doubled consonant (`running` → `run`) and a silent trailing
+  // `e` (`managed` → `manage`) on BOTH sides of the pair, so neither side can
+  // land on a different key just because one form kept the double letter.
+  if (root.length > 3 && /([a-z])\1$/.test(root)) {
+    root = root.slice(0, -1);
+  }
+
+  if (root.length > 2 && root.endsWith("e")) {
+    root = root.slice(0, -1);
+  }
+
+  return root.length >= 3 ? root : token;
+}
+
+type KeywordGroup = {
+  count: number;
+  tokens: Map<string, number>;
+};
+
 export function extractJobKeywords(
   jobDescription: string,
   limit = 40,
 ): string[] {
-  const counts = new Map<string, number>();
+  const groups = new Map<string, KeywordGroup>();
 
   for (const token of rawTokens(jobDescription)) {
     if (baseToken(token).length < 2 || isStopword(token)) {
       continue;
     }
 
-    counts.set(token, (counts.get(token) ?? 0) + 1);
+    const key = canonicalKeyword(token);
+    const group = groups.get(key) ?? { count: 0, tokens: new Map() };
+    group.count += 1;
+    group.tokens.set(token, (group.tokens.get(token) ?? 0) + 1);
+    groups.set(key, group);
   }
 
-  return [...counts.entries()]
+  return [...groups.values()]
+    .map((group) => {
+      // Prefer the base spelling over a longer inflected one, then the more
+      // frequent form, then alphabetical order for a stable display list.
+      const representative = [...group.tokens.entries()].sort(
+        ([left, leftCount], [right, rightCount]) =>
+          left.length - right.length ||
+          rightCount - leftCount ||
+          compareTokens(left, right),
+      )[0][0];
+
+      return { token: representative, count: group.count };
+    })
     .sort(
-      ([leftToken, leftCount], [rightToken, rightCount]) =>
-        rightCount - leftCount || compareTokens(leftToken, rightToken),
+      (left, right) =>
+        right.count - left.count || compareTokens(left.token, right.token),
     )
     .slice(0, Math.max(0, limit))
-    .map(([token]) => token);
+    .map((entry) => entry.token);
 }
 
 export function matchJobKeywords(

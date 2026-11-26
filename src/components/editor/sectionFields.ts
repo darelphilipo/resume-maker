@@ -38,7 +38,7 @@ export const GENERIC_SECTION_FIELDS: Record<
       kind: "url",
       inputMode: "url",
       autoComplete: "url",
-      placeholder: "Paste GitHub or LinkedIn URL — auto-fills below",
+      placeholder: "Paste GitHub or LinkedIn URL",
     },
     {
       key: "network",
@@ -169,7 +169,7 @@ export const GENERIC_SECTION_FIELDS: Record<
       label: "Location",
       kind: "text",
       autoComplete: "address-level2",
-      placeholder: "Berlin, Germany",
+      placeholder: "City, Country",
     },
     {
       key: "startDate",

@@ -65,6 +65,7 @@ export function SummaryForm() {
       />
       <FormActions>
         <ClearSectionButton
+          count={isRichTextEmpty(watched.content) ? 0 : 1}
           disabled={isRichTextEmpty(watched.content)}
           onClick={() => form.setValue("content", "", { shouldDirty: true })}
         />

@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   EntryActions,
   EntryCard,
+  LevelInput,
   MonthInput,
   MonthSelect,
   TextInput,
@@ -85,6 +86,27 @@ describe("SectionFormControls", () => {
 
     expect(input).toHaveClass("bg-surface", "text-text", "border-line");
     expect(screen.getByText("Month is enough.")).toHaveClass("text-muted");
+  });
+
+  it("labels the language level slider from None to Native", () => {
+    const onChange = vi.fn();
+
+    render(
+      <LevelInput id="language-level" label="Level" value={3} onChange={onChange} />,
+    );
+
+    const slider = screen.getByLabelText("Level");
+
+    expect(slider).toHaveAttribute("type", "range");
+    expect(slider).toHaveAttribute("min", "0");
+    expect(slider).toHaveAttribute("max", "5");
+    expect(slider.parentElement).toHaveClass("flex", "items-center");
+    expect(screen.getByText("None")).toHaveClass("text-muted");
+    expect(screen.getByText("Native")).toHaveClass("text-muted");
+    expect(screen.getByText("3")).toHaveClass("tabular-nums");
+
+    fireEvent.change(slider, { target: { value: "5" } });
+    expect(onChange).toHaveBeenCalledWith(5);
   });
 
   it("keeps entry actions on one compact row with Delete on the right", () => {

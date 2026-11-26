@@ -52,6 +52,22 @@ describe("extractJobKeywords", () => {
       ),
     ).toEqual(["costs", "impact"]);
   });
+
+  it("shows stemmed variants such as build and building only once", () => {
+    expect(extractJobKeywords("Build the platform. Building builds it.")).toEqual(
+      ["build", "platform"],
+    );
+    expect(extractJobKeywords("design designing processes process")).toEqual([
+      "design",
+      "process",
+    ]);
+  });
+
+  it("keeps dotted and tech tokens distinct instead of merging their stems", () => {
+    expect(
+      extractJobKeywords("Node.js node jobs, .NET net, C++ C#"),
+    ).toEqual(expect.arrayContaining(["node.js", ".net", "c++", "c#"]));
+  });
 });
 
 describe("matchJobKeywords", () => {

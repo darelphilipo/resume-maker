@@ -140,16 +140,17 @@ in control of every line, and your data stays on your device.
   `Network: username` instead of disappearing. When every profile has a header
   entry, that line is the only place they print — no repeated Profiles section.
   Tap **Manage profiles** in Basics to expand and jump straight to the same list.
-  The URL field itself says “Paste GitHub or LinkedIn URL — auto-fills below”,
-  and Profiles has no dead section heading to fill in because its links already
+  The URL field itself says “Paste GitHub or LinkedIn URL”, and Profiles has no
+  dead section heading to fill in because its links already
   print in the header. A row with only a URL still counts, so pasted links are
   never silently dropped.
 - **Everything you type makes it into the resume.** Your website, profile links,
   certification links, and publication links appear as clickable links in the
   preview and PDF — even if you pasted a bare address such as `github.com/you` —
-  and as plain text in the ATS view. An Education **grade** prints beside the
-  school and degree too, so no field quietly disappears between the editor and
-  the final document.
+  and as plain text in the ATS view. Project and custom-section URLs print as
+  clean labels too, without `https://` or `www.`. An Education **grade** prints
+  beside the school and degree, so no field quietly disappears between the editor
+  and the final document.
 - Summary plus Profiles, Experience, Projects, Education, Skills, and
   Certifications, with optional Awards, Languages, Interests, Volunteer,
   Publications, and References.
@@ -180,9 +181,10 @@ in control of every line, and your data stays on your device.
   year), so `2023-10` stays consistent and no browser opens a slow year
   scroller. A year on its own is enough when that is all you know, and prints as
   `2018 — 2019`. Stray years outside 1950–2100 are caught right under the field
-  and never reach the preview or PDF. End dates for current roles have a
-  **Present** toggle, and a quiet note appears under the End date when it sits
-  before the Start date.
+  and never reach the preview or PDF. End dates for current roles and ongoing
+  projects have a **Present** toggle, and a quiet note appears under the End date
+  when it sits before the Start date. Languages use a 0–5 **Level** slider with
+  **None** and **Native** marked at the ends.
 - **Sort newest first** appears above Experience, Education, or Projects when
   two or more entries are out of order, so one tap puts current roles and the
   latest dates at the top (undo still works).
@@ -209,8 +211,11 @@ in control of every line, and your data stays on your device.
   labels inside the narrow desktop Content column.
   Awards, Languages, Interests, Volunteer, Publications, and References stay
   tucked behind **Add optional section** until you need them. Several sections
-  can stay open at once; when two or more are expanded, a quiet **Collapse all**
-  button closes them together.
+  can stay open at once; when two or more cards are expanded — Basics included —
+  a quiet **Collapse all** button closes them together. A section's **Clear
+  sample data** button only appears while that section still holds preset sample
+  content, so an empty optional section, a custom section, or an imported resume
+  never shows a misleading clear-all control.
 - On a phone, **Open section editor** opens that section in a single full editor
   sheet, so switching between sections stays quick even on a long resume. The
   sheet has an **X** in the top-right corner to close it, as well as the familiar
@@ -369,7 +374,7 @@ in control of every line, and your data stays on your device.
   and “junior” are ignored, and keywords match whole words only — so “rust”
   never counts just because “trust” appears. Simple word forms are treated as
   the same keyword, so “building” matches “build” and “managed” matches
-  “manage”.
+  “manage” — and a posting that uses both forms lists that keyword just once.
   Tech names such as C++, C#, Node.js, and .NET are recognised, including
   product forms like ASP.NET. On phones it opens as a bottom sheet; on desktop
   it opens as a centred modal. Either way one tap on the **X** (or the dimmed

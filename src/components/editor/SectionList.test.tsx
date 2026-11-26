@@ -532,4 +532,23 @@ describe("SectionList", () => {
     expect(experienceToggle()).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("button", { name: "Collapse all" })).toBeNull();
   });
+
+  it("counts an open Basics accordion in Collapse all and closes it too", () => {
+    const onCollapseBasics = vi.fn();
+
+    render(<SectionList basicsOpen onCollapseBasics={onCollapseBasics} />);
+
+    // Basics alone is one open card, so the affordance stays hidden until a
+    // section is expanded as well.
+    expect(screen.queryByRole("button", { name: "Collapse all" })).toBeNull();
+
+    fireEvent.click(sectionToggle("summary"));
+    const collapseAll = screen.getByRole("button", { name: "Collapse all" });
+
+    fireEvent.click(collapseAll);
+
+    expect(onCollapseBasics).toHaveBeenCalledTimes(1);
+    expect(sectionToggle("summary")).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: "Collapse all" })).toBeNull();
+  });
 });
