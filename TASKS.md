@@ -22,7 +22,13 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+- [ ] P1: Final mobile UX polish (`Basics` row style, single-row entry actions, neutral `Education` placeholders, `Trim tips` tap cues, and `Studio Sidebar` `Awards` check) (`src/components/editor/BasicsForm.tsx`, `src/components/editor/SectionFormControls.tsx`, `src/components/editor/EducationForm.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/templates/studio/StudioSidebarTemplate.test.tsx`).
+  1. **Unified `Basics` row (`BasicsForm.tsx`):** Change the collapsed `BASICS` label from muted uppercase to dark Title Case (`Basics`) matching `Profiles`, `Experience`, and `Education`.
+  2. **Single-row entry actions & cleaner section footers (`SectionFormControls.tsx`, `SectionList.tsx`):** Make `EntryActions` fit on **one clean row** at `390px` (compact `👁`, `↑`, `↓` on the left and `🗑 Delete` on the right, preventing `Delete` from wrapping alone onto row 2), and lay out `+ Add entry` + secondary section actions cleanly without awkward 2-line button wrapping (hiding `Clear sample data` on PDF-imported resumes).
+  3. **Neutral `Education` placeholders (`EducationForm.tsx`):** Replace `"Berlin, Germany"` and `"1.3"` with region-neutral `"City, Country"` and `"3.8 GPA / 8.5 CGPA"`.
+  4. **`Trim tips` tappable cues (`LiveCanvasViewport.tsx`):** Add a subtle right chevron (`›`) and light hover/active row highlight on each clickable tip, and make `"+N more"` a tappable `"Show all"` toggle so all flagged bullets are reachable.
+  5. **`Studio Sidebar` `Awards` verification:** Add a test verifying an imported/multi-section resume with `Experience`, `Education`, `Summary`, `Skills`, `Certifications`, and `Awards` (2 items) renders `Awards` cleanly on Page 2 of `Studio Sidebar` (ensuring `awards` is present in `layout.pages` and never measured at `heightPx <= 0`).
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
