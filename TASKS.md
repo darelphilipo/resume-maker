@@ -18,33 +18,7 @@ _empty
 
 ## In Progress (OpenCode Updates This)
 
-- [ ] P0: Fix blank PDF when clicking **Save PDF** from the mobile `Content` (or `Design`) tab before visiting `Preview`, and harden `document.title` for PDF filenames (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/MeasureLayer.tsx`, `src/components/preview/PrintPortal.tsx`, `src/lib/print/printDocument.ts`).
-  1. **Always mount `MeasureLayer` outside `display: none` mobile tabs:** Lift `MeasureLayer` (and `usePageLayout`) to `EditorWorkspace.tsx` outside the mobile `hidden` `#panel-preview` container (kept off-screen via `fixed left-[-10000px] top-0 pointer-events-none`) so pagination always computes real section heights immediately on editor load, regardless of which mobile tab is active.
-  2. **Never allow `PrintPortal` to print empty:** Add a fallback inside `PrintPortal.tsx` so if `pages.length === 0` or every page is empty when printing, it falls back to rendering all visible section IDs on Page 1 rather than outputting a blank PDF.
-  3. **Harden `document.title` on `/editor`:** Continuously sync `document.title` in `EditorWorkspace.tsx` to a clean, space-free/ASCII-safe slug (e.g. `Divya_Prakash_Resume`, or `Alex_Taylor_Resume` when `Anonymize` is active) as soon as the resume loads, restoring `"Resume Maker"` on unmount, and avoid resetting `document.title` immediately after `window.print()` on mobile.
-  4. **Regression test:** Add a mobile (`390x844`) test verifying that opening `/editor` (landing on `Content`, never tapping `Preview`) populates `#print-portal` with non-empty resume content ready for `window.print()`.
-  - **Plan:** (1) render `layout.measureLayer` once in `EditorWorkspace` outside the mobile-hidden `#panel-preview`, and stop `LiveCanvasViewport` rendering its own copy, so pagination measures on Content/Design; (2) make `PrintPortal` fall back to `selectVisibleSectionIds` on Page 1 when `pages` is empty or every page is empty; (3) change `resumeDocumentTitle` to an ASCII-safe underscore slug (`Divya_Prakash_Resume`) and add a print-title lock so the editor sync effect cannot stomp the print filename while a mobile print spools; (4) add unit + mobile e2e regressions.
-  - **Target files:** `src/components/editor/EditorWorkspace.tsx` (+ test), `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PrintPortal.tsx` (+ test), `src/lib/print/printDocument.ts` (+ test), `e2e/print.spec.ts`/`e2e/mobile.spec.ts`, `README.md`, `CONTEXT.md`.
-  - **Checkpoint (2026-11-26):** All four sub-items are already implemented in
-     the tree (verified by source inspection this run):
-     (1) `EditorWorkspace.tsx` renders `layout.measureLayer` once between the
-     header and `<main>` (line ~464) and `LiveCanvasViewport` no longer renders
-     one; (2) `PrintPortal.printablePages()` falls back to
-     `[HEADER_BLOCK_ID, ...selectVisibleSectionIds({ doc })]`; (3)
-     `resumeDocumentTitle()` returns an ASCII-safe underscore slug and the
-     `isPrintTitleActive()` lock gates the editor title effect; (4) unit tests
-     and the 390×844 mobile e2e ("prints a non-empty resume from the Content
-     tab without visiting Preview") are present, and README/CONTEXT are updated
-     (Decision #115).
-     **Blocker:** this runner denies shell permission to every execution path
-     (direct `shell`, a `general` subagent, and an `automation` shell action),
-     so `npm run typecheck`, `npm test`, `npm run lint`, and Playwright could not
-     be run and the item was NOT moved to Done.
-     **Exact next steps for the next run:** with shell access, run
-     `npm run typecheck && npm test` (plus `npm run lint` if available). If all
-     pass, move this item to *Done* dated 2026-11-26 with the file list above
-     and a one-line summary; no further code changes are expected. If a check
-     fails, fix the specific failure and re-run before moving to Done.
+_empty
 
 ## Queue (Ready for Next Run)
 - [ ] P2: Harden PDF & paste parsing against real-world LaTeX, Word, Canva, and Indian resume edge cases (`src/lib/import/pdfResume.ts`, `src/lib/import/pdfLayout.ts`, `src/lib/import/pasteResume.ts`, `src/lib/import/featureScoring.ts`).
@@ -72,6 +46,26 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-26 — Closed the P0 blank-PDF fix: **Save PDF** from the mobile
+  `Content`/`Design` tab now always captures a non-empty resume. `EditorWorkspace`
+  renders `layout.measureLayer` once outside the `display: none` mobile tabs, so
+  pagination measures immediately on editor load; `PrintPortal.printablePages()`
+  falls back to `[HEADER_BLOCK_ID, ...selectVisibleSectionIds({ doc })]` when the
+  page list is empty or every page is blank; `resumeDocumentTitle()` emits an
+  ASCII-safe underscore slug (`Divya_Prakash_Resume`) guarded by
+  `isPrintTitleActive()` so the editor title effect cannot stomp the PDF filename
+  during the mobile spool grace. Unit tests and the 390×844 mobile e2e
+  (Content tab → Save PDF without visiting Preview) cover it. This run verified
+  the already-implemented tree end to end: `npm run typecheck` clean, `npm test`
+  (1186 pass, 107 files), `npm run lint` clean. Files:
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx`,
+  `src/components/preview/PrintPortal.tsx` (+ test),
+  `src/lib/print/printDocument.ts` (+ test), `e2e/helpers.ts`,
+  `e2e/mobile.spec.ts`, `e2e/print.spec.ts`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`. Playwright remains sandbox-blocked, so the mobile e2e and real
+  Android spool filename are browser-unverified.
 
 - [x] 2026-11-26 — Aligned the collapsed `Basics` row with the section cards and
   finished the homepage parity pass. In the Content panel, Basics now uses the

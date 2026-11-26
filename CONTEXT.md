@@ -1917,6 +1917,22 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-26 — Blank-PDF fix verified and moved to Done
+- Task: continued the lone In Progress item (P0). All four sub-items were
+  already implemented by the prior checkpoint; this run had working shell access
+  and verified them end to end.
+- Change: no code changes. Moved the item to Done in `TASKS.md` with the file
+  list and closed the bookkeeping. Confirmed the measure layer renders once in
+  `EditorWorkspace` outside the mobile-hidden tabpanels,
+  `PrintPortal.printablePages()` falls back to the header plus visible section
+  ids on an empty page list, `resumeDocumentTitle()` emits the underscore slug,
+  and the editor title effect respects `isPrintTitleActive()` (Decision #115).
+- Verification: `npm run typecheck` clean; `npm test` 1186 pass across 107 files;
+  `npm run lint` clean. Playwright still cannot run here, so the 390×844 mobile
+  e2e and the real Android spool filename remain browser-unverified.
+- Files: `TASKS.md`, `CONTEXT.md` (feature code and README were already in the
+  tree from the earlier checkpoint).
+
 ### 2026-11-26 — Blank-PDF fix checkpoint: implementation complete, verification blocked
 - Task: continued the lone In Progress item (P0). Source inspection confirmed
   all four sub-items were already implemented by the prior checkpoint: the
@@ -2148,27 +2164,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   README changes were needed.
 - Tests: `npm run typecheck` clean; `npm test` 1149 pass across 105 files.
 - Files: `TASKS.md`, `CONTEXT.md`.
-- Note: Playwright remains sandbox-blocked, so the 390px hover/pending geometry
-  is browser-unverified.
-
-### 2026-11-26 — Home-page polish: instant import CTAs, recent-row cues, prompt preview
-- Task: the lone Queue item (P1), moved to In Progress first. All four
-  sub-items were open.
-- Change: Backup & Restore keeps one dashed dropzone (its panel stays solid),
-  reads "Restore a single-resume JSON backup", and names the *top-right menu*
-  instead of the `⋮` glyph. Both import CTAs lost `transition-colors` so their
-  enabled navy fill appears on the same tick, and the AI reply textarea now uses
-  the same `pastedTextValue` paste fast-path as the paste box. Recent rows gained
-  a `group` hover underline/highlight on the title plus an `Opening...` spinner
-  while `openingRecentId` blocks a second tap. The AI panel gained a compact
-  **Preview prompt** disclosure showing `AI_IMPORT_PROMPT` verbatim. Decision
-  #108; README Key features updated.
-- Tests: 4 new cases (single dashed dropzone/copy, AI enable-on-change-and-paste
-  + no transition, prompt preview toggle, recent hover/spinner/double-tap guard);
-  `npm run typecheck` clean; `npm test` 1149 pass across 105 files; `npm run lint`
-  clean.
-- Files: `src/components/launcher/Launcher.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
 - Note: Playwright remains sandbox-blocked, so the 390px hover/pending geometry
   is browser-unverified.
 
