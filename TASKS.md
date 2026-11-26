@@ -47,12 +47,18 @@ _empty
      fails, fix the specific failure and re-run before moving to Done.
 
 ## Queue (Ready for Next Run)
-
-- [ ] P2: Harden `pdfResume.ts` & `pasteResume.ts` against real-world LaTeX/Indian resume edge cases (`src/lib/import/pdfResume.ts`, `src/lib/import/pasteResume.ts`, `src/lib/import/featureScoring.ts`).
-  1. **Extract embedded PDF link annotations (`pdfResume.ts`):** Read `page.getAnnotations()` for `Link` annotations with `url` (e.g. `github.com/...`, `linkedin.com/in/...`) so LaTeX/Awesome-CV resumes that use FontAwesome icons + bare usernames still auto-populate `Profiles` URLs. Also rejoin non-breaking hyphen line-wraps (`\u2011\n`).
-  2. **Heading normalization (`pasteResume.ts`):** Strip trailing parenthetical dates/notes (e.g. `PROFESSIONAL DEVELOPMENT (AUG 2025 - PRESENT)` → `professional development`) before checking `SECTION_ALIASES`, and add `key project`, `achievements & extracurriculars`, `professional development`, and `certifications & education` (splitting degree lines inside a combined section into `education` when school/degree keywords match).
-  3. **Tight punctuation & durations (`pasteResume.ts`, `featureScoring.ts`):** Accept optional spacing around en-dashes (`–Infosys`), tight `CGPA:7.6` / `12th –92.0%` grade patterns, and duration tokens (`3 Months`, `1 Month`) as Experience date metadata.
-  4. **Page-break continuation bullets:** When Page 2+ starts with bullets before any new bold/dated role header, append them to the previous page's last Experience entry instead of dropping or starting an untitled role.
+- [ ] P2: Harden PDF & paste parsing against real-world LaTeX, Word, Canva, and Indian resume edge cases (`src/lib/import/pdfResume.ts`, `src/lib/import/pdfLayout.ts`, `src/lib/import/pasteResume.ts`, `src/lib/import/featureScoring.ts`).
+  1. **PDF text cleanup & link annotations (`pdfResume.ts`, `pdfLayout.ts`):**
+     - Run `.normalize("NFKC")` to decompose ligatures (`ﬁ`→`fi`, `ﬂ`→`fl`, `ﬀ`→`ff`), normalize smart quotes (`“”`/`‘’`) and em/en-dashes (`—`/`–`), rejoin non-breaking hyphen line-wraps (`\u2011\n`), and normalize decorative line-start bullets (`➢ ➤ ➔ ► ▸ ❖ ◆ ◇ ✓ ✔`) to `•`.
+     - Extract embedded PDF `Link` annotations (`page.getAnnotations()`) for known profile hosts (`github.com`, `linkedin.com`, etc.) so LaTeX resumes using FontAwesome icons + bare usernames still populate `Profiles` URLs.
+     - Preserve wide `typicalCharWidth` phrase gaps as `, ` separators inside `Skills` lines so table/grid skills never flatten into glued blobs (`"PythonSQLTableauExcel"`).
+  2. **Heading normalization & combined sections (`pasteResume.ts`):**
+     - Collapse letter-spaced headings (`E X P E R I E N C E` → `EXPERIENCE`) and strip trailing parenthetical dates/notes (`PROFESSIONAL DEVELOPMENT (AUG 2025 - PRESENT)` → `professional development`) before `SECTION_ALIASES` lookup.
+     - Add aliases for `key project`, `achievements & extracurriculars`, `professional development`, and `certifications & education` (routing degree/school lines inside a combined section into `education`).
+  3. **Dates, punctuation, grades & page-break continuations (`pasteResume.ts`, `featureScoring.ts`):**
+     - Expand shortened year ranges (`2019–21`, `2023-24` → `2019`–`2021`, `2023`–`2024`), map season dates (`Spring`/`Summer`/`Fall`/`Winter YYYY` → `03`/`06`/`09`/`12`), and accept duration tokens (`3 Months`, `1 Month`) as Experience date metadata.
+     - Support optional spacing around dashes (`–Infosys`) and tight grade patterns (`CGPA:7.6`, `12th –92.0%`).
+     - When Page 2+ begins with bullets before any new bold/dated role header, append them to the prior page's last Experience entry instead of starting an untitled role.
 
 
 ## Done
