@@ -53,7 +53,7 @@ describe("template registry", () => {
     const studio = getTemplate("gengar");
     expect(studio.columns).toBe(2);
     expect(studio.atsSafe).toBe(false);
-    expect(studio.badge).toBe("Best for direct/human review");
+    expect(studio.badge).toBe("Human review");
   });
 
   it("keeps the measure-layer root class in sync with every template", () => {

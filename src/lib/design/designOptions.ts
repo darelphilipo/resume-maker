@@ -71,7 +71,7 @@ export const FONT_PAIRINGS: readonly FontPairing[] = [
   {
     id: "classic",
     label: "Classic",
-    description: "Serif headings over a sans-serif body.",
+    description: "Serif headings over sans-serif body.",
     body: "var(--font-sans)",
     heading: "var(--font-serif)",
   },

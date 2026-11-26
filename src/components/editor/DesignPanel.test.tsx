@@ -90,7 +90,7 @@ describe("DesignPanel", () => {
     expect(templateRadios).toHaveLength(6);
     expect(screen.getAllByText("ATS-Safe")).toHaveLength(5);
     expect(
-      screen.getByText("Best for direct/human review"),
+      screen.getByText("Human review"),
     ).toBeInTheDocument();
 
     const input = screen.getByRole("radio", {
@@ -106,7 +106,7 @@ describe("DesignPanel", () => {
 
     const badges = [
       ...screen.getAllByText("ATS-Safe"),
-      screen.getByText("Best for direct/human review"),
+      screen.getByText("Human review"),
     ];
 
     for (const badge of badges) {
@@ -204,12 +204,25 @@ describe("DesignPanel", () => {
       const target = input.closest("label") as HTMLElement;
       const dot = target.querySelector("[data-accent-dot]") as HTMLElement;
 
-      expect(target).toHaveClass("relative");
+      expect(target).toHaveClass("relative", "rounded-full");
       expect(target).toHaveAttribute("title", swatch.label);
       expect(input).toHaveAttribute("aria-label", swatch.label);
       expect(dot).toHaveClass("h-7", "w-7", "rounded-full");
       expect(dot).toHaveStyle({ backgroundColor: swatch.hex });
     }
+  });
+
+  it("names the active accent beside the heading and follows the choice", () => {
+    render(<DesignPanel />);
+
+    const activeName = document.querySelector(
+      "[data-accent-name]",
+    ) as HTMLElement;
+    expect(activeName).toHaveTextContent("· Monochrome");
+
+    fireEvent.click(screen.getByRole("radio", { name: /^Indigo/ }));
+
+    expect(activeName).toHaveTextContent("· Indigo");
   });
 
   it("writes both font families when a pairing is chosen", () => {

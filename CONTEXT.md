@@ -1769,6 +1769,23 @@ rediscover.
         the p-token needs two digits and a non-word boundary, so `p2p` stays
         dimmed.
 
+   112. **The Design heading pins inside its own column, and the accent name is
+        part of the legend.** `#panel-design` is an independent desktop scroller
+        (#51), so the card heading lives in a wrapper with
+        `lg:sticky lg:top-0 lg:z-10 lg:bg-surface` plus
+        `lg:-mx-4 lg:-mt-4 lg:rounded-t-2xl lg:px-4 lg:pt-4 lg:pb-4`. The
+        negative margin makes the sticky surface cover the card's padding band,
+        and the wrapper's `pb-4` replaces the card's former `gap-4`, so options
+        scroll underneath the heading instead of showing through a gap. Do not
+        make the panel itself sticky — the `EditorWorkspace` test asserts the
+        three tabpanels are not (`lg:sticky` belongs to the chrome rows, not the
+        columns). The `Accent color` legend renders the active swatch name
+        inline (`Accent color · Indigo`) via `data-accent-name`, so the current
+        choice is visible without hovering; the swatch target stays
+        `rounded-full` so its `focus-within` ring matches the circular dot.
+        `Studio Sidebar`'s badge is the short `Human review` label, which keeps
+        the template name on one line at 390px.
+
 ## Verification and tooling
 
 ```powershell
@@ -1833,6 +1850,32 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-26 — Design panel micro-polish: accent name, short badge, sticky heading
+- Task: top Queue item (P2), moved to In Progress first. Both sub-items were
+  open.
+- Change: the `Accent color` legend now shows the active swatch name inline
+  (`Accent color · Indigo`) through `data-accent-name`, while the per-swatch
+  `title`/`aria-label` stay; the swatch target is `rounded-full` so its
+  focus-within ring matches the dot. `Studio Sidebar`'s badge is now
+  `Human review`, registry copy uses US spelling (`centered`, `Brand-colored`),
+  and `Classic` reads "Serif headings over sans-serif body." The Design card's
+  heading sits in a `lg:sticky lg:top-0` full-bleed wrapper (`lg:bg-surface`,
+  negative margins plus matching padding) so it pins inside `#panel-design`'s
+  own desktop scroller; the card gap moved to that wrapper's `pb-4`. Decision
+  #112; README feature tour updated.
+- Tests: accent-name inline/update, swatch `rounded-full`, shortened badge and
+  copy expectations, and an `EditorWorkspace` sticky-heading assertion.
+  `npm run typecheck` clean; `npm test` 1182 pass across 107 files;
+  `npm run lint` clean.
+- Files: `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/templates/registry.ts` (+ test),
+  `src/templates/shared/TemplateBadge.test.tsx`,
+  `src/lib/design/designOptions.ts`,
+  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the real sticky/scroll geometry
+  at 390px and desktop is browser-unverified.
 
 ### 2026-11-26 — References redaction, desktop zoom pill, exact Trim-tips focus
 - Task: the lone Queue item (P1), moved to In Progress first. All four
@@ -2042,30 +2085,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/editor/EditorWorkspace.tsx` (+ test),
   `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (1142 pass), `npm run lint` (clean).
-
-### 2026-11-25 — Mobile micro-polish: Sans label, ATS top line, AI accordion label
-- Task: top Queue item (P1), the final device-review micro-polish, moved to In
-  Progress first. Sub-items 1 and 4 were already in the tree (the label carried
-  an inline family, and the `Min 78%` notice had become the disabled Fit row in
-  Review), so they were hardened/verified rather than re-implemented.
-- Change: `DesignPanel` gives every Font pairing label an explicit
-  `fontPairingLabelClass` utility (`font-sans` / `font-serif`) beside its inline
-  family, so `Sans` cannot inherit the serif Design heading. `LiveCanvasViewport`
-  returns the scroller to the top whenever `mode` becomes `ats` (a scrolled
-  paper used to open ATS mid-paragraph), and `AtsTextView` adds `pt-1` +
-  `leading-relaxed` to the intro caption. The AI accordion title is now
-  `Import via AI prompt`, with *For scanned or Canva PDFs.* as the first
-  sentence inside the panel (no mid-word `scanne…` ellipsis at 390px). README
-  already described the short label, so no feature copy changed.
-- Tests: 1131 pass (new Sans class assertions, ATS caption padding/leading,
-  mode-switch scroll reset, and the shortened accordion name + helper copy).
-  Verified `npm run typecheck`, `npm test`, `npm run lint`.
-- Files: `src/components/editor/DesignPanel.tsx` (+ test),
-  `src/components/preview/AtsTextView.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/launcher/Launcher.tsx` (+ test), `CONTEXT.md`, `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the 390px clipping is
-  browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

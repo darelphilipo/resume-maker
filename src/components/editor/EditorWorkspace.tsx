@@ -543,10 +543,14 @@ export function EditorWorkspace() {
             "lg:order-3",
           )} my-auto w-full max-w-3xl self-center lg:my-0 lg:max-w-none lg:self-stretch`}
         >
-          <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_8px_rgba(23,40,57,0.04)]">
-            <h2 className="font-serif text-xl font-semibold tracking-tight">
-              Design
-            </h2>
+          <div className="flex flex-col rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_8px_rgba(23,40,57,0.04)]">
+            {/* The Design column scrolls independently on desktop, so the
+                heading stays put while the long option list moves underneath. */}
+            <div className="pb-4 lg:sticky lg:top-0 lg:z-10 lg:-mx-4 lg:-mt-4 lg:rounded-t-2xl lg:bg-surface lg:px-4 lg:pb-4 lg:pt-4">
+              <h2 className="font-serif text-xl font-semibold tracking-tight">
+                Design
+              </h2>
+            </div>
             <DesignPanel />
           </div>
         </section>

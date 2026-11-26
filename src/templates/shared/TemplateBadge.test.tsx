@@ -19,7 +19,7 @@ describe("TemplateBadge", () => {
   it("shows the human-review label instead on the two-column option", () => {
     render(<TemplateBadge template={getTemplate("gengar")} />);
 
-    expect(screen.getByText("Best for direct/human review")).toBeInTheDocument();
+    expect(screen.getByText("Human review")).toBeInTheDocument();
     expect(screen.queryByText("ATS-Safe")).toBeNull();
   });
 

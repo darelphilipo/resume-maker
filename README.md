@@ -228,8 +228,8 @@ in control of every line, and your data stays on your device.
 - **Six resume templates** in Design: Engineering Classic (Jake), Ivy/Executive
   (Harvard), Modern Accent, Compact 1-Pager, and Hybrid Skills-First are
   single-column layouts badged **ATS-Safe**, so a parser reads them in one clean
-  top-to-bottom flow. **Studio Sidebar** is a two-column option badged **Best
-  for direct/human review**. Pick one by tapping its card — your content, page
+  top-to-bottom flow. **Studio Sidebar** is a two-column option badged
+  **Human review**. Pick one by tapping its card — your content, page
   size, and saves are unchanged, and the preview and PDF use the same layout.
   Its narrow side column (Skills, Certifications, Languages, Interests) stays
   anchored on Page 1 and is capped at that page's remaining height; anything
@@ -247,14 +247,16 @@ in control of every line, and your data stays on your device.
   so the PDF never starts with a blank page holding only your name.
 - **Accent, fonts, and density** in Design: pick an accent from seven curated
   colors (or plain monochrome) in one compact strip of round swatches — the
-  selected color wears a crisp ring and checkmark, and its name appears on hover
-  or as a screen-reader label. **Sans**, **Serif**, and **Classic** pairings and
-  **Compact**, **Normal**, and **Relaxed** spacing sit in short one-row controls,
-  with each font name drawn in the typeface it applies. All four design choices
-  stay scannable without heavy scrolling, even on a phone. Each template card
-  shows its **ATS-Safe** (or human review) badge in the same top-right spot, so
-  the labels never jump around as you compare them. The preview, page count, and
-  printed PDF all use the same choices, so the look you pick is the one you save.
+  selected color wears a crisp ring and checkmark, and its name sits beside the
+  **Accent color** heading, on hover, and in the screen-reader label. **Sans**,
+  **Serif**, and **Classic** pairings and **Compact**, **Normal**, and
+  **Relaxed** spacing sit in short one-row controls, with each font name drawn
+  in the typeface it applies. All four design choices stay scannable without
+  heavy scrolling, even on a phone, and the **Design** heading stays in view as
+  the options scroll on desktop. Each template card shows its **ATS-Safe** (or
+  **Human review**) badge in the same top-right spot, so the labels never jump
+  around as you compare them. The preview, page count, and printed PDF all use
+  the same choices, so the look you pick is the one you save.
 - A4 and US Letter page sizes — tap **A4** or **Letter** in the page-size control
   to switch.
 - Live paginated preview that measures real content, not an estimate. Long

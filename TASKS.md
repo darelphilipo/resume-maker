@@ -24,10 +24,6 @@ _empty
 
 ### P1 — Page 2 (Content Tab) Fixes & Consistency
 
-- [ ] P2: Final Design panel micro-polish (`src/components/editor/DesignPanel.tsx`, `src/templates/registry.ts`).
-  1. Display the active accent color name inline next to the `Accent color` heading (e.g. `Accent color · Indigo`), add `title` tooltips on each swatch, and use `rounded-full` on the swatch `:focus-visible` outline so it matches the circular dot.
-  2. Shorten the `Studio Sidebar` badge from `"Best for direct/human review"` to `"Human review"` so `"Studio Sidebar"` stays on one line, standardize US spelling (`"centered"`, `"Brand-colored"`), clarify `"Classic"` copy (*"Serif headings over sans-serif body"*), and make the `Design` heading sticky at the top of the desktop column.
-
 - [ ] P2: Cross-app design-system consistency pass (`src/components/editor/BasicsForm.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/editor/JdMatchDrawer.tsx`).
   1. **Fix `Basics` truncation & match card tint (`BasicsForm.tsx`):** Add `shrink-0` to the `Basics` label and `min-w-0 truncate` to the candidate name preview so long names never squish `Basics` to `Bas...`, and match `Basics`'s surface tint to the other section rows (`Summary`, `Experience`, etc.).
   2. **Unify segmented control active state (`LiveCanvasViewport.tsx`):** Style the active `Visual | ATS` segment with the same dark-navy fill and white text used by `A4 | Letter`, `Sans | Serif | Classic`, and `Compact | Normal | Relaxed` in `DesignPanel.tsx`.
@@ -40,6 +36,23 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-26 — Finished the Design panel micro-polish. The `Accent color`
+  legend now shows the active swatch name inline (`Accent color · Indigo`), each
+  swatch keeps its `title`/`aria-label`, and the swatch focus target is
+  `rounded-full` so its ring matches the circular dot. The `Studio Sidebar`
+  badge is now the short `Human review`, registry copy uses US spelling
+  (`centered`, `Brand-colored`), `Classic` reads "Serif headings over sans-serif
+  body.", and the `Design` heading pins at the top of its own desktop column
+  while the options scroll underneath. Verified `npm run typecheck`, `npm test`
+  (1182 pass, 107 files), `npm run lint`. Files:
+  `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/templates/registry.ts` (+ test),
+  `src/templates/shared/TemplateBadge.test.tsx`,
+  `src/lib/design/designOptions.ts`,
+  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains sandbox-blocked, so the real
+  sticky/scroll geometry is browser-unverified.
 
 - [x] 2026-11-26 — Closed the Page 2 consistency follow-up. `Anonymize` now
   redacts References `name` / `company` / `position` / `phone` / `email` with

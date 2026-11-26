@@ -60,7 +60,7 @@ function fontPairingLabelClass(heading: string): string {
 const ACCENT_GRID_CLASS = "mt-1 grid grid-cols-4 gap-1.5 sm:grid-cols-8";
 
 const ACCENT_TARGET_CLASS =
-  "relative flex min-h-9 min-w-0 cursor-pointer items-center justify-center rounded-lg transition-colors pointer-coarse:min-h-11 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-1";
+  "relative flex min-h-9 min-w-0 cursor-pointer items-center justify-center rounded-full transition-colors pointer-coarse:min-h-11 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-1";
 
 function accentDotClass(isCurrent: boolean): string {
   return `flex h-7 w-7 items-center justify-center rounded-full border border-black/10 transition-shadow ${
@@ -88,6 +88,9 @@ export function DesignPanel() {
   const patchDoc = useResumeStore((state) => state.patchDoc);
   const currentTemplate = getTemplate(templateId);
   const accentId = resolveAccentId(primary);
+  const activeAccent =
+    ACCENT_SWATCHES.find((swatch) => swatch.id === accentId) ??
+    ACCENT_SWATCHES[0];
   const pairingId = resolveFontPairingId(bodyFont, headingFont);
   const densityId = resolveDensityId(density, densityGapY, densityLineHeight);
 
@@ -180,7 +183,16 @@ export function DesignPanel() {
       </fieldset>
 
       <fieldset className="flex flex-col gap-2" data-design-section="accent">
-        <legend className="text-sm font-medium">Accent color</legend>
+        <legend className="text-sm font-medium">
+          Accent color
+          <span
+            data-accent-name=""
+            className="font-normal text-muted"
+          >
+            {" · "}
+            {activeAccent.label}
+          </span>
+        </legend>
         <p className="text-xs text-muted">
           Used for section rules, highlights, and tags. Your text stays dark and
           readable.

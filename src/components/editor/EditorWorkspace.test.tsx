@@ -368,6 +368,25 @@ describe("EditorWorkspace", () => {
     ]);
   });
 
+  it("pins the Design heading while its desktop column scrolls", async () => {
+    await renderReadyWorkspace();
+
+    const designPanel = screen.getByRole("tabpanel", { name: "Design" });
+    const heading = screen.getByRole("heading", { level: 2, name: "Design" });
+    const sticky = heading.parentElement as HTMLElement;
+
+    // The panel itself is not sticky (#51), but its heading sticks inside the
+    // column's own scroller and carries the card surface so options scroll
+    // underneath instead of through it.
+    expect(sticky).toHaveClass(
+      "lg:sticky",
+      "lg:top-0",
+      "lg:z-10",
+      "lg:bg-surface",
+    );
+    expect(designPanel).toContainElement(sticky);
+  });
+
   it("starts with Basics collapsed so the section list is visible", async () => {
     await renderReadyWorkspace();
 

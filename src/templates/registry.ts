@@ -43,7 +43,7 @@ const ENGINEERING_CLASSIC: TemplateDefinition = {
 const IVY_EXECUTIVE: TemplateDefinition = {
   id: "persian",
   label: "Ivy/Executive (Harvard)",
-  description: "Serif headings and a centred, traditional header.",
+  description: "Serif headings and a centered, traditional header.",
   columns: 1,
   atsSafe: true,
   Component: IvyExecutiveTemplate,
@@ -52,7 +52,7 @@ const IVY_EXECUTIVE: TemplateDefinition = {
 const MODERN_ACCENT: TemplateDefinition = {
   id: "bronzor",
   label: "Modern Accent",
-  description: "Brand-coloured name and section rules.",
+  description: "Brand-colored name and section rules.",
   columns: 1,
   atsSafe: true,
   Component: ModernAccentTemplate,
@@ -82,7 +82,7 @@ const STUDIO_SIDEBAR: TemplateDefinition = {
   description: "Two-column layout with a narrow at-a-glance sidebar.",
   columns: 2,
   atsSafe: false,
-  badge: "Best for direct/human review",
+  badge: "Human review",
   Component: StudioSidebarTemplate,
 };
 
