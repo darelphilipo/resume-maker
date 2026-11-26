@@ -98,6 +98,27 @@ const TRUST_POINTS = [
 const INPUT_CLASS =
   "mt-2 w-full rounded-xl border border-[#d8d2c6] bg-[#fbfaf7] px-3 py-2.5 text-sm text-[#172839] transition-colors placeholder:text-[#8a8f94] focus-visible:border-[#1b3a57] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/15";
 
+/**
+ * Derive the next textarea value from a paste on the same tick. Safari can
+ * delay its `change` event, so the import buttons must not wait for the browser
+ * to echo the value back.
+ */
+function pastedTextValue(
+  event: ClipboardEvent<HTMLTextAreaElement>,
+): string | null {
+  const pasted = event.clipboardData?.getData("text") ?? "";
+
+  if (pasted === "") {
+    return null;
+  }
+
+  const textarea = event.currentTarget;
+  const start = textarea.selectionStart ?? textarea.value.length;
+  const end = textarea.selectionEnd ?? textarea.value.length;
+
+  return `${textarea.value.slice(0, start)}${pasted}${textarea.value.slice(end)}`;
+}
+
 const STATUS_BADGE_CLASSES: Record<ResumeStatus, string> = {
   master: "border-[#d8d2c6] bg-[#f1ede5] text-[#33465a]",
   draft: "border-[#d8d2c6] bg-white text-[#5b6a7a]",
@@ -310,6 +331,7 @@ export function Launcher() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [isAiImporting, setIsAiImporting] = useState(false);
   const [aiCopied, setAiCopied] = useState(false);
+  const [aiPromptPreviewOpen, setAiPromptPreviewOpen] = useState(false);
   const aiDisclosureRef = useRef<HTMLDivElement>(null);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
   const [isReadingPdf, setIsReadingPdf] = useState(false);
@@ -612,19 +634,25 @@ export function Launcher() {
   }
 
   function handlePasteText(event: ClipboardEvent<HTMLTextAreaElement>) {
-    const pasted = event.clipboardData?.getData("text") ?? "";
+    const next = pastedTextValue(event);
 
-    if (pasted === "") {
+    if (next === null) {
       return;
     }
 
-    const textarea = event.currentTarget;
-    const start = textarea.selectionStart ?? textarea.value.length;
-    const end = textarea.selectionEnd ?? textarea.value.length;
-    const next = `${textarea.value.slice(0, start)}${pasted}${textarea.value.slice(end)}`;
-
     setPastedText(next);
     setPasteError(null);
+  }
+
+  function handleAiPasteText(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const next = pastedTextValue(event);
+
+    if (next === null) {
+      return;
+    }
+
+    setAiPastedText(next);
+    setAiError(null);
   }
 
   function startRename(row: ResumeRow) {
@@ -876,7 +904,7 @@ export function Launcher() {
                             ? undefined
                             : (event) => handleRecentRowClick(event, row)
                         }
-                        className={`rounded-xl border border-[#e3ddd2] bg-[#fbfaf7] px-3 py-2.5 ${
+                        className={`group rounded-xl border border-[#e3ddd2] bg-[#fbfaf7] px-3 py-2.5 ${
                           rowIsInteractive
                             ? ""
                             : "cursor-pointer transition-colors hover:border-[#c9c2b6] hover:bg-white"
@@ -932,13 +960,28 @@ export function Launcher() {
                               aria-label={`Open ${name}`}
                               className="flex min-h-11 min-w-0 flex-1 flex-col justify-center rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-wait"
                             >
-                              <span className="truncate text-sm font-medium text-[#172839]">
+                              <span
+                                className={`truncate text-sm font-medium text-[#172839] ${
+                                  rowIsInteractive
+                                    ? ""
+                                    : "group-hover:text-[#1b3a57] group-hover:underline group-hover:underline-offset-2"
+                                }`}
+                              >
                                 {name}
                               </span>
-                              <span className="truncate text-xs text-[#6a7683]">
-                                {isOpening
-                                  ? "Opening..."
-                                  : recentResumeEditedLabel(row.updatedAt)}
+                              <span className="flex min-w-0 items-center gap-1.5 text-xs text-[#6a7683]">
+                                {isOpening ? (
+                                  <CircleNotch
+                                    size={12}
+                                    aria-hidden
+                                    className="shrink-0 animate-spin"
+                                  />
+                                ) : null}
+                                <span className="truncate">
+                                  {isOpening
+                                    ? "Opening..."
+                                    : recentResumeEditedLabel(row.updatedAt)}
+                                </span>
                               </span>
                             </button>
 
@@ -1300,7 +1343,7 @@ export function Launcher() {
               type="button"
               onClick={() => void handlePasteImport()}
               disabled={pastedText.trim() === "" || isPasting}
-              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-transparent bg-[#172839] px-4 py-3 text-sm font-semibold text-white transition-colors enabled:hover:bg-[#24496b] enabled:active:bg-[#10202f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-[#d8d2c6] disabled:bg-[#e8e4dc] disabled:text-[#5b6a7a]"
+              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-transparent bg-[#172839] px-4 py-3 text-sm font-semibold text-white enabled:hover:bg-[#24496b] enabled:active:bg-[#10202f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-[#d8d2c6] disabled:bg-[#e8e4dc] disabled:text-[#5b6a7a]"
             >
               <ClipboardText size={18} aria-hidden />
               {isPasting ? "Creating..." : "Create resume from text"}
@@ -1342,6 +1385,37 @@ export function Launcher() {
                 {aiCopied ? "Copied" : "Copy prompt"}
               </button>
 
+              <button
+                type="button"
+                aria-expanded={aiPromptPreviewOpen}
+                aria-controls={
+                  aiPromptPreviewOpen ? "ai-prompt-preview" : undefined
+                }
+                onClick={() => setAiPromptPreviewOpen((open) => !open)}
+                className="mt-2 flex min-h-9 w-full items-center justify-between gap-2 rounded-lg px-1 text-left text-xs font-medium text-[#33465a] transition-colors hover:text-[#1b3a57] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2"
+              >
+                <span>Preview prompt</span>
+                <CaretDown
+                  size={14}
+                  aria-hidden
+                  className={`shrink-0 text-[#7a8794] transition-transform ${
+                    aiPromptPreviewOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {aiPromptPreviewOpen ? (
+                <div
+                  id="ai-prompt-preview"
+                  className="mt-1 rounded-lg border border-[#e6e0d6] bg-[#fbfaf7] p-3"
+                >
+                  <pre
+                    tabIndex={0}
+                    aria-label="AI import prompt"
+                    className="max-h-48 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words rounded font-mono text-[11px] leading-relaxed text-[#33465a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/30"
+                  >{AI_IMPORT_PROMPT}</pre>
+                </div>
+              ) : null}
+
               <label
                 htmlFor="ai-json-input"
                 className="mt-3 block text-sm font-medium text-[#33465a]"
@@ -1359,6 +1433,7 @@ export function Launcher() {
                   setAiPastedText(event.currentTarget.value);
                   setAiError(null);
                 }}
+                onPaste={handleAiPasteText}
                 rows={4}
                 placeholder='Paste the JSON reply here, e.g. {"basics":{"name":"..."}}'
                 className={`${INPUT_CLASS} min-h-28 resize-none font-mono text-xs`}
@@ -1367,7 +1442,7 @@ export function Launcher() {
                 type="button"
                 onClick={() => void handleAiImport()}
                 disabled={aiPastedText.trim() === "" || isAiImporting}
-                className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#172839] px-4 py-3 text-sm font-semibold text-white transition-colors enabled:hover:bg-[#24496b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#e8e4dc] disabled:text-[#5b6a7a]"
+                className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#172839] px-4 py-3 text-sm font-semibold text-white enabled:hover:bg-[#24496b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#e8e4dc] disabled:text-[#5b6a7a]"
               >
                 {isAiImporting ? "Importing..." : "Import resume"}
               </button>
@@ -1391,10 +1466,10 @@ export function Launcher() {
             }}
           >
             <p className="text-sm text-[#5b6a7a]">
-              Restore a JSON backup you exported earlier, or a resume file from
-              another tool in the open JSON Resume format. To make a new backup,
-              open a resume and choose <strong>Backup</strong> (the ⋮ menu) in
-              the editor header.
+              Restore a single-resume JSON backup you exported earlier, or a
+              resume file in the open JSON Resume format. To make a new backup,
+              open a resume and choose <strong>Backup</strong> from the
+              top-right menu in the editor header.
             </p>
 
             <label

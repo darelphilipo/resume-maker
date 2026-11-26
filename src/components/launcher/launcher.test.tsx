@@ -250,6 +250,23 @@ describe("Launcher", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("restores a single-resume backup through one clean dashed dropzone", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+    await openBackupMenu(user);
+
+    expect(
+      screen.getByText(/Restore a single-resume JSON backup/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/top-right menu/)).toBeInTheDocument();
+    expect(screen.queryByText("⋮")).not.toBeInTheDocument();
+
+    const panel = document.getElementById("launcher-backup-panel");
+    expect(panel).not.toBeNull();
+    // Only the dropzone is dashed; its enclosing panel stays a solid card.
+    expect(panel?.querySelectorAll(".border-dashed")).toHaveLength(1);
+  });
+
   it("keeps the AI prompt import manual: copy a prompt, paste a reply, no network call", async () => {
     const user = userEvent.setup();
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(
@@ -288,6 +305,32 @@ describe("Launcher", () => {
     expect(
       await screen.findByRole("button", { name: "Copied" }),
     ).toBeInTheDocument();
+  });
+
+  it("previews the exact AI prompt below Copy prompt", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+    await openAiMenu(user);
+
+    const toggle = screen.getByRole("button", { name: "Preview prompt" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText("AI import prompt")).not.toBeInTheDocument();
+
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveAttribute("aria-controls", "ai-prompt-preview");
+    const prompt = screen.getByLabelText("AI import prompt");
+    expect(prompt).toHaveTextContent(
+      "Convert the resume I paste below into standard JSON Resume format",
+    );
+    expect(prompt).toHaveTextContent("Return only the JSON object");
+    expect(prompt).toHaveAttribute("tabindex", "0");
+
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText("AI import prompt")).not.toBeInTheDocument();
   });
 
   it("gives every preset card the same width and keeps Fresh Graduate", () => {
@@ -347,6 +390,7 @@ describe("Launcher", () => {
     expect(button).toBeDisabled();
     expect(button).toHaveClass("disabled:bg-[#e8e4dc]");
     expect(button).not.toHaveClass("disabled:opacity-60");
+    expect(button).not.toHaveClass("transition-colors");
   });
 
   it("enables the paste action immediately on change and paste", async () => {
@@ -377,6 +421,34 @@ describe("Launcher", () => {
 
     expect(button).toBeEnabled();
     expect(textarea).toHaveValue("Ada Lovelace\nSoftware Engineer");
+  });
+
+  it("enables the AI import action immediately on change and paste", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+    await openAiMenu(user);
+
+    const textarea = screen.getByLabelText("Assistant's JSON reply");
+    const button = screen.getByRole("button", { name: "Import resume" });
+
+    expect(button).toBeDisabled();
+    expect(button).toHaveClass("disabled:bg-[#e8e4dc]");
+    expect(button).not.toHaveClass("transition-colors");
+
+    fireEvent.change(textarea, { target: { value: "{}" } });
+    expect(button).toBeEnabled();
+
+    fireEvent.change(textarea, { target: { value: "" } });
+    expect(button).toBeDisabled();
+
+    fireEvent.paste(textarea, {
+      clipboardData: {
+        getData: () => '{"basics":{"name":"Ada Lovelace"}}',
+      },
+    });
+
+    expect(button).toBeEnabled();
+    expect(textarea).toHaveValue('{"basics":{"name":"Ada Lovelace"}}');
   });
 
   it("explains that a single line is enough before pasting", async () => {
@@ -635,6 +707,40 @@ describe("Launcher", () => {
       expect(pushMock).toHaveBeenCalledWith("/editor?id=recent-1");
     });
     expect(useResumeStore.getState().doc.basics.name).toBe("Grace Hopper");
+  });
+
+  it("cues the clickable title and blocks double opens with a pending spinner", async () => {
+    await seedRecent("recent-1", "Grace Hopper");
+    const load = vi
+      .spyOn(useResumeStore.getState(), "loadResume")
+      .mockImplementation(() => new Promise(() => {}));
+    render(<Launcher />);
+
+    const open = await screen.findByRole("button", {
+      name: "Open Grace Hopper",
+    });
+    const row = open.closest("li");
+
+    expect(row).toHaveClass("group");
+    expect(within(open).getByText("Grace Hopper")).toHaveClass(
+      "group-hover:text-[#1b3a57]",
+    );
+
+    fireEvent.click(row as HTMLLIElement);
+
+    await waitFor(() => {
+      expect(open).toHaveAttribute("aria-busy", "true");
+    });
+    expect(within(open).getByText("Opening...")).toBeInTheDocument();
+    expect(open.querySelector(".animate-spin")).not.toBeNull();
+    expect(open).toBeDisabled();
+
+    // A second tap on the row or title cannot start another load.
+    fireEvent.click(row as HTMLLIElement);
+    fireEvent.click(open);
+
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it("does not open the resume when a row action is clicked", async () => {

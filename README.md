@@ -46,7 +46,9 @@ in control of every line, and your data stays on your device.
   you have saved something in this browser. The list is newest first: five show
   at a time, with a compact **Prev** / **Page 1 of N** / **Next** bar when there
   are more; tap anywhere on a row to reopen it, or use its buttons to rename,
-  duplicate, or delete it. Each row carries a status pill — **Master**,
+  duplicate, or delete it. The title underlines on hover, and the row you pick
+  shows a spinner while the resume opens, so a second tap cannot start another
+  copy. Each row carries a status pill — **Master**,
   **Draft**, **Applied**, **Interview**, or **Offer** — and an optional target
   company tag, so you can see at a glance where each copy stands. Change a
   status from the pill or type a company name right in the row without opening
@@ -69,12 +71,13 @@ in control of every line, and your data stays on your device.
   import (pasting the text yourself still works too).
 - **AI prompt rescue import** for scanned or Canva PDFs: open **Import via AI
   prompt**, tap **Copy prompt**, and paste it into a chat assistant together
-  with your resume text. Paste the assistant's JSON reply back into the app and
-  tap **Import resume** — no JSON file to save or upload on a phone. Markdown
-  fences, a little surrounding prose, and trailing commas are cleaned up for
-  you, and an incomplete reply gets a friendly error instead of a technical one.
-  Resume Maker never contacts the assistant itself: nothing is uploaded, and
-  the imported result stays editable in the same editor.
+  with your resume text. Prefer to check first? Open **Preview prompt** to read
+  the exact wording before copying it. Paste the assistant's JSON reply back
+  into the app and tap **Import resume** — no JSON file to save or upload on a
+  phone. Markdown fences, a little surrounding prose, and trailing commas are
+  cleaned up for you, and an incomplete reply gets a friendly error instead of a
+  technical one. Resume Maker never contacts the assistant itself: nothing is
+  uploaded, and the imported result stays editable in the same editor.
 - **Paste-to-parse import** (in the **Other ways to import** strip): paste the
   text of an existing resume from a PDF,
   LinkedIn profile, or another tool, and your contact details, summary,
@@ -102,8 +105,8 @@ in control of every line, and your data stays on your device.
   menu wipes the example names, summary, and entries across every section in one
   tap, leaving your layout and design intact — and **Undo** brings it all back.
 - **Backup & Restore** lives in the **Other ways to import** strip at the bottom
-  of the home page as a secondary option: restore a JSON backup you exported
-  earlier, or a resume file from
+  of the home page as a secondary option: restore a single-resume JSON backup
+  you exported earlier, or a resume file from
   another tool in the open **JSON Resume** format, without treating JSON as the
   main way to start.
 - **JSON export** in the editor at any time so you are never locked in: the

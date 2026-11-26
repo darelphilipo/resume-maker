@@ -22,17 +22,22 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P1: Homepage (`/`) polish from page-by-page review (`src/components/launcher/Launcher.tsx`).
-  1. **Remove double-dashed border in `Backup & Restore`:** Strip the duplicate nested `border-dashed` wrapper on the `Choose a JSON file` dropzone so it has one clean dashed border matching `Upload a PDF`, clarify the copy to *"Restore a single-resume JSON backup"*, and replace the cramped inline `⋮` glyph with plain text (*"the top-right menu"*).
-  2. **Instant button enablement on `Import resume` & `Create resume from text`:** Make the enabled dark-navy button state reflect `onChange` / `onPaste` immediately with no sluggish transition or blur delay.
-  3. **Recent Resume card hover & pending feedback:** Add a subtle hover highlight/cue on the clickable title area of each Recent Resume card and show a brief pending/loading state (`aria-busy` / subtle spinner) on the clicked card while navigating to `/editor/?id=...` to prevent accidental double-clicks.
-  4. **Add `"Preview prompt"` toggle in `Import via AI prompt`:** Add a compact collapsible `"Preview prompt"` disclosure below **Copy prompt** so users can inspect the exact prompt before pasting it into ChatGPT/Claude.
-
-
+_empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-26 — Closed the bookkeeping for the P1 homepage (`/`) polish. All
+  four sub-items were already implemented in the tree from the prior checkpoint
+  (single dashed Backup dropzone with *"Restore a single-resume JSON backup"* /
+  *top-right menu* copy; instant-on-type-and-paste import CTAs with no colour
+  fade; Recent Resume title hover cue plus spinner/`aria-busy` single-flight
+  guard; compact **Preview prompt** disclosure below **Copy prompt**) with their
+  regressions and README tour already updated, so this run verified them end to
+  end and moved the item to Done. Verified `npm run typecheck`, `npm test`
+  (1149 pass, 105 files). Files: `src/components/launcher/Launcher.tsx` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`. Playwright remains sandbox-blocked, so
+  the 390px hover/pending geometry is browser-unverified.
 - [x] 2026-11-26 — Finished the final mobile UX polish. The collapsed Basics
   header now reads Title Case at section-title weight; `EntryActions` is one
   nowrap row (icon-only eye/up/down left, labelled `Delete` right) and footer

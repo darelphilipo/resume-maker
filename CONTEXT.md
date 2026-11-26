@@ -1682,11 +1682,25 @@ rediscover.
         `Show all (N)` / `Show fewer` toggle (`aria-expanded`) instead of the
         non-interactive `+N more` line.
 
+   108. **Home-page import controls react on the same tick.** Both import CTAs
+        (`Create resume from text`, `Import resume`) read the next textarea
+        value from the shared `pastedTextValue(event)` fast-path in `Launcher`,
+        because Safari can delay `change` after a paste. Do not add
+        `transition-colors` to those two buttons: the 150ms colour fade made the
+        enabled navy state feel sluggish after typing or pasting. Only the
+        Backup dropzone is dashed; its enclosing `UtilityDisclosure` stays a
+        solid card, and the copy names the *top-right menu* instead of a `⋮`
+        glyph. The AI panel keeps the exact `AI_IMPORT_PROMPT` behind a compact
+        `Preview prompt` disclosure below **Copy prompt**. Recent-resume cues
+        live on the row's `li.group` (title underline/highlight), and the
+        existing `openingRecentId` state is the single-flight guard, so a second
+        row or title tap cannot start another load while the spinner shows.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~1145 tests
+npm test               # vitest, ~1149 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1746,6 +1760,43 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-26 — Closed the home-page polish bookkeeping
+- Task: the lone In Progress item (P1 Homepage `/` polish). Its code, tests,
+  README copy and Decision #108 were already in the tree from the prior
+  checkpoint, so this run verified them end to end and finished the bookkeeping.
+- Change: confirmed the Backup dropzone keeps one dashed border with
+  "Restore a single-resume JSON backup" / top-right menu copy, both import CTAs
+  enable on the same tick via `pastedTextValue` with no `transition-colors`, the
+  Recent title has a group hover cue plus the `openingRecentId` spinner/`aria-busy`
+  single-flight guard, and the AI panel has the compact **Preview prompt**
+  disclosure. Moved the item from In Progress to Done in `TASKS.md`; no code or
+  README changes were needed.
+- Tests: `npm run typecheck` clean; `npm test` 1149 pass across 105 files.
+- Files: `TASKS.md`, `CONTEXT.md`.
+- Note: Playwright remains sandbox-blocked, so the 390px hover/pending geometry
+  is browser-unverified.
+
+### 2026-11-26 — Home-page polish: instant import CTAs, recent-row cues, prompt preview
+- Task: the lone Queue item (P1), moved to In Progress first. All four
+  sub-items were open.
+- Change: Backup & Restore keeps one dashed dropzone (its panel stays solid),
+  reads "Restore a single-resume JSON backup", and names the *top-right menu*
+  instead of the `⋮` glyph. Both import CTAs lost `transition-colors` so their
+  enabled navy fill appears on the same tick, and the AI reply textarea now uses
+  the same `pastedTextValue` paste fast-path as the paste box. Recent rows gained
+  a `group` hover underline/highlight on the title plus an `Opening...` spinner
+  while `openingRecentId` blocks a second tap. The AI panel gained a compact
+  **Preview prompt** disclosure showing `AI_IMPORT_PROMPT` verbatim. Decision
+  #108; README Key features updated.
+- Tests: 4 new cases (single dashed dropzone/copy, AI enable-on-change-and-paste
+  + no transition, prompt preview toggle, recent hover/spinner/double-tap guard);
+  `npm run typecheck` clean; `npm test` 1149 pass across 105 files; `npm run lint`
+  clean.
+- Files: `src/components/launcher/Launcher.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the 390px hover/pending geometry
+  is browser-unverified.
 
 ### 2026-11-26 — Final mobile UX polish (Basics, entry actions, trim tips)
 - Task: the lone Queue item (P1), moved to In Progress first. All five sub-items
@@ -1906,53 +1957,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Verified: `npm run typecheck`, `npm test` (1100 pass), `npm run lint` (clean).
   Playwright remains sandbox-blocked; the new cases are pure/unit-level.
-
-### 2026-11-25 — Blocked-fit reason moved out of the Preview bar
-- Task: top Queue item (P0). The spill pill appended `· Min 78%` when no
-  readable fit existed, pushing `Review ▾` into right-edge clipping at 390px.
-- Change: `PageOverflowBanner` now renders the page count plus `· Fit` only when
-  a fit target and handler exist; with a blocked fit it keeps just `2 pages`.
-  Its `fitBlockedReason` prop is gone (and `EditorWorkspace` stopped passing it).
-  `ReviewMenu` now renders a disabled `Fit to 1 Page` row
-  (`[data-review-fit-blocked]`) with the plain-English reason beneath the label
-  instead of a separate amber paragraph. `fitCopy.ts` dropped the now-unused
-  `MIN_FIT_LABEL` export and rewrote the `too-tall` copy as "Too long to shrink
-  to 1 page cleanly — trim a few lines or try Compact density." Decisions
-  #84/#86 updated; README's page-count bullet rewritten.
-- Tests: `PageOverflowBanner` asserts the blocked pill has no `Min`/`%`/`trim`
-  text and no Fit button; `ReviewMenu` asserts the disabled row carries the
-  label + explanation for both blocked reasons; `fitCopy` asserts no percentage
-  floor. 1075 pass.
-- Files: `src/components/preview/PageOverflowBanner.tsx` (+ test),
-  `src/components/editor/ReviewMenu.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx`,
-  `src/lib/pagination/fitCopy.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1075 pass), `npm run lint`.
-  Playwright remains sandbox-blocked, so the 390px right-edge geometry is
-  browser-unverified.
-
-### 2026-11-24 — Rich PDF line metadata and a pure layout engine
-- Task: top Queue item (P0, step 1): preserve bold/size/phrase metadata in PDF
-  import and move two-column/glyph cleanup into a testable layout module.
-- Change: new `src/lib/import/pdfLayout.ts` owns `PdfTextItem`/`PdfPhrase`/
-  `PdfLine`, font weight/size helpers, `computeTypicalCharWidth`,
-  `shouldAddSpaceBetweenText`, phrase grouping, line gaps, page/column breaks,
-  wrapped-line merging, and the existing gutter detector. `pdfResume.ts` now
-  builds each page's operator list before resolving `commonObjs` font names,
-  returns `lines` on `PdfResumeResult`, and exposes `extractPdfLines`;
-  `extractPdfText`/`groupPdfTextItems` keep their exact plain-text output.
-  Punctuation spacing now separates `Skills:Python` and `SQL,SAP` even when the
-  PDF reports no gap. Decision #99; README PDF copy updated.
-- Tests: new `pdfLayout.test.ts` covers bold names/transform sizes, modal body
-  char width, phrase splitting, punctuation attach/space rules, PUA/zero-width
-  stripping, soft-hyphen merge, line gaps, page/column breaks, and a Canva
-  banner/sidebar/main ordering fixture. Launcher PDF mocks gained `lines: []`.
-  1076 pass.
-- Files: `src/lib/import/pdfLayout.ts` (new, + test),
-  `src/lib/import/pdfResume.ts`, `src/components/launcher/launcher.test.tsx`,
-  `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1076 pass).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright
