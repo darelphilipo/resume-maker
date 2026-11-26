@@ -1727,6 +1727,26 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-26 — Folded the scratch pagination harness into `computePages.test.ts`
+- Task: Inbox, In Progress, and Queue were all empty, so this run followed the
+  repo's empty-queue precedent and picked up the deferred test-hygiene debt the
+  2026-11-24 Studio Sidebar checkpoint left behind.
+- Change: moved the two realistic 8-bullet `gengar` cases out of
+  `src/lib/pagination/__scratch.test.ts` into the existing "split entries in the
+  Studio Sidebar's narrow Page 1" describe. They now share `EIGHT_BULLETS`,
+  `studioEightBulletDoc(extraExperience)`, and `fragmentHeights(fragments,
+  first, rest)` instead of a one-off `buildDoc`/`heightsFor`. The scratch file
+  became the documented comment-only `export {}` stub and joined
+  `__explore.test.tsx` in Vitest's `exclude`, because file deletion is still
+  unavailable here.
+- Tests: `npm run typecheck` clean; `npm test` 1142 pass across 105 files (the
+  two cases moved, so the count is unchanged while the file count dropped by
+  one); `npm run lint` clean. No user-visible behaviour changed, so README was
+  left alone.
+- Files: `src/lib/pagination/computePages.test.ts`,
+  `src/lib/pagination/__scratch.test.ts`, `vitest.config.ts`, `CONTEXT.md`,
+  `TASKS.md`.
+
 ### 2026-11-25 — Closed the section-header drag-handle bookkeeping
 - Task: the lone In Progress item (P1: pointer drag handle + uniform 44px rows).
   Its code, tests, README copy and Decision #106 were already in the tree from
@@ -1893,26 +1913,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   Done with its file list and cleared the duplicated Queue entry.
 - Verified: `npm run typecheck`, `npm test` (1061 pass), `npm run lint` (clean).
 - Files: `TASKS.md`, `CONTEXT.md`.
-
-### 2026-11-24 — Upload-PDF-first launcher and AI prompt rescue import
-- Task: In Progress was empty, so this run took the single top Queue item (P1):
-  redesign `/` around Upload PDF and add a paste-based AI Prompt Rescue Import.
-- Change: new pure `src/lib/import/aiJsonImport.ts` cleans fenced/prose-wrapped
-  replies (balanced-block extraction, trailing-comma stripping) and delegates to
-  `parseResumeJson`; empty-content replies get a friendly error. `Launcher` now
-  shows Recent resumes first, Upload a PDF as the full-width **Recommended**
-  hero, Start from scratch below it, and a quiet `role="group"` **Other ways to
-  import** strip holding collapsed Paste/AI/Backup disclosures. The AI panel has
-  Copy prompt + JSON-reply textarea + Import resume; a scanned/unreadable PDF
-  error links straight to it. Decisions #21/#23/#40 updated, new #98. README Key
-  features rewritten in user language; tagline no longer says "no-AI" because
-  the optional prompt helper exists (the app still sends nothing anywhere).
-- Tests: 10 parser cases plus launcher hierarchy/disclosure/AI-import/PDF-link
-  cases and updated `page.test.tsx` region expectations. 1061 pass.
-- Files: `src/lib/import/aiJsonImport.ts` (+ test),
-  `src/components/launcher/Launcher.tsx` (+ test), `src/app/page.test.tsx`,
-  `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1061 pass), `npm run lint` (clean).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

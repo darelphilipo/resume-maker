@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
-import { ExperienceItemSchema } from "@/lib/schema/resume.schema";
+import {
+  ExperienceItemSchema,
+  SkillItemSchema,
+} from "@/lib/schema/resume.schema";
 
 import { encodeEntryBlock } from "./blockIds";
 import { computePages, type ComputePagesInput } from "./computePages";
@@ -399,6 +402,63 @@ function oversizedEntryDoc() {
   return doc;
 }
 
+const EIGHT_BULLETS = `<ul>${Array.from(
+  { length: 8 },
+  (_, index) => `<li><p>Bullet ${index + 1}</p></li>`,
+).join("")}</ul>`;
+
+/**
+ * A realistic Studio Sidebar (`gengar`) role: eight bullets plus a pinned
+ * sidebar skill, so a split continuation spans several bullets instead of the
+ * one-line FOUR_BULLETS case above.
+ */
+function studioEightBulletDoc(extraExperience = false) {
+  const doc = createEmptyResume("gengar");
+  doc.metadata.page.gapY = 0;
+  doc.summary.content = "<p>Impact-driven engineer.</p>";
+  doc.sections.experience.items = [
+    ExperienceItemSchema.parse({
+      id: "e1",
+      company: "Acme",
+      position: "Engineer",
+      summary: EIGHT_BULLETS,
+    }),
+  ];
+
+  if (extraExperience) {
+    doc.sections.experience.items.push(
+      ExperienceItemSchema.parse({
+        id: "e2",
+        company: "Globex",
+        position: "Maintainer",
+      }),
+    );
+  }
+
+  doc.sections.skills.items = [
+    SkillItemSchema.parse({
+      id: "skill-1",
+      name: "Languages",
+      keywords: ["TypeScript"],
+    }),
+  ];
+
+  return doc;
+}
+
+function fragmentHeights(
+  fragments: readonly string[],
+  firstFragment: number,
+  rest: number,
+): Record<string, number> {
+  return Object.fromEntries(
+    fragments.map((key, index) => [
+      key,
+      index === 0 ? firstFragment : rest,
+    ]),
+  );
+}
+
 describe("computePages with split entries", () => {
   it("fills Page 1 at a bullet boundary instead of moving the whole entry", () => {
     const doc = oversizedEntryDoc();
@@ -635,6 +695,105 @@ describe("computePages with split entries in the Studio Sidebar's narrow Page 1"
       ["__header", "summary", fragments[0], fragments[1], fragments[2], "skills"],
       [fragments[3], blocks[1]],
     ]);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("fills the narrow main column with an eight-bullet entry and continues on Page 2", () => {
+    const doc = studioEightBulletDoc();
+    const plans = getSectionPlans(doc, ["summary", "experience", "skills"]);
+    const blocks = planBlockKeys(plans[1]);
+    const fragments = planFragmentKeys(plans[1]);
+
+    const result = computePages(
+      makeInput({
+        sectionIds: ["summary", "experience", "skills"],
+        heights: {
+          summary: 150,
+          skills: 400,
+          ...fragmentHeights(fragments, 320, 110),
+          [blocks[0]]: 900,
+        },
+        headerHeightPx: 100,
+        contentHeightPx: 1000,
+        gapPx: 0,
+        plans,
+        pinnedToFirstPage: new Set(["skills"]),
+        fullWidthHeights: {
+          ...fragmentHeights(fragments, 220, 80),
+          [blocks[0]]: 700,
+        },
+      }),
+    );
+
+    // The whole entry cannot fit beside the 400px sidebar, so it starts on
+    // Page 1 at a bullet boundary and continues on the full-width Page 2.
+    expect(result.pages).toEqual([
+      [
+        "__header",
+        "summary",
+        fragments[0],
+        fragments[1],
+        fragments[2],
+        fragments[3],
+        "skills",
+      ],
+      [fragments[4], fragments[5], fragments[6], fragments[7]],
+    ]);
+    expect(result.pages[0]).not.toContain(blocks[0]);
+    expect(result.pages).toHaveLength(2);
+    expect(result.overflowPx).toBe(0);
+  });
+
+  it("keeps a following entry on the continuation page instead of a third page", () => {
+    const doc = studioEightBulletDoc(true);
+    const plans = getSectionPlans(doc, ["summary", "experience", "skills"]);
+    const blocks = planBlockKeys(plans[1]);
+    const fragments = planFragmentKeys(plans[1]);
+
+    const result = computePages(
+      makeInput({
+        sectionIds: ["summary", "experience", "skills"],
+        heights: {
+          summary: 300,
+          skills: 400,
+          ...fragmentHeights(fragments, 320, 110),
+          [blocks[0]]: 700,
+          [blocks[1]]: 150,
+        },
+        headerHeightPx: 100,
+        contentHeightPx: 1000,
+        gapPx: 0,
+        plans,
+        pinnedToFirstPage: new Set(["skills"]),
+        fullWidthHeights: {
+          ...fragmentHeights(fragments, 220, 80),
+          [blocks[0]]: 500,
+          [blocks[1]]: 130,
+        },
+      }),
+    );
+
+    // Page 2 holds the rest of the split entry and the next role, so the two
+    // mechanical pages do not cascade into a nearly empty third page.
+    expect(result.pages).toEqual([
+      [
+        "__header",
+        "summary",
+        fragments[0],
+        fragments[1],
+        fragments[2],
+        "skills",
+      ],
+      [
+        fragments[3],
+        fragments[4],
+        fragments[5],
+        fragments[6],
+        fragments[7],
+        blocks[1],
+      ],
+    ]);
+    expect(result.pages).toHaveLength(2);
     expect(result.overflowPx).toBe(0);
   });
 });

@@ -27,6 +27,21 @@ _empty
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-26 — Retired the leftover `__scratch.test.ts` exploration harness by
+  folding its two realistic 8-bullet Studio Sidebar (`gengar`) regressions into
+  the existing `computePages` "narrow Page 1" describe. The moved cases reuse a
+  shared `EIGHT_BULLETS` fixture, `studioEightBulletDoc(extraExperience)`, and a
+  `fragmentHeights(fragments, first, rest)` helper, so the first role still fills
+  the narrow main column and continues at a bullet boundary on full-width Page 2,
+  and the following role still lands on Page 2 instead of a third page. The
+  scratch file is now a comment-only stub excluded from Vitest discovery, the
+  same pattern already used for `__explore.test.tsx` (file deletion is
+  unavailable in this runner). Inbox and Queue were empty, so this run picked up
+  the test-hygiene debt the 2026-11-24 checkpoint explicitly deferred. Verified
+  `npm run typecheck`, `npm test` (1142 pass, 105 files), `npm run lint`. Files:
+  `src/lib/pagination/computePages.test.ts`,
+  `src/lib/pagination/__scratch.test.ts`, `vitest.config.ts`, `CONTEXT.md`,
+  `TASKS.md`.
 - [x] 2026-11-25 — Replaced the section-header `↑` / `↓` buttons with a touch-first
   `⋮⋮` drag handle plus the existing Hide eye, and matched the Basics header to
   the same uniform 44px row. The handle uses Pointer Events with guarded

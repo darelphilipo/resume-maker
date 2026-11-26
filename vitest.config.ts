@@ -8,10 +8,16 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
-    // `__explore.test.tsx` is a deprecated stub (its regression now lives in
-    // BasicsForm.test.tsx). File deletion is unavailable in this runner, so it
-    // is excluded rather than left as a test file with no suite.
-    exclude: ["e2e/**", "node_modules/**", "src/components/editor/__explore.test.tsx"],
+    // `__explore.test.tsx` and `__scratch.test.ts` are deprecated stubs (their
+    // regressions now live in BasicsForm.test.tsx and computePages.test.ts).
+    // File deletion is unavailable in this runner, so they are excluded rather
+    // than left as test files with no suite.
+    exclude: [
+      "e2e/**",
+      "node_modules/**",
+      "src/components/editor/__explore.test.tsx",
+      "src/lib/pagination/__scratch.test.ts",
+    ],
     // One jsdom per worker instead of one per file keeps the suite fast while
     // preserving per-file isolation.
     pool: "vmThreads",
