@@ -64,7 +64,7 @@ function pdfFile(content = "%PDF-1.4", name = "resume.pdf"): File {
 }
 
 function backupToggle() {
-  return screen.getByRole("button", { name: /Backup & Restore/ });
+  return screen.getByRole("button", { name: /Backup & restore/ });
 }
 
 async function openBackupMenu(user: ReturnType<typeof userEvent.setup>) {
@@ -133,7 +133,7 @@ describe("Launcher", () => {
       expect.arrayContaining([
         expect.stringContaining("Paste resume text"),
         expect.stringContaining("Import via AI prompt"),
-        expect.stringContaining("Backup & Restore"),
+        expect.stringContaining("Backup & restore"),
       ]),
     );
     expect(screen.queryByLabelText("Resume text")).not.toBeInTheDocument();
@@ -219,7 +219,7 @@ describe("Launcher", () => {
     expect(fileInput.closest("label")).toHaveClass("relative");
   });
 
-  it("keeps JSON restore in a secondary Backup & Restore menu", async () => {
+  it("keeps JSON restore in a secondary Backup & restore menu", async () => {
     const user = userEvent.setup();
     render(<Launcher />);
 
@@ -265,6 +265,20 @@ describe("Launcher", () => {
     expect(panel).not.toBeNull();
     // Only the dropzone is dashed; its enclosing panel stays a solid card.
     expect(panel?.querySelectorAll(".border-dashed")).toHaveLength(1);
+
+    // The restore icon sits in the same circular tinted badge as Upload a PDF.
+    const backupBadge = screen
+      .getByLabelText("Resume backup file")
+      .closest("label")
+      ?.querySelector(".rounded-full");
+    const pdfBadge = screen
+      .getByLabelText("Resume PDF")
+      .closest("label")
+      ?.querySelector(".rounded-full");
+    expect(backupBadge).not.toBeNull();
+    expect(backupBadge).toHaveClass("size-11", "bg-[#eef2f6]", "text-[#1b3a57]");
+    expect(pdfBadge).not.toBeNull();
+    expect(backupBadge?.className).toBe(pdfBadge?.className);
   });
 
   it("keeps the AI prompt import manual: copy a prompt, paste a reply, no network call", async () => {
@@ -577,6 +591,14 @@ describe("Launcher", () => {
         name: "Filter recent resumes by status",
       }),
     ).not.toBeInTheDocument();
+
+    const companyField = screen
+      .getByLabelText("Target company for Grace Hopper")
+      .closest("label");
+    expect(companyField).not.toBeNull();
+    // The company tag is a quiet solid field, not another dashed dropzone.
+    expect(companyField).not.toHaveClass("border-dashed");
+    expect(companyField).toHaveClass("border-[#e3ddd2]");
   });
 
   it("saves a status change without opening the resume", async () => {
@@ -725,6 +747,9 @@ describe("Launcher", () => {
     expect(within(open).getByText("Grace Hopper")).toHaveClass(
       "group-hover:text-[#1b3a57]",
     );
+    const cue = open.querySelector("[data-recent-open-cue]");
+    expect(cue).not.toBeNull();
+    expect(cue).toHaveClass("opacity-0", "group-hover:opacity-100");
 
     fireEvent.click(row as HTMLLIElement);
 
@@ -829,7 +854,7 @@ describe("Launcher", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("wraps the Backup & Restore disclosure in a solid border", () => {
+  it("wraps the Backup & restore disclosure in a solid border", () => {
     render(<Launcher />);
 
     const shell = backupToggle().parentElement;
@@ -891,15 +916,22 @@ describe("Launcher", () => {
     const user = userEvent.setup();
     render(<Launcher />);
 
-    await user.click(
-      await screen.findByRole("button", { name: "Delete Grace Hopper" }),
-    );
+    const trash = await screen.findByRole("button", {
+      name: "Delete Grace Hopper",
+    });
+    // Destructive actions read muted red and tint on hover.
+    expect(trash).toHaveClass("text-red-700/80", "hover:bg-red-50");
+
+    await user.click(trash);
 
     expect(
       screen.getByText("Delete this resume? This cannot be undone."),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Delete" }));
+    const confirmDelete = screen.getByRole("button", { name: "Delete" });
+    expect(confirmDelete).toHaveClass("text-red-700/80", "hover:bg-red-50");
+
+    await user.click(confirmDelete);
 
     await waitFor(() => {
       expect(

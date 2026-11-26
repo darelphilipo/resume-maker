@@ -296,7 +296,7 @@ function RecentResumeTracking({
       <label
         htmlFor={`recent-company-${row.id}`}
         onClick={(event) => event.stopPropagation()}
-        className="flex min-h-9 min-w-0 flex-1 basis-40 cursor-text items-center gap-1.5 rounded-full border border-dashed border-[#d8d2c6] bg-white px-3 transition-colors pointer-coarse:min-h-11 focus-within:border-[#1b3a57]"
+        className="flex min-h-9 min-w-0 flex-1 basis-40 cursor-text items-center gap-1.5 rounded-full border border-[#e3ddd2] bg-white px-3 transition-colors hover:border-[#c9c2b6] pointer-coarse:min-h-11 focus-within:border-[#1b3a57]"
       >
         <span className="sr-only">Target company for {name}</span>
         <Briefcase size={13} aria-hidden className="shrink-0 text-[#7a8794]" />
@@ -960,14 +960,26 @@ export function Launcher() {
                               aria-label={`Open ${name}`}
                               className="flex min-h-11 min-w-0 flex-1 flex-col justify-center rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57] focus-visible:ring-offset-2 disabled:cursor-wait"
                             >
-                              <span
-                                className={`truncate text-sm font-medium text-[#172839] ${
-                                  rowIsInteractive
-                                    ? ""
-                                    : "group-hover:text-[#1b3a57] group-hover:underline group-hover:underline-offset-2"
-                                }`}
-                              >
-                                {name}
+                              <span className="flex min-w-0 items-center gap-1">
+                                <span
+                                  className={`truncate text-sm font-medium text-[#172839] ${
+                                    rowIsInteractive
+                                      ? ""
+                                      : "group-hover:text-[#1b3a57] group-hover:underline group-hover:underline-offset-2"
+                                  }`}
+                                >
+                                  {name}
+                                </span>
+                                <ArrowRight
+                                  size={14}
+                                  aria-hidden
+                                  data-recent-open-cue
+                                  className={`shrink-0 text-[#7a8794] transition-opacity ${
+                                    rowIsInteractive
+                                      ? "hidden"
+                                      : "opacity-0 group-hover:opacity-100"
+                                  }`}
+                                />
                               </span>
                               <span className="flex min-w-0 items-center gap-1.5 text-xs text-[#6a7683]">
                                 {isOpening ? (
@@ -993,7 +1005,7 @@ export function Launcher() {
                                     event.stopPropagation();
                                     void handleDeleteRecent(row);
                                   }}
-                                  className="min-h-11 rounded-lg border border-[#b42318] bg-white px-2.5 text-xs font-semibold text-[#b42318]"
+                                  className="min-h-11 rounded-lg border border-[#b42318] bg-white px-2.5 text-xs font-semibold text-red-700/80 transition-colors hover:bg-red-50 hover:text-red-800"
                                 >
                                   Delete
                                 </button>
@@ -1042,7 +1054,7 @@ export function Launcher() {
                                     setDeletingId(row.id);
                                   }}
                                   aria-label={`Delete ${name}`}
-                                  className="flex size-11 items-center justify-center rounded-lg border border-[#e3ddd2] bg-white text-[#33465a]"
+                                  className="flex size-11 items-center justify-center rounded-lg border border-[#e3ddd2] bg-white text-red-700/80 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-800"
                                 >
                                   <Trash size={16} aria-hidden />
                                 </button>
@@ -1458,7 +1470,7 @@ export function Launcher() {
           <UtilityDisclosure
             id="launcher-backup-panel"
             icon={BoxArrowDown}
-            title="Backup & Restore"
+            title="Backup & restore"
             open={backupOpen}
             onToggle={() => {
               setBackupOpen((open) => !open);
@@ -1475,11 +1487,13 @@ export function Launcher() {
             <label
               htmlFor="resume-backup-input"
               aria-disabled={isRestoring}
-              className={`relative mt-3 flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#c9c2b6] bg-[#fbfaf7] px-4 py-5 text-center transition-colors hover:border-[#1b3a57] ${
+              className={`relative mt-3 flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#c9c2b6] bg-[#fbfaf7] px-4 py-5 text-center transition-colors hover:border-[#1b3a57] ${
                 isRestoring ? "cursor-wait opacity-60" : ""
               }`}
             >
-              <BoxArrowDown size={24} aria-hidden />
+              <span className="flex size-11 items-center justify-center rounded-full bg-[#eef2f6] text-[#1b3a57]">
+                <BoxArrowDown size={22} weight="duotone" aria-hidden />
+              </span>
               <span className="text-sm font-medium">
                 {isRestoring ? "Restoring..." : "Choose a JSON file"}
               </span>

@@ -1806,6 +1806,27 @@ rediscover.
         (.json)** and **Export JSON Resume**. Keep the accessible names in sync
         with tests and README copy.
 
+    114. **The Basics row reuses the section-row grid, and home-page rows stay
+        quiet.** The collapsed Basics header is not a special shape: its
+        `h3` contains the same `flex min-h-11 items-center gap-1 px-2 sm:px-3`
+        row as a section card, with an `aria-hidden` `User` icon in the
+        `min-w-9`/`pointer-coarse:min-w-11` slot that the section drag handle
+        occupies. That spacer is what lines `v Basics` up with `v Profiles` and
+        `v Experience`; the `Basics` label is `shrink-0 whitespace-nowrap`
+        while the candidate name is `min-w-0 truncate`, so a long name can
+        never collapse the label to `Bas...`. Basics and `SectionList` share a
+        `flex flex-col gap-2` wrapper, so the gap under Basics equals the gap
+        between section rows; the Content card's `gap-4` still separates the
+        header from that group. Keep the row `min-h-11` (44px) — it is identical
+        to a real section row; do not inflate Basics alone. On `/`, Recent
+        Resume destructive controls are the only muted-red cue
+        (`text-red-700/80 hover:bg-red-50`), the title area adds an
+        `opacity-0 group-hover:opacity-100` `Open →` arrow instead of a second
+        CTA, the `Target company` field is a solid `border-[#e3ddd2]` pill (the
+        dropzones are the only dashed surfaces), and **Backup & restore** is
+        sentence case with the same circular `size-11 bg-[#eef2f6]` icon badge
+        as **Upload a PDF**.
+
 ## Verification and tooling
 
 ```powershell
@@ -1870,6 +1891,33 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-26 — Basics row alignment + homepage parity cues
+- Task: the lone Queue item (P2), moved to In Progress first. Both sub-items
+  were open. The Basics header actually lives in `EditorWorkspace.tsx`, not
+  `BasicsForm.tsx`/`SectionList.tsx`, so that is where the row was changed.
+- Change: the collapsed Basics header now uses the section-row geometry
+  (`min-h-11`, `gap-1`, `px-2 sm:px-3`) with an `aria-hidden` `User` spacer in
+  the drag-handle slot, so its caret aligns with Profiles/Experience. The
+  `Basics` label is `shrink-0 whitespace-nowrap` while the candidate name stays
+  `min-w-0 truncate`, and Basics + `SectionList` share a `gap-2` wrapper so the
+  gap below Basics matches the section gaps. Kept `min-h-11` (44px) because
+  that is the real section-row height; the queue's `min-h-[58px]` would have
+  made Basics the odd row out. On `/`, Recent Delete controls use the muted-red
+  `text-red-700/80 hover:bg-red-50` cue, the title reveals an `Open →` arrow on
+  row hover, `Target company` is a solid `border-[#e3ddd2]` field, and
+  **Backup & restore** is sentence case with the same circular icon badge as
+  **Upload a PDF**. Decision #114; README feature tour updated.
+- Tests: row-geometry/spacer/gap-2 assertions in `EditorWorkspace.test.tsx`,
+  plus solid target-company field, delete-cue, title-arrow, sentence-case
+  disclosure, and shared badge assertions in `launcher.test.tsx`.
+  `npm run typecheck` clean; `npm test` 1183 pass across 107 files;
+  `npm run lint` clean.
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the 390px caret alignment and
+  hover geometry are browser-unverified.
 
 ### 2026-11-26 — Preview bar status/actions, navy mode switch, modal and export polish
 - Task: top Queue item (P1), moved to In Progress first. All three sub-items were
@@ -2099,20 +2147,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/lib/pagination/computePages.test.ts`,
   `src/lib/pagination/__scratch.test.ts`, `vitest.config.ts`, `CONTEXT.md`,
   `TASKS.md`.
-
-### 2026-11-25 — Closed the section-header drag-handle bookkeeping
-- Task: the lone In Progress item (P1: pointer drag handle + uniform 44px rows).
-  Its code, tests, README copy and Decision #106 were already in the tree from
-  the prior checkpoint, so this run verified them instead of rebuilding them.
-- Change: confirmed `src/lib/editor/sectionOrder.ts` owns the three pure reorder
-  rules, `SectionList` uses the `DotsSixVertical` handle (guarded pointer capture,
-  keyboard reorder, drag rings), and `EditorWorkspace`'s Basics header shares the
-  `min-h-11` row. Moved the item from In Progress to Done in `TASKS.md`; no code
-  or README changes were needed.
-- Tests: `npm run typecheck` clean; `npm test` 1142 pass.
-- Files: `TASKS.md`, `CONTEXT.md`.
-- Note: Playwright remains sandbox-blocked, so the 390px header geometry is
-  browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

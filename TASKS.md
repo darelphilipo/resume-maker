@@ -22,13 +22,32 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P2: Align `Basics` row pixel-for-pixel with section cards and finish Homepage (`/`) visual parity (`src/components/editor/BasicsForm.tsx`, `src/components/editor/SectionList.tsx`, `src/components/launcher/Launcher.tsx`).
-  1. **`Basics` row alignment & truncation (`BasicsForm.tsx`, `SectionList.tsx`):** Add `shrink-0` to `Basics` and `min-w-0 truncate` to the candidate name so long names never squish `Basics` to `Bas...`; match `Basics`'s surface tint, collapsed height (`min-h-[58px]` / identical padding), and bottom gap to the section rows below; and add a left spacer (or subtle `User` icon matching the `⋮⋮` drag handle width) so `v Basics` aligns vertically with `v Profiles` and `v Experience`.
-  2. **Homepage (`/`) parity (`Launcher.tsx`):** Add the muted-red destructive hover/text cue (`text-red-700/80 hover:bg-red-50`) to Recent Resume `Delete` buttons; switch `Target company` from `border-dashed` to a subtle solid border; add a subtle hover tint / `Open →` cue on each Recent Resume title area; place the `Backup & restore` dropzone icon in the same circular tinted badge as `Upload a PDF`; and use sentence case (`"Backup & restore"`).
-
+_empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-26 — Aligned the collapsed `Basics` row with the section cards and
+  finished the homepage parity pass. In the Content panel, Basics now uses the
+  same `min-h-11` row, `px-2 sm:px-3` padding, `gap-1`/`bg-background`/
+  `border-black/10` surface as a section row, and a subtle `User` icon occupies
+  the `⋮⋮` drag-handle width so `v Basics` lines up with `v Profiles` and
+  `v Experience`; the `Basics` label is `shrink-0 whitespace-nowrap` while the
+  candidate name keeps `min-w-0 truncate`, and Basics + `SectionList` share an
+  8px `gap-2` wrapper so the gap below Basics matches the section gaps. (The
+  row stays `min-h-11` = 44px, identical to the real section rows, rather than
+  the queue's `min-h-[58px]`; the existing 44px regression stays green.) On the
+  homepage, Recent Resume Delete buttons use the muted-red
+  `text-red-700/80 hover:bg-red-50` cue, the title area reveals a subtle
+  `Open →` arrow on row hover, `Target company` is a solid
+  `border-[#e3ddd2]` field instead of dashed, and **Backup & restore** is
+  sentence case with its icon in the same circular tinted badge as
+  **Upload a PDF**. Verified `npm run typecheck`, `npm test` (1183 pass, 107
+  files), `npm run lint`. Files:
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`. Playwright remains sandbox-blocked, so the 390px row alignment
+  and hover geometry are browser-unverified.
 
 - [x] 2026-11-26 — Separated Preview status from actions and polished the review
   chrome. The page count (`1 page` / `2 pages`) is now borderless `text-muted`

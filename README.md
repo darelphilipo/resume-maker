@@ -104,7 +104,7 @@ in control of every line, and your data stays on your device.
   If you started from a preset, **Clear sample data** in the editor's **⋮**
   menu wipes the example names, summary, and entries across every section in one
   tap, leaving your layout and design intact — and **Undo** brings it all back.
-- **Backup & Restore** lives in the **Other ways to import** strip at the bottom
+- **Backup & restore** lives in the **Other ways to import** strip at the bottom
   of the home page as a secondary option: restore a single-resume JSON backup
   you exported earlier, or a resume file from
   another tool in the open **JSON Resume** format, without treating JSON as the
@@ -409,7 +409,7 @@ in control of every line, and your data stays on your device.
   and hidden entries intact, or **Export JSON Resume** for the open standard
   format used by other resume tools. JSON Resume exports include the resume you
   see (hidden sections and entries stay out), and importing either format works
-  through the same **Backup & Restore** picker on the home page.
+  through the same **Backup & restore** picker on the home page.
 
 ## Save a PDF
 

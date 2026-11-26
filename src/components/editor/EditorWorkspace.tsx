@@ -7,6 +7,7 @@ import {
   CaretDown,
   CaretUp,
   EyeSlash,
+  User,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -485,67 +486,81 @@ export function EditorWorkspace() {
                 Reorder, hide, or open a section to edit it.
               </p>
             </div>
-            <section
-              aria-labelledby="basics-heading"
-              className="overflow-hidden rounded-xl border border-black/10 bg-background"
-            >
-              <h3 id="basics-heading" className="m-0">
-                <button
-                  type="button"
-                  data-basics-toggle=""
-                  aria-expanded={basicsOpen}
-                  aria-controls="basics-body"
-                  onClick={() => {
-                    setBasicsOpen((open) => !open);
-                  }}
-                  className="flex min-h-11 w-full items-center gap-2 px-3 text-left transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  {basicsOpen ? (
-                    <CaretUp
-                      size={16}
-                      aria-hidden
-                      data-basics-chevron="up"
-                      className="shrink-0 text-primary"
-                    />
-                  ) : (
-                    <CaretDown
-                      size={16}
-                      aria-hidden
-                      data-basics-chevron="down"
-                      className="shrink-0 opacity-60"
-                    />
-                  )}
-                  <span className="min-w-0 truncate text-sm font-medium leading-snug">
-                    Basics
-                  </span>
-                  <span className="ml-auto min-w-0 truncate text-xs font-normal text-muted">
-                    {basicsSummary}
-                  </span>
-                </button>
-              </h3>
-              <div
-                id="basics-body"
-                hidden={!basicsOpen}
-                className="border-t border-black/10 px-3 py-3"
+            <div className="flex flex-col gap-2">
+              <section
+                aria-labelledby="basics-heading"
+                className="overflow-hidden rounded-xl border border-black/10 bg-background"
               >
-                <BasicsForm
-                  onLiveNameChange={publishLiveName}
-                  onManageProfiles={() =>
-                    setSectionFocus((current) => ({
-                      id: "profiles",
-                      nonce: (current?.nonce ?? 0) + 1,
-                    }))
-                  }
-                />
-              </div>
-            </section>
-            <SectionList
-              onOpenSection={setDrawerSection}
-              openSectionId={drawerSection?.id ?? null}
-              focusSection={sectionFocus}
-              basicsOpen={basicsOpen}
-              onCollapseBasics={() => setBasicsOpen(false)}
-            />
+                <h3 id="basics-heading" className="m-0">
+                  {/* Same row geometry as a section card: a 36px leading slot
+                      (the drag-handle width) plus the caret, so `v Basics`
+                      lines up with `v Profiles` and `v Experience`. */}
+                  <div className="flex min-h-11 w-full items-center gap-1 px-2 sm:px-3">
+                    <span
+                      aria-hidden
+                      data-basics-icon
+                      className="flex min-h-9 min-w-9 shrink-0 items-center justify-center text-muted pointer-coarse:min-h-11 pointer-coarse:min-w-11"
+                    >
+                      <User size={18} />
+                    </span>
+                    <button
+                      type="button"
+                      data-basics-toggle=""
+                      aria-expanded={basicsOpen}
+                      aria-controls="basics-body"
+                      onClick={() => {
+                        setBasicsOpen((open) => !open);
+                      }}
+                      className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    >
+                      {basicsOpen ? (
+                        <CaretUp
+                          size={16}
+                          aria-hidden
+                          data-basics-chevron="up"
+                          className="shrink-0 text-primary"
+                        />
+                      ) : (
+                        <CaretDown
+                          size={16}
+                          aria-hidden
+                          data-basics-chevron="down"
+                          className="shrink-0 opacity-60"
+                        />
+                      )}
+                      <span className="shrink-0 whitespace-nowrap text-sm font-medium leading-snug">
+                        Basics
+                      </span>
+                      <span className="ml-auto min-w-0 truncate text-xs font-normal text-muted">
+                        {basicsSummary}
+                      </span>
+                    </button>
+                  </div>
+                </h3>
+                <div
+                  id="basics-body"
+                  hidden={!basicsOpen}
+                  className="border-t border-black/10 px-3 py-3"
+                >
+                  <BasicsForm
+                    onLiveNameChange={publishLiveName}
+                    onManageProfiles={() =>
+                      setSectionFocus((current) => ({
+                        id: "profiles",
+                        nonce: (current?.nonce ?? 0) + 1,
+                      }))
+                    }
+                  />
+                </div>
+              </section>
+              <SectionList
+                onOpenSection={setDrawerSection}
+                openSectionId={drawerSection?.id ?? null}
+                focusSection={sectionFocus}
+                basicsOpen={basicsOpen}
+                onCollapseBasics={() => setBasicsOpen(false)}
+              />
+            </div>
           </div>
         </section>
 

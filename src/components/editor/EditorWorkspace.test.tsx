@@ -446,6 +446,39 @@ describe("EditorWorkspace", () => {
     // The collapsed label reads like a section title, not a muted eyebrow.
     expect(label).toHaveClass("text-sm", "font-medium");
     expect(label).not.toHaveClass("uppercase", "text-muted", "text-xs");
+    // A long candidate name truncates, but never squishes the label.
+    expect(label).toHaveClass("shrink-0", "whitespace-nowrap");
+  });
+
+  it("aligns the Basics row with the section rows below it", async () => {
+    await renderReadyWorkspace();
+
+    const toggle = screen.getByRole("button", { name: /^Basics/ });
+    const row = toggle.parentElement;
+    const grip = document.querySelector('[data-section-action="grip"]');
+    const icon = document.querySelector("[data-basics-icon]");
+
+    expect(row).not.toBeNull();
+    expect(row).toHaveClass("min-h-11", "gap-1", "px-2", "sm:px-3");
+    // The leading spacer matches the drag handle's width so the carets line up.
+    expect(icon).toHaveClass(
+      "min-w-9",
+      "pointer-coarse:min-w-11",
+      "shrink-0",
+    );
+    expect(grip).toHaveClass("min-w-9", "pointer-coarse:min-w-11");
+    expect(grip?.parentElement).toHaveClass(
+      "min-h-11",
+      "gap-1",
+      "px-2",
+      "sm:px-3",
+    );
+
+    // Basics shares the section list's 8px row gap instead of the card gap.
+    const basicsSection = document.getElementById("basics-body")?.closest("section");
+    const group = basicsSection?.parentElement;
+    expect(basicsSection).toHaveClass("bg-background", "border-black/10");
+    expect(group).toHaveClass("flex", "flex-col", "gap-2");
   });
 
   it("gives Bullet polish and Match JD matching quiet pill styling", async () => {
