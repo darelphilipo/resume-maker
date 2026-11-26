@@ -40,7 +40,7 @@ export function TrimTipsDialog({
     <CenteredModal open onClose={onClose} titleId={titleId}>
       <div data-bullet-trim-tips="">
         <div className="flex items-start justify-between gap-2">
-          <h2 id={titleId} className="text-sm font-semibold">
+          <h2 id={titleId} className="font-serif text-sm font-semibold">
             Trim tips
           </h2>
           <button

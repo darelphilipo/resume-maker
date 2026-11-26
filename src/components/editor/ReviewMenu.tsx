@@ -21,7 +21,7 @@ import type { FitBlockedReason } from "@/lib/pagination/usePageLayout";
 /**
  * The Preview toolbar keeps only two controls: the Visual/ATS switch and this
  * single **Review** pill. The rare review lenses (6s Scan, Anonymize) and the
- * occasional utilities (Trim tips, Fit to 1 Page, Reset fit) live in a centred
+ * occasional utilities (Trim tips, Fit to 1 page, Reset fit) live in a centred
  * dialog instead of crowding the live resume. A small dot or count badge on the
  * pill shows that one of them is active or needs attention. Every control is
  * session-only: the saved document only changes through an explicit fit patch.
@@ -138,7 +138,7 @@ export function ReviewMenu({
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h2 id={titleId} className="text-sm font-semibold">
+            <h2 id={titleId} className="font-serif text-sm font-semibold">
               Review tools
             </h2>
             <p className="mt-0.5 text-[11px] leading-snug text-muted">
@@ -194,6 +194,7 @@ export function ReviewMenu({
                 description="Find bullets that quietly cost you a line."
                 icon={<TextAlignLeft size={18} aria-hidden />}
                 marker="data-review-trim"
+                showChevron
                 onClick={() => {
                   setOpen(false);
                   setTrimOpen(true);
@@ -214,7 +215,7 @@ export function ReviewMenu({
             ) : null}
             {canFit ? (
               <ReviewAction
-                label="Fit to 1 Page"
+                label="Fit to 1 page"
                 description="Shrink the resume to one readable page."
                 icon={<CornersIn size={18} aria-hidden />}
                 marker="data-review-fit"
@@ -230,7 +231,7 @@ export function ReviewMenu({
               // reason directly beneath its label. The Preview bar itself shows
               // only the page count so it never clips on a 390px phone.
               <ReviewAction
-                label="Fit to 1 Page"
+                label="Fit to 1 page"
                 description={blockedCopy}
                 icon={<CornersIn size={18} aria-hidden />}
                 marker="data-review-fit-blocked"
@@ -318,6 +319,7 @@ function ReviewAction({
   marker,
   onClick,
   disabled = false,
+  showChevron = false,
 }: {
   label: string;
   description: string;
@@ -325,6 +327,8 @@ function ReviewAction({
   marker: string;
   onClick?: () => void;
   disabled?: boolean;
+  /** Adds the same muted `›` cue used by clickable Trim tips. */
+  showChevron?: boolean;
 }) {
   return (
     <button
@@ -355,6 +359,15 @@ function ReviewAction({
           {description}
         </span>
       </span>
+      {showChevron ? (
+        <span
+          aria-hidden
+          data-review-action-chevron=""
+          className="shrink-0 pl-1 text-base leading-none text-muted"
+        >
+          ›
+        </span>
+      ) : null}
     </button>
   );
 }

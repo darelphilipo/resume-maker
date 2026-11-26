@@ -31,6 +31,9 @@ describe("TrimTipsDialog", () => {
     const dialog = screen.getByRole("dialog", { name: "Trim tips" });
 
     expect(dialog).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Trim tips" }),
+    ).toHaveClass("font-serif");
     expect(screen.getByText("3-word line")).toBeVisible();
     expect(screen.getByText("1-word line")).toBeVisible();
     expect(screen.getByText("1 line")).toBeVisible();

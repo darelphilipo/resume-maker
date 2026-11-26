@@ -115,6 +115,9 @@ describe("ReviewMenu", () => {
     const dialog = screen.getByRole("dialog", { name: "Review tools" });
 
     expect(dialog).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Review tools" }),
+    ).toHaveClass("font-serif");
     expect(screen.getByRole("button", { name: /Review/ })).toHaveAttribute(
       "aria-expanded",
       "true",
@@ -162,9 +165,14 @@ describe("ReviewMenu", () => {
     expect(trigger).toHaveAccessibleName(/2 trim tips/);
 
     openMenu();
-    fireEvent.click(
-      screen.getByRole("button", { name: /^Trim tips \(2\)/ }),
-    );
+    const trimRow = screen.getByRole("button", { name: /^Trim tips \(2\)/ });
+
+    expect(trimRow).toHaveClass("hover:bg-primary/5");
+    expect(
+      trimRow.querySelector("[data-review-action-chevron]"),
+    ).toHaveTextContent("›");
+
+    fireEvent.click(trimRow);
 
     // Review closes and the dedicated trim dialog takes over.
     expect(
@@ -211,7 +219,7 @@ describe("ReviewMenu", () => {
     renderMenu({ fitTarget: 0.82, onFit });
     openMenu();
     fireEvent.click(
-      screen.getByRole("button", { name: /^Fit to 1 Page/ }),
+      screen.getByRole("button", { name: /^Fit to 1 page/ }),
     );
 
     expect(onFit).toHaveBeenCalledWith(0.82);
@@ -246,7 +254,7 @@ describe("ReviewMenu", () => {
 
     const blocked = document.querySelector("[data-review-fit-blocked]");
 
-    expect(blocked).toHaveTextContent("Fit to 1 Page");
+    expect(blocked).toHaveTextContent("Fit to 1 page");
     expect(blocked).toHaveTextContent("Too long to shrink to 1 page cleanly");
     expect(blocked).toHaveTextContent("trim a few lines");
     expect(blocked).toHaveTextContent("Compact density");

@@ -12,7 +12,7 @@ describe("PageOverflowBanner", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("shows one compact pill and applies the computed fit scale", () => {
+  it("shows the count as muted status and a tinted Fit action", () => {
     const onFit = vi.fn();
 
     render(
@@ -27,14 +27,22 @@ describe("PageOverflowBanner", () => {
     const status = screen.getByRole("status");
 
     expect(status).toHaveTextContent("Spills onto 2 pages");
-    // The line estimate and the old truncating copy are gone: the pill owns
-    // the count and a short action label only.
-    expect(status).toHaveTextContent(/2 pages\s*·\s*Fit/);
+    expect(status).toHaveClass("text-xs", "text-muted");
+    expect(status).not.toHaveClass("rounded-full", "border", "bg-surface");
 
-    const button = screen.getByRole("button", { name: "Fit to 1 Page" });
+    const button = screen.getByRole("button", { name: "Fit to 1 page" });
 
-    expect(button).toHaveTextContent("Fit");
+    expect(button).toHaveTextContent("Fit 1p");
+    expect(button).toHaveClass(
+      "bg-primary/10",
+      "text-primary",
+      "font-medium",
+      "rounded-full",
+      "px-2.5",
+      "py-0.5",
+    );
     expect(button).toBeEnabled();
+    expect(button.querySelector("svg")).not.toBeNull();
     fireEvent.click(button);
     expect(onFit).toHaveBeenCalledWith(0.82);
   });
@@ -49,15 +57,15 @@ describe("PageOverflowBanner", () => {
       />,
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent(/2 pages\s*·\s*Fit/);
-    expect(screen.getByRole("button", { name: "Fit to 1 Page" })).toBeEnabled();
+    expect(screen.getByRole("status")).toHaveTextContent("2 pages");
+    expect(screen.getByRole("button", { name: "Fit to 1 page" })).toBeEnabled();
   });
 
   it("keeps the action unavailable until a fit target and handler exist", () => {
     render(<PageOverflowBanner overflowPx={42} pageCount={2} />);
 
     expect(
-      screen.queryByRole("button", { name: "Fit to 1 Page" }),
+      screen.queryByRole("button", { name: "Fit to 1 page" }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("2 pages");
   });
@@ -81,11 +89,11 @@ describe("PageOverflowBanner", () => {
     expect(status).not.toHaveTextContent("%");
     expect(status).not.toHaveTextContent("trim");
     expect(
-      screen.queryByRole("button", { name: "Fit to 1 Page" }),
+      screen.queryByRole("button", { name: "Fit to 1 page" }),
     ).not.toBeInTheDocument();
   });
 
-  it("is one inline pill, not a full-width banner row", () => {
+  it("separates borderless status text from one compact action pill", () => {
     const { container } = render(
       <PageOverflowBanner
         overflowPx={42}
@@ -95,23 +103,17 @@ describe("PageOverflowBanner", () => {
       />,
     );
 
-    const pill = container.querySelector("[data-page-overflow]");
+    const wrapper = container.querySelector("[data-page-overflow]");
+    const status = container.querySelector("[data-page-overflow-count]");
 
-    expect(pill).not.toBeNull();
-    expect(pill).toHaveClass(
-      "h-8",
-      "rounded-full",
-      "border-line",
-      "whitespace-nowrap",
-      "text-xs",
-    );
-    expect(pill).not.toHaveClass(
-      "page-overflow-warning",
-      "bg-amber-50",
-      "flex-wrap",
-      "px-3",
-      "py-2",
-    );
+    expect(wrapper).not.toBeNull();
+    expect(wrapper).toHaveClass("flex", "items-center", "whitespace-nowrap");
+    expect(wrapper).not.toHaveClass("border");
+    expect(wrapper).not.toHaveClass("border-line");
+    expect(wrapper).not.toHaveClass("bg-surface");
+    expect(wrapper).not.toHaveClass("rounded-full");
+    expect(status).toHaveClass("text-xs", "text-muted");
+    expect(status).not.toHaveClass("font-semibold");
   });
 
   it("keeps the trim summary in the Trim tips panel, not the spill pill", () => {

@@ -44,13 +44,13 @@ describe("slugFileName", () => {
 });
 
 describe("ExportJsonButton", () => {
-  it("labels the menu trigger with an Export / Backup tooltip and desktop text", () => {
+  it("labels the menu trigger with an Export & options tooltip and desktop text", () => {
     render(<ExportJsonButton />);
 
-    const trigger = screen.getByRole("button", { name: "Backup and export" });
+    const trigger = screen.getByRole("button", { name: "Export & options" });
 
-    expect(trigger).toHaveAttribute("title", "Export / Backup");
-    expect(trigger).toHaveTextContent("Backup");
+    expect(trigger).toHaveAttribute("title", "Export & options");
+    expect(trigger).toHaveTextContent("More");
     expect(trigger.querySelector("span")).toHaveClass("hidden", "lg:inline");
   });
 
@@ -61,17 +61,17 @@ describe("ExportJsonButton", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 
     await user.click(
-      screen.getByRole("button", { name: "Backup and export" }),
+      screen.getByRole("button", { name: "Export & options" }),
     );
 
     expect(
-      screen.getByRole("menu", { name: "Backup and export" }),
+      screen.getByRole("menu", { name: "Export & options" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("menuitem", { name: /Resume Maker backup/ }),
+      screen.getByRole("menuitem", { name: /Download backup \(\.json\)/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("menuitem", { name: /JSON Resume/ }),
+      screen.getByRole("menuitem", { name: /Export JSON Resume/ }),
     ).toBeInTheDocument();
   });
 
@@ -81,7 +81,7 @@ describe("ExportJsonButton", () => {
 
     render(<ExportJsonButton />);
     await user.click(
-      screen.getByRole("button", { name: "Backup and export" }),
+      screen.getByRole("button", { name: "Export & options" }),
     );
 
     vi.spyOn(HTMLElement.prototype, "click").mockImplementation(function (
@@ -92,7 +92,9 @@ describe("ExportJsonButton", () => {
       }
     });
 
-    await user.click(screen.getByRole("menuitem", { name: /JSON Resume/ }));
+    await user.click(
+      screen.getByRole("menuitem", { name: /Export JSON Resume/ }),
+    );
 
     expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
     expect(downloadName).toBe("resume-json-resume.json");
@@ -106,7 +108,7 @@ describe("ExportJsonButton", () => {
 
     render(<ExportJsonButton />);
     await user.click(
-      screen.getByRole("button", { name: "Backup and export" }),
+      screen.getByRole("button", { name: "Export & options" }),
     );
 
     vi.spyOn(HTMLElement.prototype, "click").mockImplementation(function (
@@ -118,7 +120,7 @@ describe("ExportJsonButton", () => {
     });
 
     await user.click(
-      screen.getByRole("menuitem", { name: /Resume Maker backup/ }),
+      screen.getByRole("menuitem", { name: /Download backup \(\.json\)/ }),
     );
 
     expect(downloadName).toBe("resume-resume.json");
@@ -129,7 +131,7 @@ describe("ExportJsonButton", () => {
     render(<ExportJsonButton />);
 
     const trigger = screen.getByRole("button", {
-      name: "Backup and export",
+      name: "Export & options",
     });
 
     await user.click(trigger);
@@ -143,7 +145,7 @@ describe("ExportJsonButton", () => {
     const user = userEvent.setup();
     render(<ExportJsonButton />);
 
-    await user.click(screen.getByRole("button", { name: "Backup and export" }));
+    await user.click(screen.getByRole("button", { name: "Export & options" }));
 
     expect(
       screen.queryByRole("menuitem", { name: /Clear sample data/ }),
@@ -158,9 +160,9 @@ describe("ExportJsonButton", () => {
 
     const user = userEvent.setup();
     render(<ExportJsonButton />);
-    await user.click(screen.getByRole("button", { name: "Backup and export" }));
+    await user.click(screen.getByRole("button", { name: "Export & options" }));
 
-    const trigger = screen.getByRole("button", { name: "Backup and export" });
+    const trigger = screen.getByRole("button", { name: "Export & options" });
     const clear = screen.getByRole("menuitem", { name: /Clear sample data/ });
 
     expect(clear).toHaveAttribute("data-clear-sample-data");

@@ -80,6 +80,21 @@ function saveStatusLabel(
 const HEADER_ACTION_CLASS =
   "flex min-h-11 min-w-10 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-text transition-colors hover:border-black/30 hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:border-line disabled:bg-surface-muted disabled:text-text/80 disabled:opacity-100 disabled:hover:border-line disabled:hover:bg-surface-muted sm:min-w-11";
 
+/**
+ * The Visual | ATS segments use the same solid navy fill as the Design panel's
+ * segmented controls, so the active preview mode reads as a chosen state
+ * instead of a faint grey press.
+ */
+function previewModeClass(isCurrent: boolean): string {
+  return `h-8 rounded-md px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+    isCurrent ? "bg-primary text-white shadow-sm" : "text-text hover:bg-black/5"
+  }`;
+}
+
+/** Tinted action pill for the inline Reset beside the page count. */
+const PREVIEW_ACTION_CLASS =
+  "inline-flex h-6 shrink-0 items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset";
+
 function EmptyState({
   title,
   message,
@@ -162,7 +177,7 @@ export function EditorWorkspace() {
   }
 
   /**
-   * Reset fit from either Review or the inline `1 page · Reset` pill. The
+   * Reset fit from either Review or the inline Reset beside the page count. The
    * viewport also restores the paper scroll; the store patch is the fallback
    * when the canvas is not mounted (e.g. the ATS tab on a phone).
    */
@@ -585,7 +600,7 @@ export function EditorWorkspace() {
                     onClick={() => {
                       setPreviewMode("canvas");
                     }}
-                    className="h-8 rounded-md px-2.5 text-xs font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    className={previewModeClass(previewMode === "canvas")}
                   >
                     Visual
                   </button>
@@ -597,15 +612,15 @@ export function EditorWorkspace() {
                     onClick={() => {
                       setPreviewMode("ats");
                     }}
-                    className="h-8 rounded-md px-2.5 text-xs font-medium transition-colors hover:bg-black/5 aria-pressed:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    className={previewModeClass(previewMode === "ats")}
                   >
                     ATS
                   </button>
                 </div>
                 {/*
-                 * One calm row carries the whole Preview status: a quiet
-                 * "1 page" label when the resume fits, or one compact spill
-                 * pill (`2 pages · Fit`) once it does not. Trim tips, Fit, and
+                 * One calm row carries the whole Preview status: quiet muted
+                 * "1 page" text when the resume fits, or the page count plus a
+                 * tinted "Fit 1p" action once it spills. Trim tips, Fit, and
                  * Reset fit moved into Review, and the zoom Reset floats inside
                  * the viewport, so there is no second strip.
                  */}
@@ -619,19 +634,16 @@ export function EditorWorkspace() {
                 ) : doc.metadata.page.fitScale < 1 ? (
                   <span
                     data-preview-page-label=""
-                    className="flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-surface px-2.5 text-xs text-muted"
+                    className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs text-muted"
                   >
                     1 page
-                    <span aria-hidden className="text-line">
-                      ·
-                    </span>
                     <button
                       type="button"
                       data-preview-reset-fit=""
                       aria-label="Reset fit"
                       title="Return the resume to its full size"
                       onClick={resetFit}
-                      className="rounded-full px-1 py-0.5 font-semibold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                      className={PREVIEW_ACTION_CLASS}
                     >
                       Reset
                     </button>

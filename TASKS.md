@@ -22,13 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-## Queue (Ready for Next Run)
-
-- [ ] P1: Preview bar affordances, dark-navy `Visual | ATS`, modal polish, and `⋮` menu verbs (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/editor/JdMatchDrawer.tsx`).
-  1. **Clear status vs. action in Preview bar (`LiveCanvasViewport.tsx`):** Render `1 page` / `2 pages` as borderless muted status text (`text-muted`) instead of a white pill, and render `Fit 1p` (with a subtle compress icon) and `Reset` (when `fitScale < 1`) as distinct tinted clickable pills (`bg-primary/10 text-primary font-medium rounded-full px-2.5 py-0.5`)—keeping the total row compact so `Review N ▾` never clips at `390px`.
-  2. **Unify `Visual | ATS` & modals:** Style the active `Visual | ATS` segment with the same dark-navy fill and white text used in `DesignPanel.tsx`; add a right chevron (`›`) + hover tint to the `Trim tips (N)` row inside `Review tools`; apply the shared serif heading font to all 4 modal titles (`Bullet polish`, `Match JD` / `Job description keywords`, `Review tools`, `Trim tips`); and use sentence case (`"Fit to 1 page"`).
-  3. **Action verbs in `⋮` menu (`EditorWorkspace.tsx`):** Label export menu items `"Download backup (.json)"` and `"Export JSON Resume"`, and give the `⋮` trigger a clear `"More"` / `"Export & options"` label/tooltip.
-
 - [ ] P2: Align `Basics` row pixel-for-pixel with section cards and finish Homepage (`/`) visual parity (`src/components/editor/BasicsForm.tsx`, `src/components/editor/SectionList.tsx`, `src/components/launcher/Launcher.tsx`).
   1. **`Basics` row alignment & truncation (`BasicsForm.tsx`, `SectionList.tsx`):** Add `shrink-0` to `Basics` and `min-w-0 truncate` to the candidate name so long names never squish `Basics` to `Bas...`; match `Basics`'s surface tint, collapsed height (`min-h-[58px]` / identical padding), and bottom gap to the section rows below; and add a left spacer (or subtle `User` icon matching the `⋮⋮` drag handle width) so `v Basics` aligns vertically with `v Profiles` and `v Experience`.
   2. **Homepage (`/`) parity (`Launcher.tsx`):** Add the muted-red destructive hover/text cue (`text-red-700/80 hover:bg-red-50`) to Recent Resume `Delete` buttons; switch `Target company` from `border-dashed` to a subtle solid border; add a subtle hover tint / `Open →` cue on each Recent Resume title area; place the `Backup & restore` dropzone icon in the same circular tinted badge as `Upload a PDF`; and use sentence case (`"Backup & restore"`).
@@ -36,6 +29,29 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-26 — Separated Preview status from actions and polished the review
+  chrome. The page count (`1 page` / `2 pages`) is now borderless `text-muted`
+  status text; a spilled resume gains a compact tinted **Fit 1p** pill with a
+  compress icon, and an applied fit gains a tinted **Reset** pill, so the
+  one-row bar stays short enough for **Review** at 390px. The active
+  **Visual | ATS** segment now uses the Design panel's solid navy fill with
+  white text. **Review tools** gives **Trim tips (N)** a right `›` chevron and
+  hover tint, all four modal titles (`Bullet polish`, `Job description
+  keywords`, `Review tools`, `Trim tips`) share the serif heading font, and
+  **Fit to 1 page** uses sentence case. The header `⋮` trigger now reads
+  **More** with an **Export & options** tooltip/name, and its items are
+  **Download backup (.json)** / **Export JSON Resume**. Verified
+  `npm run typecheck`, `npm test` (1182 pass, 107 files), `npm run lint`. Files:
+  `src/components/preview/PageOverflowBanner.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.test.tsx`,
+  `src/components/preview/TrimTipsDialog.tsx` (+ test),
+  `src/components/shared/ExportJsonButton.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains sandbox-blocked, so the 390px
+  row geometry is browser-unverified.
 
 - [x] 2026-11-26 — Finished the Design panel micro-polish. The `Accent color`
   legend now shows the active swatch name inline (`Accent color · Indigo`), each

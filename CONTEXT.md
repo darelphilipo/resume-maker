@@ -1786,11 +1786,31 @@ rediscover.
         `Studio Sidebar`'s badge is the short `Human review` label, which keeps
         the template name on one line at 390px.
 
+   113. **Preview status is text, actions are tinted pills, and the export menu
+        names its verbs.** The Preview bar (owned by `EditorWorkspace`, not
+        `LiveCanvasViewport`) keeps the page count as borderless `text-xs
+        text-muted` status: `1 page` for a clean fit, `2 pages` plus a compact
+        `Fit 1p` action once `PageOverflowBanner` reports a spill. `Fit 1p`
+        (`bg-primary/10 text-primary font-medium rounded-full px-2.5 py-0.5`,
+        `h-6`, `ArrowsIn` icon) and the inline `Reset` shown while
+        `fitScale < 1` are the only action pills, so `Review` never clips at
+        390px. The active `Visual | ATS` segment uses `DesignPanel`'s solid
+        `bg-primary text-white shadow-sm` fill rather than `aria-pressed:` grey.
+        The four short dialogs share `font-serif` titles (`Bullet polish`,
+        `Review tools`, `Trim tips`, and the desktop `Job description
+        keywords`; the mobile sheet gets it from `EntryDrawer`), `Trim tips (N)`
+        carries the same muted `›` cue as its list rows, and the fit action is
+        sentence-case **Fit to 1 page**. The header `⋮` trigger
+        (`ExportJsonButton`) is named/titled **Export & options** with a
+        desktop **More** label, and its menu verbs are **Download backup
+        (.json)** and **Export JSON Resume**. Keep the accessible names in sync
+        with tests and README copy.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~1172 tests
+npm test               # vitest, ~1182 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1850,6 +1870,34 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-26 — Preview bar status/actions, navy mode switch, modal and export polish
+- Task: top Queue item (P1), moved to In Progress first. All three sub-items were
+  still open.
+- Change: `PageOverflowBanner` now renders the page count as borderless muted
+  status text plus one tinted `Fit 1p` pill (`ArrowsIn` compress icon), and
+  `EditorWorkspace` gives an applied fit the same tinted `Reset` pill instead of
+  a white `1 page · Reset` capsule. The active `Visual | ATS` segment uses the
+  Design panel's solid navy fill. `ReviewMenu` gives `Trim tips (N)` a `›`
+  chevron, all four dialog titles gained `font-serif`, and `Fit to 1 page` is
+  sentence case. `ExportJsonButton`'s trigger is now `Export & options` with a
+  desktop `More` label, and its items read `Download backup (.json)` /
+  `Export JSON Resume`. Decision #113; README feature tour updated.
+- Tests: muted-status/tinted-action and compact-row assertions, navy
+  active-segment checks, serif title checks for all four dialogs, Trim tips
+  chevron/hover, sentence-case fit label, and the renamed export trigger/items.
+  `npm run typecheck` clean; `npm test` 1182 pass across 107 files;
+  `npm run lint` clean.
+- Files: `src/components/preview/PageOverflowBanner.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/JdMatchDrawer.test.tsx`,
+  `src/components/preview/TrimTipsDialog.tsx` (+ test),
+  `src/components/shared/ExportJsonButton.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the 390px bar geometry is
+  browser-unverified.
 
 ### 2026-11-26 — Design panel micro-polish: accent name, short badge, sticky heading
 - Task: top Queue item (P2), moved to In Progress first. Both sub-items were
@@ -2065,26 +2113,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `TASKS.md`, `CONTEXT.md`.
 - Note: Playwright remains sandbox-blocked, so the 390px header geometry is
   browser-unverified.
-
-### 2026-11-25 — Section headers: pointer drag handle + uniform 44px rows
-- Task: top Queue item (P1), moved to In Progress first.
-- Change: replaced the header `↑`/`↓` buttons with one `⋮⋮` drag handle plus the
-  existing Hide eye. The handle uses Pointer Events with `setPointerCapture` and
-  `touch-none` (no HTML5 `draggable`), shows a drag/drop ring, and keeps
-  `ArrowUp`/`ArrowDown` reorder on the focused handle. New pure
-  `src/lib/editor/sectionOrder.ts` reorders visible ids while tucked optional
-  rows keep their layout slot. Section rows and the Basics header now share one
-  44px height, and the title/count pair truncates instead of overlapping at
-  390px. README feature copy updated; Decision #106.
-- Tests: new ordering-helper cases, a pointer drag-drop case with stubbed row
-  rects, keyboard reorder cases, uniform-height/truncate assertions, and a
-  Playwright header-geometry case (browser-unverified: Playwright remains
-  sandbox-blocked). 1142 pass.
-- Files: `src/lib/editor/sectionOrder.ts` (new, + test),
-  `src/components/editor/SectionList.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Verified: `npm run typecheck`, `npm test` (1142 pass), `npm run lint` (clean).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

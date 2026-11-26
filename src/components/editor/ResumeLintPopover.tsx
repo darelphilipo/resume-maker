@@ -88,7 +88,7 @@ export function ResumeLintPopover({ doc }: { doc: ResumeDocument }) {
         titleId={panelId}
       >
         <div className="flex items-start justify-between gap-2">
-          <h2 id={panelId} className="text-sm font-semibold">
+          <h2 id={panelId} className="font-serif text-sm font-semibold">
             Bullet polish
           </h2>
           <button

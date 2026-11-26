@@ -667,7 +667,7 @@ describe("EditorWorkspace", () => {
       "shrink-0",
     );
     const redo = screen.getByRole("button", { name: "Redo" });
-    const backup = screen.getByRole("button", { name: "Backup and export" });
+    const backup = screen.getByRole("button", { name: "Export & options" });
 
     expect(redo).toBeDisabled();
     expect(redo).toHaveClass("disabled:text-text/80", "disabled:opacity-100");
@@ -701,12 +701,16 @@ describe("EditorWorkspace", () => {
 
     expect(visual).toHaveAttribute("aria-pressed", "true");
     expect(ats).toHaveAttribute("aria-pressed", "false");
+    expect(visual).toHaveClass("bg-primary", "text-white");
+    expect(ats).not.toHaveClass("bg-primary");
     expect(canvas).toHaveAttribute("data-mode", "canvas");
 
     await user.click(ats);
 
     expect(visual).toHaveAttribute("aria-pressed", "false");
     expect(ats).toHaveAttribute("aria-pressed", "true");
+    expect(ats).toHaveClass("bg-primary", "text-white");
+    expect(visual).not.toHaveClass("bg-primary");
     expect(canvas).toHaveAttribute("data-mode", "ats");
   });
 
@@ -796,7 +800,18 @@ describe("EditorWorkspace", () => {
     const label = reset.closest<HTMLElement>("[data-preview-page-label]");
 
     expect(label).toHaveTextContent("1 page");
+    expect(label).toHaveClass("text-xs", "text-muted");
+    expect(label).not.toHaveClass("border");
+    expect(label).not.toHaveClass("bg-surface");
     expect(reset).toHaveTextContent("Reset");
+    expect(reset).toHaveClass(
+      "bg-primary/10",
+      "text-primary",
+      "font-medium",
+      "rounded-full",
+      "px-2.5",
+      "py-0.5",
+    );
     expect(label).toContainElement(reset);
 
     fireEvent.click(reset);

@@ -284,9 +284,10 @@ in control of every line, and your data stays on your device.
   template, or paper size. On a phone, the Preview controls collapse into one
   tight, sideways-scrollable row and the panel's extra padding is trimmed, so the
   resume itself fills as much of the screen as possible. The top bar keeps just
-  the **Visual / ATS** switch, one compact page pill, and one **Review** pill;
-  trim hints, fitting, and the occasional review lenses live inside it instead of
-  crowding the live resume. Page 1 keeps
+  the **Visual / ATS** switch, a quiet page count, and one **Review** pill; the
+  selected Visual or ATS view fills navy like the Design choices, so the current
+  mode is never ambiguous. Trim hints, fitting, and the occasional review lenses
+  live inside Review instead of crowding the live resume. Page 1 keeps
   breathing room above and below, so its top edge and shadow never clip. On tall
   tablets and phones showing the desktop site, the fitted page sits centred with
   even side margins, and the gray preview desk wraps the first and last pages
@@ -311,19 +312,19 @@ in control of every line, and your data stays on your device.
   The fitted page holds its size and position
   when a scrollbar appears or disappears, so it never shrinks and grows on its
   own.
-- **Fit to 1 Page** when a resume spills just past one page. Fitting never
+- **Fit to 1 page** when a resume spills just past one page. Fitting never
   shrinks the page below a readable size — if one page would need microscopic
   type, the preview says so instead. The fitted width keeps a little breathing
   room at the right edge, so right-aligned dates never lose their last pixels.
-  Whenever a reduced fit is active, an inline **Reset** beside the `1 page`
+  Whenever a reduced fit is active, a tinted **Reset** pill beside the `1 page`
   label — or **Reset fit** inside **Review** — returns the page to 100%.
-- **A calm page count.** A resume that fits on one page just shows a quiet
-  **1 page** label in the top bar, with no extra row stealing height from the
-  paper. After a fit, that same label reads `1 page · Reset` so you can undo the
-  shrink without opening **Review**. When the resume spills, the bar shows one
-  compact pill such as **2 pages · Fit**; if one page would need unreadable type,
-  the pill keeps just the page count and **Review** explains how to shorten the
-  resume instead.
+- **A calm page count.** A resume that fits on one page just shows quiet
+  **1 page** status text in the top bar, with no extra row or pill stealing
+  height from the paper. After a fit, the same label gains a small **Reset**
+  pill so you can undo the shrink without opening **Review**. When the resume
+  spills, the bar shows the page count as plain text plus a tinted **Fit 1p**
+  pill; if one page would need unreadable type, only the count remains and
+  **Review** explains how to shorten the resume instead.
   There is no second toolbar row, so the live resume keeps the reclaimed space.
 - **Trim tips** find the bullets that quietly cost you a line. When a bullet
   wraps and leaves only a word or two on its last line, or grows into a long
@@ -388,9 +389,10 @@ in control of every line, and your data stays on your device.
   it opens as a centred modal. Either way one tap on the **X** (or the dimmed
   background) closes it outright, with no half-collapsed bar left behind.
   Matching runs locally with simple word heuristics, not AI.
-- The **Visual / ATS** switch, page pill, and **Review** pill stay pinned in one
-  calm top bar, so none of them ever cover your name or header — and the paper
-  starts cleanly below that bar instead of sliding underneath a second strip.
+- The **Visual / ATS** switch, quiet page count, and **Review** pill stay pinned
+  in one calm top bar, so none of them ever cover your name or header — and the
+  paper starts cleanly below that bar instead of sliding underneath a second
+  strip.
 - Print/PDF filenames are generated from your name, headline, and date. While
   **Anonymize** is on, the filename uses the placeholder name too, so the file
   itself does not reveal who the resume belongs to. The browser tab keeps
@@ -401,12 +403,12 @@ in control of every line, and your data stays on your device.
 
 - Automatic local saves while you edit.
 - Undo and redo from the header or with `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`.
-- Export from the header's **⋮ Export / Backup** menu ("Backup" on desktop)
-  whenever you want a portable copy. Choose **Resume
-  Maker backup** for a complete file that reopens here with your layout, design,
-  and hidden entries intact, or **JSON Resume** for the open standard format
-  used by other resume tools. JSON Resume exports include the resume you see
-  (hidden sections and entries stay out), and importing either format works
+- Export from the header's **⋮ Export & options** menu ("More" on desktop)
+  whenever you want a portable copy. Choose **Download backup (.json)** for a
+  complete file that reopens here with your layout, design,
+  and hidden entries intact, or **Export JSON Resume** for the open standard
+  format used by other resume tools. JSON Resume exports include the resume you
+  see (hidden sections and entries stay out), and importing either format works
   through the same **Backup & Restore** picker on the home page.
 
 ## Save a PDF

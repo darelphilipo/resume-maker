@@ -125,8 +125,8 @@ export function ExportJsonButton() {
       <button
         ref={triggerRef}
         type="button"
-        aria-label="Backup and export"
-        title="Export / Backup"
+        aria-label="Export & options"
+        title="Export & options"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? "export-json-menu" : undefined}
@@ -134,7 +134,7 @@ export function ExportJsonButton() {
         className="inline-flex min-h-11 min-w-10 shrink-0 items-center justify-center gap-1 rounded-lg border border-transparent text-muted transition-colors hover:bg-black/5 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-w-11"
       >
         <DotsThreeVertical size={20} weight="bold" aria-hidden />
-        <span className="hidden text-xs font-medium lg:inline">Backup</span>
+        <span className="hidden text-xs font-medium lg:inline">More</span>
       </button>
 
       {open ? (
@@ -142,7 +142,7 @@ export function ExportJsonButton() {
           ref={menuRef}
           id="export-json-menu"
           role="menu"
-          aria-label="Backup and export"
+          aria-label="Export & options"
           onKeyDown={handleMenuKeyDown}
           className="absolute right-0 top-full z-30 mt-1 flex w-64 max-w-[calc(100vw-1rem)] flex-col gap-0.5 rounded-xl border border-line bg-surface p-1 shadow-lg"
         >
@@ -153,7 +153,7 @@ export function ExportJsonButton() {
             className="flex w-full flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:bg-black/5 focus-visible:outline-none"
           >
             <span className="text-sm font-medium text-text">
-              Resume Maker backup
+              Download backup (.json)
             </span>
             <span className="text-xs leading-snug text-muted">
               Everything: layout, design, and hidden entries.
@@ -166,7 +166,9 @@ export function ExportJsonButton() {
             onClick={() => handleExport("jsonresume")}
             className="flex w-full flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:bg-black/5 focus-visible:outline-none"
           >
-            <span className="text-sm font-medium text-text">JSON Resume</span>
+            <span className="text-sm font-medium text-text">
+              Export JSON Resume
+            </span>
             <span className="text-xs leading-snug text-muted">
               Portable standard format for other resume tools.
             </span>

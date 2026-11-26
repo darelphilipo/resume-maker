@@ -41,6 +41,9 @@ describe("ResumeLintPopover", () => {
     expect(
       screen.getByRole("dialog", { name: "Bullet polish" }),
     ).toHaveTextContent("No bullet issues found.");
+    expect(
+      screen.getByRole("heading", { name: "Bullet polish" }),
+    ).toHaveClass("font-serif");
   });
 
   it("shows the issue count and lists each finding with a snippet", () => {

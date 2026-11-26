@@ -175,6 +175,9 @@ describe("JdMatchDrawer", () => {
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(dialog).not.toHaveAttribute("data-vaul-snap-points");
     expect(dialog.parentElement).toHaveAttribute("data-centered-modal");
+    expect(
+      screen.getByRole("heading", { name: "Job description keywords" }),
+    ).toHaveClass("font-serif");
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByLabelText("Job description")).toBeInTheDocument();
 

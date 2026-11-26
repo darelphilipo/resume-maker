@@ -1,14 +1,17 @@
 "use client";
 
+import { ArrowsIn } from "@phosphor-icons/react";
+
 /**
  * The one-line spill cue that lives in the Preview mode bar.
  *
  * A clean one-page resume keeps its quiet "1 page" label; once the resume
- * spills this pill replaces it (`2 pages · Fit`) and the compact **Fit** action
- * applies the computed scale. When no readable fit exists it keeps only the
- * page count, so `[Visual | ATS]`, the count, and **Review** fit on a 390px
- * phone without clipping; the plain-English reason lives in Review under the
- * disabled `Fit to 1 Page` control.
+ * spills, the bar shows the page count as plain muted status text plus one
+ * compact **Fit 1p** action. The count stays borderless so it reads as status,
+ * not a button, and the tinted action pill is short enough to keep `Review`
+ * from clipping at 390px. When no readable fit exists only the count remains;
+ * the plain-English reason lives in Review under the disabled `Fit to 1 page`
+ * control.
  */
 export function PageOverflowBanner({
   overflowPx = 0,
@@ -29,32 +32,32 @@ export function PageOverflowBanner({
 
   return (
     <div
-      role="status"
       data-page-overflow=""
-      className="flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-line bg-surface px-2.5 text-xs text-text"
+      className="flex shrink-0 items-center gap-1 whitespace-nowrap"
     >
-      <span className="font-semibold">
+      <span
+        role="status"
+        data-page-overflow-count=""
+        className="text-xs text-muted"
+      >
         <span className="sr-only">Spills onto </span>
         {pageCount} {pageCount === 1 ? "page" : "pages"}
       </span>
       {canFit ? (
-        <>
-          <span aria-hidden className="text-line">
-            ·
-          </span>
-          <button
-            type="button"
-            aria-label="Fit to 1 Page"
-            onClick={() => {
-              if (fitScale !== null && onFit) {
-                onFit(fitScale);
-              }
-            }}
-            className="rounded-full px-1 py-0.5 font-semibold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
-          >
-            Fit
-          </button>
-        </>
+        <button
+          type="button"
+          aria-label="Fit to 1 page"
+          title="Shrink the resume to one readable page"
+          onClick={() => {
+            if (fitScale !== null && onFit) {
+              onFit(fitScale);
+            }
+          }}
+          className="inline-flex h-6 shrink-0 items-center gap-0.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+        >
+          <ArrowsIn size={12} aria-hidden className="shrink-0" />
+          Fit 1p
+        </button>
       ) : null}
     </div>
   );
