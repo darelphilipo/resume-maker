@@ -66,6 +66,9 @@ _empty
   2. **Reclaim vertical margin gently & enforce an `8pt` body floor (`templateTheme.ts`, `fitScale.ts`):** When `fitScale < 1`, gently scale `--page-margin-y` proportionally down to a `32pt` minimum floor (keeping print margins clean while letting more resumes fit on 1 page without shrinking fonts as aggressively), and compute the minimum scale floor as `Math.max(MIN_FIT_SCALE, 8 / bodyFontSize)` so smaller-font templates (`Compact 1-Pager`) never drop below `8pt`.
   3. **Surface current scale on `Reset`:** Show the active scale percentage in the `Reset` tooltip/title (e.g., `"Reset fit (86% → 100%)"`) and auto-reset `fitScale` back to `1` if the user deletes enough content that `totalHeightPx / fitScale` fits cleanly on 1 page at `100%`.
 
+- [ ] P2: Polish `6s Scan` metric matching (`₹`/`€`/`£` + `+`) and add a 1-tap active exit bar (`src/lib/preview/scanMetrics.ts`, `src/components/preview/LiveCanvasViewport.tsx`).
+  1. **Expand `METRIC_PATTERN` (`scanMetrics.ts`):** Support global currency prefixes (`$`, `₹`, `€`, `£`), Indian shorthand (`L`, `Cr`), and trailing `+` (`1,000+`, `11+`, `₹10L`, `₹2Cr`, `€500K`, `£200K`) inside `<span class="scan-metric">` so currency symbols and `+` signs don't stay dimmed.
+  2. **1-line active bar (`LiveCanvasViewport.tsx`):** When `6s Scan` is active in Visual Preview, show a slim 1-line notice bar above the canvas (*"6s Scan: showing what pops in a quick skim"*) with a compact **`Turn off`** button so users can exit in 1 tap without reopening `Review tools`.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
