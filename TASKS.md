@@ -22,7 +22,19 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+### P1 — Page 2 (Content Tab) Fixes & Consistency
+
+- [ ] P1: Upgrade `RichTextField` (inline Link popover, single-row toolbar, new-bullet formula insertion, collapsed `Writing helpers`, and field labels) (`src/components/editor/RichTextField.tsx`, `src/components/editor/ProjectsForm.tsx`, `src/components/editor/EducationForm.tsx`, `src/components/editor/GenericSectionForm.tsx`, `src/components/editor/CustomSectionForm.tsx`).
+  1. **Replace `window.prompt()` with an inline Link popover:** Clicking the Link toolbar button opens a compact inline input bar right below the toolbar (`URL` input + `Apply` + `Remove link` when editing an existing link) instead of a browser `window.prompt()`.
+  2. **Fit all 8 toolbar buttons on one row:** Slightly tighten toolbar button padding/gap (`gap-0.5` / `h-8 w-8` on desktop fine pointers, `h-10 w-10` on touch with `overflow-x-auto`) so `Redo` never wraps alone onto a 2nd row inside entry cards.
+  3. **Impact formula chips insert a new bullet & `Writing helpers` starts collapsed:** Default `Writing helpers` to **collapsed** on all sections (`Experience`, `Projects`, `Education`), and when clicking an Impact formula chip inside a bullet list at the end of a non-empty bullet, insert a **new bullet item** instead of gluing the formula onto the end of the previous sentence.
+  4. **Consistent field labels:** Add concise labels (`Description` / `Highlights` / `Summary` / `Notes`) above `RichTextField` in `Projects`, `Education`, `Awards`, `Volunteer`, `References`, and `Custom` so every form field has a visible label.
+
+- [ ] P1: Fix Page 2 section consistency (`Clear sample data`, URL stripping, `Projects` `Present`, `Collapse all`, `Match JD` dedup, placeholders) (`src/components/editor/SectionList.tsx`, `src/components/editor/ProjectsForm.tsx`, `src/components/editor/sectionFields.ts`, `src/templates/shared/SectionRenderer.tsx`, `src/lib/keywords/jdMatch.ts`).
+  1. **Clean up `Clear sample data`:** Only show `Clear sample data` when the resume/section actually contains unedited preset sample data—never show it (enabled or disabled) on newly added optional sections, custom sections, or PDF-imported resumes.
+  2. **Consistent URL display & `Projects` `Present`:** Strip `https://` / `www.` consistently across `Projects` and `Custom` URLs in `SectionRenderer.tsx` (matching `Certifications` & `Publications`), and add a `Present` checkbox to `Projects` `End date` (matching `Experience`, `Education`, and `Volunteer`).
+  3. **Polish rough edges:** Shorten `Profiles` `Profile URL` placeholder so it doesn't truncate mid-sentence (`"Paste GitHub or LinkedIn URL"`), update `Volunteer` `Location` placeholder from `"Berlin, Germany"` to `"City, Country"`, include `Basics` in `Collapse all` (both count and action), deduplicate stemmed variants in `Match JD` (`build` / `building` shown once), and add subtle min/max labels (`None` — `Native`) on the `Languages` `0–5` `Level` slider.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
