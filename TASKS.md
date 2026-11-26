@@ -34,6 +34,12 @@ _empty
   1. Display the active accent color name inline next to the `Accent color` heading (e.g. `Accent color · Indigo`), add `title` tooltips on each swatch, and use `rounded-full` on the swatch `:focus-visible` outline so it matches the circular dot.
   2. Shorten the `Studio Sidebar` badge from `"Best for direct/human review"` to `"Human review"` so `"Studio Sidebar"` stays on one line, standardize US spelling (`"centered"`, `"Brand-colored"`), clarify `"Classic"` copy (*"Serif headings over sans-serif body"*), and make the `Design` heading sticky at the top of the desktop column.
 
+- [ ] P2: Cross-app design-system consistency pass (`src/components/editor/BasicsForm.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/editor/JdMatchDrawer.tsx`).
+  1. **Fix `Basics` truncation & match card tint (`BasicsForm.tsx`):** Add `shrink-0` to the `Basics` label and `min-w-0 truncate` to the candidate name preview so long names never squish `Basics` to `Bas...`, and match `Basics`'s surface tint to the other section rows (`Summary`, `Experience`, etc.).
+  2. **Unify segmented control active state (`LiveCanvasViewport.tsx`):** Style the active `Visual | ATS` segment with the same dark-navy fill and white text used by `A4 | Letter`, `Sans | Serif | Classic`, and `Compact | Normal | Relaxed` in `DesignPanel.tsx`.
+  3. **Homepage (`Launcher.tsx`) visual parity:** Add the same subtle muted-red destructive hover/text cue (`text-red-700/80 hover:bg-red-50`) to Recent Resume `Delete` buttons as `/editor` entry deletes, place the `Backup & restore` dropzone icon inside the same circular tinted badge as `Upload a PDF`, and align sentence casing (`"Backup & restore"`, `"Fit to 1 page"`).
+  4. **Editorial serif modal titles:** Apply the shared serif heading font to the 4 modal titles (`Bullet polish`, `Match JD` / `Job description keywords`, `Review tools`, `Trim tips`) so they match the editorial serif voice of `Content`, `Preview`, and `Design`.
+
 
 
 ## Done
