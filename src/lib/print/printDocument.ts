@@ -67,15 +67,35 @@ export function printTitle(input: PrintTitleInput): string {
 }
 
 /**
- * Human-readable browser-tab title for the open editor. It stays in place for
- * the whole editing session so browsers (notably Android Chrome's async print
- * spooler) can read the resume name for the PDF "Save as" filename instead of
- * a title that was restored too early.
+ * ASCII-safe browser-tab title for the open editor. Android Chrome's async
+ * print spooler reads `document.title` for the PDF "Save as" filename, and a
+ * space-free underscore slug survives every browser/OS filename sanitiser
+ * without turning the name into a hyphen soup. It stays in place for the whole
+ * editing session so the spooler never falls back to a default name.
  */
 export function resumeDocumentTitle(name: string): string {
-  const clean = name.trim().replace(/\s+/g, " ");
+  const slug = name
+    .trim()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9]+/g, "_")
+    .replace(/_{2,}/g, "_")
+    .replace(/^_+|_+$/g, "");
 
-  return clean === "" ? "Resume Maker" : `${clean} - Resume`;
+  return slug === "" ? "Resume Maker" : `${slug}_Resume`;
+}
+
+/**
+ * `printResume` owns `document.title` between the moment it swaps in the
+ * filename slug and the moment it restores the tab title (which is delayed on
+ * coarse pointers so Android Chrome can finish spooling). The editor's title
+ * sync effect checks this flag so a re-render during that window cannot stomp
+ * the print filename.
+ */
+let printTitleActive = false;
+
+export function isPrintTitleActive(): boolean {
+  return printTitleActive;
 }
 
 function isCoarsePointer(): boolean {
@@ -170,6 +190,7 @@ export async function printResume(opts: PrintResumeOptions): Promise<void> {
       // A failing pre-print hook should never block the print dialog.
     }
 
+    printTitleActive = true;
     document.title = printTitle({
       name: opts.name,
       headline: opts.headline,
@@ -191,5 +212,6 @@ export async function printResume(opts: PrintResumeOptions): Promise<void> {
     }
 
     document.title = previousTitle;
+    printTitleActive = false;
   }
 }

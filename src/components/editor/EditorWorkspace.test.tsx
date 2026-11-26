@@ -255,14 +255,14 @@ describe("EditorWorkspace", () => {
       name: "Daniel Okafor",
     });
 
-    expect(document.title).toBe("Daniel Okafor - Resume");
+    expect(document.title).toBe("Daniel_Okafor_Resume");
 
     expandBasics();
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "Daniel Okafor Jr." },
     });
 
-    expect(document.title).toBe("Daniel Okafor Jr. - Resume");
+    expect(document.title).toBe("Daniel_Okafor_Jr_Resume");
   });
 
   it("uses the anonymized name in the tab title and restores the app name", async () => {
@@ -278,12 +278,12 @@ describe("EditorWorkspace", () => {
       name: "Grace Hopper",
     });
 
-    expect(document.title).toBe("Grace Hopper - Resume");
+    expect(document.title).toBe("Grace_Hopper_Resume");
 
     openReviewMenu();
     fireEvent.click(screen.getByRole("switch", { name: "Anonymize" }));
 
-    expect(document.title).toBe(`${ANONYMIZED_NAME} - Resume`);
+    expect(document.title).toBe("Alex_Taylor_Resume");
 
     unmount();
 

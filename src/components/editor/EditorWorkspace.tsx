@@ -25,7 +25,7 @@ import { ExportJsonButton } from "@/components/shared/ExportJsonButton";
 import type { BulletIssue, BulletLintReport } from "@/lib/lint/bulletMetrics";
 import { usePageLayout } from "@/lib/pagination/usePageLayout";
 import { anonymizeResumeDoc } from "@/lib/privacy/anonymizeDoc";
-import { resumeDocumentTitle } from "@/lib/print/printDocument";
+import { isPrintTitleActive, resumeDocumentTitle } from "@/lib/print/printDocument";
 import { resumeDisplayName } from "@/lib/schema/resumeName";
 import {
   canRedo,
@@ -250,16 +250,20 @@ export function EditorWorkspace() {
    * asynchronously after `window.print()` returns, so restoring the page title
    * immediately can make the saved file fall back to a default name. The title
    * therefore stays synced while the editor is open and is restored on unmount.
+   * While `printResume` owns the title, the sync effect stays out of its way so
+   * a re-render cannot overwrite the filename mid-spool.
    */
   useEffect(() => {
-    if (status !== "ready") {
+    if (status !== "ready" || isPrintTitleActive()) {
       return;
     }
 
     document.title = resumeDocumentTitle(previewDoc.basics.name);
 
     return () => {
-      document.title = "Resume Maker";
+      if (!isPrintTitleActive()) {
+        document.title = "Resume Maker";
+      }
     };
   }, [previewDoc.basics.name, status]);
 
@@ -451,6 +455,13 @@ export function EditorWorkspace() {
           </div>
         </div>
       </header>
+
+      {/* The measure layer must live outside the mobile tabpanels: on phones
+          `#panel-preview` is `display: none` while Content or Design is active,
+          and a hidden tree reports a zero content width, so pagination would
+          never finish and Save PDF could capture an empty page list. The layer
+          itself is a fixed 0×0, aria-hidden shell, so it adds no layout. */}
+      {layout.measureLayer}
 
       <main className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-5 lg:overflow-hidden">
         {/* Reordering entries moves focused DOM nodes; without disabling scroll

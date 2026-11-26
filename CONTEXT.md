@@ -1827,11 +1827,36 @@ rediscover.
         sentence case with the same circular `size-11 bg-[#eef2f6]` icon badge
         as **Upload a PDF**.
 
+    115. **Pagination measures outside the hidden mobile tabs, and print never
+        captures an empty page list.** `EditorWorkspace` renders
+        `layout.measureLayer` once, between the header and `<main>`, instead of
+        letting `LiveCanvasViewport` own it. On phones `#panel-preview` is
+        `display: none` while Content or Design is active, and a hidden
+        `MeasureLayer` reports `clientWidth === 0`, so `usePageLayout` stayed
+        `isMeasuring` forever and Save PDF captured `[[]]`. The measure layer is
+        already a fixed 0×0 `aria-hidden` shell, so moving it adds no layout.
+        `PrintPortal` still guards the capture: `printablePages(doc, pages)`
+        falls back to
+        `[[HEADER_BLOCK_ID, ...selectVisibleSectionIds({ doc })]]` whenever
+        `pages` is empty or every page is empty, so a print tapped before the
+        first measurement finishes still contains the resume (include the header
+        id explicitly — `selectVisibleSectionIds` only returns body sections).
+        The editor tab title is now an ASCII-safe underscore slug
+        (`resumeDocumentTitle`, e.g. `Divya_Prakash_Resume`; diacritics stripped,
+        punctuation → `_`, blank → `Resume Maker`). `printResume` sets a
+        module-level `isPrintTitleActive()` lock while it owns the title, and
+        `EditorWorkspace`'s sync effect skips both the set and the unmount
+        restore while that lock is held, so a re-render during the coarse-pointer
+        1200 ms spool grace cannot overwrite the PDF filename. The e2e helper's
+        `PrintCall` also records `sectionCount`/`textLength` so a mobile test can
+        prove the captured portal is non-empty without racing the portal
+        unmount.
+
 ## Verification and tooling
 
 ```powershell
 npm run typecheck      # tsc --noEmit
-npm test               # vitest, ~1182 tests
+npm test               # vitest, ~1186 tests
 npm run lint           # eslint
 $env:PAGES_BASE_PATH='/resume-maker'; npm run build   # production export
 npx playwright test    # e2e; needs a dev server on :3000
@@ -1891,6 +1916,54 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-26 — Blank-PDF fix checkpoint: implementation complete, verification blocked
+- Task: continued the lone In Progress item (P0). Source inspection confirmed
+  all four sub-items were already implemented by the prior checkpoint: the
+  measure layer is lifted into `EditorWorkspace` outside the hidden mobile tab,
+  `PrintPortal.printablePages()` fills an empty page list from visible section
+  ids, `resumeDocumentTitle()` emits an underscore slug guarded by
+  `isPrintTitleActive()`, and the unit + 390×844 mobile e2e regressions are in
+  place (Decision #115; README/CONTEXT already updated).
+- Change: no code changes. Added a checkpoint + exact next steps to the item in
+  `TASKS.md` and left it In Progress.
+- Verification: **not run.** This runner denies shell permission on every path:
+  direct `shell`, a spawned `general` subagent, and an `automation` shell action
+  all returned `Permission denied: shell`. `npm run typecheck`, `npm test`,
+  `npm run lint`, and Playwright could not be executed, so no pass/fail counts
+  are available and the item must NOT be moved to Done until a run with shell
+  access executes them.
+- Next run: run `npm run typecheck && npm test` (and lint); if green, move the
+  item to Done dated 2026-11-26 with the existing file list. No new code changes
+  are expected unless a check fails.
+
+### 2026-11-26 — Blank-PDF fix from mobile Content/Design + ASCII-safe print title
+- Task: the lone Queue item (P0), moved to In Progress first. All four
+  sub-items were open.
+- Change: lifted `layout.measureLayer` into `EditorWorkspace` between the
+  header and `<main>` and removed it from `LiveCanvasViewport`, so pagination
+  measures even while the mobile Preview panel is `display: none`. Added
+  `printablePages(doc, pages)` to `PrintPortal`: an empty/missing page list now
+  falls back to `[HEADER_BLOCK_ID, ...selectVisibleSectionIds({ doc })]`, so
+  Save PDF can never capture a blank sheet. `resumeDocumentTitle` now returns an
+  ASCII-safe underscore slug (`Divya_Prakash_Resume`) and `printResume` exposes
+  `isPrintTitleActive()`; the editor title effect skips its set/restore while a
+  print job owns the title, preserving the filename during the coarse-pointer
+  spool grace. Decision #115; README feature tour and Save-a-PDF steps updated.
+- Tests: new PrintPortal empty-pages/missing-pages fallbacks, underscore-slug
+  and print-lock cases, updated `EditorWorkspace` title expectations, and a
+  mobile (390×844) e2e that lands on Content, clicks Save PDF, and asserts the
+  captured portal has pages/sections/text plus the restored slug title.
+  `PrintCall` gained `sectionCount`/`textLength`. `npm run typecheck` clean;
+  `npm test` 1186 pass across 107 files; `npm run lint` clean.
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx`,
+  `src/components/preview/PrintPortal.tsx` (+ test),
+  `src/lib/print/printDocument.ts` (+ test), `e2e/helpers.ts`,
+  `e2e/mobile.spec.ts`, `e2e/print.spec.ts`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the mobile e2e and the real
+  Android spool filename are browser-unverified.
 
 ### 2026-11-26 — Basics row alignment + homepage parity cues
 - Task: the lone Queue item (P2), moved to In Progress first. Both sub-items
@@ -2098,55 +2171,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `CONTEXT.md`, `TASKS.md`.
 - Note: Playwright remains sandbox-blocked, so the 390px hover/pending geometry
   is browser-unverified.
-
-### 2026-11-26 — Final mobile UX polish (Basics, entry actions, trim tips)
-- Task: the lone Queue item (P1), moved to In Progress first. All five sub-items
-  were still open in the tree.
-- Change: the collapsed Basics header now reads Title Case at section-title
-  weight. `EntryActions` is one nowrap row — icon-only eye/up/down on the left,
-  labelled Delete on the right — and footer buttons never wrap their label
-  mid-phrase; the mobile drawer trigger spans both footer columns.
-  `ClearSectionButton` renders only for `metadata.sampleData` resumes, so
-  imported/blank resumes no longer show a misleading "Clear sample data".
-  Education uses `City, Country` / `3.8 GPA / 8.5 CGPA` placeholders. Trim tips
-  gained a muted `›` chevron, `active:bg-black/10`, and a `Show all (N)` /
-  `Show fewer` toggle instead of the dead `+N more` line. Decision #107; #104
-  updated. README Trim tips copy updated.
-- Tests: new nowrap/icon-only action row, preset-only clear, neutral Education
-  placeholders, Title Case Basics, Show-all toggle/chevron, and a two-item
-  Awards Page-2 Studio Sidebar case that asserts every awards block has a
-  positive injected height and lands in `pages[1]`. `npm run typecheck` clean;
-  `npm test` 1145 pass across 105 files.
-- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/SectionFormControls.tsx` (+ test),
-  `src/components/editor/SectionList.tsx`,
-  `src/components/editor/EducationForm.tsx` (+ test),
-  `src/components/editor/ExperienceForm.test.tsx`,
-  `src/components/preview/TrimTipsDialog.tsx` (+ test),
-  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the 390px row geometry is
-  browser-unverified.
-
-### 2026-11-26 — Folded the scratch pagination harness into `computePages.test.ts`
-- Task: Inbox, In Progress, and Queue were all empty, so this run followed the
-  repo's empty-queue precedent and picked up the deferred test-hygiene debt the
-  2026-11-24 Studio Sidebar checkpoint left behind.
-- Change: moved the two realistic 8-bullet `gengar` cases out of
-  `src/lib/pagination/__scratch.test.ts` into the existing "split entries in the
-  Studio Sidebar's narrow Page 1" describe. They now share `EIGHT_BULLETS`,
-  `studioEightBulletDoc(extraExperience)`, and `fragmentHeights(fragments,
-  first, rest)` instead of a one-off `buildDoc`/`heightsFor`. The scratch file
-  became the documented comment-only `export {}` stub and joined
-  `__explore.test.tsx` in Vitest's `exclude`, because file deletion is still
-  unavailable here.
-- Tests: `npm run typecheck` clean; `npm test` 1142 pass across 105 files (the
-  two cases moved, so the count is unchanged while the file count dropped by
-  one); `npm run lint` clean. No user-visible behaviour changed, so README was
-  left alone.
-- Files: `src/lib/pagination/computePages.test.ts`,
-  `src/lib/pagination/__scratch.test.ts`, `vitest.config.ts`, `CONTEXT.md`,
-  `TASKS.md`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

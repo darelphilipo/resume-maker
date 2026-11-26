@@ -621,7 +621,6 @@ export function LiveCanvasViewport({
       ref={containerRef}
       className="relative flex min-h-0 w-full flex-1 flex-col overflow-clip rounded-xl px-2 py-2 lg:flex-none lg:p-4"
     >
-      {layout.measureLayer}
       {/*
        * The only mobile scroll container in the preview. The page count, Fit,
        * Trim tips, and every review lens now live in the Preview mode bar, so

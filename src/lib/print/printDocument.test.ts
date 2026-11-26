@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PaperFormat } from "@/lib/units/pageGeometry";
 
 import {
+  isPrintTitleActive,
   printDateStamp,
   printPageSizeCss,
   printPageSizeLabel,
@@ -148,20 +149,22 @@ describe("printTitle", () => {
 });
 
 describe("resumeDocumentTitle", () => {
-  it("keeps the readable resume name for the browser tab and PDF", () => {
-    expect(resumeDocumentTitle("Daniel Okafor")).toBe("Daniel Okafor - Resume");
-    expect(resumeDocumentTitle("Alex Taylor")).toBe("Alex Taylor - Resume");
+  it("builds a space-free, ASCII-safe slug for the browser tab and PDF", () => {
+    expect(resumeDocumentTitle("Daniel Okafor")).toBe("Daniel_Okafor_Resume");
+    expect(resumeDocumentTitle("Alex Taylor")).toBe("Alex_Taylor_Resume");
   });
 
-  it("collapses stray whitespace without slugifying the name", () => {
+  it("strips diacritics and punctuation without leaving double underscores", () => {
     expect(resumeDocumentTitle("  Zoë   O'Brien  ")).toBe(
-      "Zoë O'Brien - Resume",
+      "Zoe_O_Brien_Resume",
     );
+    expect(resumeDocumentTitle("R&D Lead")).toBe("R_D_Lead_Resume");
   });
 
   it("falls back to the app name when no resume name is set", () => {
     expect(resumeDocumentTitle("")).toBe("Resume Maker");
     expect(resumeDocumentTitle("   ")).toBe("Resume Maker");
+    expect(resumeDocumentTitle("😀 !!!")).toBe("Resume Maker");
   });
 });
 
@@ -337,6 +340,29 @@ describe("printResume", () => {
       }),
     ).resolves.toBeUndefined();
 
+    expect(document.title).toBe("Original title");
+  });
+
+  it("holds the print title lock only while the print job owns the title", async () => {
+    stubMatchMedia(false);
+
+    expect(isPrintTitleActive()).toBe(false);
+
+    const print = vi.fn(() => {
+      expect(isPrintTitleActive()).toBe(true);
+      expect(document.title).toBe("ada-lovelace-2026-01-02-resume");
+      window.dispatchEvent(new Event("afterprint"));
+    });
+
+    await printResume({
+      pages: [["__header"]],
+      name: "Ada Lovelace",
+      date: new Date(2026, 0, 2),
+      print,
+      fontsReady: () => Promise.resolve(),
+    });
+
+    expect(isPrintTitleActive()).toBe(false);
     expect(document.title).toBe("Original title");
   });
 });

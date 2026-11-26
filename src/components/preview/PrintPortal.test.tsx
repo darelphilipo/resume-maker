@@ -2,6 +2,7 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { createEmptyResume } from "@/lib/schema/defaults";
+import { ExperienceItemSchema } from "@/lib/schema/resume.schema";
 
 import { PrintPortal } from "./PrintPortal";
 
@@ -92,6 +93,45 @@ describe("PrintPortal", () => {
     expect(portal?.querySelector(".resume-scan")).toBeNull();
     expect(portal?.querySelector(".scan-metric")).toBeNull();
     expect(portal?.textContent).toContain("Shipped 3x faster and saved $1.2M");
+
+    view.unmount();
+  });
+
+  it("falls back to every visible section on Page 1 when pages are empty", () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Ada Lovelace";
+    doc.summary.content = "<p>Fallback summary</p>";
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "e1",
+        company: "Acme",
+        position: "Engineer",
+      }),
+    ];
+
+    const view = render(<PrintPortal doc={doc} pages={[[]]} />);
+    const portal = document.getElementById("print-portal");
+
+    expect(portal?.querySelectorAll(".resume-page")).toHaveLength(1);
+    expect(portal?.querySelectorAll(".resume-section").length).toBeGreaterThan(
+      0,
+    );
+    expect(portal?.textContent).toContain("Ada Lovelace");
+    expect(portal?.textContent).toContain("Fallback summary");
+    expect(portal?.textContent).toContain("Acme");
+
+    view.unmount();
+  });
+
+  it("falls back to every visible section when the page list is missing", () => {
+    const doc = createEmptyResume();
+    doc.summary.content = "<p>Missing pages fallback</p>";
+
+    const view = render(<PrintPortal doc={doc} pages={[]} />);
+    const portal = document.getElementById("print-portal");
+
+    expect(portal?.querySelectorAll(".resume-page")).toHaveLength(1);
+    expect(portal?.textContent).toContain("Missing pages fallback");
 
     view.unmount();
   });

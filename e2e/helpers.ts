@@ -7,6 +7,8 @@ export type PrintCall = {
   portalExists: boolean;
   directChild: boolean;
   pageCount: number;
+  sectionCount: number;
+  textLength: number;
 };
 
 type PrintWindow = Window & { __printCalls: PrintCall[] };
@@ -168,6 +170,10 @@ export async function stubPrint(
         pageCount: portal
           ? portal.querySelectorAll(".resume-page").length
           : 0,
+        sectionCount: portal
+          ? portal.querySelectorAll(".resume-section").length
+          : 0,
+        textLength: portal?.textContent?.trim().length ?? 0,
       });
 
       if (shouldDispatch) {

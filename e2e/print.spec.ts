@@ -30,7 +30,7 @@ test("prints the rendered pages and restores the title", async ({ page }) => {
   await showPreview(page);
 
   const originalTitle = await page.title();
-  expect(originalTitle).toBe("Resume Maker");
+  expect(originalTitle).toBe("Maya_Chen_Resume");
   const previewPageCount = await page
     .locator(".resume-pages .resume-page")
     .count();

@@ -3,7 +3,9 @@ import { devices, expect, test, type Page } from "@playwright/test";
 import {
   createPresetResume,
   readPersistedDocument,
+  readPrintCalls,
   showTab,
+  stubPrint,
 } from "./helpers";
 
 // Spreading devices["iPhone 14"] wholesale would also carry its
@@ -331,4 +333,39 @@ test("a multi-page preview scrolls with a one-finger swipe", async ({
 
   expect(before).toBe(0);
   expect(after).toBeGreaterThan(100);
+});
+
+test("prints a non-empty resume from the Content tab without visiting Preview", async ({
+  page,
+}) => {
+  await stubPrint(page, true);
+  await createPresetResume(page);
+
+  // The regression: on a phone the editor lands on Content, so the Preview
+  // panel (and anything measured inside it) is display:none. Save PDF must
+  // still capture real pages instead of a blank sheet.
+  await expect(page.getByRole("tab", { name: "Content" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+
+  await page.getByRole("button", { name: "Save PDF" }).click();
+
+  await expect
+    .poll(async () => (await readPrintCalls(page)).length)
+    .toBe(1);
+
+  const [call] = await readPrintCalls(page);
+
+  expect(call.portalExists).toBe(true);
+  expect(call.directChild).toBe(true);
+  expect(call.pageCount).toBeGreaterThan(0);
+  expect(call.sectionCount).toBeGreaterThan(0);
+  expect(call.textLength).toBeGreaterThan(0);
+  expect(call.title).toMatch(
+    /^maya-chen-senior-backend-engineer-\d{4}-\d{2}-\d{2}-resume$/,
+  );
+
+  // The tab title returns to the ASCII-safe editor slug after the spool.
+  await expect(page).toHaveTitle("Maya_Chen_Resume");
 });

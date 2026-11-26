@@ -395,9 +395,10 @@ in control of every line, and your data stays on your device.
   strip.
 - Print/PDF filenames are generated from your name, headline, and date. While
   **Anonymize** is on, the filename uses the placeholder name too, so the file
-  itself does not reveal who the resume belongs to. The browser tab keeps
-  showing the resume name while the editor is open, so phones and tablets that
-  prepare the PDF after the print dialog closes still suggest the right name.
+  itself does not reveal who the resume belongs to. The browser tab shows a
+  clean, space-free version of the name (for example `Divya_Prakash_Resume`), so
+  phones and tablets that prepare the PDF after the print dialog closes still
+  suggest the right filename.
 
 ### Keep your work
 
@@ -414,7 +415,8 @@ in control of every line, and your data stays on your device.
 ## Save a PDF
 
 1. Open a resume in the editor.
-2. Check the page count in the Preview tab.
+2. Check the page count in the Preview tab (optional — you can print from
+   Content, Design, or Preview).
 3. Choose **Save PDF**.
 4. In the browser print dialog, choose **Save as PDF**.
 
@@ -424,7 +426,9 @@ named in the reminder and nothing will be clipped. Turn off browser headers and
 footers as well so the page URL and date do not appear. Hover or focus **Save
 PDF** to see both reminders, or tap the info button beside it on a touch device.
 If the dialog is dismissed without a close event, **Save PDF** becomes available
-again after a moment instead of staying dimmed.
+again after a moment instead of staying dimmed. Pages are measured in the
+background, so **Save PDF** works straight from Content or Design without
+opening Preview first.
 
 ## Run it locally
 
