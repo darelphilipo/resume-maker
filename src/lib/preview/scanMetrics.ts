@@ -14,11 +14,12 @@ const TOKEN_PATTERN = /(<[^>]*>|&(?:#\d+|#x[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]+);)/
 
 /**
  * A metric is a number optionally decorated like `$1.2M`, `40%`, `3x`, or
- * `1,200`. The leading boundary group keeps digits embedded in words (for
+ * `1,200`, a prefixed latency token such as `p95`/`p99`, or a GPA figure such
+ * as `3.8 GPA`. The leading boundary group keeps digits embedded in words (for
  * example `v2` or `H2O`) from being split into a span.
  */
 const METRIC_PATTERN =
-  /(^|[^\w$])(\$?\d[\d,]*(?:\.\d+)?(?:\s?(?:%|[xX](?![A-Za-z])|[kKmMbB](?![A-Za-z])))?)/g;
+  /(^|[^\w$])(\$?\d[\d,]*(?:\.\d+)?(?:\s?(?:%|[xX](?![A-Za-z])|[kKmMbB](?![A-Za-z])))?(?:\s?[Gg][Pp][Aa](?![A-Za-z]))?|[pP]\d{2,}(?![A-Za-z0-9]))/g;
 
 export const SCAN_METRIC_CLASS = "scan-metric";
 

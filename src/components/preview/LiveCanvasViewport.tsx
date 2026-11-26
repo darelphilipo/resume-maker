@@ -47,6 +47,7 @@ import {
   CanvasResetOverlay,
   RESET_ANIMATION_MS,
 } from "./CanvasResetButton";
+import { CanvasZoomControls } from "./CanvasZoomControls";
 import { PageStack } from "./PageStack";
 import { TouchPanCanvas } from "./TouchPanCanvas";
 import { useFitTransform } from "./useFitTransform";
@@ -58,6 +59,8 @@ const MIN_SCALE = 0.2;
 const MAX_SCALE = 2;
 const FIT_MAX_SCALE = 1;
 const SCALE_EPSILON = 0.001;
+/** Each desktop zoom button step is 25% of the fitted width. */
+const ZOOM_STEP_RATIO = 0.25;
 
 const useIsomorphicLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -322,6 +325,8 @@ export function LiveCanvasViewport({
   const [zoomState, setZoomState] = useState<{
     fitScale: number;
     zoomed: boolean;
+    /** Current scale relative to fit, rounded for the desktop zoom pill. */
+    percent: number;
   } | null>(null);
 
   useIsomorphicLayoutEffect(() => {
@@ -468,11 +473,14 @@ export function LiveCanvasViewport({
     }
 
     const zoomed = Math.abs(state.scale - fitScale) > SCALE_EPSILON;
+    const percent = Math.round((state.scale / fitScale) * 100);
 
     setZoomState((previous) =>
-      previous?.fitScale === fitScale && previous.zoomed === zoomed
+      previous?.fitScale === fitScale &&
+      previous.zoomed === zoomed &&
+      previous.percent === percent
         ? previous
-        : { fitScale, zoomed },
+        : { fitScale, zoomed, percent },
     );
   };
 
@@ -482,6 +490,17 @@ export function LiveCanvasViewport({
     fitScale !== null &&
     zoomState.fitScale === fitScale &&
     zoomState.zoomed;
+
+  const zoomPercent =
+    fitScale !== null &&
+    zoomState !== null &&
+    zoomState.fitScale === fitScale
+      ? zoomState.percent
+      : 100;
+  const maxZoomPercent =
+    fitScale === null ? 100 : Math.round((MAX_SCALE / fitScale) * 100);
+  const canZoomIn = fitScale !== null && zoomPercent < maxZoomPercent;
+  const canZoomOut = isZoomed;
 
   /**
    * A reset returns the paper to Page 1 exactly as on first landing in the
@@ -510,6 +529,40 @@ export function LiveCanvasViewport({
   const resetFit = (): void => {
     resetScroll();
     onFit?.(1);
+  };
+
+  /**
+   * Desktop zoom buttons step by 25% of the fitted width. Zooming out from the
+   * first step above fit returns exactly to the fitted transform instead of
+   * shrinking below it, so the pill's 100% is a real floor.
+   */
+  const zoomBy = (direction: 1 | -1): void => {
+    if (fitScale === null) {
+      return;
+    }
+
+    if (direction === 1) {
+      void wrapperRef.current?.zoomIn(
+        fitScale * ZOOM_STEP_RATIO,
+        RESET_ANIMATION_MS,
+      );
+      return;
+    }
+
+    if (zoomPercent <= 100 + Math.round(ZOOM_STEP_RATIO * 100)) {
+      void wrapperRef.current?.setTransform(
+        fitOffsetX,
+        0,
+        fitScale,
+        RESET_ANIMATION_MS,
+      );
+      return;
+    }
+
+    void wrapperRef.current?.zoomOut(
+      fitScale * ZOOM_STEP_RATIO,
+      RESET_ANIMATION_MS,
+    );
   };
 
   // Review drives Reset fit through this ref, while the floating zoom pill
@@ -643,6 +696,17 @@ export function LiveCanvasViewport({
        * transforms under it.
        */}
       <CanvasResetOverlay visible={isZoomed} onReset={resetZoom} />
+      {showCanvas ? (
+        <CanvasZoomControls
+          percent={zoomPercent}
+          zoomed={isZoomed}
+          canZoomIn={canZoomIn}
+          canZoomOut={canZoomOut}
+          onZoomIn={() => zoomBy(1)}
+          onZoomOut={() => zoomBy(-1)}
+          onReset={resetZoom}
+        />
+      ) : null}
     </div>
   );
 }

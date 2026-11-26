@@ -37,6 +37,9 @@ import { useDebouncedCommit } from "./useDebouncedCommit";
 
 const SECTION_ID_SET = new Set<string>(SECTION_IDS);
 
+/** How long the jumped-to rich-text field keeps its trim highlight. */
+const TRIM_FOCUS_MS = 1600;
+
 const OPTIONAL_SECTION_IDS = new Set<string>([
   "awards",
   "languages",
@@ -271,12 +274,41 @@ export function SectionList({
     }
 
     const row = document.getElementById(`section-row-${focusSection.id}`);
-    const target =
-      (focusSection.entryId
-        ? document.getElementById(`editor-entry-${focusSection.entryId}`)
-        : null) ?? row;
+    const entry = focusSection.entryId
+      ? document.getElementById(`editor-entry-${focusSection.entryId}`)
+      : null;
+    const sectionBody = document.getElementById(
+      `section-body-${focusSection.id}`,
+    );
+    // Trim tips point at a rendered bullet, so land on the form field that owns
+    // it rather than the top of the section. A section-level bullet (Summary)
+    // has no entry id, so the section body is its scope.
+    const scope = entry ?? sectionBody ?? row;
+    const field =
+      scope?.querySelector<HTMLElement>("[data-rich-text-field]") ?? null;
+    const target = field ?? entry ?? row;
 
-    target?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    target?.scrollIntoView?.({
+      behavior: "smooth",
+      block: field ? "center" : "start",
+    });
+
+    if (!field) {
+      return;
+    }
+
+    field.setAttribute("data-trim-focus", "true");
+    const editorInput = field.querySelector<HTMLElement>(".tiptap");
+    (editorInput ?? field).focus({ preventScroll: true });
+
+    const timer = window.setTimeout(() => {
+      field.removeAttribute("data-trim-focus");
+    }, TRIM_FOCUS_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+      field.removeAttribute("data-trim-focus");
+    };
   }, [focusSection]);
 
   function isOptionalTucked(row: SectionRow): boolean {

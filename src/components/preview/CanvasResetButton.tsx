@@ -49,7 +49,7 @@ export function CanvasResetOverlay({
   return (
     <div
       data-canvas-reset=""
-      className="pointer-events-none absolute bottom-3 right-3 z-20"
+      className="pointer-events-none absolute bottom-3 right-3 z-20 lg:hidden"
     >
       <CanvasResetButton onReset={onReset} />
     </div>

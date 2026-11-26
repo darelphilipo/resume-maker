@@ -24,12 +24,6 @@ _empty
 
 ### P1 — Page 2 (Content Tab) Fixes & Consistency
 
-- [ ] P1: Fix `Anonymize` leaking `REFERENCES`, add desktop Preview zoom buttons, and scroll `Trim tips` to the exact bullet (`src/lib/privacy/anonymizeDoc.ts`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/lib/preview/scanHighlight.ts`).
-  1. **Redact `REFERENCES` in `anonymizeResumeDoc`:** Replace reference `name` (`"Reference A"`), `company`, `position`, `phone` (`"+1 (555) 010-0101"`), and `email` (`"reference@example.com"`) in both Visual Preview and `ATS` view so personal contact details never leak.
-  2. **Desktop zoom controls (`lg:` only):** Add a compact floating `- | 100% | +` zoom pill in the bottom-right corner of the Preview canvas on desktop (`hidden lg:flex`, with `Reset` when zoomed) so mouse-only and keyboard users can zoom without needing to discover `Ctrl + Wheel`, keeping mobile unchanged with pinch-to-zoom + floating `Reset`.
-  3. **`Trim tips` exact scroll & focus:** When clicking a bullet in `Trim tips`, scroll the `Content` panel directly to that specific entry's `RichTextField` and focus/briefly highlight it instead of stopping at the top of the `Experience` section.
-  4. **`6s Scan` metric tokens:** Keep prefixed latency metrics (`p95`, `p99`) and `GPA` figures (`3.8 GPA`) at full contrast during `6s Scan`.
-
 - [ ] P2: Final Design panel micro-polish (`src/components/editor/DesignPanel.tsx`, `src/templates/registry.ts`).
   1. Display the active accent color name inline next to the `Accent color` heading (e.g. `Accent color · Indigo`), add `title` tooltips on each swatch, and use `rounded-full` on the swatch `:focus-visible` outline so it matches the circular dot.
   2. Shorten the `Studio Sidebar` badge from `"Best for direct/human review"` to `"Human review"` so `"Studio Sidebar"` stays on one line, standardize US spelling (`"centered"`, `"Brand-colored"`), clarify `"Classic"` copy (*"Serif headings over sans-serif body"*), and make the `Design` heading sticky at the top of the desktop column.
@@ -47,6 +41,24 @@ _empty
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-26 — Closed the Page 2 consistency follow-up. `Anonymize` now
+  redacts References `name` / `company` / `position` / `phone` / `email` with
+  stable placeholders (blank values stay blank), so Visual, ATS, and print never
+  leak reference contact details. The desktop Preview gained a floating
+  `− | 100% | +` zoom pill (`hidden lg:flex`, bottom-right, fit-relative
+  percentage, `Reset` while zoomed), while the mobile pinch + floating Reset is
+  unchanged (`lg:hidden`). `Trim tips` now scrolls directly to the owning
+  `RichTextField`, focuses it, and briefly highlights it instead of stopping at
+  the section row. `6s Scan` keeps `p95`/`p99` latency tokens and `3.8 GPA`
+  figures at full contrast. Verified `npm run typecheck`, `npm test` (1180 pass,
+  107 files), `npm run lint`. Files:
+  `src/lib/privacy/anonymizeDoc.ts` (+ test),
+  `src/components/preview/CanvasZoomControls.tsx` (new, + test),
+  `CanvasResetButton.tsx`, `LiveCanvasViewport.tsx` (+ test),
+  `src/components/editor/SectionList.tsx` (+ test), `RichTextField.tsx`,
+  `src/lib/preview/scanMetrics.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`. Playwright remains sandbox-blocked, so the 390px/desktop zoom
+  geometry and real focus scroll are browser-unverified.
 - [x] 2026-11-26 — Finished the Page 2 section-consistency sweep. `Clear sample
   data` now requires both the `metadata.sampleData` flag and actual content in
   that section, and is gone entirely from custom sections, so newly revealed

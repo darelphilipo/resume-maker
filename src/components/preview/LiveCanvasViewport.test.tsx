@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -335,7 +335,8 @@ describe("LiveCanvasViewport", () => {
     await renderCanvas(2);
 
     // The page count, Fit, Trim tips, and Reset all live in the Preview mode
-    // bar now, so the viewport owns no second toolbar row.
+    // bar now, so the viewport owns no second toolbar row. The desktop zoom
+    // pill floats over the canvas instead of becoming a row.
     expect(
       document.querySelector("[data-preview-header]"),
     ).not.toBeInTheDocument();
@@ -345,23 +346,38 @@ describe("LiveCanvasViewport", () => {
     expect(document.querySelector("[data-page-overflow]")).not.toBeInTheDocument();
     expect(screen.queryByText("2 pages")).not.toBeInTheDocument();
 
-    for (const name of [
-      "Zoom out",
-      "Zoom in",
-      "Fit preview to width",
-      "Move preview left",
-      "Move preview up",
-      "Move preview down",
-      "Move preview right",
-    ]) {
-      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
-    }
-    expect(
-      screen.queryByRole("group", { name: "Preview zoom" }),
-    ).not.toBeInTheDocument();
+    const zoomControls = document.querySelector<HTMLElement>(
+      "[data-canvas-zoom-controls]",
+    );
+
+    expect(zoomControls).not.toBeNull();
+    expect(zoomControls).toHaveClass("absolute", "bottom-3", "right-3");
     expect(
       screen.queryByRole("button", { name: "Reset preview zoom" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("wires the desktop zoom pill to the fitted canvas", async () => {
+    await renderCanvas();
+
+    expect(screen.getByText("100%")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zoom out" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Reset zoom to fit" }),
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset zoom to fit" }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: "Reset zoom to fit" }),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("floats the zoom Reset over the viewport instead of the mode bar", async () => {

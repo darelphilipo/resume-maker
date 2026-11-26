@@ -10,6 +10,7 @@ import {
   ProfileItemSchema,
   ProjectItemSchema,
   PublicationItemSchema,
+  ReferenceItemSchema,
   VolunteerItemSchema,
 } from "@/lib/schema/resume.schema";
 
@@ -22,6 +23,8 @@ import {
   ANONYMIZED_PHONE,
   ANONYMIZED_PROFILE_URL,
   ANONYMIZED_PROFILE_USERNAME,
+  ANONYMIZED_REFERENCE_EMAIL,
+  ANONYMIZED_REFERENCE_PHONE,
   ANONYMIZED_WEBSITE_LABEL,
   ANONYMIZED_WEBSITE_URL,
   anonymizeCertificationUrl,
@@ -358,6 +361,73 @@ describe("anonymizeResumeDoc", () => {
     expect(atsText).toContain(ANONYMIZED_ENTRY_LOCATION);
     expect(atsText).not.toContain("Oakland");
     expect(atsText).not.toContain("Berkeley");
+  });
+
+  it("redacts reference names, employers, roles, phone, and email", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "experience-1",
+        company: "US Navy",
+        position: "Officer",
+      }),
+    ];
+    doc.sections.references.items = [
+      ReferenceItemSchema.parse({
+        id: "reference-1",
+        name: "Grace Hopper",
+        position: "CTO",
+        company: "US Navy",
+        phone: "+1 202 555 0143",
+        email: "grace@navy.mil",
+        summary: "<p>Led the compiler team.</p>",
+      }),
+      ReferenceItemSchema.parse({
+        id: "reference-2",
+        name: "Ada Lovelace",
+        position: "Analyst",
+        company: "Analytical Engine",
+        phone: "",
+        email: "",
+      }),
+    ];
+
+    const anonymized = anonymizeResumeDoc(doc);
+
+    expect(anonymized.sections.references.items.map((item) => item.name)).toEqual(
+      ["Reference A", "Reference B"],
+    );
+    expect(
+      anonymized.sections.references.items.map((item) => item.company),
+    ).toEqual(["Company A", "Company B"]);
+    // Reference employers share the experience label namespace, so the same
+    // employer keeps one label and two different employers never collide.
+    expect(anonymized.sections.experience.items[0].company).toBe("Company A");
+    expect(
+      anonymized.sections.references.items.map((item) => item.position),
+    ).toEqual(["Position A", "Position B"]);
+    expect(
+      anonymized.sections.references.items.map((item) => item.phone),
+    ).toEqual([ANONYMIZED_REFERENCE_PHONE, ""]);
+    expect(
+      anonymized.sections.references.items.map((item) => item.email),
+    ).toEqual([ANONYMIZED_REFERENCE_EMAIL, ""]);
+    // Reference notes are prose, not contact fields, so they stay intact.
+    expect(anonymized.sections.references.items[0].summary).toBe(
+      "<p>Led the compiler team.</p>",
+    );
+    expect(JSON.stringify(anonymized)).not.toContain("Grace");
+    expect(JSON.stringify(anonymized)).not.toContain("navy");
+    expect(JSON.stringify(anonymized)).not.toContain("Ada Lovelace");
+
+    const atsText = buildAtsText(anonymized);
+
+    expect(atsText).toContain("Reference A");
+    expect(atsText).toContain(ANONYMIZED_REFERENCE_PHONE);
+    expect(atsText).toContain(ANONYMIZED_REFERENCE_EMAIL);
+    expect(atsText).not.toContain("Grace Hopper");
+    expect(atsText).not.toContain("grace@navy.mil");
   });
 
   it("does not mutate the saved document", () => {

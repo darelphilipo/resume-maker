@@ -280,7 +280,11 @@ export function RichTextField({
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       {label ? <span className="text-sm font-medium">{label}</span> : null}
-      <div className="overflow-hidden rounded-lg border border-line bg-surface text-text transition-shadow focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
+      <div
+        data-rich-text-field=""
+        tabIndex={-1}
+        className="overflow-hidden rounded-lg border border-line bg-surface text-text transition-shadow focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2 data-[trim-focus=true]:ring-2 data-[trim-focus=true]:ring-primary data-[trim-focus=true]:ring-offset-2"
+      >
         {/*
           * The 22rem Content column has ~270px of usable width. Eight 32px
           * targets with 2px gaps fit exactly on fine pointers; coarse pointers

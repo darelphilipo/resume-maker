@@ -1747,6 +1747,28 @@ rediscover.
         `processes` adds `proces` while `process` does not, which split one word
         into two keywords. Matching still uses full `variants()` (#12).
 
+   111. **Review redaction, desktop zoom, trim focus, and scan tokens have four
+        small contracts.** `anonymizeResumeDoc` also redacts References:
+        `name` / `company` / `position` become stable `Reference A` /
+        `Company A` / `Position A` labels (the company labels share the
+        experience employer namespace, so the same employer keeps one label and
+        two employers never collide), and `phone` / `email` use
+        `ANONYMIZED_REFERENCE_PHONE` / `ANONYMIZED_REFERENCE_EMAIL`; blank
+        values stay blank. The desktop zoom pill (`CanvasZoomControls`) is a
+        `hidden lg:flex` bottom-right overlay, reports scale **relative to fit**
+        (`100%` at the fitted width), steps by `fitScale * 0.25`, and never zooms
+        out below fit. Its Reset control is named `Reset zoom to fit` so it does
+        not collide with the mobile `Reset preview zoom`; the mobile
+        `CanvasResetOverlay` is now `lg:hidden`, so the two never stack. Trim
+        tips targets the owning `RichTextField`: every rich field renders
+        `data-rich-text-field` (and `tabIndex={-1}` as the jsdom/focus
+        fallback), and `SectionList` scrolls that field to center, focuses
+        `.tiptap` (or the shell), and sets `data-trim-focus` for 1.6s instead of
+        stopping at the entry card. `highlightScanMetrics` keeps `p95`/`p99`
+        tokens and `3.8 GPA` figures in the full-contrast `.scan-metric` span;
+        the p-token needs two digits and a non-word boundary, so `p2p` stays
+        dimmed.
+
 ## Verification and tooling
 
 ```powershell
@@ -1811,6 +1833,36 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-26 — References redaction, desktop zoom pill, exact Trim-tips focus
+- Task: the lone Queue item (P1), moved to In Progress first. All four
+  sub-items were open.
+- Change: `anonymizeResumeDoc` now redacts References name/company/position with
+  stable lettered labels (employers share the experience label namespace) and
+  replaces phone/email with the new reference
+  placeholders (blank stays blank), so the display-only clone covers Visual,
+  ATS, and print. Added `CanvasZoomControls`, a `hidden lg:flex` floating
+  `− | 100% | +` pill in the Preview viewport that reports zoom relative to the
+  fit, steps by 25% of the fitted width, never zooms out below fit, and shows
+  `Reset` while zoomed; the mobile Reset overlay is `lg:hidden`. Trim tips now
+  scrolls to the owning `data-rich-text-field`, focuses its `.tiptap` editor
+  (shell fallback for jsdom), and sets `data-trim-focus` for 1.6s. The 6s Scan
+  metric regex keeps `p95`/`p99` and `3.8 GPA` at full contrast. Decision #111;
+  README feature tour updated.
+- Tests: new reference-redaction (Visual + ATS), zoom-pill component and
+  viewport wiring, exact field focus/highlight, and latency/GPA scan cases.
+  `npm run typecheck` clean; `npm test` 1180 pass across 107 files;
+  `npm run lint` clean.
+- Files: `src/lib/privacy/anonymizeDoc.ts` (+ test),
+  `src/components/preview/CanvasZoomControls.tsx` (new, + test),
+  `src/components/preview/CanvasResetButton.tsx`,
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/editor/SectionList.tsx` (+ test),
+  `src/components/editor/RichTextField.tsx`,
+  `src/lib/preview/scanMetrics.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the desktop pill geometry, the
+  390px layout, and the real focus scroll are browser-unverified.
 
 ### 2026-11-26 — Page 2 section-consistency sweep
 - Task: the lone In Progress item (P1), continued to completion. All three
@@ -2014,20 +2066,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/launcher/Launcher.tsx` (+ test), `CONTEXT.md`, `TASKS.md`.
 - Note: Playwright remains sandbox-blocked, so the 390px clipping is
   browser-unverified.
-
-### 2026-11-25 — Trim tips click-through, JD stemming, ATS/Review cues
-- Task: top Queue item (P1). The implementation was already present in HEAD
-  (committed with its unit tests and README copy) but `TASKS.md`/`CONTEXT.md`
-  were stale, so this run verified the behavior, ran the gates, and finished the
-  bookkeeping instead of re-implementing it.
-- Change: confirmed each tip closes the dialog, switches to Content, expands the
-  owning section, and scrolls to `editor-entry-<id>`; confirmed the `-ing`/`-ed`/
-  `-s`/`-es` stemming, the expanded filler stoplist, and both tooltips. No code
-  changes were needed; Decision #105 records the rendered-id contract between
-  `SectionRenderer`, `EntryCard`, and `SectionList`.
-- Tests: 1129 pass (trim dialog/workspace/section-list jump, relative stemming,
-  and ATS/Review title cases). Verified `npm run typecheck`, `npm test`.
-- Files: `TASKS.md`, `CONTEXT.md`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

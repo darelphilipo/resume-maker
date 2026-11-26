@@ -10,6 +10,8 @@ export const ANONYMIZED_PROFILE_USERNAME = "alex-taylor";
 export const ANONYMIZED_PROFILE_URL = "https://example.com/alex-taylor";
 export const ANONYMIZED_ENTRY_URL = "https://example.com/alex-taylor";
 export const ANONYMIZED_ENTRY_LOCATION = "City, ST";
+export const ANONYMIZED_REFERENCE_PHONE = "+1 (555) 010-0101";
+export const ANONYMIZED_REFERENCE_EMAIL = "reference@example.com";
 
 /**
  * Public certification issuers whose domain is not personal information. Keep
@@ -138,6 +140,8 @@ function entityAnonymizer(prefix: string): (value: string) => string {
 export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
   const companyLabel = entityAnonymizer("Company");
   const schoolLabel = entityAnonymizer("University");
+  const referenceNameLabel = entityAnonymizer("Reference");
+  const referencePositionLabel = entityAnonymizer("Position");
 
   return {
     ...doc,
@@ -227,6 +231,19 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
         items: doc.sections.publications.items.map((item) => ({
           ...item,
           url: replaceWhenPresent(item.url, ANONYMIZED_ENTRY_URL),
+        })),
+      },
+      references: {
+        ...doc.sections.references,
+        items: doc.sections.references.items.map((item) => ({
+          ...item,
+          name: referenceNameLabel(item.name),
+          // Reuse the experience employer labels so one company keeps one name
+          // across the whole resume.
+          company: companyLabel(item.company),
+          position: referencePositionLabel(item.position),
+          phone: replaceWhenPresent(item.phone, ANONYMIZED_REFERENCE_PHONE),
+          email: replaceWhenPresent(item.email, ANONYMIZED_REFERENCE_EMAIL),
         })),
       },
     },

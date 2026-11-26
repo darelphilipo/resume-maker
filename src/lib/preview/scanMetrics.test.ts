@@ -39,6 +39,21 @@ describe("highlightScanMetrics", () => {
     );
   });
 
+  it("keeps prefixed latency and GPA figures at full contrast", () => {
+    const html =
+      "<p>Cut p95 latency and p99 tail while holding a 3.8 GPA.</p>";
+
+    expect(highlightScanMetrics(html)).toBe(
+      `<p>Cut ${metric("p95")} latency and ${metric("p99")} tail while holding a ${metric("3.8 GPA")}.</p>`,
+    );
+  });
+
+  it("does not treat a p-prefixed word or bare GPA text as a metric", () => {
+    const html = "<p>Ship p2p code, then list GPA separately.</p>";
+
+    expect(highlightScanMetrics(html)).toBe(html);
+  });
+
   it("returns blank and metric-free markup unchanged", () => {
     expect(highlightScanMetrics("   ")).toBe("   ");
     expect(highlightScanMetrics("<p>Led the platform team.</p>")).toBe(

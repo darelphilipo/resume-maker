@@ -301,8 +301,11 @@ in control of every line, and your data stays on your device.
    of the preview only while zoomed, so the top bar never crowds **Review**,
   and returns the page to its fitted width; **Reset** and **Reset fit** both
   bring you back to the top of the resume, just like when you first open the
-  Preview tab. On a computer, the mouse wheel and two-finger scrolling move the
-  editor; hold **Ctrl** (or **⌘**) while scrolling to zoom the resume.
+  Preview tab. On a computer, a small `− 100% +` pill floats in the bottom-right
+  corner of the preview, so you can zoom with the mouse or keyboard without
+  discovering a shortcut; it shows the zoom relative to the fitted page and adds
+  a **Reset** once you are zoomed in. The mouse wheel and two-finger scrolling
+  move the editor; hold **Ctrl** (or **⌘**) while scrolling to zoom the resume.
   The fitted page holds its size and position
   when a scrollbar appears or disappears, so it never shrinks and grows on its
   own.
@@ -328,7 +331,8 @@ in control of every line, and your data stays on your device.
   phone. If the list is long, **Show all** reveals every flagged bullet, and
   **Show fewer** tucks the extras away again. Tap any tip to jump straight to
   that bullet: the editor opens
-  **Content**, expands the right section, and scrolls the entry into view so you
+  **Content**, expands the right section, scrolls directly to that bullet's
+  text field, places the cursor in it, and briefly highlights the field so you
   can cut the stray words immediately. Trimming those bullets can reclaim whole
   lines before you shrink the font or spill onto a second page.
 - **Bullet polish** in the Content panel header flags the small consistency
@@ -350,7 +354,8 @@ in control of every line, and your data stays on your device.
   with no nested box to fight against on a phone.
 - **Anonymize for review**: open **Review** in the preview bar and switch on
   **Anonymize** to replace your name, contact details, website, profile links,
-  photo, and company or school names with neutral placeholders. Each role's,
+  photo, reference names, roles, employers, reference phone and email, and
+  company or school names with neutral placeholders. Each role's,
   school's, volunteer entry's, and custom entry's location is replaced too, so
   personal geography cannot give you away. Project, publication,
   and custom-section links are replaced as well, so a username inside a URL
@@ -363,7 +368,8 @@ in control of every line, and your data stays on your device.
 - **6-Second recruiter scan**: in the same **Review** menu, switch on **6s Scan**
   to see your resume the way a hurried recruiter does. Body prose fades back
   while your name, headline, section headings, job titles, companies, dates,
-  bold phrases, and numbers such as `40%`, `$1.2M`, or `3x` stay at full
+  bold phrases, and numbers such as `40%`, `$1.2M`, `3x`, prefixed latency
+  figures such as `p95`/`p99`, or GPA figures such as `3.8 GPA` stay at full
   contrast, so you can tell at a glance whether your impact pops out. It is a
   preview lens only: the scan is never added to the printed PDF or your saved
   resume, and you switch it off the same way.

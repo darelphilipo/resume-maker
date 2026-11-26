@@ -467,7 +467,7 @@ describe("SectionList", () => {
     expect(screen.queryByRole("button", { name: /Speaking/ })).toBeNull();
   });
 
-  it("expands a focused section and scrolls to the requested entry", () => {
+  it("expands a focused section and focuses the requested entry's field", () => {
     const doc = useResumeStore.getState().doc;
     const item = ExperienceItemSchema.parse({
       id: "exp-trim",
@@ -497,10 +497,18 @@ describe("SectionList", () => {
       "true",
     );
     expect(document.getElementById("editor-entry-exp-trim")).not.toBeNull();
+
+    const field = document.querySelector<HTMLElement>(
+      "#editor-entry-exp-trim [data-rich-text-field]",
+    );
+
+    expect(field).not.toBeNull();
     expect(scrollIntoView).toHaveBeenCalledWith({
       behavior: "smooth",
-      block: "start",
+      block: "center",
     });
+    expect(field).toHaveAttribute("data-trim-focus", "true");
+    expect(field!.contains(document.activeElement)).toBe(true);
 
     scrollIntoView.mockRestore();
   });
