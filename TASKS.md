@@ -22,7 +22,12 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+- [ ] P0: Fix blank PDF when clicking **Save PDF** from the mobile `Content` (or `Design`) tab before visiting `Preview`, and harden `document.title` for PDF filenames (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/MeasureLayer.tsx`, `src/components/preview/PrintPortal.tsx`, `src/lib/print/printDocument.ts`).
+  1. **Always mount `MeasureLayer` outside `display: none` mobile tabs:** Lift `MeasureLayer` (and `usePageLayout`) to `EditorWorkspace.tsx` outside the mobile `hidden` `#panel-preview` container (kept off-screen via `fixed left-[-10000px] top-0 pointer-events-none`) so pagination always computes real section heights immediately on editor load, regardless of which mobile tab is active.
+  2. **Never allow `PrintPortal` to print empty:** Add a fallback inside `PrintPortal.tsx` so if `pages.length === 0` or every page is empty when printing, it falls back to rendering all visible section IDs on Page 1 rather than outputting a blank PDF.
+  3. **Harden `document.title` on `/editor`:** Continuously sync `document.title` in `EditorWorkspace.tsx` to a clean, space-free/ASCII-safe slug (e.g. `Divya_Prakash_Resume`, or `Alex_Taylor_Resume` when `Anonymize` is active) as soon as the resume loads, restoring `"Resume Maker"` on unmount, and avoid resetting `document.title` immediately after `window.print()` on mobile.
+  4. **Regression test:** Add a mobile (`390x844`) test verifying that opening `/editor` (landing on `Content`, never tapping `Preview`) populates `#print-portal` with non-empty resume content ready for `window.print()`.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
