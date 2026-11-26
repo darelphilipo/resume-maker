@@ -22,7 +22,12 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+- [ ] P1: Homepage (`/`) polish from page-by-page review (`src/components/launcher/Launcher.tsx`).
+  1. **Remove double-dashed border in `Backup & Restore`:** Strip the duplicate nested `border-dashed` wrapper on the `Choose a JSON file` dropzone so it has one clean dashed border matching `Upload a PDF`, clarify the copy to *"Restore a single-resume JSON backup"*, and replace the cramped inline `⋮` glyph with plain text (*"the top-right menu"*).
+  2. **Instant button enablement on `Import resume` & `Create resume from text`:** Make the enabled dark-navy button state reflect `onChange` / `onPaste` immediately with no sluggish transition or blur delay.
+  3. **Recent Resume card hover & pending feedback:** Add a subtle hover highlight/cue on the clickable title area of each Recent Resume card and show a brief pending/loading state (`aria-busy` / subtle spinner) on the clicked card while navigating to `/editor/?id=...` to prevent accidental double-clicks.
+  4. **Add `"Preview prompt"` toggle in `Import via AI prompt`:** Add a compact collapsible `"Preview prompt"` disclosure below **Copy prompt** so users can inspect the exact prompt before pasting it into ChatGPT/Claude.
+
 
 
 ## Done
