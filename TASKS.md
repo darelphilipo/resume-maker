@@ -29,6 +29,17 @@ _empty
   2. **Consistent URL display & `Projects` `Present`:** Strip `https://` / `www.` consistently across `Projects` and `Custom` URLs in `SectionRenderer.tsx` (matching `Certifications` & `Publications`), and add a `Present` checkbox to `Projects` `End date` (matching `Experience`, `Education`, and `Volunteer`).
   3. **Polish rough edges:** Shorten `Profiles` `Profile URL` placeholder so it doesn't truncate mid-sentence (`"Paste GitHub or LinkedIn URL"`), update `Volunteer` `Location` placeholder from `"Berlin, Germany"` to `"City, Country"`, include `Basics` in `Collapse all` (both count and action), deduplicate stemmed variants in `Match JD` (`build` / `building` shown once), and add subtle min/max labels (`None` — `Native`) on the `Languages` `0–5` `Level` slider.
 
+- [ ] P1: Fix `Anonymize` leaking `REFERENCES`, add desktop Preview zoom buttons, and scroll `Trim tips` to the exact bullet (`src/lib/privacy/anonymizeDoc.ts`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/EditorWorkspace.tsx`, `src/lib/preview/scanHighlight.ts`).
+  1. **Redact `REFERENCES` in `anonymizeResumeDoc`:** Replace reference `name` (`"Reference A"`), `company`, `position`, `phone` (`"+1 (555) 010-0101"`), and `email` (`"reference@example.com"`) in both Visual Preview and `ATS` view so personal contact details never leak.
+  2. **Desktop zoom controls (`lg:` only):** Add a compact floating `- | 100% | +` zoom pill in the bottom-right corner of the Preview canvas on desktop (`hidden lg:flex`, with `Reset` when zoomed) so mouse-only and keyboard users can zoom without needing to discover `Ctrl + Wheel`, keeping mobile unchanged with pinch-to-zoom + floating `Reset`.
+  3. **`Trim tips` exact scroll & focus:** When clicking a bullet in `Trim tips`, scroll the `Content` panel directly to that specific entry's `RichTextField` and focus/briefly highlight it instead of stopping at the top of the `Experience` section.
+  4. **`6s Scan` metric tokens:** Keep prefixed latency metrics (`p95`, `p99`) and `GPA` figures (`3.8 GPA`) at full contrast during `6s Scan`.
+
+- [ ] P2: Final Design panel micro-polish (`src/components/editor/DesignPanel.tsx`, `src/templates/registry.ts`).
+  1. Display the active accent color name inline next to the `Accent color` heading (e.g. `Accent color · Indigo`), add `title` tooltips on each swatch, and use `rounded-full` on the swatch `:focus-visible` outline so it matches the circular dot.
+  2. Shorten the `Studio Sidebar` badge from `"Best for direct/human review"` to `"Human review"` so `"Studio Sidebar"` stays on one line, standardize US spelling (`"centered"`, `"Brand-colored"`), clarify `"Classic"` copy (*"Serif headings over sans-serif body"*), and make the `Design` heading sticky at the top of the desktop column.
+
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
