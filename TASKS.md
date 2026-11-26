@@ -22,7 +22,8 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-### P1 — Page 2 (Content Tab) Fixes & Consistency
+- [ ] P1: Make the inline `Fit` / `Reset` control in the Preview page pill unmistakably look like a clickable button (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/PageOverflowBanner.tsx`).
+  1. Style `"2 pages"` / `"1 page"` as quiet muted status text (`text-muted`), and render the adjacent action as a distinct nested tinted button pill (`"Fit 1p"` with a subtle compress icon in `bg-primary/10 text-primary font-medium rounded-full px-2.5 py-0.5`, and `"Reset"` in matching nested pill styling when `fitScale < 1`) so users immediately see it is clickable and understand it fits the resume onto 1 page—while keeping the total width compact enough that `Review N ▾` never clips at `390px`.
 
 - [ ] P2: Cross-app design-system consistency pass (`src/components/editor/BasicsForm.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/launcher/Launcher.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/editor/JdMatchDrawer.tsx`).
   1. **Fix `Basics` truncation & match card tint (`BasicsForm.tsx`):** Add `shrink-0` to the `Basics` label and `min-w-0 truncate` to the candidate name preview so long names never squish `Basics` to `Bas...`, and match `Basics`'s surface tint to the other section rows (`Summary`, `Experience`, etc.).
