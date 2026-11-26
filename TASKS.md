@@ -48,7 +48,12 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+- [ ] P2: Harden `pdfResume.ts` & `pasteResume.ts` against real-world LaTeX/Indian resume edge cases (`src/lib/import/pdfResume.ts`, `src/lib/import/pasteResume.ts`, `src/lib/import/featureScoring.ts`).
+  1. **Extract embedded PDF link annotations (`pdfResume.ts`):** Read `page.getAnnotations()` for `Link` annotations with `url` (e.g. `github.com/...`, `linkedin.com/in/...`) so LaTeX/Awesome-CV resumes that use FontAwesome icons + bare usernames still auto-populate `Profiles` URLs. Also rejoin non-breaking hyphen line-wraps (`\u2011\n`).
+  2. **Heading normalization (`pasteResume.ts`):** Strip trailing parenthetical dates/notes (e.g. `PROFESSIONAL DEVELOPMENT (AUG 2025 - PRESENT)` → `professional development`) before checking `SECTION_ALIASES`, and add `key project`, `achievements & extracurriculars`, `professional development`, and `certifications & education` (splitting degree lines inside a combined section into `education` when school/degree keywords match).
+  3. **Tight punctuation & durations (`pasteResume.ts`, `featureScoring.ts`):** Accept optional spacing around en-dashes (`–Infosys`), tight `CGPA:7.6` / `12th –92.0%` grade patterns, and duration tokens (`3 Months`, `1 Month`) as Experience date metadata.
+  4. **Page-break continuation bullets:** When Page 2+ starts with bullets before any new bold/dated role header, append them to the previous page's last Experience entry instead of dropping or starting an untitled role.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
