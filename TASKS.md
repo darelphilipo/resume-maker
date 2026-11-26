@@ -39,6 +39,8 @@ _empty
   2. **Unify segmented control active state (`LiveCanvasViewport.tsx`):** Style the active `Visual | ATS` segment with the same dark-navy fill and white text used by `A4 | Letter`, `Sans | Serif | Classic`, and `Compact | Normal | Relaxed` in `DesignPanel.tsx`.
   3. **Homepage (`Launcher.tsx`) visual parity:** Add the same subtle muted-red destructive hover/text cue (`text-red-700/80 hover:bg-red-50`) to Recent Resume `Delete` buttons as `/editor` entry deletes, place the `Backup & restore` dropzone icon inside the same circular tinted badge as `Upload a PDF`, and align sentence casing (`"Backup & restore"`, `"Fit to 1 page"`).
   4. **Editorial serif modal titles:** Apply the shared serif heading font to the 4 modal titles (`Bullet polish`, `Match JD` / `Job description keywords`, `Review tools`, `Trim tips`) so they match the editorial serif voice of `Content`, `Preview`, and `Design`.
+- [ ] P2: Align the `Basics` row height, bottom gap, and left text axis with the other section cards (`src/components/editor/BasicsForm.tsx`, `src/components/editor/SectionList.tsx`).
+  1. Match `Basics`'s collapsed header height (`min-h-[58px]` / identical padding) and bottom gap to the section rows below it, and add a matching left spacer (or subtle `User` icon in the exact width of the `⋮⋮` drag handle) so `v Basics` aligns vertically to the exact pixel with `v Profiles`, `v Experience`, and `v Education`.
 
 
 
