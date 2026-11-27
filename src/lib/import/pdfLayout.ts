@@ -76,6 +76,8 @@ const DECORATIVE_GLYPHS = /[\uE000-\uF8FF\u200B-\u200D\u2060\uFEFF]/g;
 const WRAP_GLYPHS = /[\u00AD\uFFFD]/g;
 /** A trailing soft hyphen, replacement glyph, or non-breaking hyphen wraps. */
 const TRAILING_WRAP_GLYPH = /[\u00AD\uFFFD\u2011]\s*$/;
+/** NFKC would decompose this wrap marker, so keep it out of the normalization. */
+const NON_BREAKING_HYPHEN = "\u2011";
 /** Smart quotes, typographic dashes, and decorative bullet markers. */
 const SMART_SINGLE_QUOTES = /[\u2018\u2019\u201A\u201B]/g;
 const SMART_DOUBLE_QUOTES = /[\u201C\u201D\u201E\u201F]/g;
@@ -235,14 +237,24 @@ function stripDecorativeGlyphs(value: string): string {
  * decomposes ligatures (`ﬁ` → `fi`), smart quotes become straight quotes,
  * typographic dashes become `-`, and decorative line-start bullets become `•`.
  * Kept string-only so the rules stay unit-testable without PDF.js.
+ *
+ * NFKC also decomposes the non-breaking hyphen (U+2011) into a plain hyphen,
+ * which would erase the only signal that a wrapped word continues on the next
+ * line. Normalize each segment around that marker separately so it survives
+ * until `mergeWrappedPdfLines` has rejoined the word.
  */
 export function normalizePdfText(value: string): string {
   return value
-    .normalize("NFKC")
-    .replace(SMART_SINGLE_QUOTES, "'")
-    .replace(SMART_DOUBLE_QUOTES, '"')
-    .replace(TYPOGRAPHIC_DASHES, "-")
-    .replace(DECORATIVE_BULLET_START, "$1• ");
+    .split(NON_BREAKING_HYPHEN)
+    .map((segment) =>
+      segment
+        .normalize("NFKC")
+        .replace(SMART_SINGLE_QUOTES, "'")
+        .replace(SMART_DOUBLE_QUOTES, '"')
+        .replace(TYPOGRAPHIC_DASHES, "-")
+        .replace(DECORATIVE_BULLET_START, "$1• "),
+    )
+    .join(NON_BREAKING_HYPHEN);
 }
 
 const PHRASE_TRAILING_SEPARATOR = /[,;:|•·]\s*$/;

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { parsePastedResume } from "@/lib/import/pasteResume";
 
-import { groupPdfTextItems, type PdfTextItem } from "./pdfResume";
+import { groupPdfTextItems, profileUrlsFromAnnotations, type PdfTextItem } from "./pdfResume";
 
 function item(
   str: string,
@@ -218,5 +218,32 @@ describe("groupPdfTextItems", () => {
       name: "Mathematics",
       keywords: ["Algebra", "Logic"],
     });
+  });
+});
+
+describe("profileUrlsFromAnnotations", () => {
+  it("keeps known profile hosts and drops personal or unknown links", () => {
+    expect(
+      profileUrlsFromAnnotations([
+        { subtype: "Link", url: "https://github.com/ada" },
+        { subtype: "Link", url: "https://www.linkedin.com/in/ada" },
+        { subtype: "Link", url: "https://example.com/portfolio" },
+        { subtype: "Link", url: "mailto:ada@example.com" },
+      ]),
+    ).toEqual([
+      "https://github.com/ada",
+      "https://www.linkedin.com/in/ada",
+    ]);
+  });
+
+  it("falls back to unsafeUrl, dedupes, and skips non-Link annotations", () => {
+    expect(
+      profileUrlsFromAnnotations([
+        { subtype: "Link", unsafeUrl: "https://github.com/ada" },
+        { url: "https://github.com/ada" },
+        { subtype: "Widget", url: "https://github.com/someone-else" },
+        { subtype: "Link", url: "   " },
+      ]),
+    ).toEqual(["https://github.com/ada"]);
   });
 });

@@ -61,12 +61,17 @@ in control of every line, and your data stays on your device.
   from summary and experience to projects, certifications, awards, languages,
   interests, volunteer work, publications, and references. Two-column layouts
   keep their sidebar and main body in the right order, decorative icon glyphs
-  are dropped, and words split across lines are joined back together. Labels
+  are dropped, and words split across lines are joined back together. Ligatures
+  and smart quotes are cleaned up, and a GitHub or LinkedIn icon that hides its
+  address behind a hyperlink still imports as a real profile. Labels
   and comma-separated lists keep their spaces too, so contact lines and skills
   read as `Skills: Python` and `SQL, SAP` instead of one glued token. Bold text,
   font sizes, and line spacing help tell headings, roles, grades, and project
   names apart, so an unbulleted paragraph stays in the description instead of
-  turning into a job title. If a PDF is a scan, an image, or a Canva export with
+  turning into a job title. Real-world date and grade formats are understood
+  too: shortened ranges such as `2019–21`, seasons such as `Spring 2021`,
+  durations such as `3 Months`, and tight grades such as `CGPA:7.6` or
+  `12th –92.0%`. If a PDF is a scan, an image, or a Canva export with
   no selectable text, the upload error links straight to the AI prompt rescue
   import (pasting the text yourself still works too).
 - **AI prompt rescue import** for scanned or Canva PDFs: open **Import via AI

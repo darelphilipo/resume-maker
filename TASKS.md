@@ -25,11 +25,6 @@ _empty
 
 ### P2 — Parser, Fit Math & Review-Tools Polish
 
-- [ ] P2: Harden PDF & paste parsing against real-world LaTeX, Word, Canva, and Indian resume edge cases (`src/lib/import/pdfResume.ts`, `src/lib/import/pdfLayout.ts`, `src/lib/import/pasteResume.ts`, `src/lib/import/featureScoring.ts`).
-  1. **PDF text cleanup & link annotations (`pdfResume.ts`, `pdfLayout.ts`):** Run `.normalize("NFKC")` to decompose ligatures (`ﬁ`→`fi`, `ﬂ`→`fl`, `ﬀ`→`ff`), normalize smart quotes (`“”`/`‘’`) and em/en-dashes (`—`/`–`), rejoin non-breaking hyphen line-wraps (`\u2011\n`), normalize decorative line-start bullets (`➢ ➤ ➔ ► ▸ ❖ ◆ ◇ ✓ ✔`) to `•`, extract embedded PDF `Link` annotations (`page.getAnnotations()`) for known profile hosts (`github.com`, `linkedin.com`, etc.), and preserve wide `typicalCharWidth` phrase gaps as `, ` separators inside `Skills` lines.
-  2. **Heading normalization & combined sections (`pasteResume.ts`):** Collapse letter-spaced headings (`E X P E R I E N C E` → `EXPERIENCE`), strip trailing parenthetical dates/notes (`PROFESSIONAL DEVELOPMENT (AUG 2025 - PRESENT)` → `professional development`) before `SECTION_ALIASES` lookup, and add aliases for `key project`, `achievements & extracurriculars`, `professional development`, and `certifications & education` (routing degree/school lines inside a combined section into `education`).
-  3. **Dates, punctuation, grades & page-break continuations (`pasteResume.ts`, `featureScoring.ts`):** Expand shortened year ranges (`2019–21`, `2023-24`), map season dates (`Spring`/`Summer`/`Fall`/`Winter YYYY` → `03`/`06`/`09`/`12`), accept duration tokens (`3 Months`, `1 Month`), support optional dash spacing (`–Infosys`) and tight grades (`CGPA:7.6`, `12th –92.0%`), and append Page 2+ headerless leading bullets to the prior page's last Experience entry.
-
 - [ ] P2: Improve `Fit to 1 Page` scaling math so fitted resumes stay larger, fuller, and readable (`src/lib/pagination/fitScale.ts`, `src/lib/pagination/usePageLayout.ts`, `src/templates/shared/templateTheme.ts`, `src/components/preview/LiveCanvasViewport.tsx`).
   1. **Damped scaling curve (`fitScale.ts`):** Replace the linear `contentHeightPx / totalHeightPx` ratio with a damped exponent (`Math.pow(contentHeightPx / totalHeightPx, 0.72) * currentFitScale * FIT_HEADROOM`) so prose-heavy resumes don't over-shrink and leave an unnecessary blank gap at the bottom of Page 1.
   2. **Reclaim vertical margin gently & enforce an `8pt` body floor (`templateTheme.ts`, `fitScale.ts`):** When `fitScale < 1`, gently scale `--page-margin-y` proportionally down to a `32pt` minimum floor, and compute the minimum scale floor as `Math.max(MIN_FIT_SCALE, 8 / bodyFontSize)` so smaller-font templates (`Compact 1-Pager`) never drop below `8pt`.
@@ -44,6 +39,24 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-27 — Hardened PDF & paste parsing against real-world LaTeX, Word,
+  Canva, and Indian resume edge cases. Sub-items 1–3 were already implemented in
+  the tree from earlier checkpoints, so this run audited them and added the
+  missing regressions: NFKC ligatures (`ﬁ`→`fi`), smart quotes/dashes,
+  decorative bullets (`➢ ✓ ◆` → `•`), wide skill phrase gaps → `, `, PDF `Link`
+  annotations (profile hosts only, `unsafeUrl` fallback, dedupe, non-`Link`
+  skip), letter-spaced and parenthetical headings, `KEY PROJECT`,
+  `ACHIEVEMENTS & EXTRACURRICULARS`, combined `CERTIFICATIONS & EDUCATION`
+  routing, `2019–21`, season dates, `3 Months`, `Senior Engineer –Infosys`,
+  `CGPA:7.6`, `12th –92.0%`, page-2 headerless bullets, and skill phrase gaps.
+  Fixed the one real gap: NFKC decomposed the non-breaking hyphen (U+2011) to
+  U+2010 before the wrap check, so `Soft\u2011` + `ware` never rejoined; the
+  normalizer now preserves U+2011 around each NFKC segment. Verified
+  `npm run typecheck`, `npm test` (1220 pass, 107 files), `npm run lint`. Files:
+  `src/lib/import/pdfLayout.ts` (+ test),
+  `src/lib/import/pdfResume.test.ts`, `src/lib/import/pasteResume.test.ts`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-27 — Closed the remaining `Anonymize` PII leaks. Review mode now
   redacts `awards.awarder` (its own `Organization A/B…` namespace), volunteer

@@ -1887,6 +1887,21 @@ rediscover.
          in sync with `RICH_TEXT_ITEM_FIELDS` in `richtext/sanitize.ts` when a
          new rich-text field is added.
 
+     118. **NFKC erases the non-breaking hyphen that marks a PDF line wrap.**
+         `normalizePdfText` runs NFKC so ligatures decompose (`ﬁ` → `fi`) and
+         smart quotes/dashes straighten, but NFKC also maps U+2011 (non-breaking
+         hyphen) to U+2010, which `TYPOGRAPHIC_DASHES` then turns into `-`. That
+         erased the wrap marker before `toPdfLine` could set `joinNext`, so
+         `Soft\u2011` + `ware` stayed two lines. Normalize each segment around
+         U+2011 and rejoin it, keeping the marker until `mergeWrappedPdfLines`
+         strips it from the joined word. The parser's `TRAILING_WRAP_GLYPH`
+         covers `\u00AD`, `\uFFFD`, and `\u2011`; do not add U+2011 to the NFKC
+         pass or the typographic-dash set. The same module owns the other
+         real-world cleanup: decorative line-start bullets become `•`,
+         `joinPhraseSegments` turns wide phrase gaps into `, ` for Skills lines,
+         and `profileUrlsFromAnnotations` in `pdfResume.ts` recovers GitHub /
+         LinkedIn destinations from PDF `Link` annotations.
+
 ## Verification and tooling
 
 ```powershell
@@ -1951,6 +1966,30 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-27 — PDF/paste hardening verified, non-breaking hyphen wrap fixed
+- Task: top Queue item (P2), moved to In Progress first. Sub-items 1–3 were
+  already implemented in the tree from earlier checkpoints (NFKC + smart
+  quotes/dashes/decorative bullets, `joinPhraseSegments`, PDF link annotations,
+  letter-spaced/parenthetical headings, combined `certifications & education`,
+  short year ranges, seasons, durations, tight grades, page-2 bullet folding),
+  but almost none of it had regressions.
+- Change: `normalizePdfText` now normalizes each segment around U+2011 and
+  rejoins the marker, because NFKC decomposed the non-breaking hyphen to U+2010
+  and the typographic-dash pass turned it into `-`, so `Soft\u2011` + `ware`
+  never set `joinNext` and stayed two lines. Decision #118. Added unit coverage
+  for ligatures, smart quotes, dashes, decorative bullets, phrase-gap commas,
+  the non-breaking-hyphen wrap, PDF `Link` annotation extraction (profile hosts
+  only, `unsafeUrl` fallback, dedupe, non-Link skip), letter-spaced and
+  parenthetical headings, `KEY PROJECT`, `ACHIEVEMENTS & EXTRACURRICULARS`,
+  combined `CERTIFICATIONS & EDUCATION` routing, `2019–21`, season dates,
+  `3 Months`, `Senior Engineer –Infosys`, `CGPA:7.6`, `12th –92.0%`, page-2
+  headerless bullets, and skill phrase gaps. README import tour updated.
+- Tests: `npm run typecheck` clean; `npm test` 1220 pass across 107 files;
+  `npm run lint` clean.
+- Files: `src/lib/import/pdfLayout.ts` (+ test),
+  `src/lib/import/pdfResume.test.ts`, `src/lib/import/pasteResume.test.ts`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 ### 2026-11-27 — Anonymize prose scrub + optional-section redaction
 - Task: top Queue item (P1), moved to In Progress first. All three sub-items
@@ -2167,36 +2206,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `TASKS.md`.
 - Note: Playwright remains sandbox-blocked, so the desktop pill geometry, the
   390px layout, and the real focus scroll are browser-unverified.
-
-### 2026-11-26 — Page 2 section-consistency sweep
-- Task: the lone In Progress item (P1), continued to completion. All three
-  sub-items (clear-sample gating, URL/Present consistency, rough edges) were
-  still open in the tree.
-- Change: `ClearSectionButton` now takes `count` and hides when the section is
-  empty; custom sections no longer render it at all. Project and custom URLs
-  print through the new shared `urlLabel` in `SectionRenderer`, and Projects
-  gained a schema `current` flag with an End-date **Present** toggle (Visual,
-  ATS, and newest-first sort all pick it up). Shortened the Profiles placeholder,
-  made Volunteer's location region-neutral, added `None`/`Native` ends to the
-  Languages slider, wired Basics into **Collapse all**, and deduped stemmed JD
-  keywords by a deterministic root. Decision #110; README tour updated.
-- Tests: new cases for preset-only/empty clear gating, URL labels, Present
-  toggle/disabled picker, slider labels, Basics-aware Collapse all in both
-  `SectionList` and `EditorWorkspace`, and JD root dedup. `npm run typecheck`
-  clean; `npm test` 1172 pass across 106 files; `npm run lint` clean.
-- Files: `src/components/editor/SectionFormControls.tsx` (+ test),
-  `SectionList.tsx` (+ test), `EditorWorkspace.tsx` (+ test),
-  `ProjectsForm.tsx` (+ test), `SummaryForm.tsx`, `ExperienceForm.tsx`
-  (+ test), `EducationForm.tsx`, `SkillsForm.tsx`, `GenericSectionForm.tsx`
-  (+ test), `CustomSectionForm.tsx`, `sectionFields.ts`,
-  `src/templates/shared/SectionRenderer.tsx` (+ test),
-  `allFieldsWiring.test.tsx`, `src/lib/schema/resume.schema.ts`,
-  `src/lib/presets/archetypes.ts`, `src/lib/schema/jsonResume.ts`,
-  `src/lib/import/pasteResume.ts`, `src/lib/keywords/jdMatch.ts` (+ test),
-  `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so 390px geometry is
-  browser-unverified; a `current: true` project with no end month still needs a
-  real browser print check.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

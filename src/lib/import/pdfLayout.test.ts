@@ -7,9 +7,11 @@ import {
   fontSizeFromItem,
   fontSizeFromTransform,
   isBoldFontName,
+  joinPhraseSegments,
   layoutPdfPage,
   layoutPdfPages,
   mergeWrappedPdfLines,
+  normalizePdfText,
   shouldAddSpaceBetweenText,
   type PdfTextItem,
 } from "./pdfLayout";
@@ -173,6 +175,76 @@ describe("glyph cleanup", () => {
 
     expect(merged).toHaveLength(1);
     expect(merged[0].text).toBe("https://example.com/path");
+  });
+
+  it("rejoins a non-breaking hyphen line wrap without a space", () => {
+    const lines = layoutPdfPage([
+      item("Soft\u2011", 10, 700, 30),
+      item("ware", 10, 685, 30),
+    ]).flat();
+
+    expect(lines[0].joinNext).toBe(true);
+
+    const merged = mergeWrappedPdfLines(lines);
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0].text).toBe("Software");
+  });
+});
+
+describe("typographic normalization", () => {
+  it("decomposes ligatures and straightens smart quotes and dashes", () => {
+    expect(normalizePdfText("O\ufb03ce \ufb01le")).toBe("Office file");
+    expect(normalizePdfText("\u201cBuilt\u201d \u2018APIs\u2019")).toBe(
+      '"Built" \'APIs\'',
+    );
+    expect(normalizePdfText("2019\u201321 \u2014 2023")).toBe("2019-21 - 2023");
+  });
+
+  it("turns decorative line-start bullets into a plain bullet", () => {
+    expect(normalizePdfText("\u27A2 Built billing")).toBe("• Built billing");
+    expect(normalizePdfText("\u2713 Shipped the release")).toBe(
+      "• Shipped the release",
+    );
+    expect(normalizePdfText("\u25C6 Cut latency")).toBe("• Cut latency");
+    // A decorative glyph inside a word is left alone; only a line-start bullet
+    // marker is rewritten.
+    expect(normalizePdfText("Design \u2713 review")).toBe("Design \u2713 review");
+  });
+
+  it("reads ligatures and smart quotes out of a real PDF line", () => {
+    const lines = textLines([
+      item("O\ufb03ce \u201cShip\u201d \ufb01le", 10, 700, 90),
+    ]);
+
+    expect(lines).toEqual(['Office "Ship" file']);
+  });
+});
+
+describe("joinPhraseSegments", () => {
+  it("uses commas for wide skill-column gaps", () => {
+    expect(joinPhraseSegments(["Python", "SQL", "Spark"])).toBe(
+      "Python, SQL, Spark",
+    );
+  });
+
+  it("keeps an existing separator instead of doubling it", () => {
+    expect(joinPhraseSegments(["Python,", "SQL"])).toBe("Python, SQL");
+    expect(joinPhraseSegments(["Skills:", "Python"])).toBe("Skills: Python");
+    expect(joinPhraseSegments(["• Python", "SQL"])).toBe("• Python, SQL");
+  });
+
+  it("turns a wide visual gap on a skills line into comma-separated keywords", () => {
+    const lines = layoutPdfPage([
+      item("Python", 10, 700, 30),
+      item("SQL", 120, 700, 15),
+      item("Spark", 200, 700, 25),
+    ]).flat();
+
+    expect(lines[0].phrases.length).toBeGreaterThan(1);
+    expect(joinPhraseSegments(lines[0].phrases.map((phrase) => phrase.text))).toBe(
+      "Python, SQL, Spark",
+    );
   });
 });
 

@@ -1115,3 +1115,251 @@ describe("parsePastedResume with PDF line metadata", () => {
     ]);
   });
 });
+
+describe("real-world paste and PDF edge cases", () => {
+  it("recognises a letter-spaced section heading", () => {
+    const doc = parsePastedResume(`Jane Doe
+jane@example.com
+
+E X P E R I E N C E
+Senior Engineer
+Acme Corp
+Jan 2020 - Present
+• Built billing.`);
+
+    expect(doc?.sections.experience.items).toEqual([
+      expect.objectContaining({
+        position: "Senior Engineer",
+        company: "Acme Corp",
+        current: true,
+      }),
+    ]);
+  });
+
+  it("ignores a trailing parenthetical date on a heading", () => {
+    const doc = parsePastedResume(`Jane Doe
+jane@example.com
+
+PROFESSIONAL DEVELOPMENT (AUG 2025 - PRESENT)
+Google Cloud Professional Certificate`);
+
+    expect(doc?.sections.certifications.items).toEqual([
+      expect.objectContaining({ name: "Google Cloud Professional Certificate" }),
+    ]);
+  });
+
+  it("reads KEY PROJECT as a projects heading", () => {
+    const doc = parsePastedResume(`Jane Doe
+jane@example.com
+
+KEY PROJECT
+Revenue Dashboard
+• Built the pipeline dashboard.`);
+
+    expect(doc?.sections.projects.items).toEqual([
+      expect.objectContaining({ name: "Revenue Dashboard" }),
+    ]);
+    expect(doc?.sections.projects.items[0]?.description).toContain(
+      "Built the pipeline dashboard.",
+    );
+  });
+
+  it("reads ACHIEVEMENTS & EXTRACURRICULARS as awards", () => {
+    const doc = parsePastedResume(`Jane Doe
+jane@example.com
+
+ACHIEVEMENTS & EXTRACURRICULARS
+Hackathon Winner | 2022`);
+
+    expect(doc?.sections.awards.items).toEqual([
+      expect.objectContaining({ title: "Hackathon Winner", date: "2022" }),
+    ]);
+  });
+
+  it("routes degree and school lines in a combined section into education", () => {
+    const doc = parsePastedResume(`Jane Doe
+jane@example.com
+
+CERTIFICATIONS & EDUCATION
+AWS Certified Developer | Amazon | 2022
+B.S. in Computer Science | State University | 2021`);
+
+    expect(doc?.sections.certifications.items).toEqual([
+      expect.objectContaining({
+        name: "AWS Certified Developer",
+        issuer: "Amazon",
+        date: "2022",
+      }),
+    ]);
+    expect(doc?.sections.education.items).toEqual([
+      expect.objectContaining({
+        school: "State University",
+        degree: "B.S.",
+        area: "Computer Science",
+        endDate: "2021-12",
+      }),
+    ]);
+  });
+
+  it("expands a shortened year range", () => {
+    const doc = parsePastedResume(`Jane Doe
+jane@example.com
+
+EXPERIENCE
+Senior Engineer
+Acme Corp
+2019–21`);
+
+    expect(doc?.sections.experience.items[0]).toMatchObject({
+      startDate: "2019-01",
+      endDate: "2021-12",
+    });
+  });
+
+  it("maps season dates to their months", () => {
+    const doc = parsePastedResume(`Jane Doe
+jane@example.com
+
+EXPERIENCE
+Research Assistant
+State University
+Spring 2021 - Fall 2022`);
+
+    expect(doc?.sections.experience.items[0]).toMatchObject({
+      startDate: "2021-03",
+      endDate: "2022-09",
+    });
+  });
+
+  it("uses a duration line to compute the end date", () => {
+    const doc = parsePastedResume(`Jane Doe
+jane@example.com
+
+EXPERIENCE
+Intern
+Acme Corp
+Jan 2020
+3 Months`);
+
+    expect(doc?.sections.experience.items[0]).toMatchObject({
+      startDate: "2020-01",
+      endDate: "2020-04",
+    });
+  });
+
+  it("splits a header on an unspaced en dash", () => {
+    const doc = parsePastedResume(`Jane Doe
+jane@example.com
+
+EXPERIENCE
+Senior Engineer –Infosys
+Jan 2020 - Present
+• Built billing.`);
+
+    expect(doc?.sections.experience.items[0]).toMatchObject({
+      position: "Senior Engineer",
+      company: "Infosys",
+    });
+  });
+
+  it("reads a tight CGPA grade", () => {
+    const doc = parsePastedResume(`Jane Doe
+jane@example.com
+
+EDUCATION
+B.S. in Computer Science
+State University
+CGPA:7.6`);
+
+    expect(doc?.sections.education.items[0]).toMatchObject({
+      school: "State University",
+      grade: "7.6 CGPA",
+    });
+  });
+
+  it("reads a tight percentage grade after a dash", () => {
+    const doc = parsePastedResume(`Jane Doe
+jane@example.com
+
+EDUCATION
+B.S. in Computer Science
+State University
+12th –92.0%`);
+
+    expect(doc?.sections.education.items[0]).toMatchObject({
+      school: "State University",
+      grade: "92.0%",
+    });
+  });
+
+  it("appends headerless page-2 bullets to the last experience entry", () => {
+    const doc = parsePastedResume([
+      pdfLine("Jane Doe", { isBold: true, maxFontSize: 22 }),
+      pdfLine("jane@example.com", { maxFontSize: 10 }),
+      pdfLine("EXPERIENCE", { isBold: true, maxFontSize: 14 }),
+      pdfLine("Senior Engineer", { isBold: true }),
+      pdfLine("Acme Corp"),
+      pdfLine("Jan 2020 - Present", { maxFontSize: 10 }),
+      pdfLine("• Built the billing service.", { maxFontSize: 10 }),
+      pdfLine("• Cut latency by 40%.", {
+        breakBefore: "page",
+        maxFontSize: 10,
+      }),
+      pdfLine("• Mentored four engineers.", { maxFontSize: 10 }),
+    ]);
+
+    const experience = doc?.sections.experience.items ?? [];
+
+    expect(experience).toHaveLength(1);
+    expect(experience[0]).toMatchObject({
+      position: "Senior Engineer",
+      company: "Acme Corp",
+    });
+    expect(experience[0]?.summary).toContain("Built the billing service.");
+    expect(experience[0]?.summary).toContain("Cut latency by 40%.");
+    expect(experience[0]?.summary).toContain("Mentored four engineers.");
+  });
+
+  it("keeps wide skill-column gaps as separate keywords", () => {
+    const doc = parsePastedResume([
+      pdfLine("Jane Doe", { isBold: true, maxFontSize: 22 }),
+      pdfLine("jane@example.com", { maxFontSize: 10 }),
+      pdfLine("SKILLS", { isBold: true, maxFontSize: 14 }),
+      {
+        ...pdfLine("Python SQL Spark", { maxFontSize: 10 }),
+        phrases: [
+          {
+            text: "Python",
+            x: 0,
+            width: 30,
+            isBold: false,
+            fontSize: 10,
+            fontName: "",
+          },
+          {
+            text: "SQL",
+            x: 120,
+            width: 15,
+            isBold: false,
+            fontSize: 10,
+            fontName: "",
+          },
+          {
+            text: "Spark",
+            x: 200,
+            width: 25,
+            isBold: false,
+            fontSize: 10,
+            fontName: "",
+          },
+        ],
+      },
+    ]);
+
+    expect(doc?.sections.skills.items[0]?.keywords).toEqual([
+      "Python",
+      "SQL",
+      "Spark",
+    ]);
+  });
+});
