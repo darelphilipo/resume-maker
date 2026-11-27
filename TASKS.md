@@ -21,6 +21,16 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
+- [ ] P1: Compact `Content` header pills (`Tidy` + `Match JD`) onto one row, redesign the bullet-check modal into scannable cards, and fix Indian `5+5` phone parsing (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/lib/import/pasteResume.ts`).
+  1. **Single-row `Content` header (`EditorWorkspace.tsx`, `ResumeLintPopover.tsx`):** Rename `"Bullet polish"` to **`Tidy`** (modal title `"Tidy bullets"`, compact count badge `4`) and tighten both `Tidy` and `Match JD` to `h-8 text-xs px-2.5 whitespace-nowrap` so `Content`, `Tidy 4`, and `Match JD` sit on **one clean horizontal row** at `390px` with zero 2-row wrapping.
+  2. **Card-based `Tidy bullets` modal (`ResumeLintPopover.tsx`):**
+     - Replace the developer-facing intro (*"A deterministic check..."*) with plain copy (*"Quick local checks to tidy your bullets."*).
+     - Wrap each category in a crisp bordered card (matching `Review tools`): put the **`Remove periods` / `Add periods`** buttons **directly inside** the `Mixed bullet periods` card at the top, and group repeated verbs into one compact card (`Collected ×2`, `Maintained ×2`, `Documented ×2`) with a clickable jump-to-entry link instead of long walls of quoted text.
+  3. **Fix Indian `5+5` phone parsing (`pasteResume.ts`):** Update `PHONE_PATTERN` so `+91 63699 40501` (`+91` followed by `5+5` spaced digits) matches all 10 digits instead of stopping at 9 digits and leaking the trailing `1` into `basics.headline`.
+
+
+
+
 - [ ] P1: Anchor `Visual | ATS` on the left of the Preview bar so it never jumps horizontally when `Review` badges change (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
   1. Use `justify-between` in the Preview header bar so `[Visual | ATS]` stays anchored to a fixed left position (beside the `Preview` title on desktop, flush-left on mobile) while `N pages` / `Fit 1p` / `Review ▾` sit on the right—preventing `Visual | ATS` from sliding left/right when switching `Visual` ↔ `ATS` or toggling `Anonymize` / `6s Scan`.
 - [ ] P1: Polish desktop 3-column proportions, Preview top alignment, and thin Windows scrollbars (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/app/globals.css`).
@@ -33,13 +43,6 @@ _empty
   2. **`Trim tips` accuracy & calm 1-page badge (`bulletMetrics.ts`, `ReviewMenu.tsx`):** Track words by match index instead of `!line.words.includes(word)` so repeated words on the same line aren't undercounted; scale `LINE_TOP_TOLERANCE_PX` proportionally to the active canvas scale (`Math.max(0.5, 2 * scale)`); fix `summarizeBulletIssues` so `> 3 lines` bullets under 240 chars say `"long bullets (4+ lines)"` and only count `reclaimableLines` when `lines > 3` or orphan-wrapped; and only show the yellow numeric badge on `Review ▾` when `pageCount > 1`.
 - [ ] P2: Render a section heading when an overflowed `Studio Sidebar` entry spills onto Page 2 beneath a different section (`src/templates/shared/SectionRenderer.tsx`).
   1. When rendering a continuation entry block (e.g. `certifications:entry:4` spilling from Page 1's sidebar onto Page 2 after `awards`) whose `sectionId` differs from the immediately preceding block on that page, render its section heading (e.g. `Certifications` or `Certifications (cont.)`) so overflowed sidebar items never appear as entries under the previous section (`Awards`). Add a unit test covering a 5th certification overflowing from `Studio Sidebar` Page 1 onto Page 2 below `Awards`.
-- [ ] P1: Compact `Content` header pills (`Tidy` + `Match JD`) onto one row, redesign the bullet-check modal into scannable cards, and fix Indian `5+5` phone parsing (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/lib/import/pasteResume.ts`).
-  1. **Single-row `Content` header (`EditorWorkspace.tsx`, `ResumeLintPopover.tsx`):** Rename `"Bullet polish"` to **`Tidy`** (modal title `"Tidy bullets"`, compact count badge `4`) and tighten both `Tidy` and `Match JD` to `h-8 text-xs px-2.5 whitespace-nowrap` so `Content`, `Tidy 4`, and `Match JD` sit on **one clean horizontal row** at `390px` with zero 2-row wrapping.
-  2. **Card-based `Tidy bullets` modal (`ResumeLintPopover.tsx`):**
-     - Replace the developer-facing intro (*"A deterministic check..."*) with plain copy (*"Quick local checks to tidy your bullets."*).
-     - Wrap each category in a crisp bordered card (matching `Review tools`): put the **`Remove periods` / `Add periods`** buttons **directly inside** the `Mixed bullet periods` card at the top, and group repeated verbs into one compact card (`Collected ×2`, `Maintained ×2`, `Documented ×2`) with a clickable jump-to-entry link instead of long walls of quoted text.
-  3. **Fix Indian `5+5` phone parsing (`pasteResume.ts`):** Update `PHONE_PATTERN` so `+91 63699 40501` (`+91` followed by `5+5` spaced digits) matches all 10 digits instead of stopping at 9 digits and leaking the trailing `1` into `basics.headline`.
-
 
 
 ## Done
