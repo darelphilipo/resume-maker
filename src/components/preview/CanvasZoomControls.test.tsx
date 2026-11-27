@@ -77,4 +77,48 @@ describe("CanvasZoomControls", () => {
 
     expect(screen.getByRole("button", { name: "Zoom in" })).toBeDisabled();
   });
+
+  it("keeps the zoom buttons anchored when Reset appears", () => {
+    const { rerender } = render(
+      <CanvasZoomControls
+        percent={100}
+        zoomed={false}
+        canZoomIn
+        canZoomOut={false}
+        onZoomIn={vi.fn()}
+        onZoomOut={vi.fn()}
+        onReset={vi.fn()}
+      />,
+    );
+
+    const readout = screen.getByText("100%");
+
+    expect(readout).toHaveClass("min-w-[3rem]", "tabular-nums");
+
+    rerender(
+      <CanvasZoomControls
+        percent={125}
+        zoomed
+        canZoomIn
+        canZoomOut
+        onZoomIn={vi.fn()}
+        onZoomOut={vi.fn()}
+        onReset={vi.fn()}
+      />,
+    );
+
+    const group = screen.getByRole("group", { name: "Preview zoom" });
+    const names = Array.from(group.querySelectorAll("button")).map(
+      (button) => button.getAttribute("aria-label"),
+    );
+
+    // Reset grows the right-anchored pill from the left, so `[- | % | +]` keeps
+    // its exact x-position between clicks (a second `+` cannot hit Reset).
+    expect(names).toEqual([
+      "Reset zoom to fit",
+      "Zoom out",
+      "Zoom in",
+    ]);
+    expect(screen.getByText("125%")).toHaveClass("min-w-[3rem]", "tabular-nums");
+  });
 });

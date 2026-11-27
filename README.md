@@ -316,8 +316,12 @@ in control of every line, and your data stays on your device.
   bring you back to the top of the resume, just like when you first open the
   Preview tab. On a computer, a small `− 100% +` pill floats in the bottom-right
   corner of the preview, so you can zoom with the mouse or keyboard without
-  discovering a shortcut; it shows the zoom relative to the fitted page and adds
-  a **Reset** once you are zoomed in. The mouse wheel and two-finger scrolling
+  discovering a shortcut. Each click steps in clean 25% jumps from the fitted
+  width (100%, 125%, 150%, 175%, 200%, 225%), and one click down from any zoom
+  level takes you back to 100% in a single click. A **Reset** appears to the
+  left of the buttons once you are zoomed in, so the zoom buttons stay exactly
+  where they are, even if you click quickly. The mouse wheel and two-finger
+  scrolling
   move the editor; hold **Ctrl** (or **⌘**) while scrolling to zoom the resume.
   The fitted page holds its size and position
   when a scrollbar appears or disappears, so it never shrinks and grows on its

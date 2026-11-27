@@ -381,6 +381,42 @@ describe("LiveCanvasViewport", () => {
     });
   });
 
+  it("steps the desktop zoom pill through exact 25% stops", async () => {
+    const { wrapper, fitScale } = await renderCanvas();
+
+    const canvasScale = (): number => {
+      const content = wrapper.querySelector<HTMLElement>(
+        ".react-transform-component",
+      );
+      const match = content?.style.transform.match(/scale\(([^)]+)\)/);
+
+      return match ? Number.parseFloat(match[1]) : Number.NaN;
+    };
+    const waitForStop = (percent: number): Promise<void> =>
+      waitFor(() => {
+        // Wait for the animation to settle, not just for an intermediate
+        // readout passed through on the way to the next stop.
+        expect(canvasScale()).toBeCloseTo((fitScale * percent) / 100, 6);
+        expect(screen.getByText(`${percent}%`)).toBeInTheDocument();
+      });
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    await waitForStop(125);
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    await waitForStop(150);
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
+    await waitForStop(125);
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
+    await waitForStop(100);
+
+    expect(
+      screen.queryByRole("button", { name: "Reset zoom to fit" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("floats the zoom Reset over the viewport instead of the mode bar", async () => {
     const { view, wrapper } = await renderCanvas();
 

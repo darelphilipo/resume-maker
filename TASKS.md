@@ -22,10 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P1: Fix desktop zoom `+` button jumping under `Reset` on click and snap zoom steps to clean 25% increments (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/CanvasResetButton.tsx`).
-  1. **Keep `- | % | +` anchored in place:** Render the conditional `Reset` button to the **left** of `[- | 100% | +]` (with `tabular-nums` and fixed `min-w-[3rem]` on the percentage readout) so `-` and `+` never shift a single pixel horizontally when `Reset` appears or disappears—preventing rapid `+` clicks from hitting `Reset`.
-  2. **Clean symmetric zoom steps:** Step desktop `+` / `-` zoom in clean `25%` increments relative to `fitScale` (`100%`, `125%`, `150%`, `175%`, `200%`, `225%`) so zooming down lands directly on `100%` without a stray `102%` step.
-
 - [ ] P1: Compact `Content` header pills (`Tidy` + `Match JD`) onto one row, redesign the bullet-check modal into scannable cards, and fix Indian `5+5` phone parsing (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/lib/import/pasteResume.ts`).
   1. **Single-row `Content` header (`EditorWorkspace.tsx`, `ResumeLintPopover.tsx`):** Rename `"Bullet polish"` to **`Tidy`** (modal title `"Tidy bullets"`, compact count badge `4`) and tighten both `Tidy` and `Match JD` to `h-8 text-xs px-2.5 whitespace-nowrap` so `Content`, `Tidy 4`, and `Match JD` sit on **one clean horizontal row** at `390px` with zero 2-row wrapping.
   2. **Card-based `Tidy bullets` modal (`ResumeLintPopover.tsx`):**
@@ -55,6 +51,21 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-27 — The desktop zoom pill's `Reset` now sits to the **left** of
+  `− | % | +`, so the right-anchored pill grows leftwards and the zoom buttons
+  never move when Reset appears — a rapid second `+` tap can no longer land on
+  Reset. The readout is `tabular-nums min-w-[3rem]`, and `+` / `-` jump between
+  exact fit-relative stops (`100%`–`225%` in 25% steps) instead of accumulating
+  rounded multiplicative steps; one `-` click from any wheel-zoomed level snaps
+  straight to `100%`. Verified `npm run typecheck`, `npm test` (1246 pass, 109
+  files), `npm run lint`. Files:
+  `src/components/preview/CanvasZoomControls.tsx` (+ test),
+  `src/lib/zoom/zoomSteps.ts` (new, + test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. `CanvasResetButton.tsx` was inspected but keeps the
+  mobile-only overlay unchanged. Playwright remains sandbox-blocked, so the
+  real Desktop pill geometry is browser-unverified.
 
 - [x] 2026-11-27 — Desktop now gives the live resume the stage: the grid is
   `lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]` with `lg:px-4`, so the center

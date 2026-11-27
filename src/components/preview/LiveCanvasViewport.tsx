@@ -41,6 +41,7 @@ import {
   normalizeWheelDelta,
   wheelZoomTarget,
 } from "@/lib/zoom/wheelZoom";
+import { MAX_ZOOM_STEP_PERCENT, nextZoomStepPercent } from "@/lib/zoom/zoomSteps";
 
 import { AtsTextView } from "./AtsTextView";
 import {
@@ -59,8 +60,6 @@ const MIN_SCALE = 0.2;
 const MAX_SCALE = 2;
 const FIT_MAX_SCALE = 1;
 const SCALE_EPSILON = 0.001;
-/** Each desktop zoom button step is 25% of the fitted width. */
-const ZOOM_STEP_RATIO = 0.25;
 
 const useIsomorphicLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -183,6 +182,7 @@ function WheelZoom({
 function CanvasSurface({
   frame,
   fitScale,
+  maxScale,
   fitOffsetX,
   fitResetKey,
   isCoarsePointer,
@@ -192,6 +192,7 @@ function CanvasSurface({
 }: {
   frame: CanvasFrame;
   fitScale: number;
+  maxScale: number;
   fitOffsetX: number;
   fitResetKey: string;
   isCoarsePointer: boolean;
@@ -223,7 +224,7 @@ function CanvasSurface({
         isZoomed={isZoomed}
         enabled={isCoarsePointer}
       />
-      <WheelZoom minScale={Math.min(MIN_SCALE, fitScale)} maxScale={MAX_SCALE}>
+      <WheelZoom minScale={Math.min(MIN_SCALE, fitScale)} maxScale={maxScale}>
         <TransformComponent
           wrapperStyle={{
             width: "100%",
@@ -278,6 +279,16 @@ export function LiveCanvasViewport({
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<ReactZoomPanPinchContentRef | null>(null);
+  /**
+   * The transform as of the last `onTransform`. The library ref exposes a
+   * state snapshot and mutates its context state in place, so a step reads the
+   * values mirrored here to stay accurate on consecutive rapid clicks.
+   */
+  const transformRef = useRef<{
+    scale: number;
+    positionX: number;
+    positionY: number;
+  } | null>(null);
   /**
    * The observed width is fed through an oscillation guard before it can drive
    * `fitScale` / `fitOffsetX`. A scrollbar appearing shrinks the measured width,
@@ -424,6 +435,14 @@ export function LiveCanvasViewport({
           maxScale: FIT_MAX_SCALE,
         });
 
+  // The ladder tops out at 225% of fit; keep the library's bound high enough
+  // that a near-full-width fit can still reach that last stop instead of being
+  // silently clamped at its old absolute 2x limit.
+  const maxScale =
+    fitScale === null
+      ? MAX_SCALE
+      : Math.max(MAX_SCALE, (fitScale * MAX_ZOOM_STEP_PERCENT) / 100);
+
   const frame =
     fitScale === null
       ? null
@@ -468,6 +487,12 @@ export function LiveCanvasViewport({
     _ref: ReactZoomPanPinchRef,
     state: { scale: number; positionX: number; positionY: number },
   ): void => {
+    transformRef.current = {
+      scale: state.scale,
+      positionX: state.positionX,
+      positionY: state.positionY,
+    };
+
     if (fitScale === null) {
       return;
     }
@@ -497,10 +522,10 @@ export function LiveCanvasViewport({
     zoomState.fitScale === fitScale
       ? zoomState.percent
       : 100;
-  const maxZoomPercent =
-    fitScale === null ? 100 : Math.round((MAX_SCALE / fitScale) * 100);
-  const canZoomIn = fitScale !== null && zoomPercent < maxZoomPercent;
-  const canZoomOut = isZoomed;
+  const canZoomIn =
+    fitScale !== null && nextZoomStepPercent(zoomPercent, 1) !== null;
+  const canZoomOut =
+    fitScale !== null && nextZoomStepPercent(zoomPercent, -1) !== null;
 
   /**
    * A reset returns the paper to Page 1 exactly as on first landing in the
@@ -532,35 +557,37 @@ export function LiveCanvasViewport({
   };
 
   /**
-   * Desktop zoom buttons step by 25% of the fitted width. Zooming out from the
-   * first step above fit returns exactly to the fitted transform instead of
-   * shrinking below it, so the pill's 100% is a real floor.
+   * Desktop zoom buttons jump between clean 25%-of-fit stops. The library's
+   * `zoomIn`/`zoomOut` round the target to two decimals, which turns a fitted
+   * 125% into 124% at common fit scales, so the step uses `setTransform` with
+   * the exact target scale while keeping the view centre anchored.
    */
   const zoomBy = (direction: 1 | -1): void => {
-    if (fitScale === null) {
+    const wrapper = wrapperRef.current;
+
+    if (fitScale === null || !wrapper) {
       return;
     }
 
-    if (direction === 1) {
-      void wrapperRef.current?.zoomIn(
-        fitScale * ZOOM_STEP_RATIO,
-        RESET_ANIMATION_MS,
-      );
+    const { scale, positionX, positionY } =
+      transformRef.current ?? wrapper.instance.state;
+    const targetPercent = nextZoomStepPercent((scale / fitScale) * 100, direction);
+
+    if (targetPercent === null) {
       return;
     }
 
-    if (zoomPercent <= 100 + Math.round(ZOOM_STEP_RATIO * 100)) {
-      void wrapperRef.current?.setTransform(
-        fitOffsetX,
-        0,
-        fitScale,
-        RESET_ANIMATION_MS,
-      );
-      return;
-    }
+    const targetScale = (fitScale * targetPercent) / 100;
+    const element = wrapper.instance.wrapperComponent;
+    const centerX = (element?.clientWidth ?? 0) / 2;
+    const centerY = (element?.clientHeight ?? 0) / 2;
+    const contentX = (centerX - positionX) / scale;
+    const contentY = (centerY - positionY) / scale;
 
-    void wrapperRef.current?.zoomOut(
-      fitScale * ZOOM_STEP_RATIO,
+    void wrapper.setTransform(
+      centerX - contentX * targetScale,
+      centerY - contentY * targetScale,
+      targetScale,
       RESET_ANIMATION_MS,
     );
   };
@@ -655,7 +682,7 @@ export function LiveCanvasViewport({
             initialPositionX={fitOffsetX}
             initialPositionY={0}
             minScale={Math.min(MIN_SCALE, fitScale!)}
-            maxScale={MAX_SCALE}
+            maxScale={maxScale}
             centerOnInit={false}
             limitToBounds
             doubleClick={{ disabled: true }}
@@ -666,6 +693,7 @@ export function LiveCanvasViewport({
             <CanvasSurface
               frame={frame!}
               fitScale={fitScale!}
+              maxScale={maxScale}
               fitOffsetX={fitOffsetX}
               fitResetKey={fitResetKey}
               isCoarsePointer={isCoarsePointer}

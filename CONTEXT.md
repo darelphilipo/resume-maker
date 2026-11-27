@@ -1978,6 +1978,27 @@ rediscover.
        the desktop e2e geometry case are the guards (the latter is
        browser-unverified here).
 
+   123. **The desktop zoom pill grows leftwards and snaps to a ladder.**
+       `CanvasZoomControls` renders the conditional `Reset` **before** `[- | % |
+       +]`: the overlay is `absolute right-3`, so adding a control extends the
+       pill to the left and the zoom buttons keep their exact x-position (a
+       rapid second `+` tap cannot land on the newly appeared Reset). The
+       readout is `min-w-[3rem] tabular-nums` so digit changes cannot move them
+       either. `nextZoomStepPercent` in `src/lib/zoom/zoomSteps.ts` is the one
+       100/125/150/175/200/225 rule; an off-ladder wheel scale snaps in the
+       requested direction, so `-` from 102% lands on 100%, not another stray
+       step. `LiveCanvasViewport.zoomBy` applies the target with `setTransform`,
+       because this pinned `react-zoom-pan-pinch` rounds `zoomIn`/`zoomOut`
+       targets to **two decimals** (a fitted 125% became 124%). It reads the
+       latest transform from `transformRef` mirrored in `onTransform` — the
+       imperative ref's `.state` is a creation-time snapshot and consecutive
+       clicks must not step from stale values — and keeps the view centre
+       anchored. Wheel/pan max scale is raised to `fitScale * 2.25` so the last
+       stop is reachable at near-full-width fits. The helper is pure; jsdom
+       tests wait for the *canvas scale* to settle, because a percent-only
+       `waitFor` passes on an intermediate animation frame and makes chained
+       clicks step from the wrong scale.
+
 ## Verification and tooling
 
 ```powershell
@@ -2043,26 +2064,29 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
-### 2026-11-27 — Desktop proportions, Preview baseline, thin scrollbars
-- Task: top Queue item (P1), moved to In Progress first. Both sub-items were open.
-- Change: added the `.subtle-scroll` utility to `globals.css` and applied it
-  through `panelClass()` to all three desktop column scrollers. Trimmed the grid
-  to `lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]` plus `lg:px-4` (≈72px more for
-  the live resume), aligned the `Preview` heading to the Content/Design h2
-  baseline with `lg:items-start lg:px-4 lg:pt-4`, and tightened the gap plus the
-  viewport's desktop vertical padding so Page 1 starts higher. The viewport's
-  horizontal padding and the scroller's `py-3` were left alone so the centered
-  fit and desk math stay intact. Decision #122; README desktop tour updated.
-- Tests: new `src/app/subtleScrollCss.test.ts` CSS contract, new
-  `EditorWorkspace` column/alignment class test, updated the viewport padding
-  assertion, and a 1280px e2e geometry case. `npm run typecheck` clean;
-  `npm test` 1241 pass across 108 files; `npm run lint` clean.
-- Files: `src/app/globals.css` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the real heading baseline,
-  1280px widths, and scrollbar gutters are browser-unverified.
+### 2026-11-27 — Desktop zoom buttons stay put; clean 25% steps
+- Task: top Queue item (P1), moved to In Progress first. Both sub-items were
+  open.
+- Change: moved the desktop pill's conditional `Reset` ahead of `[- | % | +]`
+  (right-anchored overlay, so buttons keep their x-position on rapid `+`
+  clicks) and gave the readout `min-w-[3rem] tabular-nums`. Added the pure
+  `nextZoomStepPercent` ladder (100–225 by 25) in `zoomSteps.ts`; `zoomBy` now
+  applies exact `setTransform` targets with view-centre anchoring instead of
+  the library's 2-decimal-rounded `zoomIn`/`zoomOut`, and reads the current
+  scale from a ref mirrored in `onTransform`. Wheel max scale now covers the
+  last 225% stop. Decision #123; README zoom tour updated.
+- Tests: new zoomSteps ladder/clamp cases, pill order + readout class test,
+  and a chained 100→125→150→125→100 viewport test that waits for the *canvas
+  scale* to settle. `npm run typecheck` clean; `npm test` 1246 pass across 109
+  files; `npm run lint` clean. Item moved to Done. One first-run failure showed
+  124% (library rounds button zoom to two decimals), a second showed a stale
+  step when `waitFor` caught an intermediate animation frame.
+- Files: `src/components/preview/CanvasZoomControls.tsx` (+ test),
+  `src/lib/zoom/zoomSteps.ts` (new, + test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. `CanvasResetButton.tsx` needed no change (mobile
+  overlay only); Playwright remains sandbox-blocked, so real pill geometry is
+  browser-unverified.
 
 ### 2026-11-27 — Preview mode switch anchored left in the bar
 - Task: top Queue item (P1), moved to In Progress first. The single sub-item
