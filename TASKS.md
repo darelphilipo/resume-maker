@@ -21,8 +21,6 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P1: Anchor `Visual | ATS` on the left of the Preview bar so it never jumps horizontally when `Review` badges change (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
-  1. Use `justify-between` in the Preview header bar so `[Visual | ATS]` stays anchored to a fixed left position (beside the `Preview` title on desktop, flush-left on mobile) while `N pages` / `Fit 1p` / `Review ▾` sit on the right—preventing `Visual | ATS` from sliding left/right when switching `Visual` ↔ `ATS` or toggling `Anonymize` / `6s Scan`.
 - [ ] P1: Polish desktop 3-column proportions, Preview top alignment, and thin Windows scrollbars (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/app/globals.css`).
   1. **Slim, subtle scrollbars (`globals.css`):** Add a reusable `.subtle-scroll` utility (`scrollbar-width: thin; scrollbar-color: rgba(30, 58, 95, 0.18) transparent;` plus `6px` `::-webkit-scrollbar` with transparent track and soft rounded thumb darkening slightly on hover) and apply it to the 3 desktop scrolling columns (`#panel-content`, `#panel-preview`, `#panel-design`) so Windows Chrome/Edge no longer displays 3 chunky gray scrollbar rails.
   2. **Widen center Preview & align top baseline (`EditorWorkspace.tsx`, `LiveCanvasViewport.tsx`):** Slightly trim the desktop sidebars (`lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]`) and outer horizontal padding so the center `Preview` gains ~70–90px of width and visually dominates the screen. Align the `Preview` header row to the exact same top vertical baseline as `Content` and `Design`, and tighten the vertical gap above Page 1 so the live resume starts higher and feels balanced with both sidebars.
@@ -37,6 +35,21 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-27 — The Preview bar's `Visual | ATS` switch is now pinned to the
+  left edge instead of travelling with the right-aligned status cluster. The
+  `[data-preview-mode-header]` keeps `justify-between` with two flex children: a
+  `shrink-0` `[data-preview-mode-anchor]` holding the desktop `Preview` heading
+  plus the mode group (flush-left on phones) and a `shrink-0`
+  `[data-preview-actions]` group holding the page label / `Fit 1p` pill /
+  `Review ▾`, so an active Review dot, a changed page count, or a mode switch
+  cannot slide the toggle horizontally. Verified `npm run typecheck`,
+  `npm test` (1237 pass, 107 files), `npm run lint`. Files:
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  `LiveCanvasViewport.tsx` was inspected but needed no markup change (its chrome
+  was lifted out in Decision #86). Playwright remains sandbox-blocked, so the
+  real 390px/1280px x-position is browser-unverified.
 
 - [x] 2026-11-27 — `Content`, **Tidy** (with a compact count badge) and **Match
   JD** now share one nowrap row at 390px: both pills use the shared `h-8

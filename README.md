@@ -291,7 +291,9 @@ in control of every line, and your data stays on your device.
   resume itself fills as much of the screen as possible. The top bar keeps just
   the **Visual / ATS** switch, a quiet page count, and one **Review** pill; the
   selected Visual or ATS view fills navy like the Design choices, so the current
-  mode is never ambiguous. Trim hints, fitting, and the occasional review lenses
+  mode is never ambiguous. The switch stays anchored on the left, so it never
+  slides sideways when the page count changes or Review gains an active badge.
+  Trim hints, fitting, and the occasional review lenses
   live inside Review instead of crowding the live resume. Page 1 keeps
   breathing room above and below, so its top edge and shadow never clip. On tall
   tablets and phones showing the desktop site, the fitted page sits centred with

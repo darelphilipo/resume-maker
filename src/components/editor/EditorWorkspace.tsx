@@ -631,12 +631,20 @@ export function EditorWorkspace() {
               data-preview-mode-header=""
               className="editor-chrome z-10 flex min-h-10 shrink-0 flex-nowrap items-center justify-between gap-2 overflow-x-auto no-scrollbar border-b border-line/70 bg-background/95 px-1 backdrop-blur lg:sticky lg:top-0 lg:z-20 lg:min-h-14 lg:flex-wrap lg:overflow-visible"
             >
-              {/* The active bottom tab already names the Preview panel, so the
-                  heading only earns its space on desktop. */}
-              <h2 className="hidden font-serif text-xl font-semibold tracking-tight lg:block">
-                Preview
-              </h2>
-              <div className="ml-auto flex shrink-0 items-center justify-end gap-2">
+              {/*
+               * The mode switch owns the left edge: a changing page pill or
+               * Review badge can never slide `Visual | ATS` sideways when it
+               * lives in its own shrink-0 group. The heading only earns space
+               * on desktop, so phones get a flush-left switch.
+               */}
+              <div
+                data-preview-mode-anchor=""
+                className="flex shrink-0 items-center gap-2"
+              >
+                {/* The active bottom tab already names the Preview panel. */}
+                <h2 className="hidden font-serif text-xl font-semibold tracking-tight lg:block">
+                  Preview
+                </h2>
                 <div
                   role="group"
                   aria-label="Preview mode"
@@ -665,6 +673,15 @@ export function EditorWorkspace() {
                     ATS
                   </button>
                 </div>
+              </div>
+              {/*
+               * Status and Review actions sit on the right, so their badges
+               * can grow without nudging the mode anchor above.
+               */}
+              <div
+                data-preview-actions=""
+                className="flex shrink-0 items-center justify-end gap-2"
+              >
                 {/*
                  * One calm row carries the whole Preview status: quiet muted
                  * "1 page" text when the resume fits, or the page count plus a

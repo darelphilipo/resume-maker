@@ -559,6 +559,28 @@ for (const viewport of VIEWPORTS) {
       expect(overlaps).toBe(false);
     });
 
+    test("the Visual/ATS switch stays left-anchored while Review badges change", async ({
+      page,
+    }) => {
+      await createPresetResume(page);
+      await showPreview(page);
+
+      const visual = page.getByRole("button", { name: "Visual" });
+      const before = await visual.boundingBox();
+      expect(before).not.toBeNull();
+
+      await page.getByRole("button", { name: "Review" }).click();
+      await page.getByRole("switch", { name: "Anonymize" }).click();
+      await page.getByRole("switch", { name: "6s Scan" }).click();
+      await page.getByRole("button", { name: "Close review tools" }).click();
+
+      const after = await visual.boundingBox();
+      expect(after).not.toBeNull();
+      // The right-hand group grows an active dot, but the mode group keeps its
+      // x at both widths (flush-left on phones, beside "Preview" on desktop).
+      expect(Math.abs(after!.x - before!.x)).toBeLessThanOrEqual(1);
+    });
+
     test("multi-page pagination fills Page 1 before breaking an entry", async ({
       page,
     }) => {

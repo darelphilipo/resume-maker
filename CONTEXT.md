@@ -1944,6 +1944,20 @@ rediscover.
     generic 6-3-4 shape: the latter stopped one digit early and leaked the
     trailing `1` into `basics.headline`.
 
+  121. **The Preview mode switch owns the left edge of the bar.**
+      `[data-preview-mode-header]` keeps `justify-between` but now has exactly
+      two flex children: `[data-preview-mode-anchor]` (a `shrink-0` group with
+      the desktop-only `Preview` heading and the `Visual | ATS` segmented
+      control, flush-left on phones) and `[data-preview-actions]` (a `shrink-0`
+      group with the `1 page` / `Fit 1p` status plus `Review ▾`). Previously the
+      mode group lived inside the one right-aligned `ml-auto` cluster, so a
+      wider Review badge or a changed page pill slid it sideways. Keep the two
+      groups separate and the anchor first/actions last: `justify-between` alone
+      cannot pin anything when the bar has a single flex child. `LiveCanvasViewport`
+      no longer owns any of this chrome (Decision #86), so it needs no markup
+      change. jsdom only sees the DOM/class contract; the real x-position is
+      guarded by the `layout-consistency` e2e case (browser-unverified here).
+
 ## Verification and tooling
 
 ```powershell
@@ -2008,6 +2022,27 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-27 — Preview mode switch anchored left in the bar
+- Task: top Queue item (P1), moved to In Progress first. The single sub-item
+  was open.
+- Change: split `[data-preview-mode-header]` into two flex children so the
+  already-present `justify-between` can work: a `shrink-0`
+  `[data-preview-mode-anchor]` holding the desktop `Preview` heading plus the
+  `Visual | ATS` group (flush-left on phones), and a `shrink-0`
+  `[data-preview-actions]` group holding the page label / `Fit 1p` pill /
+  `Review ▾`. The removed `ml-auto` cluster used to own both groups, so a new
+  Review active dot or a changed page count slid the mode switch sideways.
+  `LiveCanvasViewport` was inspected only — its chrome moved out in #86 — so
+  it needed no markup change. Decision #121; README feature tour updated.
+- Tests: extended the fixed-header test with left-anchor/right-actions class
+  and DOM-order assertions and added a Review-toggle regression (Anonymize +
+  6s Scan) plus a 390/1280 e2e bounding-box case. `npm run typecheck` clean;
+  `npm test` 1237 pass across 107 files; `npm run lint` clean.
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the real switch x-position at
+  both viewports is browser-unverified.
 
 ### 2026-11-27 — Tidy header row, card modal, Indian 5+5 phone
 - Task: top Queue item (P1), moved to In Progress first. All three sub-items
@@ -2227,32 +2262,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `CONTEXT.md`, `TASKS.md`.
 - Note: Playwright remains sandbox-blocked, so the 390px bar geometry is
   browser-unverified.
-
-### 2026-11-26 — Design panel micro-polish: accent name, short badge, sticky heading
-- Task: top Queue item (P2), moved to In Progress first. Both sub-items were
-  open.
-- Change: the `Accent color` legend now shows the active swatch name inline
-  (`Accent color · Indigo`) through `data-accent-name`, while the per-swatch
-  `title`/`aria-label` stay; the swatch target is `rounded-full` so its
-  focus-within ring matches the dot. `Studio Sidebar`'s badge is now
-  `Human review`, registry copy uses US spelling (`centered`, `Brand-colored`),
-  and `Classic` reads "Serif headings over sans-serif body." The Design card's
-  heading sits in a `lg:sticky lg:top-0` full-bleed wrapper (`lg:bg-surface`,
-  negative margins plus matching padding) so it pins inside `#panel-design`'s
-  own desktop scroller; the card gap moved to that wrapper's `pb-4`. Decision
-  #112; README feature tour updated.
-- Tests: accent-name inline/update, swatch `rounded-full`, shortened badge and
-  copy expectations, and an `EditorWorkspace` sticky-heading assertion.
-  `npm run typecheck` clean; `npm test` 1182 pass across 107 files;
-  `npm run lint` clean.
-- Files: `src/components/editor/DesignPanel.tsx` (+ test),
-  `src/templates/registry.ts` (+ test),
-  `src/templates/shared/TemplateBadge.test.tsx`,
-  `src/lib/design/designOptions.ts`,
-  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the real sticky/scroll geometry
-  at 390px and desktop is browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright
