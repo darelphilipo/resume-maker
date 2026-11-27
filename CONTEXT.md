@@ -1999,6 +1999,29 @@ rediscover.
        `waitFor` passes on an intermediate animation frame and makes chained
        clicks step from the wrong scale.
 
+  124. **Scan metrics cover global money, and Trim tips stay quiet on one
+       page.** `METRIC_PATTERN` in `scanMetrics.ts` accepts `$`/`₹`/`€`/`£`
+       prefixes, Indian `L`/`Cr` shorthand, Western `K`/`M`/`B`, a trailing `+`
+       (`1,000+`, `11+`), and keeps the GPA branch; every letter suffix carries
+       `(?![A-Za-z])` so `10 months` / `5 levels` are just numbers. The leading
+       boundary excludes the currency symbols so `₹10L` is one run. While the
+       lens is on in Visual mode, `EditorWorkspace` renders one slim
+       `[data-scan-banner]` row ("6s Scan: showing what pops in a quick skim")
+       with a **Turn off** button; it is hidden in ATS mode and is session-only.
+       In `bulletMetrics.ts`, `lineTopTolerance(scale)` scales the 2px grouping
+       margin with the canvas (`max(0.5, 2 * scale)`) because
+       `Range.getClientRects()` returns already-scaled boxes;
+       `LiveCanvasViewport` passes the live transform scale into
+       `scanBulletLint`. Lines dedupe words by match index (not text) so
+       `growth growth` on one line counts twice while one word split across
+       inline spans counts once. `reclaimableLines` is 1 only for an orphan and
+       `lines - 3` only when the bullet really runs past three lines; a 240+
+       character bullet that still fits in three lines reports 0 and the summary
+       says "will make it easier to scan" instead of promising a line. Long
+       findings are named by their real cause (`240+ characters` vs
+       `4+ lines`). The yellow `[data-review-trim-badge]` only renders when
+       `pageCount > 1`; the count and jump targets stay in Review.
+
 ## Verification and tooling
 
 ```powershell
@@ -2063,6 +2086,40 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-27 — 6s Scan currencies + exit bar; Trim tips accuracy and calm badge
+- Task: picked the top genuinely open Queue item (P2). The three Queue items
+  above it were stale duplicates already recorded under **Done** (Tidy header,
+  Visual|ATS anchor, desktop 3-column polish), so this run removed them from
+  the Queue and moved the 6s Scan / Trim tips item to In Progress first.
+- Change: `METRIC_PATTERN` now supports `₹`/`€`/`£`, Indian `L`/`Cr`, and a
+  trailing `+`, and its boundary excludes currency symbols so a money figure is
+  one run. `EditorWorkspace` renders a slim `[data-scan-banner]` above the
+  Visual preview while the lens is on, with a **Turn off** button (hidden in
+  ATS). `bulletMetrics` gained `lineTopTolerance(scale)` (threaded from the
+  live canvas transform through `scanBulletLint`), per-line word dedupe by
+  match index, `reclaimableLines` that only promises a line when the bullet
+  runs past three rendered lines, and long-bullet copy split into
+  `240+ characters` vs `4+ lines`. `ReviewMenu` gained `pageCount` and only
+  renders the yellow trim badge when it is `> 1`. Decision #124; README tour
+  updated.
+- Tests: new currency/Indian-shorthand/trailing-plus scan cases plus a
+  number-then-word guard, `lineTopTolerance` cases, a repeated-word line case,
+  updated mixed-summary/reclaim expectations, a 4+ line summary case, a
+  single-page no-badge ReviewMenu case, and the scan-bar/Turn-off assertions in
+  the workspace test. Two first-run failures were expected copy changes
+  (`reclaim 3 lines` → `2`) and the old badge wait on a one-page resume.
+  `npm run typecheck` clean; `npm test` 1253 pass across 109 files;
+  `npm run lint` clean. Item moved to Done.
+- Note: Playwright remains sandbox-blocked, so the 390px banner row and the
+  real scaled line grouping are browser-unverified.
+- Files: `src/lib/preview/scanMetrics.ts` (+ test),
+  `src/lib/lint/bulletMetrics.ts` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx`,
+  `src/components/preview/TrimTipsDialog.test.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 ### 2026-11-27 — Desktop zoom buttons stay put; clean 25% steps
 - Task: top Queue item (P1), moved to In Progress first. Both sub-items were
@@ -2272,33 +2329,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `TASKS.md`.
 - Note: Playwright remains sandbox-blocked, so the mobile e2e and the real
   Android spool filename are browser-unverified.
-
-### 2026-11-26 — Basics row alignment + homepage parity cues
-- Task: the lone Queue item (P2), moved to In Progress first. Both sub-items
-  were open. The Basics header actually lives in `EditorWorkspace.tsx`, not
-  `BasicsForm.tsx`/`SectionList.tsx`, so that is where the row was changed.
-- Change: the collapsed Basics header now uses the section-row geometry
-  (`min-h-11`, `gap-1`, `px-2 sm:px-3`) with an `aria-hidden` `User` spacer in
-  the drag-handle slot, so its caret aligns with Profiles/Experience. The
-  `Basics` label is `shrink-0 whitespace-nowrap` while the candidate name stays
-  `min-w-0 truncate`, and Basics + `SectionList` share a `gap-2` wrapper so the
-  gap below Basics matches the section gaps. Kept `min-h-11` (44px) because
-  that is the real section-row height; the queue's `min-h-[58px]` would have
-  made Basics the odd row out. On `/`, Recent Delete controls use the muted-red
-  `text-red-700/80 hover:bg-red-50` cue, the title reveals an `Open →` arrow on
-  row hover, `Target company` is a solid `border-[#e3ddd2]` field, and
-  **Backup & restore** is sentence case with the same circular icon badge as
-  **Upload a PDF**. Decision #114; README feature tour updated.
-- Tests: row-geometry/spacer/gap-2 assertions in `EditorWorkspace.test.tsx`,
-  plus solid target-company field, delete-cue, title-arrow, sentence-case
-  disclosure, and shared badge assertions in `launcher.test.tsx`.
-  `npm run typecheck` clean; `npm test` 1183 pass across 107 files;
-  `npm run lint` clean.
-- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/launcher/Launcher.tsx` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the 390px caret alignment and
-  hover geometry are browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

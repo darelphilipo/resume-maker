@@ -348,15 +348,19 @@ in control of every line, and your data stays on your device.
 - **Trim tips** find the bullets that quietly cost you a line. When a bullet
   wraps and leaves only a word or two on its last line, or grows into a long
   block, the preview counts it. Open **Review** and tap **Trim tips (N)** to see a
-  dismissible list with each bullet's opening words and a plain-language reason;
-  it covers the preview only while open, so the resume stays fully readable on a
+  dismissible list with each bullet's opening words and a plain-language reason
+  (a 4-line block is named as such, and a bullet that is only long in
+  characters is not promised a reclaimed line); it covers the preview only while
+  open, so the resume stays fully readable on a
   phone. If the list is long, **Show all** reveals every flagged bullet, and
   **Show fewer** tucks the extras away again. Tap any tip to jump straight to
   that bullet: the editor opens
   **Content**, expands the right section, scrolls directly to that bullet's
   text field, places the cursor in it, and briefly highlights the field so you
   can cut the stray words immediately. Trimming those bullets can reclaim whole
-  lines before you shrink the font or spill onto a second page.
+  lines before you shrink the font or spill onto a second page. Once the resume
+  already fits one page, the yellow count stays off the **Review** pill so the
+  top bar stays calm; the tips are still one tap away inside Review.
 - **Tidy** in the Content panel header flags the small consistency problems a
   recruiter notices first: bullets that mix ending periods, first-person
   pronouns, filler adverbs, and repeated opening verbs within one role. It is a
@@ -396,11 +400,12 @@ in control of every line, and your data stays on your device.
 - **6-Second recruiter scan**: in the same **Review** menu, switch on **6s Scan**
   to see your resume the way a hurried recruiter does. Body prose fades back
   while your name, headline, section headings, job titles, companies, dates,
-  bold phrases, and numbers such as `40%`, `$1.2M`, `3x`, prefixed latency
-  figures such as `p95`/`p99`, or GPA figures such as `3.8 GPA` stay at full
-  contrast, so you can tell at a glance whether your impact pops out. It is a
-  preview lens only: the scan is never added to the printed PDF or your saved
-  resume, and you switch it off the same way.
+  bold phrases, and numbers such as `40%`, `$1.2M`, `₹10L`, `€500K`, `3x`,
+  `1,000+`, prefixed latency figures such as `p95`/`p99`, or GPA figures such
+  as `3.8 GPA` stay at full contrast, so you can tell at a glance whether your
+  impact pops out. A slim bar above the preview reminds you the lens is on and
+  offers one-tap **Turn off**. It is a preview lens only: the scan is never
+  added to the printed PDF or your saved resume.
 - **Job description keyword matcher**: tap **Match JD** in the Content panel
   header to open the matcher on any device, then paste a posting to see which
   of its keywords already appear in your resume and which are missing. Common

@@ -19,6 +19,16 @@ export const MAX_LISTED_ISSUES = 5;
 const LINE_TOP_TOLERANCE_PX = 2;
 const WORD_PATTERN = /\S+/g;
 
+/**
+ * The vertical margin required when grouping a word box into an existing
+ * rendered line. `Range.getClientRects()` returns visual (already scaled)
+ * boxes, so the tolerance must scale with the canvas too: a fixed 2px margin
+ * is proportionally too large at a 0.5 fit and too small when zoomed in.
+ */
+export function lineTopTolerance(scale: number): number {
+  return Math.max(0.5, LINE_TOP_TOLERANCE_PX * scale);
+}
+
 export type BulletIssueKind = "orphan" | "long";
 
 export type BulletIssue = {
@@ -122,6 +132,7 @@ export function analyzeBulletLines(
   }
 
   const kind: BulletIssueKind = isLong ? "long" : "orphan";
+  const isLongByLines = cleaned.length > LONG_BULLET_LINES;
 
   return {
     kind,
@@ -130,8 +141,15 @@ export function analyzeBulletLines(
     charCount,
     lineCount: cleaned.length,
     lastLineWords,
-    reclaimableLines:
-      kind === "long" ? Math.max(1, cleaned.length - LONG_BULLET_LINES) : 1,
+    // A long bullet only guarantees a reclaimable line when it actually runs
+    // past the three-line budget. A 240+ character bullet that still renders in
+    // one to three lines is worth trimming for readability, but promising a
+    // reclaimed line would overstate it.
+    reclaimableLines: isLong
+      ? isLongByLines
+        ? cleaned.length - LONG_BULLET_LINES
+        : 0
+      : 1,
   };
 }
 
@@ -163,23 +181,48 @@ export function summarizeBulletIssues(
   }
 
   if (longIssues.length > 0) {
-    parts.push(
-      `${longIssues.length} long ${plural(
-        longIssues.length,
-        "bullet",
-      )} (${LONG_BULLET_CHARS}+ characters)`,
+    // Name the reason the user can act on. A bullet that merely runs long in
+    // characters may already fit in three rendered lines, so it must not claim
+    // the "4+ lines" advice.
+    const longByChars = longIssues.filter(
+      (issue) => issue.charCount >= LONG_BULLET_CHARS,
     );
+    const longByLines = longIssues.filter(
+      (issue) => issue.charCount < LONG_BULLET_CHARS,
+    );
+
+    if (longByChars.length > 0) {
+      parts.push(
+        `${longByChars.length} long ${plural(
+          longByChars.length,
+          "bullet",
+        )} (${LONG_BULLET_CHARS}+ characters)`,
+      );
+    }
+
+    if (longByLines.length > 0) {
+      parts.push(
+        `${longByLines.length} long ${plural(
+          longByLines.length,
+          "bullet",
+        )} (${LONG_BULLET_LINES + 1}+ lines)`,
+      );
+    }
   }
 
   const summary =
     issues.length === 0
       ? null
-      : `${parts.join(" and ")} — trimming ${
-          issues.length === 1 ? "it" : "them"
-        } can reclaim ${reclaimableLines} ${plural(
-          reclaimableLines,
-          "line",
-        )}.`;
+      : reclaimableLines > 0
+        ? `${parts.join(" and ")} — trimming ${
+            issues.length === 1 ? "it" : "them"
+          } can reclaim ${reclaimableLines} ${plural(
+            reclaimableLines,
+            "line",
+          )}.`
+        : `${parts.join(" and ")} — trimming ${
+            issues.length === 1 ? "it" : "them"
+          } will make ${issues.length === 1 ? "it" : "them"} easier to scan.`;
 
   return {
     issues: [...issues],
@@ -200,6 +243,8 @@ type LineBox = {
   top: number;
   bottom: number;
   words: string[];
+  /** Match indexes already placed on this line, so a repeated word still counts. */
+  wordIndexes: Set<number>;
 };
 
 function collectTextSegments(element: Element): {
@@ -243,25 +288,40 @@ function segmentAtOffset(
   return segments[0] ?? null;
 }
 
-function addWordToLine(lines: LineBox[], rect: DOMRect, word: string): void {
+function addWordToLine(
+  lines: LineBox[],
+  rect: DOMRect,
+  word: string,
+  wordIndex: number,
+  tolerance: number,
+): void {
   const line = lines.find(
     (candidate) =>
-      rect.top < candidate.bottom - LINE_TOP_TOLERANCE_PX &&
-      rect.bottom > candidate.top + LINE_TOP_TOLERANCE_PX,
+      rect.top < candidate.bottom - tolerance &&
+      rect.bottom > candidate.top + tolerance,
   );
 
   if (line) {
     line.top = Math.min(line.top, rect.top);
     line.bottom = Math.max(line.bottom, rect.bottom);
 
-    if (!line.words.includes(word)) {
+    // Dedupe by match index, not by text: `growth growth` on one line must
+    // still report two words, while a single word split across inline spans
+    // (several rects for one match) is only counted once.
+    if (!line.wordIndexes.has(wordIndex)) {
+      line.wordIndexes.add(wordIndex);
       line.words.push(word);
     }
 
     return;
   }
 
-  lines.push({ top: rect.top, bottom: rect.bottom, words: [word] });
+  lines.push({
+    top: rect.top,
+    bottom: rect.bottom,
+    words: [word],
+    wordIndexes: new Set([wordIndex]),
+  });
 }
 
 /**
@@ -273,7 +333,10 @@ function addWordToLine(lines: LineBox[], rect: DOMRect, word: string): void {
  * painted. When layout is unavailable (jsdom, SSR), the bullet falls back to a
  * single line so character-based checks still work.
  */
-export function measureBulletLines(element: Element): string[] {
+export function measureBulletLines(
+  element: Element,
+  scale = 1,
+): string[] {
   const { text, segments } = collectTextSegments(element);
   const normalized = normalizeBulletText(text);
 
@@ -288,12 +351,16 @@ export function measureBulletLines(element: Element): string[] {
   const doc = element.ownerDocument;
   const lines: LineBox[] = [];
   const matches = text.matchAll(WORD_PATTERN);
+  const tolerance = lineTopTolerance(scale);
+  let wordIndex = 0;
 
   for (const match of matches) {
     const start = match.index ?? 0;
     const end = start + match[0].length;
     const startSegment = segmentAtOffset(segments, start);
     const endSegment = segmentAtOffset(segments, Math.max(start, end - 1));
+    const currentWordIndex = wordIndex;
+    wordIndex += 1;
 
     if (!startSegment || !endSegment) {
       continue;
@@ -314,7 +381,7 @@ export function measureBulletLines(element: Element): string[] {
         continue;
       }
 
-      addWordToLine(lines, rect, match[0]);
+      addWordToLine(lines, rect, match[0], currentWordIndex, tolerance);
     }
   }
 
@@ -332,17 +399,22 @@ export function measureBulletLines(element: Element): string[] {
  *
  * Parent `<li>`s of nested lists are skipped so one bullet is never counted
  * twice, and the trim-tips panel itself is ignored if it ever lives inside the
- * scanned subtree.
+ * scanned subtree. `options.scale` is the canvas scale the rects were painted
+ * at, so line grouping stays proportional when the resume is fitted or zoomed.
  */
-export function scanBulletLint(root: ParentNode): BulletLintReport {
+export function scanBulletLint(
+  root: ParentNode,
+  options: { scale?: number } = {},
+): BulletLintReport {
   const issues: BulletIssue[] = [];
+  const scale = options.scale ?? 1;
 
   for (const item of Array.from(root.querySelectorAll("li"))) {
     if (item.querySelector("li") || item.closest("[data-bullet-trim-tips]")) {
       continue;
     }
 
-    const issue = analyzeBulletLines(measureBulletLines(item));
+    const issue = analyzeBulletLines(measureBulletLines(item, scale));
 
     if (issue) {
       const section = item.closest<HTMLElement>("[data-section-id]");

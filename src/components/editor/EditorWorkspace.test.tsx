@@ -229,6 +229,9 @@ describe("EditorWorkspace", () => {
 
     expect(toggle).toHaveAttribute("aria-checked", "false");
     expect(canvas).toHaveAttribute("data-scan-highlight", "false");
+    expect(
+      document.querySelector("[data-scan-banner]"),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
 
@@ -237,10 +240,22 @@ describe("EditorWorkspace", () => {
     // Session-only: the scan is a preview lens, never a document edit.
     expect(useResumeStore.getState().doc.metadata.template).toBe("onyx");
 
-    fireEvent.click(toggle);
+    const banner = document.querySelector("[data-scan-banner]");
+
+    expect(banner).toHaveTextContent(
+      "6s Scan: showing what pops in a quick skim",
+    );
+
+    // One tap leaves the lens without reopening Review.
+    fireEvent.click(
+      screen.getByRole("button", { name: "Turn off" }),
+    );
 
     expect(toggle).toHaveAttribute("aria-checked", "false");
     expect(canvas).toHaveAttribute("data-scan-highlight", "false");
+    expect(
+      document.querySelector("[data-scan-banner]"),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps the browser tab synced to the resume name while editing", async () => {
@@ -710,9 +725,11 @@ describe("EditorWorkspace", () => {
     await renderReadyWorkspace();
 
     await waitFor(() => {
+      // The report arrives through the Review pill's count copy. A one-page
+      // resume keeps the visible yellow badge off the bar (Decision #124).
       expect(
-        document.querySelector("[data-review-trim-badge]"),
-      ).toHaveTextContent("1");
+        screen.getByRole("button", { name: /1 trim tip/ }),
+      ).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole("tab", { name: "Preview" }));

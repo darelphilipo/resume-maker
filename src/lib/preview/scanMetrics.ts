@@ -13,13 +13,20 @@
 const TOKEN_PATTERN = /(<[^>]*>|&(?:#\d+|#x[0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]+);)/g;
 
 /**
- * A metric is a number optionally decorated like `$1.2M`, `40%`, `3x`, or
- * `1,200`, a prefixed latency token such as `p95`/`p99`, or a GPA figure such
- * as `3.8 GPA`. The leading boundary group keeps digits embedded in words (for
- * example `v2` or `H2O`) from being split into a span.
+ * A metric is a number optionally decorated like `$1.2M`, `₹10L`, `€500K`,
+ * `40%`, `3x`, `1,200+`, or `3.8 GPA`, a prefixed latency token such as
+ * `p95`/`p99`, or a GPA figure such as `3.8 GPA`. The leading boundary group
+ * keeps digits embedded in words (for example `v2` or `H2O`) from being split
+ * into a span, and it excludes currency symbols so `₹10L` is matched as one
+ * run instead of a boundary plus a bare number.
+ *
+ * Suffixes cover percentages, multipliers, Western magnitudes (`K`/`M`/`B`),
+ * Indian lakh/crore shorthand (`L`/`Cr`), and a trailing `+` meaning "or more".
+ * Every letter suffix carries a `(?![A-Za-z])` guard so `10 months` or
+ * `5 levels` cannot be read as a magnitude.
  */
 const METRIC_PATTERN =
-  /(^|[^\w$])(\$?\d[\d,]*(?:\.\d+)?(?:\s?(?:%|[xX](?![A-Za-z])|[kKmMbB](?![A-Za-z])))?(?:\s?[Gg][Pp][Aa](?![A-Za-z]))?|[pP]\d{2,}(?![A-Za-z0-9]))/g;
+  /(^|[^\w$₹€£])([$₹€£]?\d[\d,]*(?:\.\d+)?(?:\s?(?:%|[xX](?![A-Za-z])|[kKmMbBlL](?![A-Za-z])|[cC][rR](?![A-Za-z])))?\+?(?:\s?[Gg][Pp][Aa](?![A-Za-z]))?|[pP]\d{2,}(?![A-Za-z0-9]))/g;
 
 export const SCAN_METRIC_CLASS = "scan-metric";
 

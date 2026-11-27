@@ -36,6 +36,7 @@ export function ReviewMenu({
   fitTarget = null,
   fitBlockedReason = null,
   appliedFitScale = 1,
+  pageCount = 1,
   onFit,
   onResetFit,
 }: {
@@ -50,6 +51,8 @@ export function ReviewMenu({
   fitTarget?: number | null;
   fitBlockedReason?: FitBlockedReason | null;
   appliedFitScale?: number;
+  /** Current packed page count; the trim badge only earns space when > 1. */
+  pageCount?: number;
   onFit?: (scale: number) => void;
   onResetFit?: () => void;
 }) {
@@ -59,6 +62,12 @@ export function ReviewMenu({
   const trimTitleId = useId();
   const active = scan || anonymize;
   const trimCount = bulletReport?.issues.length ?? 0;
+  /**
+   * Trim hints are about reclaiming vertical space. A resume that already fits
+   * on one page does not need a permanent yellow count on the bar, so the badge
+   * only appears once a trim could actually remove a page.
+   */
+  const showTrimBadge = trimCount > 0 && pageCount > 1;
   const hiddenTrimCount = Math.max(0, trimCount - MAX_LISTED_ISSUES);
   const canFit = fitTarget !== null && onFit !== undefined;
   const canResetFit = appliedFitScale < 1 && onResetFit !== undefined;
@@ -89,7 +98,7 @@ export function ReviewMenu({
         className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 text-xs font-semibold text-text transition-colors hover:border-primary/40 hover:bg-primary/5 aria-expanded:border-primary/40 aria-expanded:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       >
         Review
-        {trimCount > 0 ? (
+        {showTrimBadge ? (
           <span
             data-review-trim-badge=""
             aria-hidden

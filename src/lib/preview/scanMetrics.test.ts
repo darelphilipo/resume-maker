@@ -54,6 +54,23 @@ describe("highlightScanMetrics", () => {
     expect(highlightScanMetrics(html)).toBe(html);
   });
 
+  it("keeps global currencies, Indian shorthand, and trailing plus signs whole", () => {
+    const html =
+      "<p>Saved ₹10L, ₹2Cr, €500K, and £1.2M across 1,000+ hires in 11+ quarters.</p>";
+
+    expect(highlightScanMetrics(html)).toBe(
+      `<p>Saved ${metric("₹10L")}, ${metric("₹2Cr")}, ${metric("€500K")}, and ${metric("£1.2M")} across ${metric("1,000+")} hires in ${metric("11+")} quarters.</p>`,
+    );
+  });
+
+  it("does not read a plain word after a number as a magnitude suffix", () => {
+    const html = "<p>Ran 10 months of 5 levels across 3 regions.</p>";
+
+    expect(highlightScanMetrics(html)).toBe(
+      `<p>Ran ${metric("10")} months of ${metric("5")} levels across ${metric("3")} regions.</p>`,
+    );
+  });
+
   it("returns blank and metric-free markup unchanged", () => {
     expect(highlightScanMetrics("   ")).toBe("   ");
     expect(highlightScanMetrics("<p>Led the platform team.</p>")).toBe(

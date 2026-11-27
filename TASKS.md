@@ -22,26 +22,8 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P1: Compact `Content` header pills (`Tidy` + `Match JD`) onto one row, redesign the bullet-check modal into scannable cards, and fix Indian `5+5` phone parsing (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/lib/import/pasteResume.ts`).
-  1. **Single-row `Content` header (`EditorWorkspace.tsx`, `ResumeLintPopover.tsx`):** Rename `"Bullet polish"` to **`Tidy`** (modal title `"Tidy bullets"`, compact count badge `4`) and tighten both `Tidy` and `Match JD` to `h-8 text-xs px-2.5 whitespace-nowrap` so `Content`, `Tidy 4`, and `Match JD` sit on **one clean horizontal row** at `390px` with zero 2-row wrapping.
-  2. **Card-based `Tidy bullets` modal (`ResumeLintPopover.tsx`):**
-     - Replace the developer-facing intro (*"A deterministic check..."*) with plain copy (*"Quick local checks to tidy your bullets."*).
-     - Wrap each category in a crisp bordered card (matching `Review tools`): put the **`Remove periods` / `Add periods`** buttons **directly inside** the `Mixed bullet periods` card at the top, and group repeated verbs into one compact card (`Collected ×2`, `Maintained ×2`, `Documented ×2`) with a clickable jump-to-entry link instead of long walls of quoted text.
-  3. **Fix Indian `5+5` phone parsing (`pasteResume.ts`):** Update `PHONE_PATTERN` so `+91 63699 40501` (`+91` followed by `5+5` spaced digits) matches all 10 digits instead of stopping at 9 digits and leaking the trailing `1` into `basics.headline`.
-
-
-
-
-- [ ] P1: Anchor `Visual | ATS` on the left of the Preview bar so it never jumps horizontally when `Review` badges change (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
-  1. Use `justify-between` in the Preview header bar so `[Visual | ATS]` stays anchored to a fixed left position (beside the `Preview` title on desktop, flush-left on mobile) while `N pages` / `Fit 1p` / `Review ▾` sit on the right—preventing `Visual | ATS` from sliding left/right when switching `Visual` ↔ `ATS` or toggling `Anonymize` / `6s Scan`.
-- [ ] P1: Polish desktop 3-column proportions, Preview top alignment, and thin Windows scrollbars (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/app/globals.css`).
-  1. **Slim, subtle scrollbars (`globals.css`):** Add a reusable `.subtle-scroll` utility (`scrollbar-width: thin; scrollbar-color: rgba(30, 58, 95, 0.18) transparent;` plus `6px` `::-webkit-scrollbar` with transparent track and soft rounded thumb darkening slightly on hover) and apply it to the 3 desktop scrolling columns (`#panel-content`, `#panel-preview`, `#panel-design`) so Windows Chrome/Edge no longer displays 3 chunky gray scrollbar rails.
-  2. **Widen center Preview & align top baseline (`EditorWorkspace.tsx`, `LiveCanvasViewport.tsx`):** Slightly trim the desktop sidebars (`lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]`) and outer horizontal padding so the center `Preview` gains ~70–90px of width and visually dominates the screen. Align the `Preview` header row to the exact same top vertical baseline as `Content` and `Design`, and tighten the vertical gap above Page 1 so the live resume starts higher and feels balanced with both sidebars.
 ### P2 — Parser, Fit Math & Review-Tools Polish
 
-- [ ] P2: Polish `6s Scan` & `Trim tips` accuracy and Preview chrome (`src/lib/preview/scanMetrics.ts`, `src/lib/lint/bulletMetrics.ts`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/ReviewMenu.tsx`).
-  1. **`6s Scan` currencies & 1-tap exit (`scanMetrics.ts`, `LiveCanvasViewport.tsx`):** Support global currency prefixes (`$`, `₹`, `€`, `£`), Indian shorthand (`L`, `Cr`), and trailing `+` (`1,000+`, `11+`, `₹10L`, `₹2Cr`, `€500K`) in `METRIC_PATTERN`, and show a slim 1-line active bar above Visual Preview (*"6s Scan: showing what pops in a quick skim"*) with a compact **`Turn off`** button.
-  2. **`Trim tips` accuracy & calm 1-page badge (`bulletMetrics.ts`, `ReviewMenu.tsx`):** Track words by match index instead of `!line.words.includes(word)` so repeated words on the same line aren't undercounted; scale `LINE_TOP_TOLERANCE_PX` proportionally to the active canvas scale (`Math.max(0.5, 2 * scale)`); fix `summarizeBulletIssues` so `> 3 lines` bullets under 240 chars say `"long bullets (4+ lines)"` and only count `reclaimableLines` when `lines > 3` or orphan-wrapped; and only show the yellow numeric badge on `Review ▾` when `pageCount > 1`.
 - [ ] P2: Render a section heading when an overflowed `Studio Sidebar` entry spills onto Page 2 beneath a different section (`src/templates/shared/SectionRenderer.tsx`).
   1. When rendering a continuation entry block (e.g. `certifications:entry:4` spilling from Page 1's sidebar onto Page 2 after `awards`) whose `sectionId` differs from the immediately preceding block on that page, render its section heading (e.g. `Certifications` or `Certifications (cont.)`) so overflowed sidebar items never appear as entries under the previous section (`Awards`). Add a unit test covering a 5th certification overflowing from `Studio Sidebar` Page 1 onto Page 2 below `Awards`.
 
@@ -51,6 +33,28 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-27 — `6s Scan` now reads global money and can be switched off in
+  one tap: `METRIC_PATTERN` accepts `$`/`₹`/`€`/`£`, Indian `L`/`Cr`, Western
+  `K`/`M`/`B`, and a trailing `+`, with word-boundary guards so `10 months`
+  stays a plain number, and a slim `[data-scan-banner]` above the Visual preview
+  ("6s Scan: showing what pops in a quick skim") carries a **Turn off** button.
+  `Trim tips` is more accurate and calmer: words are deduped per line by match
+  index (repeated words count twice), the line-grouping tolerance scales with
+  the live canvas transform, `reclaimableLines` only promises a line when the
+  bullet truly runs past three rendered lines, long findings say
+  `240+ characters` or `4+ lines` by cause, and the yellow `Review` badge only
+  appears when the resume spills past one page. Verified `npm run typecheck`,
+  `npm test` (1253 pass, 109 files), `npm run lint`. Files:
+  `src/lib/preview/scanMetrics.ts` (+ test),
+  `src/lib/lint/bulletMetrics.ts` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx`,
+  `src/components/preview/TrimTipsDialog.test.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`. The three stale Queue items above this one were already in Done,
+  so they were removed from the Queue. Playwright remains sandbox-blocked, so
+  the 390px banner row and real scaled grouping are browser-unverified.
 
 - [x] 2026-11-27 — The desktop zoom pill's `Reset` now sits to the **left** of
   `− | % | +`, so the right-anchored pill grows leftwards and the zoom buttons

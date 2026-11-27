@@ -40,7 +40,7 @@ describe("TrimTipsDialog", () => {
     expect(
       screen.getByText(/Led the billing migration for the platform/),
     ).toBeVisible();
-    expect(screen.getByText(/trimming them can reclaim 3 lines/)).toBeVisible();
+    expect(screen.getByText(/trimming them can reclaim 2 lines/)).toBeVisible();
   });
 
   it("caps the visible list behind a Show all toggle", () => {

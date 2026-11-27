@@ -625,7 +625,13 @@ export function LiveCanvasViewport({
 
     const update = (): void => {
       if (!cancelled) {
-        onBulletReport?.(scanBulletLint(root));
+        // Rects are visual pixels, so the line-grouping tolerance follows the
+        // canvas scale (fit or zoomed) instead of a fixed 2px.
+        onBulletReport?.(
+          scanBulletLint(root, {
+            scale: transformRef.current?.scale ?? fitScale,
+          }),
+        );
       }
     };
 

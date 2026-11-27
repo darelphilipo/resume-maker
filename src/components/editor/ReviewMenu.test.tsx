@@ -32,6 +32,7 @@ function renderMenu(
     fitTarget?: number | null;
     fitBlockedReason?: FitBlockedReason | null;
     appliedFitScale?: number;
+    pageCount?: number;
     onFit?: (scale: number) => void;
     onResetFit?: () => void;
   } = {},
@@ -50,6 +51,7 @@ function renderMenu(
       fitTarget={overrides.fitTarget ?? null}
       fitBlockedReason={overrides.fitBlockedReason ?? null}
       appliedFitScale={overrides.appliedFitScale ?? 1}
+      pageCount={overrides.pageCount ?? 1}
       onFit={overrides.onFit}
       onResetFit={overrides.onResetFit}
     />,
@@ -155,7 +157,7 @@ describe("ReviewMenu", () => {
   });
 
   it("badges the pill and opens Trim tips from the dialog", () => {
-    renderMenu({ bulletReport: TRIM_REPORT });
+    renderMenu({ bulletReport: TRIM_REPORT, pageCount: 2 });
 
     const trigger = screen.getByRole("button", { name: /Review/ });
 
@@ -181,6 +183,21 @@ describe("ReviewMenu", () => {
     expect(screen.getByRole("dialog", { name: "Trim tips" })).toHaveTextContent(
       /Led the billing migration/,
     );
+  });
+
+  it("keeps the trim count off the pill while the resume still fits one page", () => {
+    renderMenu({ bulletReport: TRIM_REPORT, pageCount: 1 });
+
+    expect(
+      document.querySelector("[data-review-trim-badge]"),
+    ).not.toBeInTheDocument();
+
+    openMenu();
+
+    // The count and jump targets stay available in the dialog.
+    expect(
+      screen.getByRole("button", { name: /^Trim tips \(2\)/ }),
+    ).toBeVisible();
   });
 
   it("explains the trim count in the Review tooltip", () => {

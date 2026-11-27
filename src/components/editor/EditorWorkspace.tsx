@@ -7,6 +7,7 @@ import {
   CaretDown,
   CaretUp,
   EyeSlash,
+  MagnifyingGlass,
   User,
 } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -742,6 +743,7 @@ export function EditorWorkspace() {
                   fitTarget={layout.fitScale}
                   fitBlockedReason={layout.fitBlockedReason ?? null}
                   appliedFitScale={doc.metadata.page.fitScale}
+                  pageCount={layout.pages.length}
                   onFit={applyFitScale}
                   onResetFit={resetFit}
                 />
@@ -759,6 +761,31 @@ export function EditorWorkspace() {
                   preview and PDF; your saved resume is unchanged.
                 </span>
               </p>
+            ) : null}
+            {scanPreview && previewMode === "canvas" ? (
+              <div
+                data-scan-banner=""
+                className="flex shrink-0 items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1 text-xs leading-snug text-primary"
+              >
+                <MagnifyingGlass
+                  size={13}
+                  aria-hidden
+                  className="shrink-0"
+                />
+                <span className="min-w-0 flex-1 truncate">
+                  6s Scan: showing what pops in a quick skim
+                </span>
+                <button
+                  type="button"
+                  data-scan-turn-off=""
+                  onClick={() => {
+                    setScanPreview(false);
+                  }}
+                  className="shrink-0 rounded-full px-2 py-0.5 font-medium transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                >
+                  Turn off
+                </button>
+              </div>
             ) : null}
             <LiveCanvasViewport
               ref={canvasRef}

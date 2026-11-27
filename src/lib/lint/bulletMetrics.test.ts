@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   LONG_BULLET_CHARS,
+  LONG_BULLET_LINES,
   analyzeBulletLines,
   bulletSnippet,
+  lineTopTolerance,
   measureBulletLines,
   scanBulletLint,
   summarizeBulletIssues,
@@ -143,9 +145,42 @@ describe("summarizeBulletIssues", () => {
 
     expect(report.orphanCount).toBe(2);
     expect(report.longCount).toBe(1);
-    expect(report.reclaimableLines).toBe(3);
+    expect(report.reclaimableLines).toBe(2);
     expect(report.summary).toBe(
-      "2 bullets spill by 1–3 words and 1 long bullet (240+ characters) — trimming them can reclaim 3 lines.",
+      "2 bullets spill by 1–3 words and 1 long bullet (240+ characters) — trimming them can reclaim 2 lines.",
+    );
+  });
+
+  it("names a 4+ line bullet instead of quoting the character budget", () => {
+    const long = analyzeBulletLines([
+      "Owned the platform roadmap",
+      "across three product teams",
+      "and every regional launch",
+      "in the last fiscal year",
+    ])!;
+
+    expect(long.charCount).toBeLessThan(LONG_BULLET_CHARS);
+    expect(long.lineCount).toBe(LONG_BULLET_LINES + 1);
+
+    const report = summarizeBulletIssues([long]);
+
+    expect(report.reclaimableLines).toBe(1);
+    expect(report.summary).toBe(
+      "1 long bullet (4+ lines) — trimming it can reclaim 1 line.",
+    );
+  });
+
+  it("does not promise a reclaimed line for a short-line long bullet", () => {
+    const long = analyzeBulletLines(["Built ".repeat(60)])!;
+
+    expect(long.lineCount).toBeLessThanOrEqual(LONG_BULLET_LINES);
+    expect(long.reclaimableLines).toBe(0);
+
+    const report = summarizeBulletIssues([long]);
+
+    expect(report.reclaimableLines).toBe(0);
+    expect(report.summary).toBe(
+      "1 long bullet (240+ characters) — trimming it will make it easier to scan.",
     );
   });
 
@@ -190,6 +225,15 @@ describe("bulletSnippet", () => {
   });
 });
 
+describe("lineTopTolerance", () => {
+  it("scales with the canvas and never drops below half a pixel", () => {
+    expect(lineTopTolerance(1)).toBe(2);
+    expect(lineTopTolerance(0.5)).toBe(1);
+    expect(lineTopTolerance(2)).toBe(4);
+    expect(lineTopTolerance(0.1)).toBe(0.5);
+  });
+});
+
 describe("measureBulletLines", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
@@ -207,6 +251,17 @@ describe("measureBulletLines", () => {
       "Alpha beta gamma",
       "delta epsilon",
     ]);
+  });
+
+  it("counts a repeated word on the same rendered line twice", () => {
+    stubLinesAfter(["growth"]);
+
+    const item = document.createElement("li");
+
+    item.textContent = "alpha growth growth";
+    document.body.append(item);
+
+    expect(measureBulletLines(item)).toEqual(["alpha", "growth growth"]);
   });
 
   it("falls back to one line when the DOM has no layout", () => {
