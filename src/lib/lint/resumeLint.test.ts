@@ -124,6 +124,23 @@ describe("analyzeResumeLint", () => {
     );
   });
 
+  it("ignores i.e., I/O, and Roman numeral I", () => {
+    const doc = createEmptyResume();
+
+    doc.summary.content =
+      "<ul><li>Owned the I/O layer, i.e. the ingest path.</li>" +
+      "<li>Delivered Phase I of the migration.</li>" +
+      "<li>Led Part I of the rollout.</li>" +
+      "<li>I built the API.</li></ul>";
+
+    const report = analyzeResumeLint(doc);
+
+    expect(report.pronounCount).toBe(1);
+    expect(report.findings).toContainEqual(
+      expect.objectContaining({ id: "first-person", count: 1 }),
+    );
+  });
+
   it("flags filler adverbs and keeps the snippets short", () => {
     const doc = createEmptyResume();
 
@@ -204,6 +221,32 @@ describe("standardizeBulletPeriods", () => {
 
     expect(next.summary.content).toBe(
       "<ul><li><p>Built <strong>APIs</strong>.</p></li><li><p>Led the team.</p></li><li><p>Why?</p></li></ul>",
+    );
+  });
+
+  it("removes one final period while preserving nested closing tags", () => {
+    const doc = createEmptyResume();
+
+    doc.summary.content =
+      "<ul><li><p><strong><em>Shipped APIs.</em></strong></p></li></ul>";
+
+    const next = standardizeBulletPeriods(doc, "remove");
+
+    expect(next.summary.content).toBe(
+      "<ul><li><p><strong><em>Shipped APIs</em></strong></p></li></ul>",
+    );
+  });
+
+  it("leaves an ellipsis alone while removing a single trailing period", () => {
+    const doc = createEmptyResume();
+
+    doc.summary.content =
+      "<ul><li>Shipped APIs...</li><li>Led the team.</li></ul>";
+
+    const next = standardizeBulletPeriods(doc, "remove");
+
+    expect(next.summary.content).toBe(
+      "<ul><li>Shipped APIs...</li><li>Led the team</li></ul>",
     );
   });
 

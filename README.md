@@ -346,8 +346,9 @@ in control of every line, and your data stays on your device.
   screen and closes with its own X, a tap on the dimmed background, or Escape.
   Each finding shows the opening words so you can find the bullet, and
   **Standardize bullet periods** can remove every trailing period or add one to
-  every bare bullet in a single undoable tap. The check runs locally with plain
-  rules — no AI and no network.
+  every bare bullet in a single undoable tap, leaving ellipses and bold or
+  italic formatting intact. The check runs locally with plain rules — no AI and
+  no network.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
   apply. **Copy all plain text** grabs the whole resume for Workday, Greenhouse,
@@ -380,12 +381,14 @@ in control of every line, and your data stays on your device.
   header to open the matcher on any device, then paste a posting to see which
   of its keywords already appear in your resume and which are missing. Common
   filler words such as “for”, “looking”, “hiring”, “high”, “improve”, “reduce”,
-  and “junior” are ignored, and keywords match whole words only — so “rust”
+  and “junior” are ignored, along with degree, pay, and equal-opportunity
+  boilerplate, and keywords match whole words only — so “rust”
   never counts just because “trust” appears. Simple word forms are treated as
   the same keyword, so “building” matches “build” and “managed” matches
   “manage” — and a posting that uses both forms lists that keyword just once.
-  Tech names such as C++, C#, Node.js, and .NET are recognised, including
-  product forms like ASP.NET. On phones it opens as a bottom sheet; on desktop
+  Tech names such as C++, C#, Node.js, .NET, CI/CD, UI/UX, TCP/IP, and A/B are
+  recognised, including product forms like ASP.NET. On phones it opens as a
+  bottom sheet; on desktop
   it opens as a centred modal. Either way one tap on the **X** (or the dimmed
   background) closes it outright, with no half-collapsed bar left behind.
   Matching runs locally with simple word heuristics, not AI.

@@ -68,6 +68,30 @@ describe("extractJobKeywords", () => {
       extractJobKeywords("Node.js node jobs, .NET net, C++ C#"),
     ).toEqual(expect.arrayContaining(["node.js", ".net", "c++", "c#"]));
   });
+
+  it("keeps slash-joined technology tokens together", () => {
+    const keywords = extractJobKeywords(
+      "CI/CD pipelines, UI/UX design, TCP/IP, A/B testing",
+    );
+
+    expect(keywords).toEqual(
+      expect.arrayContaining(["a/b", "ci/cd", "tcp/ip", "ui/ux"]),
+    );
+    expect(keywords).not.toContain("ci");
+    expect(keywords).not.toContain("cd");
+  });
+
+  it("does not turn prose slash pairs into keywords", () => {
+    expect(extractJobKeywords("and/or")).toEqual([]);
+  });
+
+  it("drops degree, pay, and equal-opportunity boilerplate", () => {
+    expect(
+      extractJobKeywords(
+        "Bachelor degree required. Equal opportunity. Salary and benefits.",
+      ),
+    ).toEqual([]);
+  });
 });
 
 describe("matchJobKeywords", () => {
@@ -174,6 +198,33 @@ describe("matchJobKeywords", () => {
 
     expect(result.matched).toEqual([]);
     expect(result.missing).toEqual([".net", "c++", "node.js"]);
+  });
+
+  it("matches slash-joined technology tokens", () => {
+    const result = matchJobKeywords(
+      "CI/CD and UI/UX",
+      "Built CI/CD pipelines and owned UI/UX for the app.",
+    );
+
+    expect(result.matched).toEqual(["ci/cd", "ui/ux"]);
+    expect(result.missing).toEqual([]);
+    expect(result.coverage).toBe(1);
+  });
+
+  it("does not strip a plural s from dotted technology names", () => {
+    const matched = matchJobKeywords(
+      "Node.js and Next.js",
+      "Built services on nodejs and nextjs.",
+    );
+
+    expect(matched.matched).toEqual(["next.js", "node.js"]);
+    expect(matched.missing).toEqual([]);
+    expect(matched.coverage).toBe(1);
+
+    const truncated = matchJobKeywords("Node.js", "node.j");
+
+    expect(truncated.matched).toEqual([]);
+    expect(truncated.missing).toEqual(["node.js"]);
   });
 
   it("reports zero coverage for an empty job description", () => {

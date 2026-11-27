@@ -1852,6 +1852,22 @@ rediscover.
         prove the captured portal is non-empty without racing the portal
         unmount.
 
+     116. **Lint and JD matching keep prose rules narrow.** `removeTrailingPeriod`
+         in `resumeLint.ts` must match only a single final period
+         (`(?<!\.)\.`) and capture the whole closing-tag/hard-break sequence in
+         one group, or `...` loses its ellipsis and nested `<strong><em>` closers
+         can be dropped. `FIRST_PERSON_PATTERN` is a constructed RegExp with a
+         lookbehind for Roman-numeral contexts (`Phase I`, `Part I`, …) and a
+         `(?![./])` lookahead so `i.e.` / `I/O` are not pronouns. In
+         `jdMatch.ts`, `TOKEN_PATTERN` allows `/`, but `expandSlashToken` only
+         keeps short abbreviation pairs (`CI/CD`, `UI/UX`, `TCP/IP`, plus the
+         `A/B` allowlist) and drops prose pairs (`and/or`, `w/o`) instead of
+         emitting their fragments as keywords. Plural `s`-stripping is skipped
+         for any dotted token, because `node.js` → `nodej` / `node.j` produced
+         bogus matches. Add new boilerplate to `STOPWORDS` in every inflected
+         form the matcher may see (`bachelor`/`bachelors`, `degree`/`degrees`,
+         `salary`/`salaries`) because `isStopword` is an exact lookup.
+
 ## Verification and tooling
 
 ```powershell
@@ -1916,6 +1932,26 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-27 — Bullet-polish period removal + Match JD tokenization tightened
+- Task: top Queue item (P1), moved to In Progress first. All three sub-items
+  were open.
+- Change: `removeTrailingPeriod` now removes only one final period
+  (`(?<!\.)\.`) and keeps the whole trailing closing-tag/hard-break sequence in
+  one capture group, so `<strong><em>Shipped APIs.</em></strong></p>` keeps its
+  tags and `...` stays an ellipsis. `FIRST_PERSON_PATTERN` excludes `i.e.`,
+  `I/O`, and Roman-numeral contexts (`Phase I`, `Part I`, …). `jdMatch` keeps
+  `CI/CD`, `UI/UX`, `TCP/IP`, and `A/B` as single keywords, splits prose pairs
+  like `and/or`, skips plural `s`-stripping on dotted tokens (`node.js`), and
+  drops degree/pay/equal-opportunity boilerplate plus pronoun/`w/o`/`n/a`
+  noise. Decision #116; README feature tour updated.
+- Tests: new nested-tag + ellipsis period cases, first-person exclusion case,
+  slash-tech extraction/matching, prose-pair rejection, dotted-plural guard,
+  and boilerplate-stopword cases. `npm run typecheck` clean; `npm test` 1194
+  pass across 107 files; `npm run lint` clean.
+- Files: `src/lib/lint/resumeLint.ts` (+ test),
+  `src/lib/keywords/jdMatch.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 ### 2026-11-26 — Blank-PDF fix verified and moved to Done
 - Task: continued the lone In Progress item (P0). All four sub-items were
@@ -2150,22 +2186,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Note: Playwright remains sandbox-blocked, so the 390px toolbar geometry and
   the real TipTap list split are browser-unverified; jsdom asserts the command
   calls and pure guard instead.
-
-### 2026-11-26 — Closed the home-page polish bookkeeping
-- Task: the lone In Progress item (P1 Homepage `/` polish). Its code, tests,
-  README copy and Decision #108 were already in the tree from the prior
-  checkpoint, so this run verified them end to end and finished the bookkeeping.
-- Change: confirmed the Backup dropzone keeps one dashed border with
-  "Restore a single-resume JSON backup" / top-right menu copy, both import CTAs
-  enable on the same tick via `pastedTextValue` with no `transition-colors`, the
-  Recent title has a group hover cue plus the `openingRecentId` spinner/`aria-busy`
-  single-flight guard, and the AI panel has the compact **Preview prompt**
-  disclosure. Moved the item from In Progress to Done in `TASKS.md`; no code or
-  README changes were needed.
-- Tests: `npm run typecheck` clean; `npm test` 1149 pass across 105 files.
-- Files: `TASKS.md`, `CONTEXT.md`.
-- Note: Playwright remains sandbox-blocked, so the 390px hover/pending geometry
-  is browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

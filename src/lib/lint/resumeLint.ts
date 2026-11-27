@@ -24,7 +24,21 @@ import {
   type ListKind,
 } from "@/templates/shared/sectionData";
 
-export const FIRST_PERSON_PATTERN = /\b(?:I|me|my|we|our)\b/i;
+/**
+ * Nouns that turn a following `I` into a Roman numeral (`Phase I`, `Part I`)
+ * rather than the first-person pronoun.
+ */
+const ROMAN_NUMERAL_CONTEXT =
+  "(?:phase|part|section|level|tier|class|grade|category|appendix|volume|book|chapter|type|stage|step|unit|module|group|series|world\\s+war)";
+
+/**
+ * First-person pronouns, excluding `i.e.` and `I/O` (the trailing lookahead)
+ * and Roman numerals such as `Phase I` (the context lookbehind).
+ */
+export const FIRST_PERSON_PATTERN = new RegExp(
+  `\\b(?:(?<!\\b${ROMAN_NUMERAL_CONTEXT}\\s+)I(?![./])|me|my|we|our)\\b`,
+  "i",
+);
 export const FILLER_WORDS = [
   "meticulously",
   "diligently",
@@ -519,11 +533,11 @@ function addTrailingPeriod(innerHtml: string): string {
 }
 
 function removeTrailingPeriod(innerHtml: string): string {
-  // Only the last visible character may be a period; closing tags (and a
-  // trailing hard break) after it are kept so inline formatting (`<strong>`,
-  // links) survives the edit.
+  // Only a single final period is removed (`...` stays an ellipsis), and every
+  // closing tag or hard break after it is captured as one group so nested
+  // inline formatting such as `<strong>text.</strong></p>` survives the edit.
   return innerHtml.replace(
-    /\.+(\s*(?:(?:<\s*br\s*\/?>|<\/[^>]+>)\s*)*)$/i,
+    /(?<!\.)\.((?:\s*(?:<\s*br\s*\/?>|<\/[^>]+>)\s*)*)$/i,
     "$1",
   );
 }

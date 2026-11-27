@@ -1,7 +1,14 @@
 // Tech tokens keep their meaningful punctuation (`C++`, `C#`, `Node.js`) and
-// leading-dot names (`.NET`) stay distinct from the bare word `net`.
-const TOKEN_PATTERN = /[a-z0-9][a-z0-9+#.]*|\.[a-z][a-z0-9+#.]*/g;
+// leading-dot names (`.NET`) stay distinct from the bare word `net`. A slash is
+// allowed so abbreviation pairs (`CI/CD`, `UI/UX`) survive tokenization.
+const TOKEN_PATTERN = /[a-z0-9][a-z0-9+#./]*|\.[a-z][a-z0-9+#./]*/g;
 const TRAILING_DOTS = /\.+$/;
+
+/**
+ * Slash-joined technology names that must stay intact even though one segment
+ * (`A` in `A/B`) would otherwise read as a stopword.
+ */
+const SLASH_TECH_TOKENS = new Set(["a/b", "ci/cd", "ui/ux", "tcp/ip"]);
 
 const STOPWORDS = new Set([
   "a",
@@ -20,11 +27,15 @@ const STOPWORDS = new Set([
   "are",
   "as",
   "at",
+  "bachelor",
+  "bachelors",
   "be",
   "because",
   "been",
   "before",
   "being",
+  "benefit",
+  "benefits",
   "between",
   "both",
   "but",
@@ -36,6 +47,8 @@ const STOPWORDS = new Set([
   "could",
   "create",
   "creating",
+  "degree",
+  "degrees",
   "deliver",
   "delivering",
   "do",
@@ -46,6 +59,7 @@ const STOPWORDS = new Set([
   "either",
   "ensure",
   "ensuring",
+  "equal",
   "etc",
   "excellent",
   "experience",
@@ -56,8 +70,13 @@ const STOPWORDS = new Set([
   "has",
   "have",
   "having",
+  "he",
   "help",
   "helping",
+  "her",
+  "hers",
+  "him",
+  "his",
   "high",
   "hiring",
   "how",
@@ -88,6 +107,7 @@ const STOPWORDS = new Set([
   "more",
   "most",
   "must",
+  "n/a",
   "need",
   "needed",
   "needs",
@@ -122,8 +142,11 @@ const STOPWORDS = new Set([
   "responsibilities",
   "responsibility",
   "role",
+  "salaries",
+  "salary",
   "seek",
   "seeking",
+  "she",
   "should",
   "skills",
   "strong",
@@ -153,6 +176,7 @@ const STOPWORDS = new Set([
   "used",
   "using",
   "via",
+  "w/o",
   "want",
   "wanting",
   "wants",
@@ -193,10 +217,47 @@ function compareTokens(left: string, right: string): number {
   return left.localeCompare(right);
 }
 
+/**
+ * Keeps short slash-joined technology names (`CI/CD`, `UI/UX`) as one token
+ * while splitting ordinary prose pairs (`and/or`) so they cannot become fake
+ * keywords. Longer slash pairs (`design/development`) split into real words.
+ */
+function expandSlashToken(token: string): string[] {
+  if (!token.includes("/")) {
+    return [token];
+  }
+
+  const segments = token.split("/").filter((segment) => segment !== "");
+  const joined = segments.join("/");
+
+  if (SLASH_TECH_TOKENS.has(joined)) {
+    return [joined];
+  }
+
+  const looksLikeAbbreviationPair =
+    segments.length >= 2 &&
+    segments.every((segment) => /^[a-z0-9+#.]{1,3}$/.test(segment));
+
+  if (looksLikeAbbreviationPair) {
+    // `and/or` and `he/she` are prose, not technologies.
+    return segments.some((segment) => STOPWORDS.has(segment)) ? [] : [joined];
+  }
+
+  return segments;
+}
+
 function rawTokens(text: string): string[] {
-  return (text.toLowerCase().match(TOKEN_PATTERN) ?? []).map((token) =>
-    token.replace(TRAILING_DOTS, ""),
-  );
+  const tokens: string[] = [];
+
+  for (const match of text.toLowerCase().match(TOKEN_PATTERN) ?? []) {
+    const token = match.replace(TRAILING_DOTS, "");
+
+    if (token !== "") {
+      tokens.push(...expandSlashToken(token));
+    }
+  }
+
+  return tokens;
 }
 
 function baseToken(token: string): string {
@@ -216,7 +277,14 @@ function variants(token: string): string[] {
   if (!token.startsWith(".")) {
     values.add(base);
 
-    if (base.length > 3 && base.endsWith("s") && !base.endsWith("ss")) {
+    // Never strip a plural `s` from a dotted technology name: `node.js` must
+    // not gain `node.j` / `nodej` variants.
+    if (
+      !token.includes(".") &&
+      base.length > 3 &&
+      base.endsWith("s") &&
+      !base.endsWith("ss")
+    ) {
       values.add(base.slice(0, -1));
       values.add(token.slice(0, -1));
     }

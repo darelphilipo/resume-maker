@@ -25,11 +25,6 @@ _empty
 
 ### P1 — Bug & Privacy Fixes
 
-- [ ] P1: Fix `removeTrailingPeriod` HTML tag-drop bug in `Bullet polish` and tighten `Match JD` tokenization/stopwords (`src/lib/lint/resumeLint.ts`, `src/lib/keywords/jdMatch.ts`).
-  1. **Fix `removeTrailingPeriod` (`resumeLint.ts`):** Wrap the trailing closing-tag sequence in a single outer capture group (`((?:\s*(?:<\s*br\s*\/?>|<\/[^>]+>)\s*)*)$`) so nested tags like `<strong>text.</strong></p>` are preserved intact, and match only a single trailing period (`(?<!\.)\.`) so ellipses (`...`) aren't stripped.
-  2. **Avoid false-positive `"I"` hits (`resumeLint.ts`):** Exclude `"i.e."`, `"I/O"`, and Roman numerals (`Phase I`, `Part I`) from `FIRST_PERSON_PATTERN`.
-  3. **Tighten `Match JD` (`jdMatch.ts`):** Preserve common slash tech tokens (`CI/CD`, `UI/UX`, `TCP/IP`, `A/B`), skip plural `s`-stripping on dotted tokens like `node.js` / `next.js`, and add JD boilerplate (`qualifications`, `responsibilities`, `preferred`, `bachelor`, `degree`, `equal`, `opportunity`, `salary`, `benefits`) to `STOPWORDS`. Add unit tests for nested-tag period removal and `CI/CD` / `node.js` matching.
-
 - [ ] P1: Close remaining PII leaks in `Anonymize` across prose, optional sections, and custom sections (`src/lib/privacy/anonymizeDoc.ts`, `src/lib/privacy/anonymizeDoc.test.ts`).
   1. **Redact optional & custom sections:** Anonymize `awards` (`awarder` → `"Organization A"`, `website`), `volunteer` (`organization`, `location` → `"City, ST"`, `website`), `publications` (`website`), `customSections` (`location`, `url`), and clear `basics.picture.url = ""` alongside `hidden: true`.
   2. **Scrub known PII from `Summary` & bullet prose:** Build a deterministic replacement map from the resume's own structured fields (`basics.name` → `"Alex Taylor"`, `basics.email`, `basics.phone`, each `experience[].company` → its mapped `"Company A"`, each `education[].school` → `"University A"`, each `volunteer[].organization` → `"Organization A"`, sorted longest-first with word boundaries and skipping short <3-char strings) and apply it HTML-safely (text nodes only, never inside tags) across `summary.content` and entry `summary`/`highlights`—so mentions like `"at Wells Fargo"` automatically become `"at Company A"`.
@@ -54,6 +49,21 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-27 — Fixed `Bullet polish` period removal and tightened `Match JD`.
+  `removeTrailingPeriod` now matches only a single final period with
+  `(?<!\.)\.` and keeps the whole trailing closing-tag sequence in one capture
+  group, so `<strong><em>Shipped APIs.</em></strong></p>` loses only the period
+  and an ellipsis (`...`) is left untouched. `FIRST_PERSON_PATTERN` excludes
+  `i.e.`, `I/O`, and Roman-numeral contexts (`Phase I`, `Part I`, `Section I`,
+  …) while still flagging a real "I built". `Match JD` tokenizes slash-joined
+  tech names (`CI/CD`, `UI/UX`, `TCP/IP`, `A/B`) as one keyword while splitting
+  prose pairs such as `and/or`, no longer strips a plural `s` from dotted names
+  (`node.js` no longer gains `node.j`), and drops degree/pay/equal-opportunity
+  boilerplate (`bachelor`, `degree`, `equal`, `salary`, `benefits`, plus pronoun
+  and `w/o`/`n/a` noise). Verified `npm run typecheck`, `npm test` (1194 pass,
+  107 files), `npm run lint`. Files: `src/lib/lint/resumeLint.ts` (+ test),
+  `src/lib/keywords/jdMatch.ts` (+ test), `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 - [x] 2026-11-26 — Closed the P0 blank-PDF fix: **Save PDF** from the mobile
   `Content`/`Design` tab now always captures a non-empty resume. `EditorWorkspace`
