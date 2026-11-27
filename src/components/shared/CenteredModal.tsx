@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 
 /**
  * A viewport-centred modal used by the short, non-form dialogs in the editor
- * (Trim tips, Bullet polish, the desktop Match JD sheet).
+ * (Trim tips, Tidy bullets, the desktop Match JD sheet).
  *
  * It is portalled to `document.body` and centred with flexbox, so a trigger in
  * the narrow left Content column can never drag a 20rem panel off the left

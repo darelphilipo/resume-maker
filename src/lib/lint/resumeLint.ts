@@ -59,6 +59,12 @@ export type ResumeLintCheckId =
   | "filler"
   | "repeated-verbs";
 
+/** Where a finding's bullets live, so a dialog can jump straight to them. */
+export type ResumeLintEntryTarget = {
+  sectionId: string;
+  entryId: string | null;
+};
+
 export type ResumeLintFinding = {
   id: ResumeLintCheckId;
   title: string;
@@ -68,6 +74,10 @@ export type ResumeLintFinding = {
   count: number;
   /** Up to `MAX_LINT_SNIPPETS` opening words, never the full bullet. */
   snippets: string[];
+  /** Repeated opening word, shown as a compact chip in the Tidy dialog. */
+  verb?: string;
+  /** First affected entry, used by the Tidy dialog's jump-to-entry links. */
+  target?: ResumeLintEntryTarget;
 };
 
 export type BulletPeriodCounts = {
@@ -99,6 +109,9 @@ export type CollectedBullet = {
   text: string;
   entryKey: string;
   entryLabel: string;
+  /** Layout section id and (for list entries) item id of the owning field. */
+  sectionId: string;
+  entryId: string | null;
 };
 
 type ListItemSpan = {
@@ -283,13 +296,21 @@ function entryLabel(kind: ListKind, item: ItemRecord): string {
 export function collectResumeBullets(doc: ResumeDocument): CollectedBullet[] {
   const bullets: CollectedBullet[] = [];
 
-  const append = (html: string, entryKey: string, label: string): void => {
+  const append = (
+    html: string,
+    entryKey: string,
+    label: string,
+    sectionId: string,
+    entryId: string | null,
+  ): void => {
     for (const inner of extractBulletHtml(html)) {
       bullets.push({
         html: inner,
         text: bulletPlainText(inner),
         entryKey,
         entryLabel: label,
+        sectionId,
+        entryId,
       });
     }
   };
@@ -302,7 +323,7 @@ export function collectResumeBullets(doc: ResumeDocument): CollectedBullet[] {
     }
 
     if (resolved.kind === "summary") {
-      append(doc.summary.content, "summary", "Summary");
+      append(doc.summary.content, "summary", "Summary", sectionId, null);
       continue;
     }
 
@@ -313,11 +334,16 @@ export function collectResumeBullets(doc: ResumeDocument): CollectedBullet[] {
     }
 
     resolved.items.forEach((item, index) => {
-      const key = `${resolved.kind}:${itemId(item, index)}`;
       const html = text(item, field);
 
       if (html.trim() !== "") {
-        append(html, key, entryLabel(resolved.kind, item));
+        append(
+          html,
+          `${resolved.kind}:${itemId(item, index)}`,
+          entryLabel(resolved.kind, item),
+          sectionId,
+          typeof item.id === "string" ? item.id : null,
+        );
       }
     });
   }
@@ -347,6 +373,16 @@ function snippetsFrom(bullets: readonly CollectedBullet[]): string[] {
   return bullets
     .slice(0, MAX_LINT_SNIPPETS)
     .map((bullet) => bulletSnippet(bullet.text));
+}
+
+function targetOf(
+  bullets: readonly CollectedBullet[],
+): ResumeLintEntryTarget | undefined {
+  const first = bullets[0];
+
+  return first
+    ? { sectionId: first.sectionId, entryId: first.entryId }
+    : undefined;
 }
 
 /**
@@ -394,6 +430,7 @@ export function analyzeResumeLint(doc: ResumeDocument): ResumeLintReport {
         bullets.filter((bullet) => periodEnding(bullet.text) !== "other"),
       ),
     });
+    // Mixed periods span several entries: no single jump target is meaningful.
   }
 
   const pronounBullets = bullets.filter((bullet) =>
@@ -410,6 +447,7 @@ export function analyzeResumeLint(doc: ResumeDocument): ResumeLintReport {
       )} use${pronounBullets.length === 1 ? "s" : ""} I, me, my, we, or our.`,
       count: pronounBullets.length,
       snippets: snippetsFrom(pronounBullets),
+      target: targetOf(pronounBullets),
     });
   }
 
@@ -430,6 +468,7 @@ export function analyzeResumeLint(doc: ResumeDocument): ResumeLintReport {
       ).join(", ")}.`,
       count: fillerBullets.length,
       snippets: snippetsFrom(fillerBullets),
+      target: targetOf(fillerBullets),
     });
   }
 
@@ -490,6 +529,8 @@ export function analyzeResumeLint(doc: ResumeDocument): ResumeLintReport {
         detail: `${matches.length} bullets in ${group[0].entryLabel} start with “${display}”.`,
         count: matches.length,
         snippets: snippetsFrom(matches),
+        verb: display,
+        target: targetOf(matches),
       });
     }
   }

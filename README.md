@@ -348,17 +348,18 @@ in control of every line, and your data stays on your device.
   text field, places the cursor in it, and briefly highlights the field so you
   can cut the stray words immediately. Trimming those bullets can reclaim whole
   lines before you shrink the font or spill onto a second page.
-- **Bullet polish** in the Content panel header flags the small consistency
-  problems a recruiter notices first: bullets that mix ending periods,
-  first-person pronouns, filler adverbs, and repeated opening verbs within one
-  role. It is a quiet pill beside **Match JD**, so neither competes with
-  **Save PDF**; tapping it opens a centred modal that always stays inside the
-  screen and closes with its own X, a tap on the dimmed background, or Escape.
-  Each finding shows the opening words so you can find the bullet, and
-  **Standardize bullet periods** can remove every trailing period or add one to
-  every bare bullet in a single undoable tap, leaving ellipses and bold or
-  italic formatting intact. The check runs locally with plain rules — no AI and
-  no network.
+- **Tidy** in the Content panel header flags the small consistency problems a
+  recruiter notices first: bullets that mix ending periods, first-person
+  pronouns, filler adverbs, and repeated opening verbs within one role. It is a
+  compact pill with a count badge beside **Match JD**, and all three labels stay
+  on one row even on a narrow phone. Tapping it opens a centred **Tidy bullets**
+  modal that always stays inside the screen and closes with its own X, a tap on
+  the dimmed background, or Escape. Each check gets its own card: **Remove
+  periods** and **Add periods** sit inside the mixed-periods card, repeated
+  verbs appear as short `Collected ×2` chips with a tap that jumps straight to
+  the entry, and the other cards show only a couple of opening words. Period
+  fixes leave ellipses and bold or italic formatting intact and undo in one
+  step. The check runs locally with plain rules — no AI and no network.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
   apply. **Copy all plain text** grabs the whole resume for Workday, Greenhouse,

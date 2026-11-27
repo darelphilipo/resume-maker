@@ -23,6 +23,7 @@ import { PageOverflowBanner } from "@/components/preview/PageOverflowBanner";
 import { PrintTriggerButton } from "@/components/preview/PrintTriggerButton";
 import { ExportJsonButton } from "@/components/shared/ExportJsonButton";
 import type { BulletIssue, BulletLintReport } from "@/lib/lint/bulletMetrics";
+import type { ResumeLintEntryTarget } from "@/lib/lint/resumeLint";
 import { usePageLayout } from "@/lib/pagination/usePageLayout";
 import { anonymizeResumeDoc } from "@/lib/privacy/anonymizeDoc";
 import { isPrintTitleActive, resumeDocumentTitle } from "@/lib/print/printDocument";
@@ -205,23 +206,30 @@ export function EditorWorkspace() {
   const appliedFitPercent = Math.round(doc.metadata.page.fitScale * 100);
 
   /**
-   * A trim tip names the rendered bullet's section and entry. Reveal the
-   * Content tab on phones, expand that section, and let SectionList smooth
-   * scroll to the entry card so the user can cut the stray words immediately.
+   * Reveal one entry in Content: switch tabs on phones, expand its section and
+   * let SectionList smooth-scroll to the card. Shared by Trim tips and the
+   * jump-to-entry links in the Tidy dialog.
    */
-  function revealTrimIssue(issue: BulletIssue): void {
-    const sectionId = issue.sectionId;
-
-    if (!sectionId) {
-      return;
-    }
-
+  function revealEntry(sectionId: string, entryId: string | null): void {
     setActiveTab("content");
     setSectionFocus((current) => ({
       id: sectionId,
-      entryId: issue.entryId ?? null,
+      entryId,
       nonce: (current?.nonce ?? 0) + 1,
     }));
+  }
+
+  /** A trim tip names the rendered bullet's section and entry. */
+  function revealTrimIssue(issue: BulletIssue): void {
+    if (!issue.sectionId) {
+      return;
+    }
+
+    revealEntry(issue.sectionId, issue.entryId ?? null);
+  }
+
+  function revealLintEntry(target: ResumeLintEntryTarget): void {
+    revealEntry(target.sectionId, target.entryId);
   }
 
   const liveName =
@@ -492,18 +500,18 @@ export function EditorWorkspace() {
         >
           <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_8px_rgba(23,40,57,0.04)]">
             <div data-content-header className="flex flex-col gap-2">
-              {/* Keep the title and its trigger on one row at every width; the
-                  descriptive line wraps below instead of pushing Match JD to a
-                  second row on phones. */}
+              {/* Content, Tidy and Match JD share one nowrap row at every
+                  width; the descriptive line wraps below instead of pushing
+                  either compact pill onto a second row at 390px. */}
               <div
                 data-content-title-row
                 className="flex items-center justify-between gap-2"
               >
-                <h2 className="font-serif text-xl font-semibold tracking-tight">
+                <h2 className="shrink-0 font-serif text-xl font-semibold tracking-tight">
                   Content
                 </h2>
-                <div className="flex flex-wrap items-center justify-end gap-1.5">
-                  <ResumeLintPopover doc={doc} />
+                <div className="flex flex-nowrap items-center justify-end gap-1.5">
+                  <ResumeLintPopover doc={doc} onJumpToEntry={revealLintEntry} />
                   <JdMatchDrawer doc={doc} compact />
                 </div>
               </div>

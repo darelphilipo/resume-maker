@@ -52,6 +52,22 @@ describe("parsePastedResume", () => {
     ]);
   });
 
+  it("parses an Indian 5+5 phone number without leaking a digit into the headline", () => {
+    const doc = parsePastedResume(`Ananya Rao
+Senior Software Engineer
+ananya@example.com | +91 63699 40501 | Bengaluru
+
+EXPERIENCE
+Engineer
+Acme
+2021 - 2024
+- Built APIs.`);
+
+    expect(doc?.basics.phone).toBe("+91 63699 40501");
+    expect(doc?.basics.headline).toBe("Senior Software Engineer");
+    expect(doc?.basics.headline).not.toContain("1");
+  });
+
   it("parses experience entries, date ranges, and bullets", () => {
     const doc = parsePastedResume(SAMPLE);
     const items = doc?.sections.experience.items ?? [];

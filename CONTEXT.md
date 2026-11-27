@@ -1924,6 +1924,26 @@ rediscover.
           zero) from clearing a seeded fit in component tests. Both Reset
           controls title themselves `Reset fit (86% → 100%)`.
 
+120. **`Tidy` is a one-row Content action with card-based findings.**
+    `CONTENT_HEADER_ACTION_CLASS` is now an `h-8 ... px-2.5 text-xs
+    whitespace-nowrap` quiet pill with a `pointer-coarse:h-11` touch target, and
+    the Content header's action group is `flex-nowrap`, so **Content**, the
+    compact **Tidy N** count badge and **Match JD** share one row at 390px.
+    `ResumeLintPopover`'s modal title is **Tidy bullets**; its findings render as
+    bordered cards, period fixes live inside the `Mixed bullet periods` card
+    (with a fallback card when periods are already consistent), and repeated
+    verbs are one card of `Verb ×N` chips instead of quoted bullet walls. A chip
+    is a jump link: `ResumeLintFinding.target` carries `sectionId`/`entryId`
+    (plus `verb` for the chip label) from `collectResumeBullets`, and
+    `onJumpToEntry` closes the modal before `EditorWorkspace.revealEntry`
+    switches to Content, expands the section and focuses `editor-entry-<id>`
+    through `SectionList`. Render chips as plain spans when no handler is
+    passed. Keep the trigger's accessible name (`Tidy: N issues`) and the
+    `data-lint-card` ids in sync with the component tests. Separately,
+    `PHONE_PATTERN` tries an Indian `+91 63699 40501` (5+5) branch **before** the
+    generic 6-3-4 shape: the latter stopped one digit early and leaked the
+    trailing `1` into `basics.headline`.
+
 ## Verification and tooling
 
 ```powershell
@@ -1989,30 +2009,40 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
-### 2026-11-27 — Fit-to-1-page: damped curve, margin reclaim, auto-reset
-- Task: top Queue item (P2), moved to In Progress first. All three sub-items were
-  open.
-- Change: `computeFitScale` now uses the 0.72 damped height ratio so a prose
-  resume keeps a larger, fuller first fit. The readable floor became
-  `max(0.78, 8 / bodyFontSize)`, and `computeFitMarginY` reclaims vertical
-  margin while a fit is active (32pt floor, never inflating the 12pt default),
-  wired through `templateTheme`, `PageStack`, `PrintPortal`, and the
-  `usePageLayout` content height so preview, print, and packing agree.
-  `usePageLayout` reports `autoResetFit` when the measured stack divided by the
-  applied scale fits the unscaled content box; `EditorWorkspace` drops the fit
-  back to 100% once. Both Reset controls now title themselves
-  `Reset fit (86% → 100%)`. Decision #119; README fit tour updated.
-- Tests: new damped/floor/margin/auto-reset helper cases, hook auto-reset and
-  reclaimed-margin cases, and Reset title assertions. `npm run typecheck`
-  clean; `npm test` 1233 pass across 107 files; `npm run lint` clean.
-- Files: `src/lib/pagination/fitScale.ts` (+ test),
-  `src/lib/pagination/usePageLayout.ts` (+ test),
-  `src/templates/shared/templateTheme.ts`,
-  `src/components/preview/PageStack.tsx`,
-  `src/components/preview/PrintPortal.tsx`,
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/ReviewMenu.tsx` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
+### 2026-11-27 — Tidy header row, card modal, Indian 5+5 phone
+- Task: top Queue item (P1), moved to In Progress first. All three sub-items
+  were open.
+- Change: `Bullet polish` is now **Tidy** with a compact `N` badge; the shared
+  `CONTENT_HEADER_ACTION_CLASS` is `h-8 px-2.5 text-xs whitespace-nowrap`
+  (`pointer-coarse:h-11`) and the Content header's action group is
+  `flex-nowrap`, so Content / Tidy / Match JD share one row at 390px. The modal
+  is titled **Tidy bullets**, opens with "Quick local checks to tidy your
+  bullets.", and renders bordered finding cards: period actions now live in
+  the `Mixed bullet periods` card, repeated verbs are one card of `Verb ×N`
+  jump chips, and other cards show at most two snippets. `ResumeLintFinding`
+  gained `verb` and a `target` (`sectionId`/`entryId`) wired from
+  `collectResumeBullets` through `ResumeLintPopover.onJumpToEntry` to
+  `EditorWorkspace.revealEntry`. `PHONE_PATTERN` now tries a `+91` 5+5 branch
+  first, so `+91 63699 40501` no longer leaks a trailing `1` into the headline.
+  Decision #120; README feature tour updated.
+- Tests: rewritten `ResumeLintPopover` tests (trigger classes/badge, card
+  classes, in-card period buttons, grouped verb chip + jump spy, copy), new
+  `EditorWorkspace` one-row/jump integration cases, a lint target assertion,
+  and a paste-parser regression for the Indian number. One first-run failure
+  came from asserting on the component's inner wrapper instead of the header's
+  action group; selecting `titleRow.lastElementChild` fixed it. `npm run
+  typecheck` clean; `npm test` 1236 pass across 107 files; `npm run lint`
+  clean. Item moved to Done.
+- Note: direct `shell` and an automation `shell` action were denied early in
+  this run but direct shell worked on retry, so a blocked probe is not proof
+  that verification is impossible in a later run. Playwright remains blocked,
+  so the 390px row geometry and real jump scroll are browser-unverified.
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/contentHeaderAction.ts`,
+  `src/components/shared/CenteredModal.tsx`, `src/lib/lint/resumeLint.ts`
+  (+ test), `src/lib/import/pasteResume.ts` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 ### 2026-11-27 — PDF/paste hardening verified, non-breaking hyphen wrap fixed
 - Task: top Queue item (P2), moved to In Progress first. Sub-items 1–3 were

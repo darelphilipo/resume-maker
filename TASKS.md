@@ -21,16 +21,6 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P1: Compact `Content` header pills (`Tidy` + `Match JD`) onto one row, redesign the bullet-check modal into scannable cards, and fix Indian `5+5` phone parsing (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/lib/import/pasteResume.ts`).
-  1. **Single-row `Content` header (`EditorWorkspace.tsx`, `ResumeLintPopover.tsx`):** Rename `"Bullet polish"` to **`Tidy`** (modal title `"Tidy bullets"`, compact count badge `4`) and tighten both `Tidy` and `Match JD` to `h-8 text-xs px-2.5 whitespace-nowrap` so `Content`, `Tidy 4`, and `Match JD` sit on **one clean horizontal row** at `390px` with zero 2-row wrapping.
-  2. **Card-based `Tidy bullets` modal (`ResumeLintPopover.tsx`):**
-     - Replace the developer-facing intro (*"A deterministic check..."*) with plain copy (*"Quick local checks to tidy your bullets."*).
-     - Wrap each category in a crisp bordered card (matching `Review tools`): put the **`Remove periods` / `Add periods`** buttons **directly inside** the `Mixed bullet periods` card at the top, and group repeated verbs into one compact card (`Collected ×2`, `Maintained ×2`, `Documented ×2`) with a clickable jump-to-entry link instead of long walls of quoted text.
-  3. **Fix Indian `5+5` phone parsing (`pasteResume.ts`):** Update `PHONE_PATTERN` so `+91 63699 40501` (`+91` followed by `5+5` spaced digits) matches all 10 digits instead of stopping at 9 digits and leaking the trailing `1` into `basics.headline`.
-
-
-
-
 - [ ] P1: Anchor `Visual | ATS` on the left of the Preview bar so it never jumps horizontally when `Review` badges change (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
   1. Use `justify-between` in the Preview header bar so `[Visual | ATS]` stays anchored to a fixed left position (beside the `Preview` title on desktop, flush-left on mobile) while `N pages` / `Fit 1p` / `Review ▾` sit on the right—preventing `Visual | ATS` from sliding left/right when switching `Visual` ↔ `ATS` or toggling `Anonymize` / `6s Scan`.
 - [ ] P1: Polish desktop 3-column proportions, Preview top alignment, and thin Windows scrollbars (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/app/globals.css`).
@@ -47,6 +37,25 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-27 — `Content`, **Tidy** (with a compact count badge) and **Match
+  JD** now share one nowrap row at 390px: both pills use the shared `h-8
+  px-2.5 text-xs whitespace-nowrap` treatment with a 44px coarse-pointer
+  target. The renamed **Tidy bullets** modal opens with plain copy and groups
+  findings into bordered cards: period fixes sit inside the mixed-periods card,
+  repeated verbs collapse into one card of `Verb ×N` chips that jump to the
+  offending entry through `ResumeLintFinding.target` → `onJumpToEntry` →
+  `revealEntry`, and other cards show only two snippets. `PHONE_PATTERN` now
+  matches Indian `+91 63699 40501` 5+5 numbers in full instead of leaking a
+  trailing digit into the headline. Verified `npm run typecheck`, `npm test`
+  (1236 pass, 107 files), `npm run lint`. Files:
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/contentHeaderAction.ts`,
+  `src/components/shared/CenteredModal.tsx`, `src/lib/lint/resumeLint.ts`
+  (+ test), `src/lib/import/pasteResume.ts` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains sandbox-blocked, so the 390px
+  one-row geometry and jump-link scroll are browser-unverified.
 
 - [x] 2026-11-27 — Fit-to-1-page now keeps resumes larger and fuller, reclaims
   vertical margin, and releases itself. The fit curve uses a damped 0.72 height

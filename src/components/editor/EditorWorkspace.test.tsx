@@ -481,10 +481,10 @@ describe("EditorWorkspace", () => {
     expect(group).toHaveClass("flex", "flex-col", "gap-2");
   });
 
-  it("gives Bullet polish and Match JD matching quiet pill styling", async () => {
+  it("gives Tidy and Match JD matching quiet pill styling on one row", async () => {
     await renderReadyWorkspace();
 
-    const bullet = screen.getByRole("button", { name: /Bullet polish:/ });
+    const bullet = screen.getByRole("button", { name: /Tidy:/ });
     const match = screen.getByRole("button", {
       name: "Match to a job description",
     });
@@ -494,11 +494,22 @@ describe("EditorWorkspace", () => {
         "rounded-full",
         "border-line",
         "bg-surface",
-        "min-h-9",
+        "h-8",
+        "px-2.5",
         "text-xs",
+        "whitespace-nowrap",
+        "pointer-coarse:h-11",
       );
       expect(trigger).not.toHaveClass("bg-primary");
     }
+
+    // Content, Tidy and Match JD share a nowrap row at 390px; only the
+    // descriptive line below is allowed to wrap.
+    const titleRow = bullet.closest("[data-content-title-row]");
+    expect(titleRow?.className).toContain("flex");
+    const actions = titleRow?.lastElementChild;
+    expect(actions?.className).toContain("flex-nowrap");
+    expect(actions?.className).not.toContain("flex-wrap");
 
     // The job-description trigger used to be the only white, semibold pill.
     expect(match).not.toHaveClass("bg-white", "font-semibold");
@@ -603,7 +614,7 @@ describe("EditorWorkspace", () => {
     );
     // The zero-AI bullet check sits beside Match JD in the same row.
     expect(titleRow).toContainElement(
-      screen.getByRole("button", { name: /Bullet polish:/ }),
+      screen.getByRole("button", { name: /Tidy:/ }),
     );
 
     await user.click(trigger);
@@ -660,6 +671,41 @@ describe("EditorWorkspace", () => {
         document.querySelector('[data-section-toggle="experience"]'),
       ).toHaveAttribute("aria-expanded", "true");
       expect(document.getElementById("editor-entry-exp-trim")).not.toBeNull();
+    });
+  });
+
+  it("jumps from a Tidy repeated-verb card to its entry in Content", async () => {
+    const doc = createEmptyResume();
+
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "exp-tidy",
+        company: "Acme",
+        position: "Engineer",
+        summary:
+          "<ul><li>Collected data.</li><li>Collected reports.</li></ul>",
+      }),
+    ];
+    useResumeStore.setState({ doc });
+
+    await renderReadyWorkspace();
+
+    fireEvent.click(screen.getByRole("button", { name: /Tidy:/ }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Jump to entry for repeated “Collected” bullets",
+      }),
+    );
+
+    expect(screen.getByRole("tab", { name: "Content" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-section-toggle="experience"]'),
+      ).toHaveAttribute("aria-expanded", "true");
+      expect(document.getElementById("editor-entry-exp-tidy")).not.toBeNull();
     });
   });
 
