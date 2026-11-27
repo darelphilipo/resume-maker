@@ -54,6 +54,10 @@ _empty
   2. **Scrub known PII from `Summary` & bullet prose:** Build a deterministic replacement map from the resume's own structured fields (`basics.name` → `"Alex Taylor"`, `basics.email`, `basics.phone`, each `experience[].company` → its mapped `"Company A"`, each `education[].school` → `"University A"`, each `volunteer[].organization` → `"Organization A"`, sorted longest-first with word boundaries and skipping short <3-char strings) and apply it HTML-safely (text nodes only, never inside tags) across `summary.content` and entry `summary`/`highlights`—so mentions like `"at Wells Fargo"` automatically become `"at Company A"`.
   3. Add unit tests verifying `"at Wells Fargo"` in Summary/bullets, `awards.awarder`, `volunteer.organization`/`location`, `publications.website`, and `customSections.url`/`location` all redact cleanly.
 
+- [ ] P1: Fix `removeTrailingPeriod` HTML tag-drop bug in `Bullet polish` and tighten `Match JD` tokenization/stopwords (`src/lib/lint/resumeLint.ts`, `src/lib/keywords/jdMatch.ts`).
+  1. **Fix `removeTrailingPeriod` (`resumeLint.ts`):** Wrap the trailing closing-tag sequence in a single outer capture group (`((?:\s*(?:<\s*br\s*\/?>|<\/[^>]+>)\s*)*)$`) so nested tags like `<strong>text.</strong></p>` are preserved intact, and match only a single trailing period (`(?<!\.)\.`) so ellipses (`...`) aren't stripped.
+  2. **Avoid false-positive `"I"` hits (`resumeLint.ts`):** Exclude `"i.e."`, `"I/O"`, and Roman numerals (`Phase I`, `Part I`) from `FIRST_PERSON_PATTERN`.
+  3. **Tighten `Match JD` (`jdMatch.ts`):** Preserve common slash tech tokens (`CI/CD`, `UI/UX`, `TCP/IP`, `A/B`), skip plural `s`-stripping on dotted tokens like `node.js` / `next.js`, and add JD boilerplate (`qualifications`, `responsibilities`, `preferred`, `bachelor`, `degree`, `equal`, `opportunity`, `salary`, `benefits`) to `STOPWORDS`. Add unit tests for nested-tag period removal and `CI/CD` / `node.js` matching.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
