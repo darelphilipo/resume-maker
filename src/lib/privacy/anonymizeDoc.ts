@@ -87,6 +87,115 @@ function replaceWhenPresent(value: string, replacement: string): string {
   return value.trim() === "" ? value : replacement;
 }
 
+/** Terms shorter than this are too ambiguous to rewrite in prose safely. */
+const MIN_PROSE_PII_LENGTH = 3;
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Rewrites known personal terms inside HTML text nodes while leaving every tag
+ * (and therefore every attribute, class, or href) untouched. The HTML is split
+ * into tag/text chunks so a company name that also appears in an attribute is
+ * never rewritten.
+ */
+function scrubHtmlTextNodes(
+  html: string,
+  pattern: RegExp | null,
+  replacements: Map<string, string>,
+): string {
+  if (html.trim() === "" || pattern === null) {
+    return html;
+  }
+
+  return html
+    .split(/(<[^>]*>)/g)
+    .map((chunk, index) => {
+      if (index % 2 === 1) {
+        return chunk;
+      }
+
+      return chunk.replace(
+        pattern,
+        (match: string, prefix: string, term: string) => {
+          const replacement = replacements.get(term.toLowerCase());
+
+          return `${prefix}${replacement ?? term}`;
+        },
+      );
+    })
+    .join("");
+}
+
+/**
+ * Builds a single-pass scrubber from the resume's own structured fields. Terms
+ * are deduplicated case-insensitively, sorted longest-first so a full employer
+ * name wins over a shorter prefix, and matched on alphanumeric boundaries so
+ * "Acme" never rewrites "Acmeology". The replacements reuse the same stable
+ * labels as the structured redaction (`Alex Taylor`, `Company A`, ...).
+ */
+function buildProseScrubber(
+  doc: ResumeDocument,
+  labels: {
+    companyLabel: (value: string) => string;
+    schoolLabel: (value: string) => string;
+    organizationLabel: (value: string) => string;
+    awarderLabel: (value: string) => string;
+  },
+): (html: string) => string {
+  const replacements = new Map<string, string>();
+
+  const add = (value: string, replacement: string): void => {
+    const term = value.trim();
+
+    if (term.length < MIN_PROSE_PII_LENGTH) {
+      return;
+    }
+
+    const key = term.toLowerCase();
+
+    if (!replacements.has(key)) {
+      replacements.set(key, replacement);
+    }
+  };
+
+  add(doc.basics.name, ANONYMIZED_NAME);
+  add(doc.basics.email, ANONYMIZED_EMAIL);
+  add(doc.basics.phone, ANONYMIZED_PHONE);
+
+  for (const item of doc.sections.experience.items) {
+    add(item.company, labels.companyLabel(item.company));
+  }
+
+  for (const item of doc.sections.education.items) {
+    add(item.school, labels.schoolLabel(item.school));
+  }
+
+  for (const item of doc.sections.volunteer.items) {
+    add(item.organization, labels.organizationLabel(item.organization));
+  }
+
+  for (const item of doc.sections.awards.items) {
+    add(item.awarder, labels.awarderLabel(item.awarder));
+  }
+
+  if (replacements.size === 0) {
+    return (html: string): string => html;
+  }
+
+  const terms = [...replacements.keys()].sort(
+    (a, b) => b.length - a.length || (a < b ? -1 : a > b ? 1 : 0),
+  );
+  const pattern = new RegExp(
+    `(^|[^\\p{L}\\p{N}])(${terms.map(escapeRegExp).join("|")})(?![\\p{L}\\p{N}])`,
+    "giu",
+  );
+
+  return (html: string): string =>
+    scrubHtmlTextNodes(html, pattern, replacements);
+}
+
 function replaceOptionalWhenPresent(
   value: string | undefined,
   replacement: string,
@@ -140,14 +249,23 @@ function entityAnonymizer(prefix: string): (value: string) => string {
 export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
   const companyLabel = entityAnonymizer("Company");
   const schoolLabel = entityAnonymizer("University");
+  const awarderLabel = entityAnonymizer("Organization");
+  const volunteerOrganizationLabel = entityAnonymizer("Organization");
   const referenceNameLabel = entityAnonymizer("Reference");
   const referencePositionLabel = entityAnonymizer("Position");
+  const scrubProse = buildProseScrubber(doc, {
+    companyLabel,
+    schoolLabel,
+    organizationLabel: volunteerOrganizationLabel,
+    awarderLabel,
+  });
 
   return {
     ...doc,
     picture: {
       ...doc.picture,
       hidden: true,
+      url: "",
     },
     basics: {
       ...doc.basics,
@@ -166,6 +284,10 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
           ANONYMIZED_WEBSITE_LABEL,
         ),
       },
+    },
+    summary: {
+      ...doc.summary,
+      content: scrubProse(doc.summary.content),
     },
     sections: {
       ...doc.sections,
@@ -189,6 +311,7 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
             item.location,
             ANONYMIZED_ENTRY_LOCATION,
           ),
+          summary: scrubProse(item.summary),
         })),
       },
       education: {
@@ -200,16 +323,19 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
             item.location,
             ANONYMIZED_ENTRY_LOCATION,
           ),
+          summary: scrubProse(item.summary),
         })),
       },
       volunteer: {
         ...doc.sections.volunteer,
         items: doc.sections.volunteer.items.map((item) => ({
           ...item,
+          organization: volunteerOrganizationLabel(item.organization),
           location: replaceWhenPresent(
             item.location,
             ANONYMIZED_ENTRY_LOCATION,
           ),
+          summary: scrubProse(item.summary),
         })),
       },
       projects: {
@@ -217,6 +343,7 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
         items: doc.sections.projects.items.map((item) => ({
           ...item,
           url: replaceWhenPresent(item.url, ANONYMIZED_ENTRY_URL),
+          description: scrubProse(item.description),
         })),
       },
       certifications: {
@@ -226,11 +353,20 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
           url: anonymizeCertificationUrl(item.url),
         })),
       },
+      awards: {
+        ...doc.sections.awards,
+        items: doc.sections.awards.items.map((item) => ({
+          ...item,
+          awarder: awarderLabel(item.awarder),
+          summary: scrubProse(item.summary),
+        })),
+      },
       publications: {
         ...doc.sections.publications,
         items: doc.sections.publications.items.map((item) => ({
           ...item,
           url: replaceWhenPresent(item.url, ANONYMIZED_ENTRY_URL),
+          summary: scrubProse(item.summary),
         })),
       },
       references: {
@@ -244,6 +380,7 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
           position: referencePositionLabel(item.position),
           phone: replaceWhenPresent(item.phone, ANONYMIZED_REFERENCE_PHONE),
           email: replaceWhenPresent(item.email, ANONYMIZED_REFERENCE_EMAIL),
+          summary: scrubProse(item.summary),
         })),
       },
     },
@@ -256,6 +393,7 @@ export function anonymizeResumeDoc(doc: ResumeDocument): ResumeDocument {
           ANONYMIZED_ENTRY_LOCATION,
         ),
         url: replaceOptionalWhenPresent(item.url, ANONYMIZED_ENTRY_URL),
+        description: scrubProse(item.description),
       })),
     })),
   };

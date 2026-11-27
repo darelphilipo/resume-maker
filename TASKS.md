@@ -23,13 +23,6 @@ _empty
 ## Queue (Ready for Next Run)
 ## Queue (Ready for Next Run)
 
-### P1 — Bug & Privacy Fixes
-
-- [ ] P1: Close remaining PII leaks in `Anonymize` across prose, optional sections, and custom sections (`src/lib/privacy/anonymizeDoc.ts`, `src/lib/privacy/anonymizeDoc.test.ts`).
-  1. **Redact optional & custom sections:** Anonymize `awards` (`awarder` → `"Organization A"`, `website`), `volunteer` (`organization`, `location` → `"City, ST"`, `website`), `publications` (`website`), `customSections` (`location`, `url`), and clear `basics.picture.url = ""` alongside `hidden: true`.
-  2. **Scrub known PII from `Summary` & bullet prose:** Build a deterministic replacement map from the resume's own structured fields (`basics.name` → `"Alex Taylor"`, `basics.email`, `basics.phone`, each `experience[].company` → its mapped `"Company A"`, each `education[].school` → `"University A"`, each `volunteer[].organization` → `"Organization A"`, sorted longest-first with word boundaries and skipping short <3-char strings) and apply it HTML-safely (text nodes only, never inside tags) across `summary.content` and entry `summary`/`highlights`—so mentions like `"at Wells Fargo"` automatically become `"at Company A"`.
-  3. Add unit tests verifying `"at Wells Fargo"` in Summary/bullets, `awards.awarder`, `volunteer.organization`/`location`, `publications.website`, and `customSections.url`/`location` all redact cleanly.
-
 ### P2 — Parser, Fit Math & Review-Tools Polish
 
 - [ ] P2: Harden PDF & paste parsing against real-world LaTeX, Word, Canva, and Indian resume edge cases (`src/lib/import/pdfResume.ts`, `src/lib/import/pdfLayout.ts`, `src/lib/import/pasteResume.ts`, `src/lib/import/featureScoring.ts`).
@@ -49,6 +42,20 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-27 — Closed the remaining `Anonymize` PII leaks. Review mode now
+  redacts `awards.awarder` (its own `Organization A/B…` namespace), volunteer
+  `organization`, and clears `picture.url` while forcing the picture hidden.
+  A new longest-first, boundary-aware term map built from the document's own
+  name/email/phone, employers, schools, volunteer organizations, and award
+  issuers rewrites **text nodes only** in `summary.content` and every rich-text
+  entry field, so prose like "at Wells Fargo" becomes "at Company A" while tags,
+  attributes, and longer words (`Acmeology`) stay untouched; terms under 3
+  characters are skipped and one combined alternation prevents re-scrubbing.
+  Verified `npm run typecheck`, `npm test` (1198 pass, 107 files),
+  `npm run lint`. Files:
+  `src/lib/privacy/anonymizeDoc.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-27 — Fixed `Bullet polish` period removal and tightened `Match JD`.
   `removeTrailingPeriod` now matches only a single final period with

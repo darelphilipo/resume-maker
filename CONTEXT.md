@@ -1868,6 +1868,25 @@ rediscover.
          form the matcher may see (`bachelor`/`bachelors`, `degree`/`degrees`,
          `salary`/`salaries`) because `isStopword` is an exact lookup.
 
+     117. **Anonymize scrubs prose from its own structured field map.** Review
+         mode already replaces whole structured fields (#58/#63), but a Summary
+         or bullet can still name an employer (`"at Wells Fargo"`). After
+         building the structured clone, `anonymizeResumeDoc` derives one
+         longest-first term map from `basics.name`/`email`/`phone`, every
+         experience company, education school, volunteer organization, and
+         award issuer, then rewrites **text nodes only** in `summary.content`
+         and every rich-text entry field (experience/education/awards/volunteer/
+         publications/references summaries, project and custom descriptions).
+         Split on `/(<[^>]*>)/g` so tags/attributes are never touched; match on
+         `\p{L}\p{N}` boundaries with the `u` flag so `Acme` cannot rewrite
+         `Acmeology`; skip terms under 3 characters as too ambiguous; dedupe
+         case-insensitively; and use one combined alternation so an inserted
+         label can never be re-matched. `awards.awarder` and volunteer
+         `organization` get independent `Organization A/B…` namespaces, while
+         the picture URL is cleared (`""`) alongside `hidden: true`. Keep this
+         in sync with `RICH_TEXT_ITEM_FIELDS` in `richtext/sanitize.ts` when a
+         new rich-text field is added.
+
 ## Verification and tooling
 
 ```powershell
@@ -1932,6 +1951,27 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-27 — Anonymize prose scrub + optional-section redaction
+- Task: top Queue item (P1), moved to In Progress first. All three sub-items
+  were open.
+- Change: `anonymizeResumeDoc` now redacts `awards.awarder` (independent
+  `Organization A/B…` namespace), volunteer `organization`, and clears
+  `picture.url` while forcing `hidden: true`. A new longest-first,
+  boundary-aware term map built from the doc's own name/email/phone, employers,
+  schools, volunteer organizations, and award issuers rewrites **text nodes
+  only** in `summary.content` plus every rich-text entry field, so `"at Wells
+  Fargo"` becomes `"at Company A"` without touching tags or attributes.
+  Terms under 3 chars are skipped, matches are case-insensitive and
+  deduplicated, and one combined alternation prevents re-scrubbing an inserted
+  label. Decision #117; README feature tour updated.
+- Tests: new cases for optional-section redaction/picture clearing, prose
+  scrub in summary + entry bullets (including email/phone), ATS output, tag
+  and attribute safety, short-term skipping, and longest-employer precedence.
+  `npm run typecheck` clean; `npm test` 1198 pass across 107 files;
+  `npm run lint` clean.
+- Files: `src/lib/privacy/anonymizeDoc.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 ### 2026-11-27 — Bullet-polish period removal + Match JD tokenization tightened
 - Task: top Queue item (P1), moved to In Progress first. All three sub-items
@@ -2157,35 +2197,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Note: Playwright remains sandbox-blocked, so 390px geometry is
   browser-unverified; a `current: true` project with no end month still needs a
   real browser print check.
-
-### 2026-11-26 — RichTextField: inline links, one-row toolbar, new-bullet formulas
-- Task: top Queue item (P1), moved to In Progress first; all four sub-items were
-  still open.
-- Change: `window.prompt` became an inline URL bar (URL input + Apply + Remove
-  link when an href exists, Enter/Escape support) below the toolbar. All eight
-  controls now stay on one row — 32px targets on fine pointers, 40px targets in
-  a nowrap horizontal-scroll strip on touch — and `Writing helpers` starts
-  collapsed everywhere. Impact-formula chips call `splitListItem("listItem")`
-  before inserting when tapped at the end of a finished bullet, via the pure
-  `shouldStartNewBullet` guard. A shared `label` prop gives Projects
-  **Highlights**, Education **Summary**, generic rich fields their descriptor
-  label, and Custom **Description** a visible label. Decision #109 supersedes
-  the old no-overflow toolbar rule in #31; README feature tour updated.
-- Tests: new cases for the link bar (no prompt, Apply/Remove/Enter/Escape),
-  one-row toolbar and collapsed helpers, new-bullet vs inline insertion, the
-  pure guard, and visible labels in Projects/Education/generic/Custom.
-  `npm run typecheck` clean; `npm test` 1163 pass across 106 files;
-  `npm run lint` clean.
-- Files: `src/components/editor/RichTextField.tsx` (+ test),
-  `src/lib/richtext/bulletFormulas.ts` (+ test),
-  `src/components/editor/ProjectsForm.tsx` (+ test),
-  `src/components/editor/EducationForm.tsx` (+ test),
-  `src/components/editor/GenericSectionForm.tsx` (+ test),
-  `src/components/editor/CustomSectionForm.tsx` (+ new test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the 390px toolbar geometry and
-  the real TipTap list split are browser-unverified; jsdom asserts the command
-  calls and pure guard instead.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

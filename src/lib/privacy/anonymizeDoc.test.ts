@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildAtsText } from "@/lib/ats/atsText";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
+  AwardItemSchema,
   CertificationItemSchema,
   CustomSectionSchema,
   EducationItemSchema,
@@ -430,11 +431,217 @@ describe("anonymizeResumeDoc", () => {
     expect(atsText).not.toContain("grace@navy.mil");
   });
 
+  it("redacts optional sections and clears the saved picture URL", () => {
+    const doc = createEmptyResume();
+
+    doc.picture = {
+      ...doc.picture,
+      hidden: false,
+      url: "https://example.com/jordan.jpg",
+    };
+    doc.sections.awards.items = [
+      AwardItemSchema.parse({
+        id: "award-1",
+        title: "Engineer of the Year",
+        awarder: "IEEE",
+        summary: "<p>Honored by IEEE.</p>",
+      }),
+      AwardItemSchema.parse({
+        id: "award-2",
+        title: "Hackathon winner",
+        awarder: "Globex",
+      }),
+    ];
+    doc.sections.volunteer.items = [
+      VolunteerItemSchema.parse({
+        id: "volunteer-1",
+        organization: "Food Bank",
+        position: "Volunteer",
+        location: "San Jose, CA",
+      }),
+    ];
+    doc.sections.publications.items = [
+      PublicationItemSchema.parse({
+        id: "publication-1",
+        title: "Local-first resumes",
+        publisher: "ACM",
+        url: "https://github.com/jordan/paper",
+      }),
+    ];
+    doc.customSections = [
+      CustomSectionSchema.parse({
+        id: "custom-1",
+        title: "Speaking",
+        items: [
+          {
+            id: "custom-item-1",
+            name: "Browser-only tools",
+            location: "Portland, OR",
+            url: "https://github.com/jordan/talks",
+          },
+        ],
+      }),
+    ];
+
+    const anonymized = anonymizeResumeDoc(doc);
+
+    expect(anonymized.picture).toMatchObject({ hidden: true, url: "" });
+    expect(anonymized.sections.awards.items.map((item) => item.awarder)).toEqual(
+      ["Organization A", "Organization B"],
+    );
+    expect(anonymized.sections.volunteer.items[0]).toMatchObject({
+      organization: "Organization A",
+      location: ANONYMIZED_ENTRY_LOCATION,
+    });
+    expect(anonymized.sections.publications.items[0].url).toBe(
+      ANONYMIZED_ENTRY_URL,
+    );
+    expect(anonymized.customSections[0].items[0]).toMatchObject({
+      location: ANONYMIZED_ENTRY_LOCATION,
+      url: ANONYMIZED_ENTRY_URL,
+    });
+    expect(JSON.stringify(anonymized)).not.toContain("IEEE");
+    expect(JSON.stringify(anonymized)).not.toContain("Food Bank");
+    expect(JSON.stringify(anonymized)).not.toContain("San Jose");
+    expect(JSON.stringify(anonymized)).not.toContain("jordan");
+  });
+
+  it("scrubs known PII from summary and entry prose", () => {
+    const doc = createEmptyResume();
+
+    doc.basics.name = "Jordan Alvarez";
+    doc.basics.email = "jordan@acme.com";
+    doc.basics.phone = "+1 415 555 0100";
+    doc.summary.content =
+      "<p>Jordan Alvarez built tools at Wells Fargo.</p>" +
+      "<ul><li>Joined Wells Fargo in 2019</li>" +
+      "<li>Contact jordan@acme.com or +1 415 555 0100.</li></ul>";
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "experience-1",
+        company: "Wells Fargo",
+        position: "Engineer",
+        summary:
+          "<p>Mentored at State University and Food Bank.</p>" +
+          "<ul><li>wells fargo recognized the program.</li></ul>",
+      }),
+    ];
+    doc.sections.education.items = [
+      EducationItemSchema.parse({
+        id: "education-1",
+        school: "State University",
+        degree: "BSc",
+        summary: "<p>State University honors graduate.</p>",
+      }),
+    ];
+    doc.sections.volunteer.items = [
+      VolunteerItemSchema.parse({
+        id: "volunteer-1",
+        organization: "Food Bank",
+        position: "Volunteer",
+        summary: "<p>Weekends at Food Bank.</p>",
+      }),
+    ];
+
+    const anonymized = anonymizeResumeDoc(doc);
+
+    expect(anonymized.summary.content).toBe(
+      "<p>Alex Taylor built tools at Company A.</p>" +
+        `<ul><li>Joined Company A in 2019</li>` +
+        `<li>Contact ${ANONYMIZED_EMAIL} or ${ANONYMIZED_PHONE}.</li></ul>`,
+    );
+    expect(anonymized.sections.experience.items[0].summary).toBe(
+      "<p>Mentored at University A and Organization A.</p>" +
+        "<ul><li>Company A recognized the program.</li></ul>",
+    );
+    expect(anonymized.sections.education.items[0].summary).toBe(
+      "<p>University A honors graduate.</p>",
+    );
+    expect(anonymized.sections.volunteer.items[0].summary).toBe(
+      "<p>Weekends at Organization A.</p>",
+    );
+    expect(JSON.stringify(anonymized)).not.toContain("Jordan Alvarez");
+    expect(JSON.stringify(anonymized)).not.toContain("jordan@acme.com");
+    expect(JSON.stringify(anonymized)).not.toContain("+1 415 555 0100");
+    expect(JSON.stringify(anonymized)).not.toContain("Wells Fargo");
+    expect(JSON.stringify(anonymized)).not.toContain("State University");
+    expect(JSON.stringify(anonymized)).not.toContain("Food Bank");
+
+    const atsText = buildAtsText(anonymized);
+
+    expect(atsText).toContain("Alex Taylor");
+    expect(atsText).toContain("Company A");
+    expect(atsText).not.toContain("Wells Fargo");
+    expect(atsText).not.toContain("Food Bank");
+  });
+
+  it("scrubs only whole text-node matches and skips short terms", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "experience-1",
+        company: "Acme",
+        position: "Engineer",
+        summary:
+          '<p class="Acme">Acme helped Acmeology and Acme.</p>',
+      }),
+      ExperienceItemSchema.parse({
+        id: "experience-2",
+        company: "AB",
+        position: "Analyst",
+        summary: "<p>AB worked with AB.</p>",
+      }),
+    ];
+
+    const anonymized = anonymizeResumeDoc(doc);
+
+    expect(anonymized.sections.experience.items[0].company).toBe("Company A");
+    expect(anonymized.sections.experience.items[1].company).toBe("Company B");
+    // The attribute keeps the literal text, and a longer word is not a match.
+    expect(anonymized.sections.experience.items[0].summary).toBe(
+      '<p class="Acme">Company A helped Acmeology and Company A.</p>',
+    );
+    // A two-character term is too ambiguous to rewrite in prose.
+    expect(anonymized.sections.experience.items[1].summary).toBe(
+      "<p>AB worked with AB.</p>",
+    );
+  });
+
+  it("scrubs the longest matching employer before a shorter prefix", () => {
+    const doc = createEmptyResume();
+
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "experience-1",
+        company: "Wells Fargo Bank",
+        position: "Engineer",
+        summary: "<p>Worked at Wells Fargo Bank.</p>",
+      }),
+      ExperienceItemSchema.parse({
+        id: "experience-2",
+        company: "Wells Fargo",
+        position: "Analyst",
+        summary: "<p>Earlier, Wells Fargo.</p>",
+      }),
+    ];
+
+    const anonymized = anonymizeResumeDoc(doc);
+
+    expect(anonymized.sections.experience.items[0].summary).toBe(
+      "<p>Worked at Company A.</p>",
+    );
+    expect(anonymized.sections.experience.items[1].summary).toBe(
+      "<p>Earlier, Company B.</p>",
+    );
+  });
+
   it("does not mutate the saved document", () => {
     const doc = createEmptyResume();
 
     doc.basics.name = "Jordan Alvarez";
     doc.basics.email = "jordan@acme.com";
+    doc.summary.content = "<p>Jordan Alvarez at Acme.</p>";
     doc.picture = {
       ...doc.picture,
       hidden: false,
@@ -446,6 +653,7 @@ describe("anonymizeResumeDoc", () => {
         company: "Acme",
         position: "Engineer",
         location: "Oakland, CA",
+        summary: "<p>Worked at Acme.</p>",
       }),
     ];
     doc.sections.education.items = [
@@ -467,9 +675,14 @@ describe("anonymizeResumeDoc", () => {
 
     expect(doc.basics.name).toBe("Jordan Alvarez");
     expect(doc.basics.email).toBe("jordan@acme.com");
+    expect(doc.summary.content).toBe("<p>Jordan Alvarez at Acme.</p>");
     expect(doc.picture.hidden).toBe(false);
+    expect(doc.picture.url).toBe("https://example.com/jordan.jpg");
     expect(doc.sections.experience.items[0].company).toBe("Acme");
     expect(doc.sections.experience.items[0].location).toBe("Oakland, CA");
+    expect(doc.sections.experience.items[0].summary).toBe(
+      "<p>Worked at Acme.</p>",
+    );
     expect(doc.sections.education.items[0].school).toBe("State University");
     expect(doc.sections.education.items[0].location).toBe("Berkeley, CA");
     expect(doc.sections.projects.items[0].url).toBe(

@@ -358,10 +358,14 @@ in control of every line, and your data stays on your device.
   with no nested box to fight against on a phone.
 - **Anonymize for review**: open **Review** in the preview bar and switch on
   **Anonymize** to replace your name, contact details, website, profile links,
-  photo, reference names, roles, employers, reference phone and email, and
-  company or school names with neutral placeholders. Each role's,
-  school's, volunteer entry's, and custom entry's location is replaced too, so
-  personal geography cannot give you away. Project, publication,
+  photo, reference names, roles, employers, reference phone and email, company
+  or school names, award issuers, and volunteer organizations with neutral
+  placeholders. Mentions of your name, email, phone, employers, schools,
+  volunteer organizations, and award issuers inside your summary and bullet
+  points are rewritten too, so prose such as *"at Wells Fargo"* becomes *"at
+  Company A"* without changing your formatting. Each role's, school's,
+  volunteer entry's, and custom entry's location is replaced too, so personal
+  geography cannot give you away. Project, publication,
   and custom-section links are replaced as well, so a username inside a URL
   cannot leak; certification links keep a recognizable public issuer such as
    Credly, AWS, Scrum, or Coursera while the personal badge path is stripped. A
