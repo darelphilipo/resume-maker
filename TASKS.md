@@ -49,6 +49,11 @@ _empty
   2. **Accurate summary copy (`bulletMetrics.ts`):** Update `summarizeBulletIssues` so bullets flagged for `> 3 lines` (under 240 chars) say `"long bullets (4+ lines)"` instead of always saying `"240+ characters"`, and only count `reclaimableLines` when `lines > 3` or orphan-wrapped.
   3. **Calm 1-page header (`ReviewMenu.tsx`):** Keep `Trim tips` available inside `Review tools`, but only show the yellow numeric badge on the `Review ▾` trigger button when `pageCount > 1` (when reclaiming lines actually helps fit 1 page).
 
+- [ ] P1: Close remaining PII leaks in `Anonymize` across prose, optional sections, and custom sections (`src/lib/privacy/anonymizeDoc.ts`, `src/lib/privacy/anonymizeDoc.test.ts`).
+  1. **Redact optional & custom sections:** Anonymize `awards` (`awarder` → `"Organization A"`, `website`), `volunteer` (`organization`, `location` → `"City, ST"`, `website`), `publications` (`website`), `customSections` (`location`, `url`), and clear `basics.picture.url = ""` alongside `hidden: true`.
+  2. **Scrub known PII from `Summary` & bullet prose:** Build a deterministic replacement map from the resume's own structured fields (`basics.name` → `"Alex Taylor"`, `basics.email`, `basics.phone`, each `experience[].company` → its mapped `"Company A"`, each `education[].school` → `"University A"`, each `volunteer[].organization` → `"Organization A"`, sorted longest-first with word boundaries and skipping short <3-char strings) and apply it HTML-safely (text nodes only, never inside tags) across `summary.content` and entry `summary`/`highlights`—so mentions like `"at Wells Fargo"` automatically become `"at Company A"`.
+  3. Add unit tests verifying `"at Wells Fargo"` in Summary/bullets, `awards.awarder`, `volunteer.organization`/`location`, `publications.website`, and `customSections.url`/`location` all redact cleanly.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
