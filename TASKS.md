@@ -56,6 +56,55 @@ _empty
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-27 — Desktop now gives the live resume the stage: the grid is
+  `lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]` with `lg:px-4`, so the center
+  Preview gains ~72px, and its heading sits on the same 16px top baseline as
+  **Content** and **Design** (`lg:items-start lg:px-4 lg:pt-4`) while a tighter
+  gap and `lg:py-2` lift Page 1 higher. A new `.subtle-scroll` utility keeps all
+  three independently scrolling columns' scrollbars thin and low-contrast on
+  Windows instead of three chunky gray rails. Verified `npm run typecheck`,
+  `npm test` (1241 pass, 108 files), `npm run lint`. Files:
+  `src/app/globals.css` (+ new `subtleScrollCss.test.ts`),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  Playwright remains sandbox-blocked, so the 1280px baseline, widths, and
+  scrollbar gutters are browser-unverified.
+
+- [x] 2026-11-27 — The Preview bar's `Visual | ATS` switch is now pinned to the
+  left edge instead of travelling with the right-aligned status cluster. The
+  `[data-preview-mode-header]` keeps `justify-between` with two flex children: a
+  `shrink-0` `[data-preview-mode-anchor]` holding the desktop `Preview` heading
+  plus the mode group (flush-left on phones) and a `shrink-0`
+  `[data-preview-actions]` group holding the page label / `Fit 1p` pill /
+  `Review ▾`, so an active Review dot, a changed page count, or a mode switch
+  cannot slide the toggle horizontally. Verified `npm run typecheck`,
+  `npm test` (1237 pass, 107 files), `npm run lint`. Files:
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  `LiveCanvasViewport.tsx` was inspected but needed no markup change (its chrome
+  was lifted out in Decision #86). Playwright remains sandbox-blocked, so the
+  real 390px/1280px x-position is browser-unverified.
+
+- [x] 2026-11-27 — `Content`, **Tidy** (with a compact count badge) and **Match
+  JD** now share one nowrap row at 390px: both pills use the shared `h-8
+  px-2.5 text-xs whitespace-nowrap` treatment with a 44px coarse-pointer
+  target. The renamed **Tidy bullets** modal opens with plain copy and groups
+  findings into bordered cards: period fixes sit inside the mixed-periods card,
+  repeated verbs collapse into one card of `Verb ×N` chips that jump to the
+  offending entry through `ResumeLintFinding.target` → `onJumpToEntry` →
+  `revealEntry`, and other cards show only two snippets. `PHONE_PATTERN` now
+  matches Indian `+91 63699 40501` 5+5 numbers in full instead of leaking a
+  trailing digit into the headline. Verified `npm run typecheck`, `npm test`
+  (1236 pass, 107 files), `npm run lint`. Files:
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/contentHeaderAction.ts`,
+  `src/components/shared/CenteredModal.tsx`, `src/lib/lint/resumeLint.ts`
+  (+ test), `src/lib/import/pasteResume.ts` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains sandbox-blocked, so the 390px
+  one-row geometry and jump-link scroll are browser-unverified.
+
 - [x] 2026-11-27 — Fit-to-1-page now keeps resumes larger and fuller, reclaims
   vertical margin, and releases itself. The fit curve uses a damped 0.72 height
   ratio instead of the linear ratio, the readable floor is

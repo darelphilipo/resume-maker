@@ -176,6 +176,8 @@ describe("analyzeResumeLint", () => {
     expect(repeated[0]).toMatchObject({
       count: 2,
       title: "Repeated opening verb “Built”",
+      verb: "Built",
+      target: { sectionId: "experience", entryId: "exp-1" },
     });
     expect(report.repeatedVerbCount).toBe(2);
   });

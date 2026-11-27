@@ -231,8 +231,11 @@ const BULLET_PREFIX = /^[-*•▪◦●○■□‣⁃]\s+/;
 const INLINE_HEADING = /^([^:]{1,48}):\s+(\S.*)$/;
 const EDGE_SEPARATORS = /^[\s|•·,;:–—-]+|[\s|•·,;:–—-]+$/g;
 const EMAIL_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
+// Indian numbers are commonly written `+91 63699 40501` (country code plus
+// 5+5 digits). Try that shape first: the generic pattern groups 6-3-4 and
+// stops one digit early, leaking the last digit into the headline.
 const PHONE_PATTERN =
-  /(?:\+?\d{1,3}[\s.-]?)?(?:\(\d{2,4}\)|\d{2,4})[\s.-]?\d{3,4}(?:[\s.-]?\d{3,4})?/;
+  /(?:\+91[\s.-]?)?[6-9]\d{4}[\s.-]\d{5}|(?:\+?\d{1,3}[\s.-]?)?(?:\(\d{2,4}\)|\d{2,4})[\s.-]?\d{3,4}(?:[\s.-]?\d{3,4})?/;
 const URL_PATTERN =
   /\b(?:https?:\/\/|www\.)[^\s|•·,;]+|\b(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s|•·,;]*)?/gi;
 // Entry URLs are stricter than header URLs: a project keyword such as

@@ -23,6 +23,7 @@ import { PageOverflowBanner } from "@/components/preview/PageOverflowBanner";
 import { PrintTriggerButton } from "@/components/preview/PrintTriggerButton";
 import { ExportJsonButton } from "@/components/shared/ExportJsonButton";
 import type { BulletIssue, BulletLintReport } from "@/lib/lint/bulletMetrics";
+import type { ResumeLintEntryTarget } from "@/lib/lint/resumeLint";
 import { usePageLayout } from "@/lib/pagination/usePageLayout";
 import { anonymizeResumeDoc } from "@/lib/privacy/anonymizeDoc";
 import { isPrintTitleActive, resumeDocumentTitle } from "@/lib/print/printDocument";
@@ -205,23 +206,30 @@ export function EditorWorkspace() {
   const appliedFitPercent = Math.round(doc.metadata.page.fitScale * 100);
 
   /**
-   * A trim tip names the rendered bullet's section and entry. Reveal the
-   * Content tab on phones, expand that section, and let SectionList smooth
-   * scroll to the entry card so the user can cut the stray words immediately.
+   * Reveal one entry in Content: switch tabs on phones, expand its section and
+   * let SectionList smooth-scroll to the card. Shared by Trim tips and the
+   * jump-to-entry links in the Tidy dialog.
    */
-  function revealTrimIssue(issue: BulletIssue): void {
-    const sectionId = issue.sectionId;
-
-    if (!sectionId) {
-      return;
-    }
-
+  function revealEntry(sectionId: string, entryId: string | null): void {
     setActiveTab("content");
     setSectionFocus((current) => ({
       id: sectionId,
-      entryId: issue.entryId ?? null,
+      entryId,
       nonce: (current?.nonce ?? 0) + 1,
     }));
+  }
+
+  /** A trim tip names the rendered bullet's section and entry. */
+  function revealTrimIssue(issue: BulletIssue): void {
+    if (!issue.sectionId) {
+      return;
+    }
+
+    revealEntry(issue.sectionId, issue.entryId ?? null);
+  }
+
+  function revealLintEntry(target: ResumeLintEntryTarget): void {
+    revealEntry(target.sectionId, target.entryId);
   }
 
   const liveName =
@@ -396,6 +404,8 @@ export function EditorWorkspace() {
    * `flex` because it owns a fixed-height column with its own scroller; using
    * one display utility (instead of layering `block`/`flex`) keeps `hidden`
    * authoritative for inactive tabs without depending on class order.
+   * `subtle-scroll` keeps each column's own scrollbar thin and low-contrast so
+   * Windows Chrome/Edge do not frame every panel in a chunky gray rail.
    */
   function panelClass(
     tab: EditorTab,
@@ -404,7 +414,7 @@ export function EditorWorkspace() {
   ): string {
     const visibility = activeTab === tab ? display : "hidden";
 
-    return `${visibility} lg:block ${orderClass} min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain`;
+    return `${visibility} lg:block ${orderClass} min-w-0 subtle-scroll lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain`;
   }
 
   return (
@@ -477,7 +487,7 @@ export function EditorWorkspace() {
           itself is a fixed 0×0, aria-hidden shell, so it adds no layout. */}
       {layout.measureLayer}
 
-      <main className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-5 lg:overflow-hidden">
+      <main className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 lg:grid lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem] lg:items-start lg:gap-5 lg:overflow-hidden lg:px-4">
         {/* Reordering entries moves focused DOM nodes; without disabling scroll
             anchoring here the browser can shift this column's scrollTop after
             EntryActions has restored it. */}
@@ -492,18 +502,18 @@ export function EditorWorkspace() {
         >
           <div className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-4 shadow-[0_2px_8px_rgba(23,40,57,0.04)]">
             <div data-content-header className="flex flex-col gap-2">
-              {/* Keep the title and its trigger on one row at every width; the
-                  descriptive line wraps below instead of pushing Match JD to a
-                  second row on phones. */}
+              {/* Content, Tidy and Match JD share one nowrap row at every
+                  width; the descriptive line wraps below instead of pushing
+                  either compact pill onto a second row at 390px. */}
               <div
                 data-content-title-row
                 className="flex items-center justify-between gap-2"
               >
-                <h2 className="font-serif text-xl font-semibold tracking-tight">
+                <h2 className="shrink-0 font-serif text-xl font-semibold tracking-tight">
                   Content
                 </h2>
-                <div className="flex flex-wrap items-center justify-end gap-1.5">
-                  <ResumeLintPopover doc={doc} />
+                <div className="flex flex-nowrap items-center justify-end gap-1.5">
+                  <ResumeLintPopover doc={doc} onJumpToEntry={revealLintEntry} />
                   <JdMatchDrawer doc={doc} compact />
                 </div>
               </div>
@@ -618,17 +628,30 @@ export function EditorWorkspace() {
             display: "flex",
           })} min-h-0 flex-1 flex-col [scrollbar-gutter:stable]`}
         >
-          <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-none">
+          <div className="flex min-h-0 flex-1 flex-col gap-2 lg:flex-none">
+            {/*
+             * At `lg` the mode row starts at the same 16px inset as the
+             * Content/Design card headings (card padding vs. this row's own
+             * padding), and the tighter gap lifts Page 1 toward their top edge.
+             */}
             <div
               data-preview-mode-header=""
-              className="editor-chrome z-10 flex min-h-10 shrink-0 flex-nowrap items-center justify-between gap-2 overflow-x-auto no-scrollbar border-b border-line/70 bg-background/95 px-1 backdrop-blur lg:sticky lg:top-0 lg:z-20 lg:min-h-14 lg:flex-wrap lg:overflow-visible"
+              className="editor-chrome z-10 flex min-h-10 shrink-0 flex-nowrap items-center justify-between gap-2 overflow-x-auto no-scrollbar border-b border-line/70 bg-background/95 px-1 backdrop-blur lg:sticky lg:top-0 lg:z-20 lg:min-h-14 lg:flex-wrap lg:items-start lg:overflow-visible lg:px-4 lg:pt-4"
             >
-              {/* The active bottom tab already names the Preview panel, so the
-                  heading only earns its space on desktop. */}
-              <h2 className="hidden font-serif text-xl font-semibold tracking-tight lg:block">
-                Preview
-              </h2>
-              <div className="ml-auto flex shrink-0 items-center justify-end gap-2">
+              {/*
+               * The mode switch owns the left edge: a changing page pill or
+               * Review badge can never slide `Visual | ATS` sideways when it
+               * lives in its own shrink-0 group. The heading only earns space
+               * on desktop, so phones get a flush-left switch.
+               */}
+              <div
+                data-preview-mode-anchor=""
+                className="flex shrink-0 items-center gap-2"
+              >
+                {/* The active bottom tab already names the Preview panel. */}
+                <h2 className="hidden font-serif text-xl font-semibold tracking-tight lg:block">
+                  Preview
+                </h2>
                 <div
                   role="group"
                   aria-label="Preview mode"
@@ -657,6 +680,15 @@ export function EditorWorkspace() {
                     ATS
                   </button>
                 </div>
+              </div>
+              {/*
+               * Status and Review actions sit on the right, so their badges
+               * can grow without nudging the mode anchor above.
+               */}
+              <div
+                data-preview-actions=""
+                className="flex shrink-0 items-center justify-end gap-2"
+              >
                 {/*
                  * One calm row carries the whole Preview status: quiet muted
                  * "1 page" text when the resume fits, or the page count plus a

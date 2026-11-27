@@ -1924,6 +1924,60 @@ rediscover.
           zero) from clearing a seeded fit in component tests. Both Reset
           controls title themselves `Reset fit (86% → 100%)`.
 
+120. **`Tidy` is a one-row Content action with card-based findings.**
+    `CONTENT_HEADER_ACTION_CLASS` is now an `h-8 ... px-2.5 text-xs
+    whitespace-nowrap` quiet pill with a `pointer-coarse:h-11` touch target, and
+    the Content header's action group is `flex-nowrap`, so **Content**, the
+    compact **Tidy N** count badge and **Match JD** share one row at 390px.
+    `ResumeLintPopover`'s modal title is **Tidy bullets**; its findings render as
+    bordered cards, period fixes live inside the `Mixed bullet periods` card
+    (with a fallback card when periods are already consistent), and repeated
+    verbs are one card of `Verb ×N` chips instead of quoted bullet walls. A chip
+    is a jump link: `ResumeLintFinding.target` carries `sectionId`/`entryId`
+    (plus `verb` for the chip label) from `collectResumeBullets`, and
+    `onJumpToEntry` closes the modal before `EditorWorkspace.revealEntry`
+    switches to Content, expands the section and focuses `editor-entry-<id>`
+    through `SectionList`. Render chips as plain spans when no handler is
+    passed. Keep the trigger's accessible name (`Tidy: N issues`) and the
+    `data-lint-card` ids in sync with the component tests. Separately,
+    `PHONE_PATTERN` tries an Indian `+91 63699 40501` (5+5) branch **before** the
+    generic 6-3-4 shape: the latter stopped one digit early and leaked the
+    trailing `1` into `basics.headline`.
+
+  121. **The Preview mode switch owns the left edge of the bar.**
+      `[data-preview-mode-header]` keeps `justify-between` but now has exactly
+      two flex children: `[data-preview-mode-anchor]` (a `shrink-0` group with
+      the desktop-only `Preview` heading and the `Visual | ATS` segmented
+      control, flush-left on phones) and `[data-preview-actions]` (a `shrink-0`
+      group with the `1 page` / `Fit 1p` status plus `Review ▾`). Previously the
+      mode group lived inside the one right-aligned `ml-auto` cluster, so a
+      wider Review badge or a changed page pill slid it sideways. Keep the two
+      groups separate and the anchor first/actions last: `justify-between` alone
+      cannot pin anything when the bar has a single flex child. `LiveCanvasViewport`
+      no longer owns any of this chrome (Decision #86), so it needs no markup
+      change. jsdom only sees the DOM/class contract; the real x-position is
+      guarded by the `layout-consistency` e2e case (browser-unverified here).
+
+   122. **Desktop columns are slim-scrolled, and the Preview heading shares the
+       card baseline.** `.subtle-scroll` in `globals.css` is the one utility for
+       all three independently scrolling desktop columns: `panelClass()` applies
+       it to `#panel-content`, `#panel-design`, and `#panel-preview`, so the
+       Firefox `scrollbar-width: thin` + `scrollbar-color` and the 6px WebKit
+       track/rounded thumb/hover stay consistent instead of three chunky gray
+       rails on Windows. The grid is
+       `lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]` with `lg:px-4`; the center
+       gains ~72px. `[data-preview-mode-header]` uses `lg:items-start
+       lg:px-4 lg:pt-4` so the desktop `Preview` h2 starts at the same 16px
+       inset as the Content (`p-4` card) and Design (`lg:-mt-4 lg:pt-4`) h2s —
+       `items-center` in a 56px bar only *looked* close. Keep the viewport
+       root's **horizontal** padding (`lg:px-4`) because the centered-fit math
+       (#85) reads it; only the **vertical** padding was trimmed to `lg:py-2`,
+       and `[data-canvas-scroll]` keeps `py-3` so the paper edge/shadow still
+       clear the scroller and `CANVAS_SCROLL_PADDING_PX` stays correct. jsdom
+       cannot measure the baseline or gutter; the class/CSS contract tests and
+       the desktop e2e geometry case are the guards (the latter is
+       browser-unverified here).
+
 ## Verification and tooling
 
 ```powershell
@@ -1989,30 +2043,82 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
-### 2026-11-27 — Fit-to-1-page: damped curve, margin reclaim, auto-reset
-- Task: top Queue item (P2), moved to In Progress first. All three sub-items were
-  open.
-- Change: `computeFitScale` now uses the 0.72 damped height ratio so a prose
-  resume keeps a larger, fuller first fit. The readable floor became
-  `max(0.78, 8 / bodyFontSize)`, and `computeFitMarginY` reclaims vertical
-  margin while a fit is active (32pt floor, never inflating the 12pt default),
-  wired through `templateTheme`, `PageStack`, `PrintPortal`, and the
-  `usePageLayout` content height so preview, print, and packing agree.
-  `usePageLayout` reports `autoResetFit` when the measured stack divided by the
-  applied scale fits the unscaled content box; `EditorWorkspace` drops the fit
-  back to 100% once. Both Reset controls now title themselves
-  `Reset fit (86% → 100%)`. Decision #119; README fit tour updated.
-- Tests: new damped/floor/margin/auto-reset helper cases, hook auto-reset and
-  reclaimed-margin cases, and Reset title assertions. `npm run typecheck`
-  clean; `npm test` 1233 pass across 107 files; `npm run lint` clean.
-- Files: `src/lib/pagination/fitScale.ts` (+ test),
-  `src/lib/pagination/usePageLayout.ts` (+ test),
-  `src/templates/shared/templateTheme.ts`,
-  `src/components/preview/PageStack.tsx`,
-  `src/components/preview/PrintPortal.tsx`,
+### 2026-11-27 — Desktop proportions, Preview baseline, thin scrollbars
+- Task: top Queue item (P1), moved to In Progress first. Both sub-items were open.
+- Change: added the `.subtle-scroll` utility to `globals.css` and applied it
+  through `panelClass()` to all three desktop column scrollers. Trimmed the grid
+  to `lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]` plus `lg:px-4` (≈72px more for
+  the live resume), aligned the `Preview` heading to the Content/Design h2
+  baseline with `lg:items-start lg:px-4 lg:pt-4`, and tightened the gap plus the
+  viewport's desktop vertical padding so Page 1 starts higher. The viewport's
+  horizontal padding and the scroller's `py-3` were left alone so the centered
+  fit and desk math stay intact. Decision #122; README desktop tour updated.
+- Tests: new `src/app/subtleScrollCss.test.ts` CSS contract, new
+  `EditorWorkspace` column/alignment class test, updated the viewport padding
+  assertion, and a 1280px e2e geometry case. `npm run typecheck` clean;
+  `npm test` 1241 pass across 108 files; `npm run lint` clean.
+- Files: `src/app/globals.css` (+ test),
   `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/ReviewMenu.tsx` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the real heading baseline,
+  1280px widths, and scrollbar gutters are browser-unverified.
+
+### 2026-11-27 — Preview mode switch anchored left in the bar
+- Task: top Queue item (P1), moved to In Progress first. The single sub-item
+  was open.
+- Change: split `[data-preview-mode-header]` into two flex children so the
+  already-present `justify-between` can work: a `shrink-0`
+  `[data-preview-mode-anchor]` holding the desktop `Preview` heading plus the
+  `Visual | ATS` group (flush-left on phones), and a `shrink-0`
+  `[data-preview-actions]` group holding the page label / `Fit 1p` pill /
+  `Review ▾`. The removed `ml-auto` cluster used to own both groups, so a new
+  Review active dot or a changed page count slid the mode switch sideways.
+  `LiveCanvasViewport` was inspected only — its chrome moved out in #86 — so
+  it needed no markup change. Decision #121; README feature tour updated.
+- Tests: extended the fixed-header test with left-anchor/right-actions class
+  and DOM-order assertions and added a Review-toggle regression (Anonymize +
+  6s Scan) plus a 390/1280 e2e bounding-box case. `npm run typecheck` clean;
+  `npm test` 1237 pass across 107 files; `npm run lint` clean.
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the real switch x-position at
+  both viewports is browser-unverified.
+
+### 2026-11-27 — Tidy header row, card modal, Indian 5+5 phone
+- Task: top Queue item (P1), moved to In Progress first. All three sub-items
+  were open.
+- Change: `Bullet polish` is now **Tidy** with a compact `N` badge; the shared
+  `CONTENT_HEADER_ACTION_CLASS` is `h-8 px-2.5 text-xs whitespace-nowrap`
+  (`pointer-coarse:h-11`) and the Content header's action group is
+  `flex-nowrap`, so Content / Tidy / Match JD share one row at 390px. The modal
+  is titled **Tidy bullets**, opens with "Quick local checks to tidy your
+  bullets.", and renders bordered finding cards: period actions now live in
+  the `Mixed bullet periods` card, repeated verbs are one card of `Verb ×N`
+  jump chips, and other cards show at most two snippets. `ResumeLintFinding`
+  gained `verb` and a `target` (`sectionId`/`entryId`) wired from
+  `collectResumeBullets` through `ResumeLintPopover.onJumpToEntry` to
+  `EditorWorkspace.revealEntry`. `PHONE_PATTERN` now tries a `+91` 5+5 branch
+  first, so `+91 63699 40501` no longer leaks a trailing `1` into the headline.
+  Decision #120; README feature tour updated.
+- Tests: rewritten `ResumeLintPopover` tests (trigger classes/badge, card
+  classes, in-card period buttons, grouped verb chip + jump spy, copy), new
+  `EditorWorkspace` one-row/jump integration cases, a lint target assertion,
+  and a paste-parser regression for the Indian number. One first-run failure
+  came from asserting on the component's inner wrapper instead of the header's
+  action group; selecting `titleRow.lastElementChild` fixed it. `npm run
+  typecheck` clean; `npm test` 1236 pass across 107 files; `npm run lint`
+  clean. Item moved to Done.
+- Note: direct `shell` and an automation `shell` action were denied early in
+  this run but direct shell worked on retry, so a blocked probe is not proof
+  that verification is impossible in a later run. Playwright remains blocked,
+  so the 390px row geometry and real jump scroll are browser-unverified.
+- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/contentHeaderAction.ts`,
+  `src/components/shared/CenteredModal.tsx`, `src/lib/lint/resumeLint.ts`
+  (+ test), `src/lib/import/pasteResume.ts` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 ### 2026-11-27 — PDF/paste hardening verified, non-breaking hyphen wrap fixed
 - Task: top Queue item (P2), moved to In Progress first. Sub-items 1–3 were
@@ -2169,60 +2275,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `TASKS.md`.
 - Note: Playwright remains sandbox-blocked, so the 390px caret alignment and
   hover geometry are browser-unverified.
-
-### 2026-11-26 — Preview bar status/actions, navy mode switch, modal and export polish
-- Task: top Queue item (P1), moved to In Progress first. All three sub-items were
-  still open.
-- Change: `PageOverflowBanner` now renders the page count as borderless muted
-  status text plus one tinted `Fit 1p` pill (`ArrowsIn` compress icon), and
-  `EditorWorkspace` gives an applied fit the same tinted `Reset` pill instead of
-  a white `1 page · Reset` capsule. The active `Visual | ATS` segment uses the
-  Design panel's solid navy fill. `ReviewMenu` gives `Trim tips (N)` a `›`
-  chevron, all four dialog titles gained `font-serif`, and `Fit to 1 page` is
-  sentence case. `ExportJsonButton`'s trigger is now `Export & options` with a
-  desktop `More` label, and its items read `Download backup (.json)` /
-  `Export JSON Resume`. Decision #113; README feature tour updated.
-- Tests: muted-status/tinted-action and compact-row assertions, navy
-  active-segment checks, serif title checks for all four dialogs, Trim tips
-  chevron/hover, sentence-case fit label, and the renamed export trigger/items.
-  `npm run typecheck` clean; `npm test` 1182 pass across 107 files;
-  `npm run lint` clean.
-- Files: `src/components/preview/PageOverflowBanner.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/ReviewMenu.tsx` (+ test),
-  `src/components/editor/ResumeLintPopover.tsx` (+ test),
-  `src/components/editor/JdMatchDrawer.test.tsx`,
-  `src/components/preview/TrimTipsDialog.tsx` (+ test),
-  `src/components/shared/ExportJsonButton.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the 390px bar geometry is
-  browser-unverified.
-
-### 2026-11-26 — Design panel micro-polish: accent name, short badge, sticky heading
-- Task: top Queue item (P2), moved to In Progress first. Both sub-items were
-  open.
-- Change: the `Accent color` legend now shows the active swatch name inline
-  (`Accent color · Indigo`) through `data-accent-name`, while the per-swatch
-  `title`/`aria-label` stay; the swatch target is `rounded-full` so its
-  focus-within ring matches the dot. `Studio Sidebar`'s badge is now
-  `Human review`, registry copy uses US spelling (`centered`, `Brand-colored`),
-  and `Classic` reads "Serif headings over sans-serif body." The Design card's
-  heading sits in a `lg:sticky lg:top-0` full-bleed wrapper (`lg:bg-surface`,
-  negative margins plus matching padding) so it pins inside `#panel-design`'s
-  own desktop scroller; the card gap moved to that wrapper's `pb-4`. Decision
-  #112; README feature tour updated.
-- Tests: accent-name inline/update, swatch `rounded-full`, shortened badge and
-  copy expectations, and an `EditorWorkspace` sticky-heading assertion.
-  `npm run typecheck` clean; `npm test` 1182 pass across 107 files;
-  `npm run lint` clean.
-- Files: `src/components/editor/DesignPanel.tsx` (+ test),
-  `src/templates/registry.ts` (+ test),
-  `src/templates/shared/TemplateBadge.test.tsx`,
-  `src/lib/design/designOptions.ts`,
-  `src/components/editor/EditorWorkspace.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the real sticky/scroll geometry
-  at 390px and desktop is browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

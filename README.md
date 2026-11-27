@@ -278,7 +278,10 @@ in control of every line, and your data stays on your device.
   split mid-word; only long links break anywhere they need to.
 - **Three tidy columns on desktop**: on a wide window the editor fills the
   screen, and Content, Preview, and Design each scroll on their own instead of
-  growing the page and leaving a second scrollbar at the right edge. Moving a
+  growing the page and leaving a second scrollbar at the right edge. The center
+  Preview takes most of the width, its heading lines up with Content and Design,
+  and the live resume starts closer to the top; each column's scrollbar is a
+  slim, quiet rail instead of a chunky gray stripe. Moving a
   section up or down keeps your place in the preview, so it never snaps back to
   Page 1 while the pages re-measure; reordering individual entries keeps your
   place in Content too. Your name follows every keystroke in both the header and
@@ -291,7 +294,9 @@ in control of every line, and your data stays on your device.
   resume itself fills as much of the screen as possible. The top bar keeps just
   the **Visual / ATS** switch, a quiet page count, and one **Review** pill; the
   selected Visual or ATS view fills navy like the Design choices, so the current
-  mode is never ambiguous. Trim hints, fitting, and the occasional review lenses
+  mode is never ambiguous. The switch stays anchored on the left, so it never
+  slides sideways when the page count changes or Review gains an active badge.
+  Trim hints, fitting, and the occasional review lenses
   live inside Review instead of crowding the live resume. Page 1 keeps
   breathing room above and below, so its top edge and shadow never clip. On tall
   tablets and phones showing the desktop site, the fitted page sits centred with
@@ -348,17 +353,18 @@ in control of every line, and your data stays on your device.
   text field, places the cursor in it, and briefly highlights the field so you
   can cut the stray words immediately. Trimming those bullets can reclaim whole
   lines before you shrink the font or spill onto a second page.
-- **Bullet polish** in the Content panel header flags the small consistency
-  problems a recruiter notices first: bullets that mix ending periods,
-  first-person pronouns, filler adverbs, and repeated opening verbs within one
-  role. It is a quiet pill beside **Match JD**, so neither competes with
-  **Save PDF**; tapping it opens a centred modal that always stays inside the
-  screen and closes with its own X, a tap on the dimmed background, or Escape.
-  Each finding shows the opening words so you can find the bullet, and
-  **Standardize bullet periods** can remove every trailing period or add one to
-  every bare bullet in a single undoable tap, leaving ellipses and bold or
-  italic formatting intact. The check runs locally with plain rules — no AI and
-  no network.
+- **Tidy** in the Content panel header flags the small consistency problems a
+  recruiter notices first: bullets that mix ending periods, first-person
+  pronouns, filler adverbs, and repeated opening verbs within one role. It is a
+  compact pill with a count badge beside **Match JD**, and all three labels stay
+  on one row even on a narrow phone. Tapping it opens a centred **Tidy bullets**
+  modal that always stays inside the screen and closes with its own X, a tap on
+  the dimmed background, or Escape. Each check gets its own card: **Remove
+  periods** and **Add periods** sit inside the mixed-periods card, repeated
+  verbs appear as short `Collected ×2` chips with a tap that jumps straight to
+  the entry, and the other cards show only a couple of opening words. Period
+  fixes leave ellipses and bold or italic formatting intact and undo in one
+  step. The check runs locally with plain rules — no AI and no network.
 - **ATS plain-text view** that shows the exact linear text a parser reads from
   the current template, so you can check section order and wording before you
   apply. **Copy all plain text** grabs the whole resume for Workday, Greenhouse,

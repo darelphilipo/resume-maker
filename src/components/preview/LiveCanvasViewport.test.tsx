@@ -550,8 +550,10 @@ describe("LiveCanvasViewport", () => {
     // No stacked status row and no inter-row gap: the canvas scroller is the
     // only child after the zero-height measure shell.
     expect(root).toHaveClass("px-2", "py-2");
-    expect(root).toHaveClass("lg:p-4");
-    expect(root).not.toHaveClass("gap-2", "lg:gap-4");
+    // Desktop keeps the horizontal padding (the centered-fit math reads it)
+    // but trims the vertical padding so Page 1 starts closer to the mode bar.
+    expect(root).toHaveClass("lg:px-4", "lg:py-2");
+    expect(root).not.toHaveClass("lg:p-4", "gap-2", "lg:gap-4");
     expect(root.querySelector("[data-preview-header]")).toBeNull();
     expect(wrapper.closest("[data-canvas-scroll]")).not.toBeNull();
   });

@@ -559,6 +559,28 @@ for (const viewport of VIEWPORTS) {
       expect(overlaps).toBe(false);
     });
 
+    test("the Visual/ATS switch stays left-anchored while Review badges change", async ({
+      page,
+    }) => {
+      await createPresetResume(page);
+      await showPreview(page);
+
+      const visual = page.getByRole("button", { name: "Visual" });
+      const before = await visual.boundingBox();
+      expect(before).not.toBeNull();
+
+      await page.getByRole("button", { name: "Review" }).click();
+      await page.getByRole("switch", { name: "Anonymize" }).click();
+      await page.getByRole("switch", { name: "6s Scan" }).click();
+      await page.getByRole("button", { name: "Close review tools" }).click();
+
+      const after = await visual.boundingBox();
+      expect(after).not.toBeNull();
+      // The right-hand group grows an active dot, but the mode group keeps its
+      // x at both widths (flush-left on phones, beside "Preview" on desktop).
+      expect(Math.abs(after!.x - before!.x)).toBeLessThanOrEqual(1);
+    });
+
     test("multi-page pagination fills Page 1 before breaking an entry", async ({
       page,
     }) => {
@@ -769,6 +791,76 @@ for (const viewport of VIEWPORTS) {
         expect(panel.top).toBeGreaterThanOrEqual(0);
         expect(panel.top).toBeLessThan(result.innerHeight);
         expect(panel.bottom).toBeLessThanOrEqual(result.innerHeight + 1);
+      }
+    });
+
+    test("desktop headings share a baseline and columns keep slim scrollbars", async ({
+      page,
+    }) => {
+      test.skip(viewport.name === "mobile", "desktop column layout only");
+
+      await createPresetResume(page);
+      await showPreview(page);
+
+      const geometry = await page.evaluate(() => {
+        const heading = (name: string) =>
+          Array.from(document.querySelectorAll<HTMLElement>("h2")).find(
+            (element) => element.textContent?.trim() === name,
+          );
+        const content = heading("Content");
+        const design = heading("Design");
+        const preview = heading("Preview");
+        const modeHeader = document.querySelector<HTMLElement>(
+          "[data-preview-mode-header]",
+        );
+        const contentPanel = document.getElementById("panel-content");
+        const previewPanel = document.getElementById("panel-preview");
+        const designPanel = document.getElementById("panel-design");
+        const paper = previewPanel?.querySelector<HTMLElement>(".resume-page");
+
+        if (
+          !content ||
+          !design ||
+          !preview ||
+          !modeHeader ||
+          !contentPanel ||
+          !previewPanel ||
+          !designPanel ||
+          !paper
+        ) {
+          return null;
+        }
+
+        return {
+          contentTop: content.getBoundingClientRect().top,
+          designTop: design.getBoundingClientRect().top,
+          previewTop: preview.getBoundingClientRect().top,
+          modeBottom: modeHeader.getBoundingClientRect().bottom,
+          paperTop: paper.getBoundingClientRect().top,
+          contentWidth: contentPanel.getBoundingClientRect().width,
+          previewWidth: previewPanel.getBoundingClientRect().width,
+          designWidth: designPanel.getBoundingClientRect().width,
+          // offsetWidth - clientWidth is the real gutter on classic scrollbars;
+          // overlay scrollbars report 0, which is also acceptably quiet.
+          gutters: [contentPanel, previewPanel, designPanel].map(
+            (panel) => panel.offsetWidth - panel.clientWidth,
+          ),
+        };
+      });
+
+      expect(geometry).not.toBeNull();
+      const result = geometry as NonNullable<typeof geometry>;
+
+      // All three h2s start at the same 16px inset inside their panel.
+      expect(Math.abs(result.previewTop - result.contentTop)).toBeLessThanOrEqual(2);
+      expect(Math.abs(result.previewTop - result.designTop)).toBeLessThanOrEqual(2);
+      // The live resume owns the width and starts below the aligned chrome.
+      expect(result.previewWidth).toBeGreaterThan(result.contentWidth);
+      expect(result.previewWidth).toBeGreaterThan(result.designWidth);
+      expect(result.paperTop).toBeGreaterThanOrEqual(result.modeBottom);
+      // No chunky gray rail on any of the three independently scrolling columns.
+      for (const gutter of result.gutters) {
+        expect(gutter).toBeLessThanOrEqual(8);
       }
     });
 

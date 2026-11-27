@@ -387,6 +387,69 @@ describe("EditorWorkspace", () => {
     expect(designPanel).toContainElement(sticky);
   });
 
+  it("gives desktop three thin-scrolling columns with a wider, top-aligned Preview", async () => {
+    await renderReadyWorkspace();
+
+    const main = screen.getByRole("main");
+    const panels = screen.getAllByRole("tabpanel");
+
+    // Slimmer sidebars and less outer padding hand the width to the live resume.
+    expect(main).toHaveClass(
+      "lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]",
+      "lg:px-4",
+    );
+    expect(main).not.toHaveClass(
+      "lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)]",
+    );
+
+    // All three independent desktop scrollers use the same low-contrast rail.
+    for (const panel of panels) {
+      expect(panel).toHaveClass("subtle-scroll", "lg:overflow-y-auto");
+    }
+
+    const contentHeading = screen.getByRole("heading", {
+      level: 2,
+      name: "Content",
+    });
+    const designHeading = screen.getByRole("heading", {
+      level: 2,
+      name: "Design",
+    });
+    const previewHeading = screen.getByRole("heading", {
+      level: 2,
+      name: "Preview",
+    });
+
+    // Same type scale, and the Preview row starts at the same 16px inset as the
+    // Content/Design card headings. jsdom has no layout, so this class contract
+    // is the guard; the real baseline is a Playwright geometry check.
+    for (const heading of [contentHeading, designHeading, previewHeading]) {
+      expect(heading).toHaveClass(
+        "font-serif",
+        "text-xl",
+        "font-semibold",
+        "tracking-tight",
+      );
+    }
+    expect(contentHeading.closest("[data-content-header]")!.parentElement).toHaveClass(
+      "p-4",
+    );
+    expect(designHeading.parentElement).toHaveClass(
+      "lg:-mt-4",
+      "lg:pt-4",
+    );
+
+    const header = screen
+      .getByRole("button", { name: "Visual" })
+      .closest<HTMLElement>("[data-preview-mode-header]")!;
+
+    expect(header).toHaveClass("lg:items-start", "lg:px-4", "lg:pt-4");
+    expect(header).not.toHaveClass("lg:items-center");
+    // The paper sits closer to that aligned row instead of a roomy gap.
+    expect(header.parentElement).toHaveClass("gap-2");
+    expect(header.parentElement).not.toHaveClass("gap-3");
+  });
+
   it("starts with Basics collapsed so the section list is visible", async () => {
     await renderReadyWorkspace();
 
@@ -481,10 +544,10 @@ describe("EditorWorkspace", () => {
     expect(group).toHaveClass("flex", "flex-col", "gap-2");
   });
 
-  it("gives Bullet polish and Match JD matching quiet pill styling", async () => {
+  it("gives Tidy and Match JD matching quiet pill styling on one row", async () => {
     await renderReadyWorkspace();
 
-    const bullet = screen.getByRole("button", { name: /Bullet polish:/ });
+    const bullet = screen.getByRole("button", { name: /Tidy:/ });
     const match = screen.getByRole("button", {
       name: "Match to a job description",
     });
@@ -494,11 +557,22 @@ describe("EditorWorkspace", () => {
         "rounded-full",
         "border-line",
         "bg-surface",
-        "min-h-9",
+        "h-8",
+        "px-2.5",
         "text-xs",
+        "whitespace-nowrap",
+        "pointer-coarse:h-11",
       );
       expect(trigger).not.toHaveClass("bg-primary");
     }
+
+    // Content, Tidy and Match JD share a nowrap row at 390px; only the
+    // descriptive line below is allowed to wrap.
+    const titleRow = bullet.closest("[data-content-title-row]");
+    expect(titleRow?.className).toContain("flex");
+    const actions = titleRow?.lastElementChild;
+    expect(actions?.className).toContain("flex-nowrap");
+    expect(actions?.className).not.toContain("flex-wrap");
 
     // The job-description trigger used to be the only white, semibold pill.
     expect(match).not.toHaveClass("bg-white", "font-semibold");
@@ -603,7 +677,7 @@ describe("EditorWorkspace", () => {
     );
     // The zero-AI bullet check sits beside Match JD in the same row.
     expect(titleRow).toContainElement(
-      screen.getByRole("button", { name: /Bullet polish:/ }),
+      screen.getByRole("button", { name: /Tidy:/ }),
     );
 
     await user.click(trigger);
@@ -660,6 +734,41 @@ describe("EditorWorkspace", () => {
         document.querySelector('[data-section-toggle="experience"]'),
       ).toHaveAttribute("aria-expanded", "true");
       expect(document.getElementById("editor-entry-exp-trim")).not.toBeNull();
+    });
+  });
+
+  it("jumps from a Tidy repeated-verb card to its entry in Content", async () => {
+    const doc = createEmptyResume();
+
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "exp-tidy",
+        company: "Acme",
+        position: "Engineer",
+        summary:
+          "<ul><li>Collected data.</li><li>Collected reports.</li></ul>",
+      }),
+    ];
+    useResumeStore.setState({ doc });
+
+    await renderReadyWorkspace();
+
+    fireEvent.click(screen.getByRole("button", { name: /Tidy:/ }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Jump to entry for repeated “Collected” bullets",
+      }),
+    );
+
+    expect(screen.getByRole("tab", { name: "Content" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-section-toggle="experience"]'),
+      ).toHaveAttribute("aria-expanded", "true");
+      expect(document.getElementById("editor-entry-exp-tidy")).not.toBeNull();
     });
   });
 
@@ -759,6 +868,23 @@ describe("EditorWorkspace", () => {
     expect(header).toHaveClass("shrink-0", "z-10", "min-h-10", "lg:min-h-14");
     expect(header).toHaveClass("lg:sticky", "lg:top-0", "lg:z-20");
     expect(header).not.toHaveClass("sticky");
+    // The mode switch is pinned to the left edge and status/Review to the
+    // right, so a changing badge cannot slide `Visual | ATS` sideways.
+    expect(header).toHaveClass("justify-between");
+    const anchor = header!.querySelector<HTMLElement>("[data-preview-mode-anchor]");
+    const actions = header!.querySelector<HTMLElement>("[data-preview-actions]");
+    expect(anchor).toHaveClass("flex", "shrink-0");
+    expect(header!.firstElementChild).toBe(anchor);
+    expect(anchor).toContainElement(heading);
+    expect(actions).toHaveClass("flex", "shrink-0");
+    expect(header!.lastElementChild).toBe(actions);
+    expect(actions).toContainElement(
+      header!.querySelector("[data-preview-page-label]")!,
+    );
+    expect(actions).toContainElement(screen.getByRole("button", { name: "Review" }));
+    expect(anchor).not.toContainElement(
+      screen.getByRole("button", { name: "Review" }),
+    );
     // The active bottom tab already says Preview, so the heading is desktop-only.
     expect(heading).toHaveClass("hidden", "lg:block");
     expect(header).toContainElement(visual);
@@ -806,6 +932,40 @@ describe("EditorWorkspace", () => {
     expect(
       screen.queryByRole("switch", { name: "6s Scan" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("anchors the mode switch on the left while Review badges change", async () => {
+    await renderReadyWorkspace();
+
+    const header = screen
+      .getByRole("button", { name: "Visual" })
+      .closest<HTMLElement>("[data-preview-mode-header]")!;
+    const anchor = header.querySelector<HTMLElement>("[data-preview-mode-anchor]")!;
+    const actions = header.querySelector<HTMLElement>("[data-preview-actions]")!;
+
+    expect(header.firstElementChild).toBe(anchor);
+    expect(header.lastElementChild).toBe(actions);
+    expect(anchor).toContainElement(screen.getByRole("button", { name: "Visual" }));
+    expect(anchor).toContainElement(
+      screen.getByRole("button", { name: "ATS text" }),
+    );
+    expect(actions).toContainElement(
+      screen.getByRole("button", { name: "Review" }),
+    );
+
+    openReviewMenu();
+    fireEvent.click(screen.getByRole("switch", { name: "Anonymize" }));
+    fireEvent.click(screen.getByRole("switch", { name: "6s Scan" }));
+
+    // The right-hand group now carries two active markers, but the switch
+    // keeps its DOM slot. jsdom has no layout, so the class/DOM contract is
+    // the guard here and real x-position stays a Playwright concern.
+    expect(header.querySelector("[data-preview-mode-anchor]")).toBe(anchor);
+    expect(header.firstElementChild).toBe(anchor);
+    expect(header.lastElementChild).toBe(actions);
+    expect(anchor).toContainElement(screen.getByRole("button", { name: "Visual" }));
+    expect(screen.getByRole("button", { name: /Review, active/ })).toBeVisible();
+    expect(document.querySelector("[data-review-active-dot]")).toBeVisible();
   });
 
   it("shows a subtle 1-page label in the top bar instead of an extra chrome row", async () => {
