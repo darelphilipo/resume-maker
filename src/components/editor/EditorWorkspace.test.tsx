@@ -837,6 +837,7 @@ describe("EditorWorkspace", () => {
     expect(label).not.toHaveClass("border");
     expect(label).not.toHaveClass("bg-surface");
     expect(reset).toHaveTextContent("Reset");
+    expect(reset).toHaveAttribute("title", "Reset fit (85% → 100%)");
     expect(reset).toHaveClass(
       "bg-primary/10",
       "text-primary",

@@ -18,7 +18,11 @@ import {
 
 import { HEADER_BLOCK_ID } from "./constants";
 import { computePages } from "./computePages";
-import { computeFitScale } from "./fitScale";
+import {
+  computeFitMarginY,
+  computeFitScale,
+  shouldResetFitScale,
+} from "./fitScale";
 import type { PackBlock } from "./packPages";
 import {
   buildPackBlocks,
@@ -50,6 +54,12 @@ export type PageLayout = {
   gapPx: number;
   fitScale: number | null;
   fitBlockedReason?: FitBlockedReason | null;
+  /**
+   * True when a fitted resume was edited down enough to fit at 100%. The
+   * editor applies `fitScale: 1` once, so a page never stays needlessly
+   * shrunken after the user deletes content.
+   */
+  autoResetFit: boolean;
   measureLayer: ReactNode;
 };
 
@@ -147,7 +157,28 @@ export function usePageLayout(
     [plans],
   );
 
+  const currentFitScale = doc.metadata.page.fitScale;
+  // A fitted page reclaims a little vertical margin, so the packing budget has
+  // to grow with it. The unscaled box is kept for the auto-reset check, which
+  // asks whether the document would fit at 100%.
+  const fittedMarginY = computeFitMarginY(
+    doc.metadata.page.marginY,
+    currentFitScale,
+  );
   const { contentWidthPx, contentHeightPx } = useMemo(
+    () =>
+      pageGeometry(
+        doc.metadata.page.format,
+        doc.metadata.page.marginX,
+        fittedMarginY,
+      ),
+    [
+      doc.metadata.page.format,
+      doc.metadata.page.marginX,
+      fittedMarginY,
+    ],
+  );
+  const { contentHeightPx: fullContentHeightPx } = useMemo(
     () =>
       pageGeometry(
         doc.metadata.page.format,
@@ -161,7 +192,6 @@ export function usePageLayout(
     ],
   );
 
-  const currentFitScale = doc.metadata.page.fitScale;
   const gapPx = doc.metadata.page.gapY * PT_TO_PX * currentFitScale;
 
   const startOnNewPage = useMemo(() => {
@@ -287,6 +317,7 @@ export function usePageLayout(
       gapPx,
       fitScale: null,
       fitBlockedReason: null,
+      autoResetFit: false,
       measureLayer,
     };
   }
@@ -328,6 +359,7 @@ export function usePageLayout(
           totalHeightPx,
           contentHeightPx,
           currentFitScale,
+          bodyFontSize: doc.metadata.typography.body.fontSize,
         });
 
   // Only explain a blocked fit when the resume genuinely needs more than one
@@ -340,6 +372,14 @@ export function usePageLayout(
         ? "page-break"
         : "too-tall";
 
+  const autoResetFit =
+    startOnNewPage.size === 0 &&
+    shouldResetFitScale({
+      totalHeightPx,
+      contentHeightPx: fullContentHeightPx,
+      currentFitScale,
+    });
+
   return {
     pages: packed.pages,
     overflowPx: packed.overflowPx,
@@ -349,6 +389,7 @@ export function usePageLayout(
     gapPx,
     fitScale,
     fitBlockedReason,
+    autoResetFit,
     measureLayer,
   };
 }

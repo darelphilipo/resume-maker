@@ -20,15 +20,9 @@ _empty
 
 _empty
 
-
 ## Queue (Ready for Next Run)
 
 ### P2 — Parser, Fit Math & Review-Tools Polish
-
-- [ ] P2: Improve `Fit to 1 Page` scaling math so fitted resumes stay larger, fuller, and readable (`src/lib/pagination/fitScale.ts`, `src/lib/pagination/usePageLayout.ts`, `src/templates/shared/templateTheme.ts`, `src/components/preview/LiveCanvasViewport.tsx`).
-  1. **Damped scaling curve (`fitScale.ts`):** Replace the linear `contentHeightPx / totalHeightPx` ratio with a damped exponent (`Math.pow(contentHeightPx / totalHeightPx, 0.72) * currentFitScale * FIT_HEADROOM`) so prose-heavy resumes don't over-shrink and leave an unnecessary blank gap at the bottom of Page 1.
-  2. **Reclaim vertical margin gently & enforce an `8pt` body floor (`templateTheme.ts`, `fitScale.ts`):** When `fitScale < 1`, gently scale `--page-margin-y` proportionally down to a `32pt` minimum floor, and compute the minimum scale floor as `Math.max(MIN_FIT_SCALE, 8 / bodyFontSize)` so smaller-font templates (`Compact 1-Pager`) never drop below `8pt`.
-  3. **Surface current scale on `Reset`:** Show the active scale percentage in the `Reset` tooltip/title (`"Reset fit (86% → 100%)"`) and auto-reset `fitScale` back to `1` if the user deletes enough content that `totalHeightPx / fitScale` fits cleanly on 1 page at `100%`.
 
 - [ ] P2: Polish `6s Scan` & `Trim tips` accuracy and Preview chrome (`src/lib/preview/scanMetrics.ts`, `src/lib/lint/bulletMetrics.ts`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/ReviewMenu.tsx`).
   1. **`6s Scan` currencies & 1-tap exit (`scanMetrics.ts`, `LiveCanvasViewport.tsx`):** Support global currency prefixes (`$`, `₹`, `€`, `£`), Indian shorthand (`L`, `Cr`), and trailing `+` (`1,000+`, `11+`, `₹10L`, `₹2Cr`, `€500K`) in `METRIC_PATTERN`, and show a slim 1-line active bar above Visual Preview (*"6s Scan: showing what pops in a quick skim"*) with a compact **`Turn off`** button.
@@ -45,6 +39,26 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-27 — Fit-to-1-page now keeps resumes larger and fuller, reclaims
+  vertical margin, and releases itself. The fit curve uses a damped 0.72 height
+  ratio instead of the linear ratio, the readable floor is
+  `max(0.78, 8 / bodyFontSize)`, and `computeFitMarginY` scales the printed
+  `--page-margin-y` down to a 32pt floor (never inflating the 12pt default)
+  across preview, print, and the packing budget. `usePageLayout` reports
+  `autoResetFit` once the fitted stack would fit at 100%, so `EditorWorkspace`
+  drops the scale back automatically, and both Reset controls show the active
+  percentage (`Reset fit (85% → 100%)`). Verified `npm run typecheck`,
+  `npm test` (1233 pass, 107 files), `npm run lint`. Files:
+  `src/lib/pagination/fitScale.ts` (+ test),
+  `src/lib/pagination/usePageLayout.ts` (+ test),
+  `src/templates/shared/templateTheme.ts`,
+  `src/components/preview/PageStack.tsx`,
+  `src/components/preview/PrintPortal.tsx`,
+  `src/components/preview/LiveCanvasViewport*.test.tsx`,
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 - [x] 2026-11-27 — Hardened PDF & paste parsing against real-world LaTeX, Word,
   Canva, and Indian resume edge cases. Sub-items 1–3 were already implemented in

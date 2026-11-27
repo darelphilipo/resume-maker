@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 
+import { computeFitMarginY } from "@/lib/pagination/fitScale";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { pageGeometry } from "@/lib/units/pageGeometry";
 import { getTemplate } from "@/templates/registry";
@@ -27,7 +28,10 @@ export function PageStack({
     "--page-width": `${geometry.widthMm}mm`,
     "--page-height": `${geometry.heightMm}mm`,
     "--page-margin-x": `${doc.metadata.page.marginX}pt`,
-    "--page-margin-y": `${doc.metadata.page.marginY}pt`,
+    "--page-margin-y": `${computeFitMarginY(
+      doc.metadata.page.marginY,
+      doc.metadata.page.fitScale,
+    )}pt`,
   } as CSSProperties;
 
   return (

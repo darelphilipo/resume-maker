@@ -172,6 +172,17 @@ export function EditorWorkspace() {
   } | null>(null);
   const layout = usePageLayout(doc);
 
+  /**
+   * A fit is only useful while the content needs it. Once the user deletes
+   * enough to fit at 100%, drop the scale automatically instead of leaving a
+   * needlessly shrunken page (and a stale Reset pill) behind.
+   */
+  useEffect(() => {
+    if (layout.autoResetFit) {
+      patchDoc({ metadata: { page: { fitScale: 1 } } });
+    }
+  }, [layout.autoResetFit, patchDoc]);
+
   /** One owner for Fit/Reset fit, whether it starts in the pill or Review. */
   function applyFitScale(scale: number): void {
     patchDoc({ metadata: { page: { fitScale: scale } } });
@@ -189,6 +200,9 @@ export function EditorWorkspace() {
       applyFitScale(1);
     }
   }
+
+  /** Shown in the Reset tooltip so the current shrink is never a mystery. */
+  const appliedFitPercent = Math.round(doc.metadata.page.fitScale * 100);
 
   /**
    * A trim tip names the rendered bullet's section and entry. Reveal the
@@ -667,7 +681,7 @@ export function EditorWorkspace() {
                       type="button"
                       data-preview-reset-fit=""
                       aria-label="Reset fit"
-                      title="Return the resume to its full size"
+                      title={`Reset fit (${appliedFitPercent}% → 100%)`}
                       onClick={resetFit}
                       className={PREVIEW_ACTION_CLASS}
                     >

@@ -317,12 +317,17 @@ in control of every line, and your data stays on your device.
   The fitted page holds its size and position
   when a scrollbar appears or disappears, so it never shrinks and grows on its
   own.
-- **Fit to 1 page** when a resume spills just past one page. Fitting never
-  shrinks the page below a readable size — if one page would need microscopic
-  type, the preview says so instead. The fitted width keeps a little breathing
-  room at the right edge, so right-aligned dates never lose their last pixels.
-  Whenever a reduced fit is active, a tinted **Reset** pill beside the `1 page`
-  label — or **Reset fit** inside **Review** — returns the page to 100%.
+- **Fit to 1 page** when a resume spills just past one page. The fit is gentle:
+  it keeps the page as large and full as it can instead of over-shrinking, and
+  a fitted page quietly reclaims a little vertical margin. Fitting never
+  shrinks the body below a readable size — a resume with a smaller base font
+  gets a higher floor so it never prints under 8pt — and if one page would need
+  microscopic type, the preview says so instead. The fitted width keeps a
+  little breathing room at the right edge, so right-aligned dates never lose
+  their last pixels. Whenever a reduced fit is active, a tinted **Reset** pill
+  beside the `1 page` label — or **Reset fit** inside **Review** — returns the
+  page to 100% and shows the current size in its tooltip. If you trim enough
+  content to fit at full size, the page grows back on its own.
 - **A calm page count.** A resume that fits on one page just shows quiet
   **1 page** status text in the top bar, with no extra row or pill stealing
   height from the paper. After a fit, the same label gains a small **Reset**

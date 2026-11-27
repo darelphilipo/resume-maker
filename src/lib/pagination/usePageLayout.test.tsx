@@ -129,6 +129,68 @@ describe("usePageLayout", () => {
     expect(result.current.fitBlockedReason).toBeNull();
   });
 
+  it("asks the editor to drop a fit once the content fits at full size", () => {
+    const doc = makeDoc();
+    doc.metadata.page.fitScale = 0.85;
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: { experience: 200, skills: 200 },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    expect(result.current.pages).toHaveLength(1);
+    expect(result.current.autoResetFit).toBe(true);
+  });
+
+  it("keeps a fit while the unscaled content would still overflow", () => {
+    const doc = makeDoc();
+    doc.metadata.page.fitScale = 0.85;
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: { experience: 600, skills: 600 },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    expect(result.current.pages).toHaveLength(2);
+    expect(result.current.autoResetFit).toBe(false);
+  });
+
+  it("never asks for an auto-reset at full size", () => {
+    const doc = makeDoc();
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: { experience: 200, skills: 200 },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+
+    expect(result.current.autoResetFit).toBe(false);
+  });
+
+  it("packs against the reclaimed vertical margin while a fit is applied", () => {
+    const doc = makeDoc();
+    doc.metadata.page.marginY = 48;
+    doc.metadata.page.fitScale = 0.5;
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights: { experience: 200, skills: 200 },
+    });
+
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+    const fitted = pageGeometry(
+      doc.metadata.page.format,
+      doc.metadata.page.marginX,
+      32,
+    );
+
+    expect(result.current.contentHeightPx).toBeCloseTo(
+      fitted.contentHeightPx,
+      10,
+    );
+  });
+
   it("does not suggest a fit scale when a forced page break keeps content apart", () => {
     const doc = makeDoc();
     doc.sections.skills.startOnNewPage = true;

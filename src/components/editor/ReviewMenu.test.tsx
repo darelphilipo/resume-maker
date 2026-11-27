@@ -239,7 +239,11 @@ describe("ReviewMenu", () => {
     ).toBeVisible();
 
     openMenu();
-    fireEvent.click(screen.getByRole("button", { name: /^Reset fit/ }));
+    const reset = screen.getByRole("button", { name: /^Reset fit/ });
+
+    expect(reset).toHaveAttribute("title", "Reset fit (85% → 100%)");
+
+    fireEvent.click(reset);
 
     expect(onResetFit).toHaveBeenCalledTimes(1);
   });

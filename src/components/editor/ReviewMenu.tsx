@@ -62,6 +62,7 @@ export function ReviewMenu({
   const hiddenTrimCount = Math.max(0, trimCount - MAX_LISTED_ISSUES);
   const canFit = fitTarget !== null && onFit !== undefined;
   const canResetFit = appliedFitScale < 1 && onResetFit !== undefined;
+  const appliedFitPercent = Math.round(appliedFitScale * 100);
   const blockedCopy =
     fitBlockedReason && !canFit ? fitBlockedCopy(fitBlockedReason) : null;
   const hasUtilities =
@@ -205,6 +206,7 @@ export function ReviewMenu({
               <ReviewAction
                 label="Reset fit"
                 description="Return the resume to its full size."
+                title={`Reset fit (${appliedFitPercent}% → 100%)`}
                 icon={<CornersIn size={18} aria-hidden />}
                 marker="data-review-reset-fit"
                 onClick={() => {
@@ -320,6 +322,7 @@ function ReviewAction({
   onClick,
   disabled = false,
   showChevron = false,
+  title,
 }: {
   label: string;
   description: string;
@@ -329,11 +332,14 @@ function ReviewAction({
   disabled?: boolean;
   /** Adds the same muted `›` cue used by clickable Trim tips. */
   showChevron?: boolean;
+  /** Optional hover tooltip for controls with extra state to explain. */
+  title?: string;
 }) {
   return (
     <button
       type="button"
       {...{ [marker]: "" }}
+      title={title}
       onClick={onClick}
       disabled={disabled}
       className={`flex min-h-14 w-full items-center gap-3 rounded-lg border border-line px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${

@@ -4,6 +4,7 @@ import { useMemo, type CSSProperties, type ReactPortal } from "react";
 import { createPortal } from "react-dom";
 
 import { HEADER_BLOCK_ID } from "@/lib/pagination/constants";
+import { computeFitMarginY } from "@/lib/pagination/fitScale";
 import { printPageSizeCss } from "@/lib/print/printDocument";
 import { sanitizeResumeDocument } from "@/lib/richtext/sanitize";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
@@ -57,7 +58,10 @@ export function PrintPortal({
     "--page-width": `${geometry.widthMm}mm`,
     "--page-height": `${geometry.heightMm}mm`,
     "--page-margin-x": `${safeDoc.metadata.page.marginX}pt`,
-    "--page-margin-y": `${safeDoc.metadata.page.marginY}pt`,
+    "--page-margin-y": `${computeFitMarginY(
+      safeDoc.metadata.page.marginY,
+      safeDoc.metadata.page.fitScale,
+    )}pt`,
   } as CSSProperties;
 
   return createPortal(

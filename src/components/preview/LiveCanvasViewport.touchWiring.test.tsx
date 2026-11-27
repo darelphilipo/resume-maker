@@ -32,6 +32,7 @@ function createLayout(): PageLayout {
     contentHeightPx: 1,
     gapPx: 16,
     fitScale: null,
+    autoResetFit: false,
     measureLayer: null,
   };
 }

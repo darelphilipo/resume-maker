@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 
+import { computeFitMarginY } from "@/lib/pagination/fitScale";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 
 /** Round to two decimals so preview, measurement and print agree on the value. */
@@ -28,7 +29,12 @@ export function buildTemplateThemeStyle(doc: ResumeDocument): CSSProperties {
     "--page-gap-y": scaledPt(metadata.page.gapY, fitScale),
     "--page-gap-x": scaledPt(metadata.page.gapX, fitScale),
     "--page-margin-x": `${metadata.page.marginX}pt`,
-    "--page-margin-y": `${metadata.page.marginY}pt`,
+    // A fitted resume gently reclaims vertical margin so the printed page
+    // keeps the preview's proportions. Horizontal margins stay put.
+    "--page-margin-y": `${computeFitMarginY(
+      metadata.page.marginY,
+      fitScale,
+    )}pt`,
     "--item-gap": scaledPt(6, fitScale),
     "--brand-primary": metadata.design.colors.primary,
     fontFamily: metadata.typography.body.fontFamily,

@@ -1902,6 +1902,28 @@ rediscover.
          and `profileUrlsFromAnnotations` in `pdfResume.ts` recovers GitHub /
          LinkedIn destinations from PDF `Link` annotations.
 
+      119. **The fit curve is damped, margin-aware, and self-releasing.**
+          `computeFitScale` uses
+          `pow(contentHeight / totalHeight, 0.72) * currentFitScale * 0.98`
+          instead of the linear ratio, because line-height rounding and
+          re-wrapping make a linear shrink land shorter than predicted and
+          leave a blank gap at the bottom of Page 1. A damped target can still
+          spill; a second Fit click moves it further. The readable floor is
+          `computeMinimumFitScale(bodyFontSize)` = `max(0.78, 8 / bodyFontSize)`,
+          so a 9pt resume may only shrink to ~89% and an 8pt one cannot shrink
+          at all. `computeFitMarginY` gently scales `--page-margin-y` with the
+          fit and floors it at 32pt **without inflating a margin already below
+          the floor** (the 12pt default stays 12pt). The same helper feeds
+          `templateTheme`, `PageStack`, `PrintPortal`, and `usePageLayout`'s
+          `contentHeightPx`; if only the CSS variable changed, the printed
+          padding and the packing budget would disagree. `usePageLayout` also
+          returns `autoResetFit` when
+          `totalHeightPx / currentFitScale <= contentHeightPx` measured at the
+          **unscaled** margin, and `EditorWorkspace` applies `fitScale: 1`
+          once. `totalHeightPx <= 0` never resets, which keeps jsdom (all rects
+          zero) from clearing a seeded fit in component tests. Both Reset
+          controls title themselves `Reset fit (86% → 100%)`.
+
 ## Verification and tooling
 
 ```powershell
@@ -1966,6 +1988,31 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-27 — Fit-to-1-page: damped curve, margin reclaim, auto-reset
+- Task: top Queue item (P2), moved to In Progress first. All three sub-items were
+  open.
+- Change: `computeFitScale` now uses the 0.72 damped height ratio so a prose
+  resume keeps a larger, fuller first fit. The readable floor became
+  `max(0.78, 8 / bodyFontSize)`, and `computeFitMarginY` reclaims vertical
+  margin while a fit is active (32pt floor, never inflating the 12pt default),
+  wired through `templateTheme`, `PageStack`, `PrintPortal`, and the
+  `usePageLayout` content height so preview, print, and packing agree.
+  `usePageLayout` reports `autoResetFit` when the measured stack divided by the
+  applied scale fits the unscaled content box; `EditorWorkspace` drops the fit
+  back to 100% once. Both Reset controls now title themselves
+  `Reset fit (86% → 100%)`. Decision #119; README fit tour updated.
+- Tests: new damped/floor/margin/auto-reset helper cases, hook auto-reset and
+  reclaimed-margin cases, and Reset title assertions. `npm run typecheck`
+  clean; `npm test` 1233 pass across 107 files; `npm run lint` clean.
+- Files: `src/lib/pagination/fitScale.ts` (+ test),
+  `src/lib/pagination/usePageLayout.ts` (+ test),
+  `src/templates/shared/templateTheme.ts`,
+  `src/components/preview/PageStack.tsx`,
+  `src/components/preview/PrintPortal.tsx`,
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 ### 2026-11-27 — PDF/paste hardening verified, non-breaking hyphen wrap fixed
 - Task: top Queue item (P2), moved to In Progress first. Sub-items 1–3 were
@@ -2176,36 +2223,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `CONTEXT.md`, `TASKS.md`.
 - Note: Playwright remains sandbox-blocked, so the real sticky/scroll geometry
   at 390px and desktop is browser-unverified.
-
-### 2026-11-26 — References redaction, desktop zoom pill, exact Trim-tips focus
-- Task: the lone Queue item (P1), moved to In Progress first. All four
-  sub-items were open.
-- Change: `anonymizeResumeDoc` now redacts References name/company/position with
-  stable lettered labels (employers share the experience label namespace) and
-  replaces phone/email with the new reference
-  placeholders (blank stays blank), so the display-only clone covers Visual,
-  ATS, and print. Added `CanvasZoomControls`, a `hidden lg:flex` floating
-  `− | 100% | +` pill in the Preview viewport that reports zoom relative to the
-  fit, steps by 25% of the fitted width, never zooms out below fit, and shows
-  `Reset` while zoomed; the mobile Reset overlay is `lg:hidden`. Trim tips now
-  scrolls to the owning `data-rich-text-field`, focuses its `.tiptap` editor
-  (shell fallback for jsdom), and sets `data-trim-focus` for 1.6s. The 6s Scan
-  metric regex keeps `p95`/`p99` and `3.8 GPA` at full contrast. Decision #111;
-  README feature tour updated.
-- Tests: new reference-redaction (Visual + ATS), zoom-pill component and
-  viewport wiring, exact field focus/highlight, and latency/GPA scan cases.
-  `npm run typecheck` clean; `npm test` 1180 pass across 107 files;
-  `npm run lint` clean.
-- Files: `src/lib/privacy/anonymizeDoc.ts` (+ test),
-  `src/components/preview/CanvasZoomControls.tsx` (new, + test),
-  `src/components/preview/CanvasResetButton.tsx`,
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
-  `src/components/editor/SectionList.tsx` (+ test),
-  `src/components/editor/RichTextField.tsx`,
-  `src/lib/preview/scanMetrics.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the desktop pill geometry, the
-  390px layout, and the real focus scroll are browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright
