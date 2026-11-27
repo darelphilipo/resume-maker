@@ -21,6 +21,26 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
+
+- [ ] P1: Fix desktop zoom `+` button jumping under `Reset` on click and snap zoom steps to clean 25% increments (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/CanvasResetButton.tsx`).
+  1. **Keep `- | % | +` anchored in place:** Render the conditional `Reset` button to the **left** of `[- | 100% | +]` (with `tabular-nums` and fixed `min-w-[3rem]` on the percentage readout) so `-` and `+` never shift a single pixel horizontally when `Reset` appears or disappears—preventing rapid `+` clicks from hitting `Reset`.
+  2. **Clean symmetric zoom steps:** Step desktop `+` / `-` zoom in clean `25%` increments relative to `fitScale` (`100%`, `125%`, `150%`, `175%`, `200%`, `225%`) so zooming down lands directly on `100%` without a stray `102%` step.
+
+- [ ] P1: Compact `Content` header pills (`Tidy` + `Match JD`) onto one row, redesign the bullet-check modal into scannable cards, and fix Indian `5+5` phone parsing (`src/components/editor/EditorWorkspace.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/lib/import/pasteResume.ts`).
+  1. **Single-row `Content` header (`EditorWorkspace.tsx`, `ResumeLintPopover.tsx`):** Rename `"Bullet polish"` to **`Tidy`** (modal title `"Tidy bullets"`, compact count badge `4`) and tighten both `Tidy` and `Match JD` to `h-8 text-xs px-2.5 whitespace-nowrap` so `Content`, `Tidy 4`, and `Match JD` sit on **one clean horizontal row** at `390px` with zero 2-row wrapping.
+  2. **Card-based `Tidy bullets` modal (`ResumeLintPopover.tsx`):**
+     - Replace the developer-facing intro (*"A deterministic check..."*) with plain copy (*"Quick local checks to tidy your bullets."*).
+     - Wrap each category in a crisp bordered card (matching `Review tools`): put the **`Remove periods` / `Add periods`** buttons **directly inside** the `Mixed bullet periods` card at the top, and group repeated verbs into one compact card (`Collected ×2`, `Maintained ×2`, `Documented ×2`) with a clickable jump-to-entry link instead of long walls of quoted text.
+  3. **Fix Indian `5+5` phone parsing (`pasteResume.ts`):** Update `PHONE_PATTERN` so `+91 63699 40501` (`+91` followed by `5+5` spaced digits) matches all 10 digits instead of stopping at 9 digits and leaking the trailing `1` into `basics.headline`.
+
+
+
+
+- [ ] P1: Anchor `Visual | ATS` on the left of the Preview bar so it never jumps horizontally when `Review` badges change (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`).
+  1. Use `justify-between` in the Preview header bar so `[Visual | ATS]` stays anchored to a fixed left position (beside the `Preview` title on desktop, flush-left on mobile) while `N pages` / `Fit 1p` / `Review ▾` sit on the right—preventing `Visual | ATS` from sliding left/right when switching `Visual` ↔ `ATS` or toggling `Anonymize` / `6s Scan`.
+- [ ] P1: Polish desktop 3-column proportions, Preview top alignment, and thin Windows scrollbars (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/app/globals.css`).
+  1. **Slim, subtle scrollbars (`globals.css`):** Add a reusable `.subtle-scroll` utility (`scrollbar-width: thin; scrollbar-color: rgba(30, 58, 95, 0.18) transparent;` plus `6px` `::-webkit-scrollbar` with transparent track and soft rounded thumb darkening slightly on hover) and apply it to the 3 desktop scrolling columns (`#panel-content`, `#panel-preview`, `#panel-design`) so Windows Chrome/Edge no longer displays 3 chunky gray scrollbar rails.
+  2. **Widen center Preview & align top baseline (`EditorWorkspace.tsx`, `LiveCanvasViewport.tsx`):** Slightly trim the desktop sidebars (`lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]`) and outer horizontal padding so the center `Preview` gains ~70–90px of width and visually dominates the screen. Align the `Preview` header row to the exact same top vertical baseline as `Content` and `Design`, and tighten the vertical gap above Page 1 so the live resume starts higher and feels balanced with both sidebars.
 ### P2 — Parser, Fit Math & Review-Tools Polish
 
 - [ ] P2: Polish `6s Scan` & `Trim tips` accuracy and Preview chrome (`src/lib/preview/scanMetrics.ts`, `src/lib/lint/bulletMetrics.ts`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/ReviewMenu.tsx`).
@@ -29,6 +49,9 @@ _empty
 - [ ] P2: Render a section heading when an overflowed `Studio Sidebar` entry spills onto Page 2 beneath a different section (`src/templates/shared/SectionRenderer.tsx`).
   1. When rendering a continuation entry block (e.g. `certifications:entry:4` spilling from Page 1's sidebar onto Page 2 after `awards`) whose `sectionId` differs from the immediately preceding block on that page, render its section heading (e.g. `Certifications` or `Certifications (cont.)`) so overflowed sidebar items never appear as entries under the previous section (`Awards`). Add a unit test covering a 5th certification overflowing from `Studio Sidebar` Page 1 onto Page 2 below `Awards`.
 
+- [ ] P2: Rename `⋮ More` to `Export ▾` on desktop and fix the button's clipped hover/background box (`src/components/editor/EditorWorkspace.tsx`).
+  1. Replace the fixed square width on desktop (`w-11 lg:w-auto lg:px-3 gap-1.5`) so the button's background, focus ring, and hover highlight cleanly wrap the full icon + label with balanced horizontal padding.
+  2. Rename the desktop label from `"More"` to **`"Export"`** (with a subtle chevron `▾` or download/file icon, keeping the compact `⋮` icon on mobile `< lg`), and place a subtle divider above `"Clear sample data"` inside the menu so export actions stay cleanly grouped.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
