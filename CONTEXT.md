@@ -1958,6 +1958,26 @@ rediscover.
       change. jsdom only sees the DOM/class contract; the real x-position is
       guarded by the `layout-consistency` e2e case (browser-unverified here).
 
+   122. **Desktop columns are slim-scrolled, and the Preview heading shares the
+       card baseline.** `.subtle-scroll` in `globals.css` is the one utility for
+       all three independently scrolling desktop columns: `panelClass()` applies
+       it to `#panel-content`, `#panel-design`, and `#panel-preview`, so the
+       Firefox `scrollbar-width: thin` + `scrollbar-color` and the 6px WebKit
+       track/rounded thumb/hover stay consistent instead of three chunky gray
+       rails on Windows. The grid is
+       `lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]` with `lg:px-4`; the center
+       gains ~72px. `[data-preview-mode-header]` uses `lg:items-start
+       lg:px-4 lg:pt-4` so the desktop `Preview` h2 starts at the same 16px
+       inset as the Content (`p-4` card) and Design (`lg:-mt-4 lg:pt-4`) h2s —
+       `items-center` in a 56px bar only *looked* close. Keep the viewport
+       root's **horizontal** padding (`lg:px-4`) because the centered-fit math
+       (#85) reads it; only the **vertical** padding was trimmed to `lg:py-2`,
+       and `[data-canvas-scroll]` keeps `py-3` so the paper edge/shadow still
+       clear the scroller and `CANVAS_SCROLL_PADDING_PX` stays correct. jsdom
+       cannot measure the baseline or gutter; the class/CSS contract tests and
+       the desktop e2e geometry case are the guards (the latter is
+       browser-unverified here).
+
 ## Verification and tooling
 
 ```powershell
@@ -2022,6 +2042,27 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-27 — Desktop proportions, Preview baseline, thin scrollbars
+- Task: top Queue item (P1), moved to In Progress first. Both sub-items were open.
+- Change: added the `.subtle-scroll` utility to `globals.css` and applied it
+  through `panelClass()` to all three desktop column scrollers. Trimmed the grid
+  to `lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]` plus `lg:px-4` (≈72px more for
+  the live resume), aligned the `Preview` heading to the Content/Design h2
+  baseline with `lg:items-start lg:px-4 lg:pt-4`, and tightened the gap plus the
+  viewport's desktop vertical padding so Page 1 starts higher. The viewport's
+  horizontal padding and the scroller's `py-3` were left alone so the centered
+  fit and desk math stay intact. Decision #122; README desktop tour updated.
+- Tests: new `src/app/subtleScrollCss.test.ts` CSS contract, new
+  `EditorWorkspace` column/alignment class test, updated the viewport padding
+  assertion, and a 1280px e2e geometry case. `npm run typecheck` clean;
+  `npm test` 1241 pass across 108 files; `npm run lint` clean.
+- Files: `src/app/globals.css` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+- Note: Playwright remains sandbox-blocked, so the real heading baseline,
+  1280px widths, and scrollbar gutters are browser-unverified.
 
 ### 2026-11-27 — Preview mode switch anchored left in the bar
 - Task: top Queue item (P1), moved to In Progress first. The single sub-item
@@ -2234,34 +2275,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `TASKS.md`.
 - Note: Playwright remains sandbox-blocked, so the 390px caret alignment and
   hover geometry are browser-unverified.
-
-### 2026-11-26 — Preview bar status/actions, navy mode switch, modal and export polish
-- Task: top Queue item (P1), moved to In Progress first. All three sub-items were
-  still open.
-- Change: `PageOverflowBanner` now renders the page count as borderless muted
-  status text plus one tinted `Fit 1p` pill (`ArrowsIn` compress icon), and
-  `EditorWorkspace` gives an applied fit the same tinted `Reset` pill instead of
-  a white `1 page · Reset` capsule. The active `Visual | ATS` segment uses the
-  Design panel's solid navy fill. `ReviewMenu` gives `Trim tips (N)` a `›`
-  chevron, all four dialog titles gained `font-serif`, and `Fit to 1 page` is
-  sentence case. `ExportJsonButton`'s trigger is now `Export & options` with a
-  desktop `More` label, and its items read `Download backup (.json)` /
-  `Export JSON Resume`. Decision #113; README feature tour updated.
-- Tests: muted-status/tinted-action and compact-row assertions, navy
-  active-segment checks, serif title checks for all four dialogs, Trim tips
-  chevron/hover, sentence-case fit label, and the renamed export trigger/items.
-  `npm run typecheck` clean; `npm test` 1182 pass across 107 files;
-  `npm run lint` clean.
-- Files: `src/components/preview/PageOverflowBanner.tsx` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/ReviewMenu.tsx` (+ test),
-  `src/components/editor/ResumeLintPopover.tsx` (+ test),
-  `src/components/editor/JdMatchDrawer.test.tsx`,
-  `src/components/preview/TrimTipsDialog.tsx` (+ test),
-  `src/components/shared/ExportJsonButton.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the 390px bar geometry is
-  browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

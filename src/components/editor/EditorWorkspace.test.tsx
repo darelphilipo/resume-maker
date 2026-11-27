@@ -387,6 +387,69 @@ describe("EditorWorkspace", () => {
     expect(designPanel).toContainElement(sticky);
   });
 
+  it("gives desktop three thin-scrolling columns with a wider, top-aligned Preview", async () => {
+    await renderReadyWorkspace();
+
+    const main = screen.getByRole("main");
+    const panels = screen.getAllByRole("tabpanel");
+
+    // Slimmer sidebars and less outer padding hand the width to the live resume.
+    expect(main).toHaveClass(
+      "lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]",
+      "lg:px-4",
+    );
+    expect(main).not.toHaveClass(
+      "lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)]",
+    );
+
+    // All three independent desktop scrollers use the same low-contrast rail.
+    for (const panel of panels) {
+      expect(panel).toHaveClass("subtle-scroll", "lg:overflow-y-auto");
+    }
+
+    const contentHeading = screen.getByRole("heading", {
+      level: 2,
+      name: "Content",
+    });
+    const designHeading = screen.getByRole("heading", {
+      level: 2,
+      name: "Design",
+    });
+    const previewHeading = screen.getByRole("heading", {
+      level: 2,
+      name: "Preview",
+    });
+
+    // Same type scale, and the Preview row starts at the same 16px inset as the
+    // Content/Design card headings. jsdom has no layout, so this class contract
+    // is the guard; the real baseline is a Playwright geometry check.
+    for (const heading of [contentHeading, designHeading, previewHeading]) {
+      expect(heading).toHaveClass(
+        "font-serif",
+        "text-xl",
+        "font-semibold",
+        "tracking-tight",
+      );
+    }
+    expect(contentHeading.closest("[data-content-header]")!.parentElement).toHaveClass(
+      "p-4",
+    );
+    expect(designHeading.parentElement).toHaveClass(
+      "lg:-mt-4",
+      "lg:pt-4",
+    );
+
+    const header = screen
+      .getByRole("button", { name: "Visual" })
+      .closest<HTMLElement>("[data-preview-mode-header]")!;
+
+    expect(header).toHaveClass("lg:items-start", "lg:px-4", "lg:pt-4");
+    expect(header).not.toHaveClass("lg:items-center");
+    // The paper sits closer to that aligned row instead of a roomy gap.
+    expect(header.parentElement).toHaveClass("gap-2");
+    expect(header.parentElement).not.toHaveClass("gap-3");
+  });
+
   it("starts with Basics collapsed so the section list is visible", async () => {
     await renderReadyWorkspace();
 

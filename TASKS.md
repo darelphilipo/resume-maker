@@ -21,9 +21,6 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P1: Polish desktop 3-column proportions, Preview top alignment, and thin Windows scrollbars (`src/components/editor/EditorWorkspace.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/app/globals.css`).
-  1. **Slim, subtle scrollbars (`globals.css`):** Add a reusable `.subtle-scroll` utility (`scrollbar-width: thin; scrollbar-color: rgba(30, 58, 95, 0.18) transparent;` plus `6px` `::-webkit-scrollbar` with transparent track and soft rounded thumb darkening slightly on hover) and apply it to the 3 desktop scrolling columns (`#panel-content`, `#panel-preview`, `#panel-design`) so Windows Chrome/Edge no longer displays 3 chunky gray scrollbar rails.
-  2. **Widen center Preview & align top baseline (`EditorWorkspace.tsx`, `LiveCanvasViewport.tsx`):** Slightly trim the desktop sidebars (`lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]`) and outer horizontal padding so the center `Preview` gains ~70–90px of width and visually dominates the screen. Align the `Preview` header row to the exact same top vertical baseline as `Content` and `Design`, and tighten the vertical gap above Page 1 so the live resume starts higher and feels balanced with both sidebars.
 ### P2 — Parser, Fit Math & Review-Tools Polish
 
 - [ ] P2: Polish `6s Scan` & `Trim tips` accuracy and Preview chrome (`src/lib/preview/scanMetrics.ts`, `src/lib/lint/bulletMetrics.ts`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/ReviewMenu.tsx`).
@@ -35,6 +32,21 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-27 — Desktop now gives the live resume the stage: the grid is
+  `lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem]` with `lg:px-4`, so the center
+  Preview gains ~72px, and its heading sits on the same 16px top baseline as
+  **Content** and **Design** (`lg:items-start lg:px-4 lg:pt-4`) while a tighter
+  gap and `lg:py-2` lift Page 1 higher. A new `.subtle-scroll` utility keeps all
+  three independently scrolling columns' scrollbars thin and low-contrast on
+  Windows instead of three chunky gray rails. Verified `npm run typecheck`,
+  `npm test` (1241 pass, 108 files), `npm run lint`. Files:
+  `src/app/globals.css` (+ new `subtleScrollCss.test.ts`),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  Playwright remains sandbox-blocked, so the 1280px baseline, widths, and
+  scrollbar gutters are browser-unverified.
 
 - [x] 2026-11-27 — The Preview bar's `Visual | ATS` switch is now pinned to the
   left edge instead of travelling with the right-aligned status cluster. The

@@ -278,7 +278,10 @@ in control of every line, and your data stays on your device.
   split mid-word; only long links break anywhere they need to.
 - **Three tidy columns on desktop**: on a wide window the editor fills the
   screen, and Content, Preview, and Design each scroll on their own instead of
-  growing the page and leaving a second scrollbar at the right edge. Moving a
+  growing the page and leaving a second scrollbar at the right edge. The center
+  Preview takes most of the width, its heading lines up with Content and Design,
+  and the live resume starts closer to the top; each column's scrollbar is a
+  slim, quiet rail instead of a chunky gray stripe. Moving a
   section up or down keeps your place in the preview, so it never snaps back to
   Page 1 while the pages re-measure; reordering individual entries keeps your
   place in Content too. Your name follows every keystroke in both the header and

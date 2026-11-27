@@ -86,3 +86,31 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/*
+ * The three desktop editor columns each own a scrollbar. Windows Chrome/Edge
+ * draws a chunky gray rail by default, so keep the gutter but make it a thin,
+ * low-contrast track that recedes behind the resume.
+ */
+.subtle-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(30, 58, 95, 0.18) transparent;
+}
+
+.subtle-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.subtle-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.subtle-scroll::-webkit-scrollbar-thumb {
+  background: rgba(30, 58, 95, 0.18);
+  border-radius: 9999px;
+}
+
+.subtle-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(30, 58, 95, 0.3);
+}

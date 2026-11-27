@@ -617,9 +617,12 @@ export function LiveCanvasViewport({
   }, [doc, fitScale, layout.isMeasuring, mode, onBulletReport]);
 
   return (
+    // Keep the horizontal padding for the centered-fit math, but trim the
+    // desktop top/bottom padding so Page 1 starts closer to the mode bar. The
+    // scroller's own `py-3` still protects the paper edge and its shadow.
     <div
       ref={containerRef}
-      className="relative flex min-h-0 w-full flex-1 flex-col overflow-clip rounded-xl px-2 py-2 lg:flex-none lg:p-4"
+      className="relative flex min-h-0 w-full flex-1 flex-col overflow-clip rounded-xl px-2 py-2 lg:flex-none lg:px-4 lg:py-2"
     >
       {/*
        * The only mobile scroll container in the preview. The page count, Fit,

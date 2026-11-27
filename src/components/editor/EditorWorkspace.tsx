@@ -404,6 +404,8 @@ export function EditorWorkspace() {
    * `flex` because it owns a fixed-height column with its own scroller; using
    * one display utility (instead of layering `block`/`flex`) keeps `hidden`
    * authoritative for inactive tabs without depending on class order.
+   * `subtle-scroll` keeps each column's own scrollbar thin and low-contrast so
+   * Windows Chrome/Edge do not frame every panel in a chunky gray rail.
    */
   function panelClass(
     tab: EditorTab,
@@ -412,7 +414,7 @@ export function EditorWorkspace() {
   ): string {
     const visibility = activeTab === tab ? display : "hidden";
 
-    return `${visibility} lg:block ${orderClass} min-w-0 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain`;
+    return `${visibility} lg:block ${orderClass} min-w-0 subtle-scroll lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain`;
   }
 
   return (
@@ -485,7 +487,7 @@ export function EditorWorkspace() {
           itself is a fixed 0×0, aria-hidden shell, so it adds no layout. */}
       {layout.measureLayer}
 
-      <main className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 lg:grid lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-5 lg:overflow-hidden">
+      <main className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-6 pt-4 sm:px-6 lg:grid lg:grid-cols-[20.5rem_minmax(0,1fr)_18rem] lg:items-start lg:gap-5 lg:overflow-hidden lg:px-4">
         {/* Reordering entries moves focused DOM nodes; without disabling scroll
             anchoring here the browser can shift this column's scrollTop after
             EntryActions has restored it. */}
@@ -626,10 +628,15 @@ export function EditorWorkspace() {
             display: "flex",
           })} min-h-0 flex-1 flex-col [scrollbar-gutter:stable]`}
         >
-          <div className="flex min-h-0 flex-1 flex-col gap-3 lg:flex-none">
+          <div className="flex min-h-0 flex-1 flex-col gap-2 lg:flex-none">
+            {/*
+             * At `lg` the mode row starts at the same 16px inset as the
+             * Content/Design card headings (card padding vs. this row's own
+             * padding), and the tighter gap lifts Page 1 toward their top edge.
+             */}
             <div
               data-preview-mode-header=""
-              className="editor-chrome z-10 flex min-h-10 shrink-0 flex-nowrap items-center justify-between gap-2 overflow-x-auto no-scrollbar border-b border-line/70 bg-background/95 px-1 backdrop-blur lg:sticky lg:top-0 lg:z-20 lg:min-h-14 lg:flex-wrap lg:overflow-visible"
+              className="editor-chrome z-10 flex min-h-10 shrink-0 flex-nowrap items-center justify-between gap-2 overflow-x-auto no-scrollbar border-b border-line/70 bg-background/95 px-1 backdrop-blur lg:sticky lg:top-0 lg:z-20 lg:min-h-14 lg:flex-wrap lg:items-start lg:overflow-visible lg:px-4 lg:pt-4"
             >
               {/*
                * The mode switch owns the left edge: a changing page pill or
