@@ -19,7 +19,11 @@ import {
   scoreBestCandidate,
   type ScorableText,
 } from "@/lib/import/featureScoring";
-import { mergeWrappedPdfLines, type PdfLine } from "@/lib/import/pdfLayout";
+import {
+  joinPhraseSegments,
+  mergeWrappedPdfLines,
+  type PdfLine,
+} from "@/lib/import/pdfLayout";
 import {
   detectProfileLink,
   websiteLabelFromUrl,
@@ -52,6 +56,7 @@ type SectionKey =
   | "profiles"
   | "projects"
   | "certifications"
+  | "certificationsEducation"
   | "awards"
   | "languages"
   | "interests"
@@ -72,6 +77,8 @@ type Line = {
   hasLayout: boolean;
   lineGap?: number;
   breakBefore?: "page" | "column";
+  /** PDF phrase runs, used to keep wide skill-column gaps as separators. */
+  phrases?: string[];
 };
 
 const SECTION_ALIASES: Record<string, SectionKey> = {
@@ -156,6 +163,8 @@ const SECTION_ALIASES: Record<string, SectionKey> = {
   "selected projects": "projects",
   "side projects": "projects",
   "academic projects": "projects",
+  "key project": "projects",
+  "key projects": "projects",
   certifications: "certifications",
   certification: "certifications",
   certificates: "certifications",
@@ -169,6 +178,11 @@ const SECTION_ALIASES: Record<string, SectionKey> = {
   // certifications parser still keeps each line (and its date/issuer) intact.
   "certifications & awards": "certifications",
   "certifications and awards": "certifications",
+  "certifications & education": "certificationsEducation",
+  "certifications and education": "certificationsEducation",
+  "education & certifications": "certificationsEducation",
+  "education and certifications": "certificationsEducation",
+  "professional development": "certifications",
   awards: "awards",
   honors: "awards",
   honours: "awards",
@@ -180,6 +194,10 @@ const SECTION_ALIASES: Record<string, SectionKey> = {
   "awards and honors": "awards",
   "awards & achievements": "awards",
   "awards and achievements": "awards",
+  "achievements & extracurriculars": "awards",
+  "achievements and extracurriculars": "awards",
+  "achievements & extra curriculars": "awards",
+  "achievements and extra curriculars": "awards",
   "honors & awards": "awards",
   "honors and awards": "awards",
   languages: "languages",
@@ -252,15 +270,27 @@ const COMPANY_SUFFIX_ONLY = /^(inc|llc|ltd|corp|corporation|gmbh|plc|co)\.?$/i;
 // The lookahead stops a short abbreviation such as `B.Eng` from matching the
 // start of a normal word (`Bengaluru`); `B.Sc.` / `M.Sc.` need their own forms.
 const DEGREE_PATTERN =
-  /((?:Bachelor|Master|Associate|Doctor)(?:'s)?(?:\s+of\s+(?!in\b)[A-Za-z]+(?:\s+(?!in\b)[A-Za-z]+){0,2})?|B\.?\s?Sc\.?|M\.?\s?Sc\.?|B\.?\s?S\.?|M\.?\s?S\.?|B\.?\s?A\.?|M\.?\s?A\.?|MBA|Ph\.?\s?D\.?|B\.?\s?F\.?\s?A\.?|M\.?\s?F\.?\s?A\.?|B\.?\s?Eng\.?|M\.?\s?Eng\.?)(?![A-Za-z])(?:\s+in\s+([^,|•·]+))?/i;
+  /((?:Bachelor|Master|Associate|Doctor)(?:'s)?(?:\s+of\s+(?!in\b)[A-Za-z]+(?:\s+(?!in\b)[A-Za-z]+){0,2})?|B\.?\s?Sc\.?|M\.?\s?Sc\.?|B\.?\s?S\.?|M\.?\s?S\.?|B\.?\s?A\.?|M\.?\s?A\.?|MBA|Ph\.?\s?D\.?|B\.?\s?F\.?\s?A\.?|M\.?\s?F\.?\s?A\.?|B\.?\s?Eng\.?|M\.?\s?Eng\.?|B\.?\s?Tech\.?|M\.?\s?Tech\.?|B\.?\s?Com\.?|M\.?\s?Com\.?|BCA|MCA|B\.?\s?Arch\.?|M\.?\s?Arch\.?|B\.?\s?E\.?|M\.?\s?E\.?)(?![A-Za-z])(?:\s+in\s+([^,|•·]+))?/i;
 const GPA_PATTERN =
   /(?:gpa[:\s]*([0-9]+(?:\.[0-9]+)?)(?:\s*\/\s*[0-9.]+)?|([0-9]+(?:\.[0-9]+)?)\s*gpa)/i;
 const DATE_TOKEN =
-  "(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\.?\\s+\\d{4}|\\d{1,2}/\\d{4}|\\d{4}-\\d{1,2}|\\d{4}";
+  "(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\.?\\s+\\d{4}|(?:Spring|Summer|Fall|Autumn|Winter)\\s+\\d{4}|\\d{1,2}/\\d{4}|\\d{4}-\\d{1,2}|\\d{4}";
 const DATE_RANGE_PATTERN = new RegExp(
   `(${DATE_TOKEN})\\s*(?:-|–|—|to)\\s*(${DATE_TOKEN}|present|current|now|ongoing)`,
   "i",
 );
+// `2019–21` / `2023-24`: the end year is abbreviated to two digits. The end
+// must be 13 or higher so a `YYYY-MM` token (`2020-01`) is never mistaken for a
+// range.
+const SHORT_YEAR_RANGE_PATTERN =
+  /(?:^|[\s|,;•·–—(])((?:19|20)\d{2})\s*[-–—]\s*(\d{2})(?=$|[\s|,;•·–—)])/;
+const SEASON_MONTHS: Record<string, string> = {
+  spring: "03",
+  summer: "06",
+  fall: "09",
+  autumn: "09",
+  winter: "12",
+};
 const SINGLE_DATE_PATTERN = new RegExp(
   `(?:^|[\\s|,;•·–—])\\(?(${DATE_TOKEN})\\)?(?=$|[\\s|,;•·–—])`,
   "i",
@@ -274,6 +304,10 @@ const SINGLE_DATE_IN_LINE = new RegExp(
 const ENTRY_DATE_MARKER =
   /\b(completed|graduated|awarded|earned|finished|received|expected|anticipated|due)\b(?:\s+(?:in|on|by))?[\s:]*/i;
 const INLINE_BULLET_SEPARATOR = /[,;|•·▪◦●○■□‣⁃]|\s{2,}/;
+// `3 Months` / `1 Month` is a duration, not a header line. Only a whole-line
+// token counts, so a bullet that happens to mention three months stays copy.
+const DURATION_LINE =
+  /^(?:duration\s*[:\-–—]?\s*)?(\d{1,2})\s*(?:months?|mos?)$/i;
 
 type DateRange = {
   startDate: string;
@@ -422,6 +456,7 @@ function linesFromPdf(input: readonly PdfLine[]): Line[] {
       hasLayout: true,
       lineGap: line.lineGap,
       breakBefore: line.breakBefore,
+      phrases: line.phrases.map((phrase) => phrase.text),
     });
   });
 
@@ -440,8 +475,20 @@ function normalizeLines(input: string | readonly PdfLine[]): Line[] {
   return typeof input === "string" ? normalizeTextLines(input) : linesFromPdf(input);
 }
 
+/** `E X P E R I E N C E` → `EXPERIENCE`, common in LaTeX/InDesign exports. */
+function collapseLetterSpaced(value: string): string {
+  const tokens = value.trim().split(/\s+/);
+
+  if (tokens.length >= 3 && tokens.every((token) => token.length === 1)) {
+    return tokens.join("");
+  }
+
+  return value;
+}
+
 function headingKey(value: string): SectionKey | null {
-  const cleaned = value
+  const withoutNotes = value.replace(/\s*\([^)]*\)\s*$/g, "");
+  const cleaned = collapseLetterSpaced(withoutNotes)
     .replace(/^#+\s*/, "")
     .replace(BULLET_PREFIX, "")
     .replace(/[*_]+/g, "")
@@ -449,11 +496,34 @@ function headingKey(value: string): SectionKey | null {
     .trim()
     .toLowerCase();
 
-  if (cleaned === "" || cleaned.length > 48) {
+  if (cleaned === "") {
     return null;
   }
 
-  return SECTION_ALIASES[cleaned] ?? null;
+  if (cleaned.length <= 48) {
+    const direct = SECTION_ALIASES[cleaned];
+
+    if (direct) {
+      return direct;
+    }
+  }
+
+  // Multi-word letter-spaced headings paste as one run of single letters, so
+  // `P R O F E S S I O N A L D E V E L O P M E N T` collapses to a single
+  // word. Compare against the aliases with their spaces removed to recover it.
+  const compact = cleaned.replace(/\s+/g, "");
+
+  if (compact.length > 48) {
+    return null;
+  }
+
+  for (const [alias, key] of Object.entries(SECTION_ALIASES)) {
+    if (alias.replace(/\s+/g, "") === compact) {
+      return key;
+    }
+  }
+
+  return null;
 }
 
 function modalFontSize(lines: readonly Line[]): number {
@@ -993,6 +1063,15 @@ function linesToRichText(lines: string[]): string {
 
 function normalizeDateToken(token: string, yearMonth: "01" | "12"): string {
   const trimmed = token.trim();
+  const season = /^([A-Za-z]+)\s+(\d{4})$/.exec(trimmed);
+
+  if (season) {
+    const month = SEASON_MONTHS[season[1].toLowerCase()];
+
+    if (month) {
+      return `${season[2]}-${month}`;
+    }
+  }
 
   if (/^\d{4}$/.test(trimmed)) {
     return `${trimmed}-${yearMonth}`;
@@ -1001,7 +1080,62 @@ function normalizeDateToken(token: string, yearMonth: "01" | "12"): string {
   return parseMonthInput(trimmed) ?? "";
 }
 
+/** Add months to a `YYYY-MM` value, used for `3 Months` durations. */
+function addMonths(monthValue: string, months: number): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(monthValue);
+
+  if (!match || months <= 0) {
+    return "";
+  }
+
+  const total = Number(match[1]) * 12 + (Number(match[2]) - 1) + months;
+  const year = Math.floor(total / 12);
+  const month = (total % 12) + 1;
+
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}`;
+}
+
+function durationMonths(value: string): number {
+  const match = DURATION_LINE.exec(value.trim());
+
+  return match ? Number(match[1]) : 0;
+}
+
+function extractShortYearRange(value: string): DateRange | null {
+  const match = SHORT_YEAR_RANGE_PATTERN.exec(value);
+
+  if (!match) {
+    return null;
+  }
+
+  const startYear = Number(match[1]);
+  const endYearPart = Number(match[2]);
+
+  if (endYearPart < 13) {
+    return null;
+  }
+
+  let endYear = Math.floor(startYear / 100) * 100 + endYearPart;
+
+  if (endYear < startYear) {
+    endYear += 100;
+  }
+
+  return {
+    startDate: `${match[1]}-01`,
+    endDate: `${String(endYear).padStart(4, "0")}-12`,
+    current: false,
+    matchedText: match[0].replace(/^[\s|,;•·(]+/, ""),
+  };
+}
+
 function extractDateRange(value: string): DateRange | null {
+  const short = extractShortYearRange(value);
+
+  if (short) {
+    return short;
+  }
+
   const match = DATE_RANGE_PATTERN.exec(value);
 
   if (!match) {
@@ -1301,6 +1435,7 @@ function splitEntryLines(
   const headers: Line[] = [];
   const body: string[] = [];
   let dates: DateRange | null = null;
+  let duration = 0;
   let inBody = false;
 
   for (const rawLine of block) {
@@ -1313,6 +1448,13 @@ function splitEntryLines(
     if (isBullet(line)) {
       inBody = true;
       body.push(line);
+      continue;
+    }
+
+    const months = durationMonths(line);
+
+    if (months > 0) {
+      duration = duration || months;
       continue;
     }
 
@@ -1341,6 +1483,14 @@ function splitEntryLines(
 
     if (headers.length >= 3) {
       inBody = true;
+    }
+  }
+
+  if (duration > 0 && dates?.startDate && dates.endDate === "") {
+    const computed = addMonths(dates.startDate, duration);
+
+    if (computed !== "") {
+      dates = { ...dates, endDate: computed };
     }
   }
 
@@ -1377,7 +1527,9 @@ function markDescriptionLines(
 function splitHeaderParts(value: string): string[] {
   // `as` is a compact synonym for `at`: `Acme Corp as Senior Engineer`.
   return value
-    .split(/\s+(?:at|as|@)\s+|\s*[|•·]\s*|\s+[–—]\s+|\s+-\s+|\s*,\s*/i)
+    .split(
+      /\s+(?:at|as|@)\s+|\s*[|•·]\s*|\s*[–—]\s*|\s+-\s+|\s*,\s*/i,
+    )
     .map(trimSeparators)
     .filter((part) => part !== "");
 }
@@ -1522,7 +1674,7 @@ type EducationHeader = {
 const CGPA_PATTERN =
   /cgpa\s*:?\s*([0-9]+(?:\.[0-9]+)?)(?:\s*\/\s*([0-9.]+))?/i;
 const PERCENT_GRADE_PATTERN =
-  /(?:^|[\s,|•·])(\d{1,3}(?:\.\d{1,2})?)\s*%(?=$|[\s,|•·])/;
+  /(?:^|[\s,|•·–—:-])(\d{1,3}(?:\.\d{1,2})?)\s*%(?=$|[\s,|•·–—:])/;
 
 /**
  * Grade formats vary by region: `GPA: 3.8`, `CGPA: 8.7/10`, and `85%` all mean
@@ -1610,7 +1762,7 @@ function parseEducationHeader(headers: Line[]): EducationHeader {
 
   for (const header of headers) {
     const segments = header.text
-      .split(/\s*[|•·]\s*|\s+[–—]\s+|\s+-\s+/)
+      .split(/\s*[|•·]\s*|\s*[–—]\s*|\s+-\s+/)
       .map(trimSeparators)
       .filter((segment) => segment !== "");
 
@@ -1692,6 +1844,28 @@ function looksLikeSchool(value: string): boolean {
   return SCHOOL_WORDS.test(value);
 }
 
+/**
+ * Classify one block inside a combined `Certifications & Education` heading.
+ * A degree at the *start* of the line, a school word, or a grade is education;
+ * a certification that merely ends in `– Associate` stays a certification.
+ */
+function isEducationEntryLine(value: string): boolean {
+  const line = cleanLine(value);
+
+  if (line === "") {
+    return false;
+  }
+
+  const degree = DEGREE_PATTERN.exec(line);
+
+  return (
+    looksLikeSchool(line) ||
+    (degree !== null && degree.index === 0) ||
+    /\b(?:cgpa|gpa)\b/i.test(line) ||
+    gradeFromText(line).grade !== ""
+  );
+}
+
 function buildEducation(block: Line[]): EducationItem | null {
   // A lone year on an education entry is the graduation date.
   const { headers, body, dates } = splitEntryLines(
@@ -1744,13 +1918,21 @@ function splitKeywords(value: string): string[] {
   return keywords;
 }
 
-function parseSkills(lines: string[], category = ""): SkillItem[] {
+function skillLineText(line: Line): string {
+  if (line.phrases && line.phrases.length > 1) {
+    return joinPhraseSegments(line.phrases);
+  }
+
+  return line.text;
+}
+
+function parseSkills(lines: readonly Line[], category = ""): SkillItem[] {
   const items: SkillItem[] = [];
   let uncategorized: SkillItem | null = null;
 
   for (const rawLine of lines) {
     const line = stripBullet(
-      cleanLine(rawLine).replace(
+      cleanLine(skillLineText(rawLine)).replace(
         /^(?:proficient (?:in|with)|experienced (?:in|with)|knowledge of|familiar with|skills?)\s*:?\s*/i,
         "",
       ),
@@ -1863,7 +2045,7 @@ function extractSingleDate(value: string): { rest: string; date: string } {
 
 function splitEntrySegments(value: string): string[] {
   return value
-    .split(/\s*[|•·]\s*|\s+[–—]\s+/)
+    .split(/\s*[|•·]\s*|\s*[–—]\s*|\s+-\s+/)
     .map(trimSeparators)
     .filter((part) => part !== "");
 }
@@ -2457,15 +2639,38 @@ export function parsePastedResume(
   const experience = splitEntryBlocks(sections.experience ?? [])
     .map(buildExperience)
     .filter((item): item is ExperienceItem => item !== null);
-  const education = splitEntryBlocks(sections.education ?? [])
-    .map(buildEducation)
-    .filter((item): item is EducationItem => item !== null);
+  const combinedEducationBlocks: string[][] = [];
+  const combinedCertificationBlocks: string[][] = [];
+
+  for (const block of splitCompactEntryBlocks(
+    sections.certificationsEducation ?? [],
+  )) {
+    if (block.some(isEducationEntryLine)) {
+      combinedEducationBlocks.push(block);
+    } else {
+      combinedCertificationBlocks.push(block);
+    }
+  }
+
+  const education = [
+    ...splitEntryBlocks(sections.education ?? [])
+      .map(buildEducation)
+      .filter((item): item is EducationItem => item !== null),
+    ...combinedEducationBlocks
+      .map((block) => buildEducation(block.map(plainLine)))
+      .filter((item): item is EducationItem => item !== null),
+  ];
   const projects = splitEntryBlocks(sections.projects ?? [])
     .map(buildProject)
     .filter((item): item is ProjectItem => item !== null);
-  const certifications = splitCompactEntryBlocks(sections.certifications ?? [])
-    .map(buildCertification)
-    .filter((item): item is CertificationItem => item !== null);
+  const certifications = [
+    ...splitCompactEntryBlocks(sections.certifications ?? [])
+      .map(buildCertification)
+      .filter((item): item is CertificationItem => item !== null),
+    ...combinedCertificationBlocks
+      .map(buildCertification)
+      .filter((item): item is CertificationItem => item !== null),
+  ];
   const awards = splitCompactEntryBlocks(sections.awards ?? [])
     .map(buildAward)
     .filter((item): item is AwardItem => item !== null);
@@ -2482,9 +2687,9 @@ export function parsePastedResume(
     .map(buildReference)
     .filter((item): item is ReferenceItem => item !== null);
   const skills = [
-    ...parseSkills(sectionText("skills")),
-    ...parseSkills(sectionText("hardSkills"), "Hard skills"),
-    ...parseSkills(sectionText("softSkills"), "Soft skills"),
+    ...parseSkills(sections.skills ?? []),
+    ...parseSkills(sections.hardSkills ?? [], "Hard skills"),
+    ...parseSkills(sections.softSkills ?? [], "Soft skills"),
   ];
 
   if (

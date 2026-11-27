@@ -74,7 +74,14 @@ export const FALLBACK_CHAR_WIDTH = 4.5;
 const DECORATIVE_GLYPHS = /[\uE000-\uF8FF\u200B-\u200D\u2060\uFEFF]/g;
 /** Characters that mean "this line continues on the next line". */
 const WRAP_GLYPHS = /[\u00AD\uFFFD]/g;
-const TRAILING_WRAP_GLYPH = /[\u00AD\uFFFD]\s*$/;
+/** A trailing soft hyphen, replacement glyph, or non-breaking hyphen wraps. */
+const TRAILING_WRAP_GLYPH = /[\u00AD\uFFFD\u2011]\s*$/;
+/** Smart quotes, typographic dashes, and decorative bullet markers. */
+const SMART_SINGLE_QUOTES = /[\u2018\u2019\u201A\u201B]/g;
+const SMART_DOUBLE_QUOTES = /[\u201C\u201D\u201E\u201F]/g;
+const TYPOGRAPHIC_DASHES = /[\u2010\u2012-\u2015]/g;
+const DECORATIVE_BULLET_START =
+  /^(\s*)[\u27A2\u27A4\u2794\u25BA\u25B8\u2756\u25C6\u25C7\u2713\u2714]\s*/;
 
 const BOLD_FONT_NAME = /bold|semibold|demi|heavy|black/i;
 
@@ -116,7 +123,25 @@ const FORCE_SPACE_AFTER = new Set([
   "]",
   "}",
 ]);
-const BULLET_GLYPHS = new Set(["•", "●", "▪", "◦", "‣", "○", "■", "➢"]);
+const BULLET_GLYPHS = new Set([
+  "•",
+  "●",
+  "▪",
+  "◦",
+  "‣",
+  "○",
+  "■",
+  "➢",
+  "➤",
+  "➔",
+  "►",
+  "▸",
+  "❖",
+  "◆",
+  "◇",
+  "✓",
+  "✔",
+]);
 
 function lastChar(value: string): string {
   return value.trimEnd().slice(-1);
@@ -205,6 +230,57 @@ function stripDecorativeGlyphs(value: string): string {
   return value.replace(DECORATIVE_GLYPHS, "");
 }
 
+/**
+ * Normalize the typographic noise real-world PDFs carry before layout: NFKC
+ * decomposes ligatures (`ﬁ` → `fi`), smart quotes become straight quotes,
+ * typographic dashes become `-`, and decorative line-start bullets become `•`.
+ * Kept string-only so the rules stay unit-testable without PDF.js.
+ */
+export function normalizePdfText(value: string): string {
+  return value
+    .normalize("NFKC")
+    .replace(SMART_SINGLE_QUOTES, "'")
+    .replace(SMART_DOUBLE_QUOTES, '"')
+    .replace(TYPOGRAPHIC_DASHES, "-")
+    .replace(DECORATIVE_BULLET_START, "$1• ");
+}
+
+const PHRASE_TRAILING_SEPARATOR = /[,;:|•·]\s*$/;
+const PHRASE_LEADING_SEPARATOR = /^[,;:|•·]/;
+
+/**
+ * Join a PDF line's phrases as a skill list. Phrase boundaries already mean a
+ * visual gap wider than the body character width, which in a Skills line is a
+ * column separator (`Python    SQL`), not a word space. An existing comma,
+ * colon, or bullet wins so the text never gains `,,`.
+ */
+export function joinPhraseSegments(phrases: readonly string[]): string {
+  let result = "";
+
+  for (const raw of phrases) {
+    const text = collapseWhitespace(raw.replace(WRAP_GLYPHS, ""));
+
+    if (text === "") {
+      continue;
+    }
+
+    if (result === "") {
+      result = text;
+      continue;
+    }
+
+    const separator =
+      PHRASE_TRAILING_SEPARATOR.test(result) ||
+      PHRASE_LEADING_SEPARATOR.test(text)
+        ? " "
+        : ", ";
+
+    result = `${result}${separator}${text}`;
+  }
+
+  return result;
+}
+
 export function isBoldFontName(fontName: string): boolean {
   return BOLD_FONT_NAME.test(fontName);
 }
@@ -240,7 +316,7 @@ function toPositionedItem(item: PdfTextItem): PositionedItem | null {
     return null;
   }
 
-  const text = stripDecorativeGlyphs(item.str);
+  const text = normalizePdfText(stripDecorativeGlyphs(item.str));
 
   if (text.trim() === "") {
     return null;
@@ -290,7 +366,9 @@ function median(values: number[]): number {
 export function computeTypicalCharWidth(items: PdfTextItem[]): number {
   const usable = items
     .map((item) => {
-      const text = collapseWhitespace(stripDecorativeGlyphs(item.str));
+      const text = collapseWhitespace(
+        normalizePdfText(stripDecorativeGlyphs(item.str)),
+      );
       const width = item.width ?? 0;
 
       return {
@@ -780,10 +858,23 @@ export function mergeWrappedPdfLines(lines: PdfLine[]): PdfLine[] {
     const previous = merged[merged.length - 1];
 
     if (previous?.joinNext) {
+      // A non-breaking hyphen at the wrap point is a break marker, not part of
+      // the word; soft hyphens and replacement glyphs were already stripped.
+      const head = previous.text.replace(/\u2011\s*$/, "");
+      const phrases = [...previous.phrases];
+
+      if (phrases.length > 0) {
+        const last = phrases[phrases.length - 1];
+        phrases[phrases.length - 1] = {
+          ...last,
+          text: last.text.replace(/\u2011\s*$/, ""),
+        };
+      }
+
       merged[merged.length - 1] = {
         ...previous,
-        text: collapseWhitespace(`${previous.text}${line.text}`),
-        phrases: [...previous.phrases, ...line.phrases],
+        text: collapseWhitespace(`${head}${line.text}`),
+        phrases: [...phrases, ...line.phrases],
         isBoldLine: previous.isBoldLine && line.isBoldLine,
         maxFontSize: Math.max(previous.maxFontSize, line.maxFontSize),
         joinNext: line.joinNext,

@@ -18,6 +18,7 @@ import {
   type PdfTextItem,
 } from "@/lib/import/pdfLayout";
 import { parsePastedResume } from "@/lib/import/pasteResume";
+import { detectProfileLink } from "@/lib/links/contactLinks";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 
 export type { PdfLine, PdfPhrase, PdfTextItem } from "@/lib/import/pdfLayout";
@@ -30,6 +31,47 @@ export type PdfResumeResult = {
   /** Parsed resume, or null when the text did not look like a resume. */
   doc: ResumeDocument | null;
 };
+
+/** A PDF link annotation as exposed by PDF.js `page.getAnnotations()`. */
+export type PdfLinkAnnotation = {
+  subtype?: string;
+  url?: string;
+  unsafeUrl?: string;
+};
+
+/**
+ * Profile URLs that exist only as hyperlinks in the PDF. Design tools often
+ * print `LinkedIn` or a GitHub icon while the destination lives in the link
+ * annotation, so the visible text alone loses the contact. Only known profile
+ * hosts are returned; a personal site stays a website and is never invented.
+ */
+export function profileUrlsFromAnnotations(
+  annotations: readonly PdfLinkAnnotation[],
+): string[] {
+  const seen = new Set<string>();
+  const urls: string[] = [];
+
+  for (const annotation of annotations) {
+    if (annotation.subtype && annotation.subtype !== "Link") {
+      continue;
+    }
+
+    const raw = (annotation.url ?? annotation.unsafeUrl ?? "").trim();
+
+    if (raw === "" || !detectProfileLink(raw)) {
+      continue;
+    }
+
+    if (seen.has(raw)) {
+      continue;
+    }
+
+    seen.add(raw);
+    urls.push(raw);
+  }
+
+  return urls;
+}
 
 /** A gap this much larger than the usual line spacing starts a new paragraph. */
 const PARAGRAPH_GAP_FACTOR = 1.6;
@@ -166,6 +208,7 @@ async function readPdfPages(data: ArrayBuffer): Promise<PdfTextItem[][]> {
 
   try {
     const pages: PdfTextItem[][] = [];
+    const annotationUrls: string[] = [];
 
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
       const page = await document.getPage(pageNumber);
@@ -196,8 +239,41 @@ async function readPdfPages(data: ArrayBuffer): Promise<PdfTextItem[][]> {
         }
       }
 
+      // Hyperlinks are not part of the text layer. Collect recognised profile
+      // destinations so a "LinkedIn" label still imports as a real profile.
+      try {
+        for (const url of profileUrlsFromAnnotations(
+          await page.getAnnotations(),
+        )) {
+          if (!annotationUrls.includes(url)) {
+            annotationUrls.push(url);
+          }
+        }
+      } catch {
+        // Annotations are optional.
+      }
+
       pages.push(items);
       page.cleanup();
+    }
+
+    if (annotationUrls.length > 0 && pages.length > 0) {
+      const firstPage = pages[0];
+      const topY = firstPage.reduce((highest, item) => {
+        const y =
+          item.transform && item.transform.length >= 6
+            ? item.transform[5]
+            : 0;
+
+        return Math.max(highest, y);
+      }, 0);
+
+      firstPage.unshift({
+        str: annotationUrls.join(" | "),
+        transform: [1, 0, 0, 1, 0, topY + 12],
+        width: 0,
+        fontName: "",
+      });
     }
 
     return pages;

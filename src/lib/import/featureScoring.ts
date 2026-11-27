@@ -54,7 +54,7 @@ const MONTH_TOKEN =
 
 /** Any date token a resume header might carry. */
 const DATE_TEXT = new RegExp(
-  `(?:${MONTH_TOKEN}\\s+\\d{4}|\\d{1,2}/\\d{4}|\\d{4}-\\d{1,2}|\\b(?:19|20)\\d{2}\\b)`,
+  `(?:${MONTH_TOKEN}\\s+\\d{4}|(?:Spring|Summer|Fall|Autumn|Winter)\\s+\\d{4}|\\d{1,2}/\\d{4}|\\d{4}-\\d{1,2}|\\b(?:19|20)\\d{2}\\b)`,
   "i",
 );
 
