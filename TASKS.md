@@ -43,6 +43,12 @@ _empty
 - [ ] P2: Polish `6s Scan` metric matching (`₹`/`€`/`£` + `+`) and add a 1-tap active exit bar (`src/lib/preview/scanMetrics.ts`, `src/components/preview/LiveCanvasViewport.tsx`).
   1. **Expand `METRIC_PATTERN` (`scanMetrics.ts`):** Support global currency prefixes (`$`, `₹`, `€`, `£`), Indian shorthand (`L`, `Cr`), and trailing `+` (`1,000+`, `11+`, `₹10L`, `₹2Cr`, `€500K`, `£200K`) inside `<span class="scan-metric">` so currency symbols and `+` signs don't stay dimmed.
   2. **1-line active bar (`LiveCanvasViewport.tsx`):** When `6s Scan` is active in Visual Preview, show a slim 1-line notice bar above the canvas (*"6s Scan: showing what pops in a quick skim"*) with a compact **`Turn off`** button so users can exit in 1 tap without reopening `Review tools`.
+     
+- [ ] P2: Tighten `Trim tips` accuracy & calm 1-page badge noise (`src/lib/lint/bulletMetrics.ts`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/ReviewMenu.tsx`).
+  1. **Fix word-count dedup & scale-aware line tolerance (`bulletMetrics.ts`):** Track each word by its match index instead of `!line.words.includes(word)` so repeated words on the same line aren't undercounted, and scale `LINE_TOP_TOLERANCE_PX` proportionally to the active canvas scale (e.g. `Math.max(0.5, 2 * scale)`) so mobile `390px` line detection stays exact.
+  2. **Accurate summary copy (`bulletMetrics.ts`):** Update `summarizeBulletIssues` so bullets flagged for `> 3 lines` (under 240 chars) say `"long bullets (4+ lines)"` instead of always saying `"240+ characters"`, and only count `reclaimableLines` when `lines > 3` or orphan-wrapped.
+  3. **Calm 1-page header (`ReviewMenu.tsx`):** Keep `Trim tips` available inside `Review tools`, but only show the yellow numeric badge on the `Review ▾` trigger button when `pageCount > 1` (when reclaiming lines actually helps fit 1 page).
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
