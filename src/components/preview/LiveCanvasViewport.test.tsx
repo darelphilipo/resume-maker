@@ -352,7 +352,7 @@ describe("LiveCanvasViewport", () => {
     );
 
     expect(zoomControls).not.toBeNull();
-    expect(zoomControls).toHaveClass("absolute", "bottom-3", "right-3");
+    expect(zoomControls).toHaveClass("absolute", "bottom-4", "right-4");
     expect(
       screen.queryByRole("button", { name: "Reset preview zoom" }),
     ).not.toBeInTheDocument();
@@ -412,6 +412,49 @@ describe("LiveCanvasViewport", () => {
     fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
     await waitForStop(100);
 
+    expect(
+      screen.queryByRole("button", { name: "Reset zoom to fit" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("resets to exactly 100% after an off-ladder wheel zoom", async () => {
+    const { wrapper, fitScale } = await renderCanvas();
+
+    const canvasScale = (): number => {
+      const content = wrapper.querySelector<HTMLElement>(
+        ".react-transform-component",
+      );
+      const match = content?.style.transform.match(/scale\(([^)]+)\)/);
+
+      return match ? Number.parseFloat(match[1]) : Number.NaN;
+    };
+
+    // ~107% of fit: the wheel leaves the pill on an intermediate percentage
+    // that used to survive Reset as a lingering "107%" with Reset still shown.
+    wrapper.dispatchEvent(
+      new WheelEvent("wheel", {
+        bubbles: true,
+        cancelable: true,
+        deltaY: -80,
+        ctrlKey: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(canvasScale()).toBeGreaterThan(fitScale);
+      expect(
+        screen.getByRole("button", { name: "Reset zoom to fit" }),
+      ).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset zoom to fit" }));
+
+    await waitFor(() => {
+      // The exact fit scale (the library renders it to 8 decimals), not an
+      // interrupted animation frame sitting at an in-between percentage.
+      expect(canvasScale()).toBeCloseTo(fitScale, 6);
+      expect(screen.getByText("100%")).toBeInTheDocument();
+    });
     expect(
       screen.queryByRole("button", { name: "Reset zoom to fit" }),
     ).not.toBeInTheDocument();

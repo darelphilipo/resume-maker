@@ -1781,10 +1781,12 @@ rediscover.
         three tabpanels are not (`lg:sticky` belongs to the chrome rows, not the
         columns). The `Accent color` legend renders the active swatch name
         inline (`Accent color · Indigo`) via `data-accent-name`, so the current
-        choice is visible without hovering; the swatch target stays
-        `rounded-full` so its `focus-within` ring matches the circular dot.
-        `Studio Sidebar`'s badge is the short `Human review` label, which keeps
-        the template name on one line at 390px.
+        choice is visible without hovering. Each swatch target is a fixed
+        `h-10 w-10` square centred in its grid track (`justify-self-center`,
+        `pointer-coarse:h-11 pointer-coarse:w-11`) rather than a stretched cell:
+        a grid-wide label turned the `focus-within` ring into an oval around the
+        circular dot. `Studio Sidebar`'s badge is the short `Human review`
+        label, which keeps the template name on one line at 390px.
 
    113. **Preview status is text, actions are tinted pills, and the export menu
         names its verbs.** The Preview bar (owned by `EditorWorkspace`, not
@@ -1980,24 +1982,33 @@ rediscover.
 
    123. **The desktop zoom pill grows leftwards and snaps to a ladder.**
        `CanvasZoomControls` renders the conditional `Reset` **before** `[- | % |
-       +]`: the overlay is `absolute right-3`, so adding a control extends the
-       pill to the left and the zoom buttons keep their exact x-position (a
-       rapid second `+` tap cannot land on the newly appeared Reset). The
-       readout is `min-w-[3rem] tabular-nums` so digit changes cannot move them
-       either. `nextZoomStepPercent` in `src/lib/zoom/zoomSteps.ts` is the one
-       100/125/150/175/200/225 rule; an off-ladder wheel scale snaps in the
-       requested direction, so `-` from 102% lands on 100%, not another stray
-       step. `LiveCanvasViewport.zoomBy` applies the target with `setTransform`,
-       because this pinned `react-zoom-pan-pinch` rounds `zoomIn`/`zoomOut`
-       targets to **two decimals** (a fitted 125% became 124%). It reads the
-       latest transform from `transformRef` mirrored in `onTransform` — the
-       imperative ref's `.state` is a creation-time snapshot and consecutive
-       clicks must not step from stale values — and keeps the view centre
-       anchored. Wheel/pan max scale is raised to `fitScale * 2.25` so the last
-       stop is reachable at near-full-width fits. The helper is pure; jsdom
-       tests wait for the *canvas scale* to settle, because a percent-only
-       `waitFor` passes on an intermediate animation frame and makes chained
-       clicks step from the wrong scale.
+       +]`: the overlay is right-anchored, so adding a control extends the pill
+       to the left and the zoom buttons keep their exact x-position (a rapid
+       second `+` tap cannot land on the newly appeared Reset). The overlay is
+       `bottom-4 right-4` (not `bottom-3 right-3`) with an explicit
+       `overflow-visible` wrapper: 16px clears the preview root's rounded
+       `overflow-clip` corner, so the pill's bottom border and shadow are never
+       shaved. The readout is `min-w-[3rem] tabular-nums` so digit changes cannot
+       move the buttons either. `nextZoomStepPercent` in
+       `src/lib/zoom/zoomSteps.ts` is the one 100/125/150/175/200/225 rule; an
+       off-ladder wheel scale snaps in the requested direction, so `-` from 102%
+       lands on 100%, not another stray step. `LiveCanvasViewport.zoomBy` applies
+       the target with a **zero-duration**
+       `setTransform(fitOffsetX, 0, targetScale, 0)` where
+       `targetScale = fitScale * nextPct / 100`: this pinned
+       `react-zoom-pan-pinch` rounds `zoomIn`/`zoomOut` targets to two decimals
+       (a fitted 125% became 124%), and an animated, centre-anchored step could
+       be interrupted so Reset settled on an in-between ~107%. `resetZoom` calls
+       the same transform with `fitScale` and duration 0, so it lands on exact
+       100% and the Reset control hides. It reads the latest transform from
+       `transformRef` mirrored in `onTransform` — the imperative ref's `.state`
+       is a creation-time snapshot and consecutive clicks must not step from
+       stale values. Wheel/pan max scale is raised to `fitScale * 2.25` so the
+       last stop is reachable at near-full-width fits. The helper is pure; jsdom
+       tests wait for the *canvas scale* to settle and compare it at 6 decimals
+       because the library renders the CSS transform to 8 decimals. A
+       percent-only `waitFor` passes on an intermediate animation frame and
+       makes chained clicks step from the wrong scale.
 
   124. **Scan metrics cover global money, and Trim tips stay quiet on one
        page.** `METRIC_PATTERN` in `scanMetrics.ts` accepts `$`/`₹`/`€`/`£`
@@ -2086,6 +2097,34 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-28 — Exact 100% zoom reset, unclipped zoom pill, circular swatch focus
+- Task: top Queue item (P1), moved to In Progress first. Both sub-items were
+  open.
+- Change: `LiveCanvasViewport.zoomBy` and `resetZoom` now apply a
+  **zero-duration** `setTransform(fitOffsetX, 0, targetScale, 0)` from the live
+  `fitScale` (target = `fitScale * nextPct / 100`; Reset uses `fitScale`
+  itself). This removes the animated, centre-anchored step that could settle on
+  an in-between ~107% with Reset still visible, and makes chained `+` clicks
+  step exactly 100 → 125 → 150. `CanvasZoomControls` moved to
+  `bottom-4 right-4` with an explicit `overflow-visible` wrapper so the
+  preview's rounded `overflow-clip` corner cannot shave the pill's bottom
+  border. `DesignPanel` accent swatch labels are fixed `h-10 w-10` squares
+  (`justify-self-center`, 44px on coarse pointers), so the `focus-within` ring
+  stays a crisp circle instead of stretching into an oval. Decisions
+  #112/#123; README tour updated.
+- Tests: new viewport regression wheels to ~107%, clicks Reset, and asserts the
+  rendered canvas scale is the fit scale (6 decimals; the library renders 8) and
+  the readout is `100%` with Reset gone. Updated pill geometry (`bottom-4`,
+  `right-4`, `overflow-visible`) and swatch square/focus-ring assertions.
+  `npm run typecheck` clean; `npm test` 1255 pass across 109 files;
+  `npm run lint` clean.
+- Note: Playwright remains sandbox-blocked, so the real pill corner clearance
+  and focus ring are browser-unverified.
+- Files: `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/CanvasZoomControls.tsx` (+ test),
+  `src/components/editor/DesignPanel.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 ### 2026-11-27 — 6s Scan currencies + exit bar; Trim tips accuracy and calm badge
 - Task: picked the top genuinely open Queue item (P2). The three Queue items
@@ -2301,34 +2340,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Next run: run `npm run typecheck && npm test` (and lint); if green, move the
   item to Done dated 2026-11-26 with the existing file list. No new code changes
   are expected unless a check fails.
-
-### 2026-11-26 — Blank-PDF fix from mobile Content/Design + ASCII-safe print title
-- Task: the lone Queue item (P0), moved to In Progress first. All four
-  sub-items were open.
-- Change: lifted `layout.measureLayer` into `EditorWorkspace` between the
-  header and `<main>` and removed it from `LiveCanvasViewport`, so pagination
-  measures even while the mobile Preview panel is `display: none`. Added
-  `printablePages(doc, pages)` to `PrintPortal`: an empty/missing page list now
-  falls back to `[HEADER_BLOCK_ID, ...selectVisibleSectionIds({ doc })]`, so
-  Save PDF can never capture a blank sheet. `resumeDocumentTitle` now returns an
-  ASCII-safe underscore slug (`Divya_Prakash_Resume`) and `printResume` exposes
-  `isPrintTitleActive()`; the editor title effect skips its set/restore while a
-  print job owns the title, preserving the filename during the coarse-pointer
-  spool grace. Decision #115; README feature tour and Save-a-PDF steps updated.
-- Tests: new PrintPortal empty-pages/missing-pages fallbacks, underscore-slug
-  and print-lock cases, updated `EditorWorkspace` title expectations, and a
-  mobile (390×844) e2e that lands on Content, clicks Save PDF, and asserts the
-  captured portal has pages/sections/text plus the restored slug title.
-  `PrintCall` gained `sectionCount`/`textLength`. `npm run typecheck` clean;
-  `npm test` 1186 pass across 107 files; `npm run lint` clean.
-- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx`,
-  `src/components/preview/PrintPortal.tsx` (+ test),
-  `src/lib/print/printDocument.ts` (+ test), `e2e/helpers.ts`,
-  `e2e/mobile.spec.ts`, `e2e/print.spec.ts`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the mobile e2e and the real
-  Android spool filename are browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

@@ -204,11 +204,41 @@ describe("DesignPanel", () => {
       const target = input.closest("label") as HTMLElement;
       const dot = target.querySelector("[data-accent-dot]") as HTMLElement;
 
-      expect(target).toHaveClass("relative", "rounded-full");
+      expect(target).toHaveClass(
+        "relative",
+        "rounded-full",
+        "h-10",
+        "w-10",
+        "justify-self-center",
+      );
+      // A fixed square target keeps the focus ring circular instead of
+      // stretching it into an oval across the grid cell.
+      expect(target).not.toHaveClass("min-w-0", "flex-1", "w-full");
       expect(target).toHaveAttribute("title", swatch.label);
       expect(input).toHaveAttribute("aria-label", swatch.label);
       expect(dot).toHaveClass("h-7", "w-7", "rounded-full");
       expect(dot).toHaveStyle({ backgroundColor: swatch.hex });
+    }
+  });
+
+  it("keeps every accent swatch target a fixed square for a circular focus ring", () => {
+    render(<DesignPanel />);
+
+    const strip = document.querySelector(
+      "[data-accent-strip]",
+    ) as HTMLElement;
+
+    for (const swatch of ACCENT_SWATCHES) {
+      const input = document.getElementById(
+        `accent-${swatch.id}`,
+      ) as HTMLInputElement;
+      const target = input.closest("label") as HTMLElement;
+
+      // Every cell is a 40px square centred in its grid track, so
+      // `focus-within` draws the same crisp circle at every card width.
+      expect(target.parentElement).toBe(strip);
+      expect(target).toHaveClass("h-10", "w-10", "shrink-0", "justify-self-center");
+      expect(target).toHaveClass("focus-within:ring-2", "focus-within:ring-primary");
     }
   });
 

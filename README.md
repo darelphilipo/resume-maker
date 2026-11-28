@@ -252,8 +252,9 @@ in control of every line, and your data stays on your device.
   so the PDF never starts with a blank page holding only your name.
 - **Accent, fonts, and density** in Design: pick an accent from seven curated
   colors (or plain monochrome) in one compact strip of round swatches — the
-  selected color wears a crisp ring and checkmark, and its name sits beside the
-  **Accent color** heading, on hover, and in the screen-reader label. **Sans**,
+  selected color wears a crisp ring and checkmark, its keyboard focus ring stays
+  a clean circle, and its name sits beside the **Accent color** heading, on
+  hover, and in the screen-reader label. **Sans**,
   **Serif**, and **Classic** pairings and **Compact**, **Normal**, and
   **Relaxed** spacing sit in short one-row controls, with each font name drawn
   in the typeface it applies. All four design choices stay scannable without
@@ -315,13 +316,14 @@ in control of every line, and your data stays on your device.
   and returns the page to its fitted width; **Reset** and **Reset fit** both
   bring you back to the top of the resume, just like when you first open the
   Preview tab. On a computer, a small `− 100% +` pill floats in the bottom-right
-  corner of the preview, so you can zoom with the mouse or keyboard without
-  discovering a shortcut. Each click steps in clean 25% jumps from the fitted
-  width (100%, 125%, 150%, 175%, 200%, 225%), and one click down from any zoom
-  level takes you back to 100% in a single click. A **Reset** appears to the
-  left of the buttons once you are zoomed in, so the zoom buttons stay exactly
-  where they are, even if you click quickly. The mouse wheel and two-finger
-  scrolling
+  corner of the preview, clear of the paper's rounded edge, so you can zoom with
+  the mouse or keyboard without discovering a shortcut. Each click steps in
+  clean 25% jumps from the fitted width (100%, 125%, 150%, 175%, 200%, 225%),
+  and one click down from any zoom level takes you back to exactly 100% in a
+  single click. A **Reset** appears to the left of the buttons once you are
+  zoomed in, so the zoom buttons stay exactly where they are, even if you click
+  quickly, and Reset always lands on a true 100% instead of an in-between
+  percentage. The mouse wheel and two-finger scrolling
   move the editor; hold **Ctrl** (or **⌘**) while scrolling to zoom the resume.
   The fitted page holds its size and position
   when a scrollbar appears or disappears, so it never shrinks and grows on its

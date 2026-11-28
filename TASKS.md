@@ -22,11 +22,6 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-- [ ] P1: Fix desktop zoom `Reset` settling at `107%`, zoom pill bottom clipping, and oval focus ring on `Accent color` swatches (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/DesignPanel.tsx`).
-  1. **Exact `100%` zoom reset & clean 25% steps (`LiveCanvasViewport.tsx`):** Compute desktop `+` / `-` and `Reset` transforms directly from the current live `fitScale` (using `setTransform(fitOffsetX, 0, targetScale, 0)` where `targetScale = fitScale * nextPct / 100`, and `Reset` sets `fitScale` exactly) so `+` always steps `100% → 125% → 150%` and `Reset` always settles at `100%` with `Reset` hidden. Give the floating zoom pill `bottom-4 right-4` inside a non-clipped wrapper so its bottom border is never cut off.
-  2. **Circular swatch focus ring (`DesignPanel.tsx`):** Make each `Accent color` swatch `<label>` a fixed square (`h-10 w-10 rounded-full items-center justify-center`) so `:focus-visible` draws a crisp circle instead of a stretched oval.
-
-
 ### P2 — Parser, Fit Math & Review-Tools Polish
 
 - [ ] P2: Render a section heading when an overflowed `Studio Sidebar` entry spills onto Page 2 beneath a different section (`src/templates/shared/SectionRenderer.tsx`).
@@ -38,6 +33,23 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-28 — Desktop zoom now resets to exactly `100%` and steps in clean
+  25% jumps. `zoomBy` and `resetZoom` apply a zero-duration
+  `setTransform(fitOffsetX, 0, targetScale, 0)` from the live `fitScale`, so an
+  interrupted centre-anchored animation can no longer leave Reset showing
+  ~`107%`, and `+` always lands on 100 → 125 → 150. The floating zoom pill moved
+  to `bottom-4 right-4` inside an explicit `overflow-visible` wrapper, clear of
+  the preview's rounded `overflow-clip` corner, so its bottom border is never
+  shaved. Each `Accent color` swatch label is now a fixed `h-10 w-10` square
+  (`justify-self-center`, 44px on coarse pointers), so its `focus-within` ring
+  is a crisp circle instead of a stretched oval. Verified `npm run typecheck`,
+  `npm test` (1255 pass, 109 files), `npm run lint`. Files:
+  `src/components/preview/LiveCanvasViewport.tsx` (+ test),
+  `src/components/preview/CanvasZoomControls.tsx` (+ test),
+  `src/components/editor/DesignPanel.tsx` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`. Playwright remains sandbox-blocked, so the real pill corner
+  clearance and focus ring are browser-unverified.
 
 - [x] 2026-11-27 — `6s Scan` now reads global money and can be switched off in
   one tap: `METRIC_PATTERN` accepts `$`/`₹`/`€`/`£`, Indian `L`/`Cr`, Western

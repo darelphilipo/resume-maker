@@ -31,10 +31,13 @@ export function CanvasZoomControls({
   onZoomOut: () => void;
   onReset: () => void;
 }) {
+  // `bottom-4 right-4` keeps the pill clear of the preview's rounded
+  // `overflow-clip` corner, and `overflow-visible` stops this wrapper from
+  // cropping the pill's own bottom border and shadow.
   return (
     <div
       data-canvas-zoom-controls=""
-      className="pointer-events-none absolute bottom-3 right-3 z-20 hidden lg:flex"
+      className="pointer-events-none absolute bottom-4 right-4 z-20 hidden overflow-visible lg:flex"
     >
       <div
         role="group"

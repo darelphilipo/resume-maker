@@ -44,10 +44,7 @@ import {
 import { MAX_ZOOM_STEP_PERCENT, nextZoomStepPercent } from "@/lib/zoom/zoomSteps";
 
 import { AtsTextView } from "./AtsTextView";
-import {
-  CanvasResetOverlay,
-  RESET_ANIMATION_MS,
-} from "./CanvasResetButton";
+import { CanvasResetOverlay } from "./CanvasResetButton";
 import { CanvasZoomControls } from "./CanvasZoomControls";
 import { PageStack } from "./PageStack";
 import { TouchPanCanvas } from "./TouchPanCanvas";
@@ -543,12 +540,10 @@ export function LiveCanvasViewport({
     }
 
     resetScroll();
-    void wrapperRef.current?.setTransform(
-      fitOffsetX,
-      0,
-      fitScale,
-      RESET_ANIMATION_MS,
-    );
+    // A zero-duration reset lands on the exact fit scale instead of animating
+    // toward it, so the readout can never settle on an intermediate percentage
+    // (an interrupted animation used to leave Reset showing ~107%).
+    void wrapperRef.current?.setTransform(fitOffsetX, 0, fitScale, 0);
   };
 
   const resetFit = (): void => {
@@ -559,8 +554,10 @@ export function LiveCanvasViewport({
   /**
    * Desktop zoom buttons jump between clean 25%-of-fit stops. The library's
    * `zoomIn`/`zoomOut` round the target to two decimals, which turns a fitted
-   * 125% into 124% at common fit scales, so the step uses `setTransform` with
-   * the exact target scale while keeping the view centre anchored.
+   * 125% into 124% at common fit scales, so the step uses a zero-duration
+   * `setTransform` with the exact target scale, re-centred on the fitted offset.
+   * The final scale is applied synchronously, so a rapid second click reads the
+   * real stop instead of an animation frame in between.
    */
   const zoomBy = (direction: 1 | -1): void => {
     const wrapper = wrapperRef.current;
@@ -569,8 +566,7 @@ export function LiveCanvasViewport({
       return;
     }
 
-    const { scale, positionX, positionY } =
-      transformRef.current ?? wrapper.instance.state;
+    const { scale } = transformRef.current ?? wrapper.instance.state;
     const targetPercent = nextZoomStepPercent((scale / fitScale) * 100, direction);
 
     if (targetPercent === null) {
@@ -578,18 +574,8 @@ export function LiveCanvasViewport({
     }
 
     const targetScale = (fitScale * targetPercent) / 100;
-    const element = wrapper.instance.wrapperComponent;
-    const centerX = (element?.clientWidth ?? 0) / 2;
-    const centerY = (element?.clientHeight ?? 0) / 2;
-    const contentX = (centerX - positionX) / scale;
-    const contentY = (centerY - positionY) / scale;
 
-    void wrapper.setTransform(
-      centerX - contentX * targetScale,
-      centerY - contentY * targetScale,
-      targetScale,
-      RESET_ANIMATION_MS,
-    );
+    void wrapper.setTransform(fitOffsetX, 0, targetScale, 0);
   };
 
   // Review drives Reset fit through this ref, while the floating zoom pill
