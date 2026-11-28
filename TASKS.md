@@ -21,7 +21,16 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-_empty
+- [ ] P1: Add real PDF-output regression suite (`e2e/pdf-output.spec.ts`) and Android `Pixel 7` project (`playwright.config.ts`).
+  1. **Add Android mobile project (`playwright.config.ts`):** Add a `mobile-chrome` project using `devices["Pixel 7"]` alongside existing `chromium` (`Desktop Chrome`) and `mobile-safari` (`iPhone 14` WebKit).
+  2. **Create `e2e/pdf-output.spec.ts` (Chromium `page.pdf()` + `pdfjs-dist` verification):** Write a helper that generates real PDF bytes with `page.pdf({ preferCSSPageSize: true, printBackground: true })` and parses them with `pdfjs-dist` to assert exact `numPages` and per-page extracted text across these 6 scenarios:
+     - **1-page preset parity (`A4` & `Letter`):** Software Engineer preset exports as exact `1` PDF page on both `A4` and `Letter`, with non-empty text containing the candidate's name, Experience, Education, and Skills.
+     - **Cold mobile print from `Content` tab (`390×844`):** Open `/editor` (stay on `Content`, never tap `Preview`), export PDF, and assert exact `1` non-blank PDF page (guarding the blank-PDF bug).
+     - **Multi-page `Studio Sidebar` (`A4` & `Letter`):** Import a dense multi-page resume (including 6+ certifications and Awards), switch to `Studio Sidebar`, export PDF, and assert `pdf.numPages === previewPageCount`, every PDF page has substantial text (no blank Page 1 or alternating blank pages), and `Awards` is present in the PDF text.
+     - **Multi-page single-column (`Engineering Classic` + `Compact 1-Pager`):** Verify exact preview-to-PDF page parity and zero blank trailing pages.
+     - **`Anonymize` PDF check:** Toggle `Anonymize` ON, export PDF, and assert `"Alex Taylor"` and `"Company A"` appear in the PDF text while the real name, email, and employer do **not** appear anywhere in the PDF.
+     - **`6s Scan` print isolation + WebKit print-CSS check:** Toggle `6s Scan` ON, emulate `media: "print"` (runs on both Chromium and `mobile-safari` WebKit), and assert `#print-portal` has no `.resume-scan` class and every `.resume-page` computes to `min-height: 0px` and `height <= pageHeight`.
+
 
 
 ## Done
