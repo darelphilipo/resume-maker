@@ -21,6 +21,10 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
+- [ ] P0: Fix iOS Safari print blocking dialog and alternating blank pages in PDF export (`src/lib/print/printDocument.ts`, `src/components/preview/PrintTriggerButton.tsx`, `src/styles/print.css`).
+  1. **Eliminate Safari "blocked from automatically printing" alert (`printDocument.ts`, `PrintTriggerButton.tsx`):** Invoke `window.print()` **synchronously** inside the `onClick` user-gesture handler (remove any `await document.fonts.ready`, `requestAnimationFrame`, or `setTimeout` before `window.print()`) so iOS Safari never treats it as an automatic/unsolicited print.
+  2. **Eliminate Safari alternating blank pages (`print.css`):** In `@media print`, size each `.resume-page` with a `1mm` subpixel safety margin (`height: calc(var(--page-height) - 1mm); max-height: calc(var(--page-height) - 1mm); overflow: hidden; box-sizing: border-box;`), apply `break-after: page; page-break-after: always;` **only** to `.resume-page:not(:last-child)` (with `break-after: auto` on `:last-child`), and ensure `html, body` use `height: auto !important; min-height: 0 !important; overflow: visible !important; margin: 0 !important; padding: 0 !important;` so a 3-page resume prints as **exact 3 pages** on iOS Safari, Chrome, and Firefox.
+  3. Add unit tests verifying `window.print()` is called synchronously on click and guarding the `@media print` `:not(:last-child)` and `- 1mm` rules in `print.css`.
 
 - [ ] P2: Add privacy-first, zero-PII aggregate product analytics via a Cloudflare Pages Function (`functions/api/event.ts`, `src/lib/analytics/trackEvent.ts`, `src/components/launcher/Launcher.tsx`, `src/components/editor/EditorWorkspace.tsx`).
   1. **Client beacon (`src/lib/analytics/trackEvent.ts`):** Export a tiny fire-and-forget `trackEvent(event, meta?)` helper using `navigator.sendBeacon("/api/event", ...)` (silently no-oping on `localhost`, when `navigator.doNotTrack === "1"`, or if offline/blocked). Payload contains strictly `{ event, meta, device: "mobile" | "desktop" }` — never any resume text, filename, URL, or user ID.
