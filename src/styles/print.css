@@ -60,18 +60,21 @@
   }
 
   /* Each logical page renders with exact physical padding and clean page breaks.
-     `height` + `overflow: hidden` are deliberate: pagination already guarantees
-     every packed page fits, and a fixed, clipped page box cannot be fragmented
-     by Chrome's print layout into an extra page. Without the clamp, a Studio
-     Sidebar grid that measured a fraction taller than the paper in print (mm/pt
-     rounding) was pushed whole onto Page 2, leaving Page 1 with only the header.
-     The `- 1mm` safety margin absorbs subpixel/mm rounding: a page box exactly
-     as tall as the physical sheet can overflow by a hair on iOS Safari, which
-     then inserts an alternating blank page between every real page. */
+     `height: auto` + `overflow: hidden` are deliberate: pagination already
+     guarantees every packed page fits, and a clipped page box cannot be
+     fragmented by Chrome's print layout into an extra page. A fixed height is
+     what iOS Safari mishandles: `preview.css` sets
+     `min-height: var(--page-height)`, which neutralized the clamped height and
+     made a page box as tall as the physical sheet overflow by a hair, inserting
+     an alternating blank page between every real page. Resetting `min-height`
+     and letting the page shrink to its content (bounded by `max-height`) keeps
+     the break after each page clean. The `- 2mm` safety margin absorbs
+     subpixel/mm rounding without depending on an exact page height. */
   .resume-page {
     width: var(--page-width, 210mm);
-    height: calc(var(--page-height, 297mm) - 1mm);
-    max-height: calc(var(--page-height, 297mm) - 1mm);
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: calc(var(--page-height, 297mm) - 2mm) !important;
     padding: var(--page-margin-y, 12pt) var(--page-margin-x, 14pt);
     box-sizing: border-box;
     overflow: hidden;

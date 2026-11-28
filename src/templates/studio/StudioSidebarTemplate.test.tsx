@@ -681,11 +681,12 @@ describe("StudioSidebarTemplate", () => {
     );
 
     expect(pageRule, "the print page rule must exist").not.toBeNull();
+    // The page must shrink to its content instead of matching the sheet height,
+    // otherwise iOS Safari inserts an alternating blank page.
+    expect(pageRule?.[1]).toContain("min-height: 0 !important;");
+    expect(pageRule?.[1]).toContain("height: auto !important;");
     expect(pageRule?.[1]).toMatch(
-      /height:\s*calc\(var\(--page-height[^)]*\)\s*-\s*1mm\)/,
-    );
-    expect(pageRule?.[1]).toMatch(
-      /max-height:\s*calc\(var\(--page-height[^)]*\)\s*-\s*1mm\)/,
+      /max-height:\s*calc\(var\(--page-height[^)]*\)\s*-\s*2mm\)/,
     );
     expect(pageRule?.[1]).toContain("overflow: hidden;");
     expect(pageRule?.[1]).toContain("box-sizing: border-box;");

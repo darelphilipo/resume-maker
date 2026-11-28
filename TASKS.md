@@ -21,13 +21,25 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P0: Fix iOS Safari alternating blank print pages by resetting `min-height` and switching `.resume-page` to `height: auto` in `@media print` (`src/styles/print.css`).
-  1. In `@media print` for `.resume-page`, set `min-height: 0 !important; height: auto !important; max-height: calc(var(--page-height) - 2mm) !important; overflow: hidden;` (overriding `preview.css`'s `min-height: var(--page-height)` which previously neutralized `max-height`), while keeping `break-after: page; page-break-after: always;` strictly on `.resume-page:not(:last-child)` and `break-after: auto` on `:last-child`.
-  2. Update the `print.css` unit test to assert `min-height: 0` and `height: auto` are present in `@media print`.
+_empty
 
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-28 — Fixed iOS Safari's alternating blank print pages. In
+  `@media print`, `.resume-page` now sets `min-height: 0 !important` and
+  `height: auto !important` with `max-height: calc(var(--page-height) - 2mm)
+  !important`, so a page shrinks to its content instead of staying a full sheet
+  tall (the base `preview.css` `min-height: var(--page-height)` was overriding
+  the old clamped height and causing a hairline overflow on iOS). `overflow:
+  hidden` and the `:not(:last-child)`-only `break-after: page` are unchanged.
+  Verified `npm run typecheck`, `npm test` (1329 pass, 116 files; geometry
+  assertions replaced, not added). Files: `src/styles/print.css`,
+  `src/lib/print/printCss.test.ts`,
+  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `CONTEXT.md`,
+  `TASKS.md`. Playwright remains sandbox-blocked, so the real iOS Safari print
+  sheet and page count are browser-unverified.
 
 - [x] 2026-11-28 — Accessibility & readability polish. Home input placeholders now
   use the AA-contrast `--brand-muted` token instead of `#8a8f94`; every UI-chrome

@@ -2197,6 +2197,30 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-28 — iOS Safari print: pages shrink instead of matching the sheet
+- Task: top Queue item (P0), moved to In Progress with a plan first.
+- Change: in `@media print`, `.resume-page` now sets
+  `min-height: 0 !important; height: auto !important;
+  max-height: calc(var(--page-height, 297mm) - 2mm) !important`, keeping
+  `overflow: hidden` and the `:not(:last-child)`-only page break. The root
+  cause was `preview.css`'s base `min-height: var(--page-height)`: it is a
+  separate property, and CSS resolves `min-height` above `max-height`, so the
+  old clamped `height`/`max-height` never took effect and every page box stayed
+  a full sheet tall — which iOS Safari turned into an alternating blank page.
+  Shrinking to content removes the hairline overflow without depending on an
+  exact page height.
+- Tests: `printCss.test.ts` now asserts `min-height: 0`, `height: auto`, the
+  `- 2mm` max-height, `overflow: hidden`, and the unchanged break rules; the
+  duplicate geometry assertion in `StudioSidebarTemplate.test.tsx` was updated
+  to match. `npm run typecheck` clean; `npm test` 1329 pass across 116 files
+  (same count; assertions replaced, not added).
+- Note: Playwright remains sandbox-blocked, so the real iOS Safari print sheet
+  and physical page count are still browser-unverified. README already promises
+  "each page exactly once — no blank", so it needed no edit.
+- Files: `src/styles/print.css`, `src/lib/print/printCss.test.ts`,
+  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `CONTEXT.md`,
+  `TASKS.md`.
+
 ### 2026-11-28 — Accessibility & readability polish (contrast, 12px floor, 44px targets)
 - Task: top Queue item (P1), moved to In Progress with a plan first. The Queue
   also held a duplicated P0 print item; the accidental nested copy was removed
@@ -2449,30 +2473,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/preview/LiveCanvasViewport.tsx`,
   `src/components/preview/TrimTipsDialog.test.tsx`, `README.md`, `CONTEXT.md`,
   `TASKS.md`.
-
-### 2026-11-27 — Desktop zoom buttons stay put; clean 25% steps
-- Task: top Queue item (P1), moved to In Progress first. Both sub-items were
-  open.
-- Change: moved the desktop pill's conditional `Reset` ahead of `[- | % | +]`
-  (right-anchored overlay, so buttons keep their x-position on rapid `+`
-  clicks) and gave the readout `min-w-[3rem] tabular-nums`. Added the pure
-  `nextZoomStepPercent` ladder (100–225 by 25) in `zoomSteps.ts`; `zoomBy` now
-  applies exact `setTransform` targets with view-centre anchoring instead of
-  the library's 2-decimal-rounded `zoomIn`/`zoomOut`, and reads the current
-  scale from a ref mirrored in `onTransform`. Wheel max scale now covers the
-  last 225% stop. Decision #123; README zoom tour updated.
-- Tests: new zoomSteps ladder/clamp cases, pill order + readout class test,
-  and a chained 100→125→150→125→100 viewport test that waits for the *canvas
-  scale* to settle. `npm run typecheck` clean; `npm test` 1246 pass across 109
-  files; `npm run lint` clean. Item moved to Done. One first-run failure showed
-  124% (library rounds button zoom to two decimals), a second showed a stale
-  step when `waitFor` caught an intermediate animation frame.
-- Files: `src/components/preview/CanvasZoomControls.tsx` (+ test),
-  `src/lib/zoom/zoomSteps.ts` (new, + test),
-  `src/components/preview/LiveCanvasViewport.tsx` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`. `CanvasResetButton.tsx` needed no change (mobile
-  overlay only); Playwright remains sandbox-blocked, so real pill geometry is
-  browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

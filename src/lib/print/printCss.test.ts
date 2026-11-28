@@ -31,18 +31,19 @@ describe("print.css page geometry", () => {
     expect(body).toContain("padding: 0 !important;");
   });
 
-  it("leaves a 1mm safety margin so iOS Safari cannot add blank pages", () => {
+  it("lets pages shrink and leaves a 2mm margin so iOS Safari cannot add blank pages", () => {
     const page = printSection().match(/\.resume-page\s*\{([^}]*)\}/);
 
     expect(page, "the .resume-page print rule must exist").not.toBeNull();
 
     const body = page?.[1] ?? "";
 
+    // `preview.css` sets `min-height: var(--page-height)`, which neutralized
+    // `max-height` and made a sheet-tall page overflow by a hair on iOS Safari.
+    expect(body).toContain("min-height: 0 !important;");
+    expect(body).toContain("height: auto !important;");
     expect(body).toMatch(
-      /height:\s*calc\(var\(--page-height[^)]*\)\s*-\s*1mm\)/,
-    );
-    expect(body).toMatch(
-      /max-height:\s*calc\(var\(--page-height[^)]*\)\s*-\s*1mm\)/,
+      /max-height:\s*calc\(var\(--page-height[^)]*\)\s*-\s*2mm\)\s*!important/,
     );
     expect(body).toContain("overflow: hidden;");
     expect(body).toContain("box-sizing: border-box;");
