@@ -437,6 +437,18 @@ describe("Launcher", () => {
     expect(textarea).toHaveValue("Ada Lovelace\nSoftware Engineer");
   });
 
+  it("keeps input placeholders at AA contrast on the warm paper surface", async () => {
+    const user = userEvent.setup();
+    render(<Launcher />);
+    await openPasteMenu(user);
+
+    const textarea = screen.getByLabelText("Resume text");
+
+    // #8a8f94 on #fbfaf7 was ~3.1:1; the brand muted token is ~5.5:1 on white.
+    expect(textarea).toHaveClass("placeholder:text-muted");
+    expect(textarea).not.toHaveClass("placeholder:text-[#8a8f94]");
+  });
+
   it("enables the AI import action immediately on change and paste", async () => {
     const user = userEvent.setup();
     render(<Launcher />);

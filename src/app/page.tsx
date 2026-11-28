@@ -32,7 +32,7 @@ export default function Home() {
               <h1 className="font-serif text-lg font-semibold leading-tight tracking-tight sm:text-xl">
                 Resume Maker
               </h1>
-              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">
                 Free resume builder
               </p>
             </div>

@@ -146,7 +146,7 @@ export function RichTextField({
     () => ({
       attributes: {
         class:
-          "tiptap min-h-24 w-full min-w-0 break-words bg-surface px-3 py-2 text-sm leading-relaxed text-text outline-none",
+          "tiptap min-h-24 w-full min-w-0 break-words bg-surface px-3 py-2 text-sm leading-relaxed text-text outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset",
         "aria-label": ariaLabel,
         "aria-multiline": "true",
         role: "textbox",

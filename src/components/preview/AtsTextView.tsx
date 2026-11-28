@@ -165,7 +165,7 @@ export function AtsTextView({ doc }: { doc: ResumeDocument }) {
                 className="border-b border-line"
               >
                 <div className="flex items-center justify-between gap-2 bg-surface-muted px-3 py-2">
-                  <h3 className="min-w-0 text-[11px] font-semibold uppercase tracking-wide text-muted">
+                  <h3 className="min-w-0 text-xs font-semibold uppercase tracking-wide text-muted">
                     Contact details
                   </h3>
                   <CopyButton
@@ -193,7 +193,7 @@ export function AtsTextView({ doc }: { doc: ResumeDocument }) {
                   className="border-b border-line last:border-b-0"
                 >
                   <div className="flex items-center justify-between gap-2 bg-surface-muted px-3 py-2">
-                    <h3 className="min-w-0 text-[11px] font-semibold uppercase tracking-wide text-muted">
+                    <h3 className="min-w-0 text-xs font-semibold uppercase tracking-wide text-muted">
                       {section.title}
                     </h3>
                     <CopyButton

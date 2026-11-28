@@ -98,7 +98,7 @@ const TRUST_POINTS = [
 ] as const satisfies ReadonlyArray<{ label: string; icon: Icon }>;
 
 const INPUT_CLASS =
-  "mt-2 w-full rounded-xl border border-[#d8d2c6] bg-[#fbfaf7] px-3 py-2.5 text-sm text-[#172839] transition-colors placeholder:text-[#8a8f94] focus-visible:border-[#1b3a57] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/15";
+  "mt-2 w-full rounded-xl border border-[#d8d2c6] bg-[#fbfaf7] px-3 py-2.5 text-sm text-[#172839] transition-colors placeholder:text-muted focus-visible:border-[#1b3a57] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/15";
 
 /**
  * Derive the next textarea value from a paste on the same tick. Safari can
@@ -166,7 +166,7 @@ function EntryCard({
               {title}
             </h3>
             {badge ? (
-              <span className="rounded-full bg-[#f3e7d3] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a5a12]">
+              <span className="rounded-full bg-[#f3e7d3] px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.12em] text-[#8a5a12]">
                 {badge}
               </span>
             ) : null}
@@ -315,7 +315,7 @@ function RecentResumeTracking({
               event.currentTarget.blur();
             }
           }}
-          className="min-h-9 min-w-0 flex-1 bg-transparent text-xs text-[#172839] placeholder:text-[#8a8f94] pointer-coarse:min-h-11 focus-visible:outline-none disabled:cursor-wait"
+          className="min-h-9 min-w-0 flex-1 bg-transparent text-xs text-[#172839] placeholder:text-muted pointer-coarse:min-h-11 focus-visible:outline-none disabled:cursor-wait"
         />
       </label>
     </div>
@@ -806,7 +806,7 @@ export function Launcher() {
     <div className="mt-7 flex flex-col gap-5 sm:mt-9">
       <ul
         aria-label="Resume Maker promises"
-        className="flex flex-nowrap items-center justify-start gap-x-2 text-[11px] font-medium leading-tight text-muted sm:gap-x-4 sm:text-sm"
+        className="flex flex-nowrap items-center justify-start gap-x-2 text-xs font-medium leading-tight text-muted sm:gap-x-4 sm:text-sm"
       >
         {TRUST_POINTS.map(({ label, icon: PromiseIcon }, index) => (
           <li
@@ -1432,7 +1432,7 @@ export function Launcher() {
                   <pre
                     tabIndex={0}
                     aria-label="AI import prompt"
-                    className="max-h-48 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words rounded font-mono text-[11px] leading-relaxed text-[#33465a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/30"
+                    className="max-h-48 overflow-y-auto overscroll-contain whitespace-pre-wrap break-words rounded font-mono text-xs leading-relaxed text-[#33465a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1b3a57]/30"
                   >{AI_IMPORT_PROMPT}</pre>
                 </div>
               ) : null}

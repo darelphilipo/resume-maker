@@ -31,7 +31,7 @@ export function MobileBottomNav({
       aria-label="Editor panels"
       className="mobile-bottom-bar shrink-0 border-t border-line bg-background/95 pb-[min(env(safe-area-inset-bottom),20px)] backdrop-blur lg:hidden"
     >
-      <div role="tablist" aria-label="Editor panels" className="grid grid-cols-3">
+      <div role="tablist" aria-label="Editor tabs" className="grid grid-cols-3">
         {TABS.map(({ id, label, Icon }) => {
           const isActive = activeTab === id;
 

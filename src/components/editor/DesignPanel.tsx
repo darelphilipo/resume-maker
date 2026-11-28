@@ -65,7 +65,7 @@ const ACCENT_GRID_CLASS = "mt-1 grid grid-cols-4 gap-1.5 sm:grid-cols-8";
 // A fixed square keeps the `focus-within` ring a true circle. A stretched grid
 // cell made the ring an oval around the circular dot on wide cards.
 const ACCENT_TARGET_CLASS =
-  "relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center justify-self-center rounded-full transition-colors pointer-coarse:h-11 pointer-coarse:w-11 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-1";
+  "relative flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center justify-self-center rounded-full transition-colors focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-1";
 
 function accentDotClass(isCurrent: boolean): string {
   return `flex h-7 w-7 items-center justify-center rounded-full border border-black/10 transition-shadow ${

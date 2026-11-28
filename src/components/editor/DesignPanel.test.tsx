@@ -235,8 +235,8 @@ describe("DesignPanel", () => {
       expect(target).toHaveClass(
         "relative",
         "rounded-full",
-        "h-10",
-        "w-10",
+        "h-11",
+        "w-11",
         "justify-self-center",
       );
       // A fixed square target keeps the focus ring circular instead of
@@ -262,10 +262,10 @@ describe("DesignPanel", () => {
       ) as HTMLInputElement;
       const target = input.closest("label") as HTMLElement;
 
-      // Every cell is a 40px square centred in its grid track, so
+      // Every cell is a 44px square centred in its grid track, so
       // `focus-within` draws the same crisp circle at every card width.
       expect(target.parentElement).toBe(strip);
-      expect(target).toHaveClass("h-10", "w-10", "shrink-0", "justify-self-center");
+      expect(target).toHaveClass("h-11", "w-11", "shrink-0", "justify-self-center");
       expect(target).toHaveClass("focus-within:ring-2", "focus-within:ring-primary");
     }
   });

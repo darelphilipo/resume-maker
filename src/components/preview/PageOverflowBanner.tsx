@@ -53,7 +53,7 @@ export function PageOverflowBanner({
               onFit(fitScale);
             }
           }}
-          className="inline-flex h-6 shrink-0 items-center gap-0.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+          className="inline-flex h-6 shrink-0 items-center gap-0.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset pointer-coarse:min-h-11"
         >
           <ArrowsIn size={12} aria-hidden className="shrink-0" />
           Fit 1p

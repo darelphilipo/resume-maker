@@ -53,12 +53,12 @@ export function TrimTipsDialog({
           </button>
         </div>
         {report.summary ? (
-          <p className="mt-1 text-[11px] leading-snug text-muted">
+          <p className="mt-1 text-xs leading-snug text-muted">
             {report.summary}
           </p>
         ) : null}
         {onSelectIssue && report.issues.length > 0 ? (
-          <p className="mt-1 text-[11px] leading-snug text-muted">
+          <p className="mt-1 text-xs leading-snug text-muted">
             Tap a tip to open that bullet in the editor.
           </p>
         ) : null}
@@ -66,14 +66,14 @@ export function TrimTipsDialog({
           {visibleIssues.map((issue, index) => {
             const content = (
               <>
-                <span className="mt-0.5 shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                <span className="mt-0.5 shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
                   {issue.kind === "orphan"
                     ? `${issue.lastLineWords}-word line`
                     : `${issue.lineCount} ${
                         issue.lineCount === 1 ? "line" : "lines"
                       }`}
                 </span>
-                <span className="min-w-0 break-words text-[11px] leading-snug text-text/90">
+                <span className="min-w-0 break-words text-xs leading-snug text-text/90">
                   {issue.snippet}
                 </span>
               </>
@@ -109,7 +109,7 @@ export function TrimTipsDialog({
             type="button"
             aria-expanded={showAll}
             onClick={() => setShowAll((open) => !open)}
-            className="mt-2 inline-flex min-h-9 items-center rounded-lg px-1.5 text-[11px] font-medium text-primary transition-colors hover:bg-black/5 active:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:min-h-11"
+            className="mt-2 inline-flex min-h-9 items-center rounded-lg px-1.5 text-xs font-medium text-primary transition-colors hover:bg-black/5 active:bg-black/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:min-h-11"
           >
             {showAll
               ? "Show fewer"

@@ -2112,6 +2112,26 @@ rediscover.
         `vi.stubEnv("NEXT_PUBLIC_ANALYTICS_ENABLED", "true")`; the default test
         environment is off.
 
+   130. **UI chrome has a 12px text floor and a light, calm accessibility
+        baseline.** `text-[10px]`/`text-[11px]` are gone from app chrome: helper
+        copy, count badges, eyebrows, ATS headings, template badges, and the
+        editor header status all use `text-xs` (12px). The resume templates and
+        print CSS are a separate surface — do not apply the floor there. Home
+        and launcher placeholders use `placeholder:text-muted`
+        (`--brand-muted`, ~5.5:1 on white), never `#8a8f94`. Accent swatch
+        targets are `h-11 w-11`, Review's switch rows are full-width `min-h-14`
+        buttons, and secondary pills use `pointer-coarse:min-h-11` /
+        `pointer-coarse:h-11` rather than growing at every pointer size.
+        `globals.css` sets `color-scheme: light` on `:root` and disables
+        transitions/animations under `prefers-reduced-motion: reduce`.
+        `MobileBottomNav`'s `<nav>` keeps "Editor panels" while the inner
+        `tablist` is "Editor tabs", so the two landmarks no longer share a name.
+        `outline-none` is allowed only when paired with a visible
+        `focus-visible` ring/tint; Radix dialog containers (which receive
+        programmatic focus) are the deliberate exception. `Tidy` and `6s Scan`
+        carry plain-English `title` tooltips; `Fit 1p` and `ATS` already did.
+        `src/app/accessibilityCss.test.ts` guards the CSS baseline.
+
 ## Verification and tooling
 
 ```powershell
@@ -2176,6 +2196,39 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-28 — Accessibility & readability polish (contrast, 12px floor, 44px targets)
+- Task: top Queue item (P1), moved to In Progress with a plan first. The Queue
+  also held a duplicated P0 print item; the accidental nested copy was removed
+  and the real one stays first.
+- Change: launcher placeholders now use `placeholder:text-muted`; every
+  `text-[10px]`/`text-[11px]` in app chrome became `text-xs` (resume templates
+  untouched); accent swatches are `h-11 w-11`; Review's `6s Scan` row is a
+  full-width `min-h-14` target with a tooltip; Review/preview/lint pills and the
+  floating canvas Reset gained `pointer-coarse` 44px heights; `:root` declares
+  `color-scheme: light`; `globals.css` honours `prefers-reduced-motion`; `.tiptap`
+  gained a `focus-visible` ring; nav/tablist labels are unique; `Tidy` and
+  `6s Scan` gained plain tooltips. Decision #130; README tour updated.
+- Tests: new `src/app/accessibilityCss.test.ts`, nav-label, Review tooltip/row
+  target, Tidy tooltip, and launcher placeholder regressions; DesignPanel swatch
+  assertions moved to `h-11`/`w-11`. `npm run typecheck` clean; `npm test` 1329
+  pass across 116 files (baseline 1325/115).
+- Note: Playwright remains sandbox-blocked, so the 390px bar heights, real
+  coarse-pointer targets, and reduced-motion behaviour are browser-unverified.
+- Files: `src/app/globals.css`, `src/app/page.tsx`,
+  `src/components/launcher/Launcher.tsx` (+ test),
+  `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx`,
+  `src/components/editor/MobileBottomNav.tsx` (+ test),
+  `src/components/editor/RichTextField.tsx`,
+  `src/components/preview/TrimTipsDialog.tsx`,
+  `src/components/preview/AtsTextView.tsx`,
+  `src/components/preview/PageOverflowBanner.tsx`,
+  `src/components/preview/CanvasResetButton.tsx`,
+  `src/templates/shared/TemplateBadge.tsx`,
+  `src/app/accessibilityCss.test.ts` (new), `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 ### 2026-11-28 — Final v1.0 polish: thumbnails, Basics context, fit note, zoom, copy widths
 - Task: top Queue item (P1), moved to In Progress first; all seven sub-items.
@@ -2420,27 +2473,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `CONTEXT.md`, `TASKS.md`. `CanvasResetButton.tsx` needed no change (mobile
   overlay only); Playwright remains sandbox-blocked, so real pill geometry is
   browser-unverified.
-
-### 2026-11-27 — Preview mode switch anchored left in the bar
-- Task: top Queue item (P1), moved to In Progress first. The single sub-item
-  was open.
-- Change: split `[data-preview-mode-header]` into two flex children so the
-  already-present `justify-between` can work: a `shrink-0`
-  `[data-preview-mode-anchor]` holding the desktop `Preview` heading plus the
-  `Visual | ATS` group (flush-left on phones), and a `shrink-0`
-  `[data-preview-actions]` group holding the page label / `Fit 1p` pill /
-  `Review ▾`. The removed `ml-auto` cluster used to own both groups, so a new
-  Review active dot or a changed page count slid the mode switch sideways.
-  `LiveCanvasViewport` was inspected only — its chrome moved out in #86 — so
-  it needed no markup change. Decision #121; README feature tour updated.
-- Tests: extended the fixed-header test with left-anchor/right-actions class
-  and DOM-order assertions and added a Review-toggle regression (Anonymize +
-  6s Scan) plus a 390/1280 e2e bounding-box case. `npm run typecheck` clean;
-  `npm test` 1237 pass across 107 files; `npm run lint` clean.
-- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
-- Note: Playwright remains sandbox-blocked, so the real switch x-position at
-  both viewports is browser-unverified.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

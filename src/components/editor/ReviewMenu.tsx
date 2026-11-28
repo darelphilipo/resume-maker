@@ -97,14 +97,14 @@ export function ReviewMenu({
         onClick={() => {
           setOpen((current) => !current);
         }}
-        className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 text-xs font-semibold text-text transition-colors hover:border-primary/40 hover:bg-primary/5 aria-expanded:border-primary/40 aria-expanded:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 text-xs font-semibold text-text transition-colors hover:border-primary/40 hover:bg-primary/5 aria-expanded:border-primary/40 aria-expanded:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:h-11"
       >
         Review
         {showTrimBadge ? (
           <span
             data-review-trim-badge=""
             aria-hidden
-            className="min-w-4 rounded-full bg-amber-100 px-1 py-0.5 text-center text-[10px] font-semibold leading-none text-amber-900"
+            className="min-w-4 rounded-full bg-amber-100 px-1 py-0.5 text-center text-xs font-semibold leading-none text-amber-900"
           >
             {trimCount}
           </span>
@@ -153,7 +153,7 @@ export function ReviewMenu({
             <h2 id={titleId} className="font-serif text-sm font-semibold">
               Review tools
             </h2>
-            <p className="mt-0.5 text-[11px] leading-snug text-muted">
+            <p className="mt-0.5 text-xs leading-snug text-muted">
               Optional preview lenses and page helpers. Your saved resume never
               changes unless you fit it.
             </p>
@@ -174,6 +174,7 @@ export function ReviewMenu({
           <ReviewSwitch
             label="6s Scan"
             description="Dim body prose; keep names, titles, dates, and numbers at full contrast."
+            title="Shows what a recruiter notices in a quick six-second skim."
             icon={<MagnifyingGlass size={18} aria-hidden />}
             checked={scan}
             marker="data-review-scan"
@@ -293,6 +294,7 @@ function ReviewSwitch({
   icon,
   checked,
   marker,
+  title,
   onChange,
 }: {
   label: string;
@@ -300,6 +302,8 @@ function ReviewSwitch({
   icon: React.ReactNode;
   checked: boolean;
   marker: string;
+  /** Optional hover tooltip in plain language. */
+  title?: string;
   onChange: () => void;
 }) {
   return (
@@ -308,6 +312,7 @@ function ReviewSwitch({
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      title={title}
       {...{ [marker]: "" }}
       onClick={onChange}
       className="flex min-h-14 w-full items-center gap-3 rounded-lg border border-line bg-surface-muted px-3 py-2 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
@@ -315,7 +320,7 @@ function ReviewSwitch({
       <span className="shrink-0 text-primary">{icon}</span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-semibold text-text">{label}</span>
-        <span className="block text-[11px] leading-snug text-muted">
+        <span className="block text-xs leading-snug text-muted">
           {description}
         </span>
       </span>
@@ -382,7 +387,7 @@ function ReviewAction({
         >
           {label}
         </span>
-        <span className="block text-[11px] leading-snug text-muted">
+        <span className="block text-xs leading-snug text-muted">
           {description}
         </span>
       </span>

@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  /* The app is a light paper surface; tell the browser so native controls
+     (selects, scrollbars, date pickers) never switch to dark chrome. */
+  color-scheme: light;
   /* Warm paper + navy editorial palette (home page and editor chrome). */
   --brand-primary: #1b3a57;
   --brand-text: #172839;
@@ -113,4 +116,20 @@ body {
 
 .subtle-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(30, 58, 95, 0.3);
+}
+
+/*
+ * Respect the OS "reduce motion" preference. Transitions, the spinner
+ * rotation, and smooth scrolling are decoration, not information: the resume
+ * must still appear, print, and save without animation.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -49,6 +49,20 @@ describe("MobileBottomNav", () => {
     expect(nav).not.toHaveClass("pb-[env(safe-area-inset-bottom)]");
   });
 
+  it("labels the nav and the tablist distinctly", () => {
+    render(<MobileBottomNav activeTab="content" onChange={vi.fn()} />);
+
+    // A duplicate accessible name on both landmarks made screen readers
+    // announce "Editor panels" twice with no way to tell them apart.
+    expect(
+      screen.getByRole("navigation", { name: "Editor panels" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("tablist", { name: "Editor tabs" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByLabelText("Editor panels")).toHaveLength(1);
+  });
+
   it("reflects a controlled active tab", () => {
     const { rerender } = render(
       <MobileBottomNav activeTab="content" onChange={vi.fn()} />,

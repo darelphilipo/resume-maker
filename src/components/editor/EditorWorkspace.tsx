@@ -88,14 +88,14 @@ const HEADER_ACTION_CLASS =
  * instead of a faint grey press.
  */
 function previewModeClass(isCurrent: boolean): string {
-  return `h-8 rounded-md px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+  return `h-8 rounded-md px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:h-11 ${
     isCurrent ? "bg-primary text-white shadow-sm" : "text-text hover:bg-black/5"
   }`;
 }
 
 /** Tinted action pill for the inline Reset beside the page count. */
 const PREVIEW_ACTION_CLASS =
-  "inline-flex h-6 shrink-0 items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset";
+  "inline-flex h-6 shrink-0 items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset pointer-coarse:min-h-11";
 
 function EmptyState({
   title,
@@ -479,7 +479,7 @@ export function EditorWorkspace() {
             </h1>
             <p
               aria-live="polite"
-              className={`truncate text-[11px] leading-tight sm:text-xs ${
+              className={`truncate text-xs leading-tight ${
                 isError ? "text-red-700" : "text-muted"
               }`}
             >

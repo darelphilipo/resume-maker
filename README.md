@@ -21,10 +21,13 @@ in control of every line, and your data stays on your device.
   has no accounts, and no analytics ever touch your resume content. Anonymous
   button counts are opt-in per build and off by default; when a build enables
   them they use no cookies and no personal data.
-- **Fast on a phone.** The editor is mobile-first, with large touch targets and
-  a layout that works at phone width instead of a desktop screen squeezed down.
-  The resume name, undo/redo, JSON export, and a solid **Save PDF** button share
-  one compact header row, so the preview keeps the height.
+- **Fast on a phone.** The editor is mobile-first, with large 44px touch targets,
+  comfortably readable text, and a layout that works at phone width instead of a
+  desktop screen squeezed down. Placeholder hints and helper copy meet
+  contrast guidance on the warm paper background, every control has a visible
+  keyboard focus ring, and the app follows your system **Reduce Motion**
+  setting. The resume name, undo/redo, JSON export, and a solid **Save PDF**
+  button share one compact header row, so the preview keeps the height.
 - **Honest PDF output.** Preview the exact pages before printing, then use your
   browser's print dialog to save a sharp PDF at your chosen A4 or Letter size.
 

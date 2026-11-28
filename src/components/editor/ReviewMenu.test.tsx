@@ -73,6 +73,7 @@ describe("ReviewMenu", () => {
     expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(trigger).toHaveClass("h-8", "text-xs", "px-2.5");
+    expect(trigger).toHaveClass("pointer-coarse:h-11");
     expect(trigger).not.toHaveAttribute("data-review-active-dot");
     expect(
       screen.queryByRole("switch", { name: "6s Scan" }),
@@ -130,6 +131,13 @@ describe("ReviewMenu", () => {
 
     expect(scan).toHaveAttribute("aria-checked", "false");
     expect(anonymize).toHaveAttribute("aria-checked", "false");
+    // The whole row is the 44px+ tap target, not just the small switch, and
+    // the plain-English title explains the lens on hover.
+    expect(scan).toHaveClass("min-h-14", "w-full");
+    expect(scan).toHaveAttribute(
+      "title",
+      "Shows what a recruiter notices in a quick six-second skim.",
+    );
 
     fireEvent.click(scan);
     fireEvent.click(anonymize);

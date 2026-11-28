@@ -21,28 +21,42 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P1: Accessibility & readability polish — placeholder contrast, 12px text floor, 44px touch targets, reduced motion, `color-scheme: light`, and focus rings (`src/components/launcher/Launcher.tsx`, `src/components/editor/DesignPanel.tsx`, `src/components/editor/ReviewMenu.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/preview/TrimTipsDialog.tsx`, `src/components/editor/MobileBottomNav.tsx`, `src/app/globals.css`).
-  1. **Placeholder contrast (`Launcher.tsx`):** Replace `#8a8f94` input placeholders (lines ~101, ~318) with `--brand-muted` (`#5b6a7a`, ~5.5:1 on white) to meet WCAG AA contrast.
-  2. **12px minimum UI text floor:** Replace `text-[10px]` and `text-[11px]` across UI chrome (`ResumeLintPopover`, `TrimTipsDialog`, `ReviewMenu`, mobile editor header) with `text-xs` (`12px`) so helper copy stays legible on phones *(leaving resume template print typography untouched)*.
-  3. **44px touch targets without visual bloat:** Wrap the `28px` Accent color dots (`DesignPanel.tsx`) in `h-11 w-11` (`44×44px`) circular hit targets, ensure each `ReviewMenu` toggle row is fully clickable at `min-h-11` (not just the `h-6` switch), and apply `pointer-coarse:min-h-11` consistently on secondary toolbar/section/lint controls.
-  4. **Accessibility hygiene & plain-language tooltips:**
-     - Add `@media (prefers-reduced-motion: reduce)` in `globals.css` to disable transitions/spinners for reduced-motion users, and declare `color-scheme: light` on `:root` so browsers don't apply dark native controls to the light UI.
-     - Deduplicate `aria-label="Editor panels"` between `<nav>` and `role="tablist"` in `MobileBottomNav.tsx`.
-     - Audit `outline-none` usages across `src/components/` to verify every focusable element has a visible `focus-visible:ring` replacement.
-     - Add concise plain-English `title` tooltips on `Fit 1p`, `6s Scan`, `Tidy`, and `ATS`.
-       
 - [ ] P0: Fix iOS Safari alternating blank print pages by resetting `min-height` and switching `.resume-page` to `height: auto` in `@media print` (`src/styles/print.css`).
   1. In `@media print` for `.resume-page`, set `min-height: 0 !important; height: auto !important; max-height: calc(var(--page-height) - 2mm) !important; overflow: hidden;` (overriding `preview.css`'s `min-height: var(--page-height)` which previously neutralized `max-height`), while keeping `break-after: page; page-break-after: always;` strictly on `.resume-page:not(:last-child)` and `break-after: auto` on `:last-child`.
   2. Update the `print.css` unit test to assert `min-height: 0` and `height: auto` are present in `@media print`.
-  - [ ] P0: Fix iOS Safari alternating blank print pages by resetting `min-height` and switching `.resume-page` to `height: auto` in `@media print` (`src/styles/print.css`).
-  1. In `@media print` for `.resume-page`, set `min-height: 0 !important; height: auto !important; max-height: calc(var(--page-height) - 2mm) !important; overflow: hidden;` (overriding `preview.css`'s `min-height: var(--page-height)` which previously neutralized `max-height`), while keeping `break-after: page; page-break-after: always;` strictly on `.resume-page:not(:last-child)` and `break-after: auto` on `:last-child`.
-  2. Update the `print.css` unit test to assert `min-height: 0` and `height: auto` are present in `@media print`.
-
-    
 
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-28 — Accessibility & readability polish. Home input placeholders now
+  use the AA-contrast `--brand-muted` token instead of `#8a8f94`; every UI-chrome
+  `text-[10px]`/`text-[11px]` (Tidy, Trim tips, Review, ATS headings, template
+  badges, header status, launcher badge/trust row/AI prompt, home eyebrow) is now
+  `text-xs` while resume/print typography is untouched. Accent swatches are
+  44×44px targets, Review's `6s Scan` row is a full-width 56px tap target with a
+  plain-English tooltip, and the Review/preview pills, lint jump chips, floating
+  canvas Reset, and Fit 1p pill gained `pointer-coarse` 44px heights. `:root`
+  declares `color-scheme: light`, `globals.css` disables transitions/animations
+  under `prefers-reduced-motion`, the Tidy and `6s Scan` controls gained plain
+  tooltips, the `.tiptap` editable gained a `focus-visible` ring, and the mobile
+  nav/tablist no longer share the same accessible name. Verified
+  `npm run typecheck`, `npm test` (1329 pass, 116 files, up from 1325). Files:
+  `src/app/globals.css` (+ new `accessibilityCss.test.ts`), `src/app/page.tsx`,
+  `src/components/launcher/Launcher.tsx` (+ test),
+  `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/editor/ResumeLintPopover.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx`,
+  `src/components/editor/MobileBottomNav.tsx` (+ test),
+  `src/components/editor/RichTextField.tsx`,
+  `src/components/preview/TrimTipsDialog.tsx`,
+  `src/components/preview/AtsTextView.tsx`,
+  `src/components/preview/PageOverflowBanner.tsx`,
+  `src/components/preview/CanvasResetButton.tsx`,
+  `src/templates/shared/TemplateBadge.tsx`, `README.md`, `CONTEXT.md`, `TASKS.md`.
+  Playwright remains sandbox-blocked, so the 390px bar heights and real
+  reduced-motion behaviour are browser-unverified.
 
 - [x] 2026-11-28 — Final v1.0 polish: each Design template card leads with a
   40×54 inline SVG wireframe (single-column, centered header, accent rule,

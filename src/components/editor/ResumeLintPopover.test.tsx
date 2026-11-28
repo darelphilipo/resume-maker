@@ -33,6 +33,10 @@ describe("ResumeLintPopover", () => {
     });
 
     expect(trigger).toHaveTextContent("Tidy");
+    expect(trigger).toHaveAttribute(
+      "title",
+      "Checks bullet periods, repeated verbs, and filler words.",
+    );
     expect(document.querySelector("[data-lint-count]")).toBeNull();
     expect(trigger).toHaveClass("h-8", "px-2.5", "text-xs", "whitespace-nowrap");
 
