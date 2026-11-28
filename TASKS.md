@@ -22,8 +22,7 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
-
+- [ ] p2 revert and remove the footer area "Your resume stays 100% on this device. We count anonymous button clicks (no cookies or personal data) to improve the app. " . It's making the page too tall 
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
