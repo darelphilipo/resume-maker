@@ -140,7 +140,10 @@ export function ResumeLintPopover({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => {
-          trackEvent("tool_tidy");
+          if (!open) {
+            trackEvent("tool_tidy");
+          }
+
           setOpen((current) => !current);
         }}
         className={`${CONTENT_HEADER_ACTION_CLASS} ${

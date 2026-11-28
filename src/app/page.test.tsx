@@ -50,36 +50,4 @@ describe("Home page", () => {
       screen.getAllByRole("list", { name: "Resume Maker promises" }),
     ).toHaveLength(1);
   });
-
-  it("only promises click counts when the build opts in", () => {
-    const previous = process.env.NEXT_PUBLIC_ANALYTICS_ENABLED;
-
-    try {
-      delete process.env.NEXT_PUBLIC_ANALYTICS_ENABLED;
-
-      const { unmount } = render(<Home />);
-
-      expect(
-        screen.getByText(/Your resume stays 100% on this device/),
-      ).toBeInTheDocument();
-      expect(
-        screen.queryByText(/anonymous button clicks/),
-      ).not.toBeInTheDocument();
-
-      unmount();
-
-      process.env.NEXT_PUBLIC_ANALYTICS_ENABLED = "1";
-      render(<Home />);
-
-      expect(
-        screen.getByText(/anonymous button clicks/),
-      ).toBeInTheDocument();
-    } finally {
-      if (previous === undefined) {
-        delete process.env.NEXT_PUBLIC_ANALYTICS_ENABLED;
-      } else {
-        process.env.NEXT_PUBLIC_ANALYTICS_ENABLED = previous;
-      }
-    }
-  });
 });

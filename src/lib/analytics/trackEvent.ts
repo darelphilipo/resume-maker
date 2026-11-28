@@ -1,116 +1,148 @@
 import {
-  validateAnalyticsEvent,
+  isAllowedMetaValue,
+  isAnalyticsEvent,
+  type AnalyticsDevice,
   type AnalyticsEvent,
   type AnalyticsMeta,
-} from "./eventAllowlist";
-import { analyticsEnabled } from "./analyticsEnabled";
+} from "./events";
 
-/** Coarse device class only — no model, screen size, or orientation. */
-export function deviceClass(): "mobile" | "desktop" {
-  if (typeof window === "undefined") {
-    return "desktop";
-  }
+/** Cloudflare Pages Functions route that receives the beacons. */
+export const ANALYTICS_ENDPOINT = "/api/event";
 
-  const coarse =
-    window.matchMedia?.("(pointer: coarse)").matches === true ||
-    (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+/** Matches the editor's mobile/desktop split; the pointer check wins. */
+export const MOBILE_BREAKPOINT_PX = 1024;
 
-  return coarse ? "mobile" : "desktop";
-}
-
-/**
- * `/api/event` is a Pages Function beside the static export, so its URL must
- * carry the deployment's base path. Derive it from the current pathname instead
- * of hardcoding an absolute path: `/` → `/api/event`, `/resume-maker/` →
- * `/resume-maker/api/event`, `/resume-maker/editor/` → the same.
- */
-export function analyticsEndpoint(pathname: string): string {
-  const trimmed = pathname.split(/[?#]/)[0].replace(/\/+$/, "");
-  const base = trimmed.endsWith("/editor")
-    ? trimmed.slice(0, -"/editor".length)
-    : trimmed;
-
-  return `${base}/api/event`;
-}
-
-/**
- * The browser facts the beacon needs. Kept as one value so the opt-out rules
- * can be tested without jsdom's read-only `location`.
- */
-export type BeaconEnv = {
-  hostname: string;
-  pathname: string;
-  doNotTrack: string | null | undefined;
+export type TrackEnvironment = {
+  doNotTrack: string | null;
+  globalDoNotTrack: string | null;
   onLine: boolean;
-  coarse: boolean;
-  sendBeacon: ((url: string, body: BodyInit) => boolean) | undefined;
-  /** False on builds that do not deploy the `/api/event` Pages Function. */
-  enabled: boolean;
+  hostname: string;
+  device: AnalyticsDevice;
+  send(body: string): void;
 };
 
-function browserEnv(): BeaconEnv | null {
-  if (typeof window === "undefined" || typeof navigator === "undefined") {
-    return null;
-  }
+export function isLocalHostname(hostname: string): boolean {
+  const host = hostname.toLowerCase();
 
-  return {
-    hostname: window.location.hostname,
-    pathname: window.location.pathname,
-    doNotTrack: navigator.doNotTrack,
-    onLine: navigator.onLine,
-    coarse: deviceClass() === "mobile",
-    sendBeacon: navigator.sendBeacon?.bind(navigator),
-    enabled: analyticsEnabled(),
-  };
-}
-
-function isLocalhost(hostname: string): boolean {
   return (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "[::1]" ||
-    hostname.endsWith(".localhost")
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "0.0.0.0" ||
+    host === "::1" ||
+    host === "[::1]" ||
+    host.endsWith(".localhost")
   );
 }
 
 /**
- * Fire-and-forget, zero-PII click counter. Never sends resume text, filenames,
- * URLs, or identifiers, and silently opts out on localhost, Do Not Track,
- * offline/blocked beacons, and builds that did not opt in with
- * `NEXT_PUBLIC_ANALYTICS_ENABLED` (see `analyticsEnabled`). A failed beacon
- * must never affect the UI.
+ * Opt-outs are deliberate and checked before anything is built:
+ * Do Not Track, an offline browser, and any local development host.
  */
-export function trackEvent(
-  event: AnalyticsEvent,
-  meta?: AnalyticsMeta,
-  env: BeaconEnv | null = browserEnv(),
-): void {
+export function shouldTrack(
+  environment: Pick<
+    TrackEnvironment,
+    "doNotTrack" | "globalDoNotTrack" | "onLine" | "hostname"
+  >,
+): boolean {
   if (
-    env === null ||
-    !env.enabled ||
-    isLocalhost(env.hostname) ||
-    env.doNotTrack === "1" ||
-    env.onLine === false ||
-    typeof env.sendBeacon !== "function"
+    environment.doNotTrack === "1" ||
+    environment.globalDoNotTrack === "1"
+  ) {
+    return false;
+  }
+
+  if (!environment.onLine) {
+    return false;
+  }
+
+  return !isLocalHostname(environment.hostname);
+}
+
+export function resolveDevice(
+  isCoarsePointer: boolean,
+  viewportWidth: number,
+): AnalyticsDevice {
+  return isCoarsePointer || viewportWidth < MOBILE_BREAKPOINT_PX
+    ? "mobile"
+    : "desktop";
+}
+
+/**
+ * `sendBeacon` survives the navigation that follows most onboarding clicks.
+ * When it refuses the payload (queue full, unsupported), a `keepalive` fetch
+ * is the same fire-and-forget shape. Both failures are swallowed.
+ */
+function sendWithBeacon(body: string): void {
+  const payload = new Blob([body], { type: "application/json" });
+
+  if (
+    typeof navigator.sendBeacon === "function" &&
+    navigator.sendBeacon(ANALYTICS_ENDPOINT, payload)
   ) {
     return;
   }
 
-  const payload = validateAnalyticsEvent(event, meta);
+  void fetch(ANALYTICS_ENDPOINT, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body,
+    keepalive: true,
+  }).catch(() => {
+    // Analytics is best-effort; a blocked or 404 endpoint is not an error.
+  });
+}
 
-  if (!payload.ok) {
-    return;
+export function browserEnvironment(): TrackEnvironment | null {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return null;
   }
 
-  const body = JSON.stringify({
-    event: payload.event,
-    meta: payload.meta,
-    device: env.coarse ? "mobile" : "desktop",
-  });
+  const nav = navigator as Navigator & {
+    doNotTrack?: string | null;
+    msDoNotTrack?: string;
+  };
+  const win = window as Window & { doNotTrack?: string | null };
+  const coarse =
+    window.matchMedia?.("(pointer: coarse)")?.matches ?? false;
 
+  return {
+    doNotTrack: nav.doNotTrack ?? nav.msDoNotTrack ?? null,
+    globalDoNotTrack: win.doNotTrack ?? null,
+    onLine: nav.onLine !== false,
+    hostname: window.location.hostname,
+    device: resolveDevice(coarse, window.innerWidth),
+    send: sendWithBeacon,
+  };
+}
+
+/**
+ * Fire-and-forget anonymous click counting.
+ *
+ * Never throws, never blocks the UI, and never sends anything except the
+ * closed `{ event, meta, device }` payload. Resume content cannot reach it:
+ * `meta` is validated against the fixed per-event allowlist first.
+ */
+export function trackEvent(
+  event: AnalyticsEvent,
+  meta?: AnalyticsMeta,
+  environment: TrackEnvironment | null = browserEnvironment(),
+): void {
   try {
-    void env.sendBeacon(analyticsEndpoint(env.pathname), body);
+    if (!environment || !shouldTrack(environment) || !isAnalyticsEvent(event)) {
+      return;
+    }
+
+    const payloadMeta = meta ?? null;
+
+    if (payloadMeta !== null && !isAllowedMetaValue(event, payloadMeta)) {
+      return;
+    }
+
+    environment.send(
+      JSON.stringify({ event, meta: payloadMeta, device: environment.device }),
+    );
   } catch {
-    // Analytics is best-effort: a blocked beacons call is not an app error.
+    // A privacy tool, a blocked beacon, or a serialization failure must never
+    // interrupt an export, an import, or a print.
   }
 }

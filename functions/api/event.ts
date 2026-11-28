@@ -1,78 +1,111 @@
 import {
-  analyticsMetaToken,
-  validateAnalyticsEvent,
-} from "../../src/lib/analytics/eventAllowlist";
-import { coarseUserAgent } from "../../src/lib/analytics/userAgent";
+  parseAnalyticsPayload,
+  type AnalyticsPayload,
+} from "../../src/lib/analytics/events";
+import {
+  coarseBrowserFromUserAgent,
+  coarseOsFromUserAgent,
+} from "../../src/lib/analytics/userAgent";
 
 /**
- * Cloudflare Pages Function for anonymous product click counts. The Next.js
- * build stays a static export: this file lives beside `out/` and is deployed by
- * Cloudflare Pages, never bundled into the app.
+ * Cloudflare Pages Function: `POST /api/event`.
  *
- * IP address and cookies are deliberately never read. The only written fields
- * are the allowlisted event/meta, the coarse device class, and coarse os/browser
- * enums derived from the User-Agent — the raw User-Agent is never stored.
+ * This is intentionally the only server-side code in the project and it is
+ * not part of the Next.js static export. It accepts the closed analytics
+ * payload, maps the request User-Agent to two coarse enums, and writes one
+ * Analytics Engine data point. It never reads IP addresses or cookies, and it
+ * never returns user data.
+ *
+ * A missing `ANALYTICS` binding (local preview, GitHub Pages, a fresh Pages
+ * project) is not an error: the beacon still gets its quiet `204`.
  */
 
-export type AnalyticsBinding = {
-  writeDataPoint(data: {
-    blobs: (string | number | null)[];
-    indexes: string[];
-  }): void;
+type AnalyticsEngineDataPoint = {
+  blobs?: (string | null)[];
+  doubles?: number[];
+  indexes?: string[];
 };
 
-export type AnalyticsEnv = { ANALYTICS?: AnalyticsBinding };
+type AnalyticsEngineDataset = {
+  writeDataPoint(point: AnalyticsEngineDataPoint): void;
+};
 
-export type AnalyticsContext = { request: Request; env: AnalyticsEnv };
+export type AnalyticsEnv = {
+  ANALYTICS?: AnalyticsEngineDataset;
+};
 
-function badRequest(): Response {
-  return new Response(null, { status: 400 });
+/**
+ * Structural request shape so the handler is testable without a DOM `Request`
+ * implementation. Cloudflare supplies a real `Request` at runtime.
+ */
+export type AnalyticsRequest = {
+  headers: {
+    get(name: string): string | null;
+  };
+  json(): Promise<unknown>;
+};
+
+export type AnalyticsContext = {
+  request: AnalyticsRequest;
+  env: AnalyticsEnv;
+};
+
+/** Generous for the three-key payload, small enough to reject junk. */
+export const MAX_ANALYTICS_BODY_BYTES = 1024;
+
+function emptyResponse(status: number): Response {
+  return new Response(null, {
+    status,
+    headers: {
+      "cache-control": "no-store",
+      "content-type": "text/plain; charset=utf-8",
+    },
+  });
 }
 
-export async function onRequestPost({
-  request,
-  env,
-}: AnalyticsContext): Promise<Response> {
-  let body: unknown;
-
-  try {
-    body = await request.json();
-  } catch {
-    return badRequest();
-  }
-
-  if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return badRequest();
-  }
-
-  const payload = body as { event?: unknown; meta?: unknown; device?: unknown };
-  const validation = validateAnalyticsEvent(payload.event, payload.meta);
+async function readPayload(
+  request: AnalyticsRequest,
+): Promise<AnalyticsPayload | null> {
+  const declaredLength = Number(request.headers.get("content-length") ?? "0");
 
   if (
-    !validation.ok ||
-    (payload.device !== "mobile" && payload.device !== "desktop")
+    Number.isFinite(declaredLength) &&
+    declaredLength > MAX_ANALYTICS_BODY_BYTES
   ) {
-    return badRequest();
+    return null;
   }
 
-  // Return 204 when the binding is not configured yet: local/dev/preview
-  // deployments stay quiet instead of throwing on every beacon.
-  if (!env.ANALYTICS) {
-    return new Response(null, { status: 204 });
+  try {
+    return parseAnalyticsPayload(await request.json());
+  } catch {
+    return null;
+  }
+}
+
+export async function onRequestPost(
+  context: AnalyticsContext,
+): Promise<Response> {
+  const payload = await readPayload(context.request);
+
+  if (!payload) {
+    return emptyResponse(400);
   }
 
-  const { os, browser } = coarseUserAgent(request.headers.get("user-agent"));
+  try {
+    // Only the coarse enums leave this function; the raw UA is discarded.
+    context.env.ANALYTICS?.writeDataPoint({
+      blobs: [
+        payload.event,
+        payload.meta ?? "",
+        payload.device,
+        coarseOsFromUserAgent(context.request.headers.get("user-agent")),
+        coarseBrowserFromUserAgent(context.request.headers.get("user-agent")),
+      ],
+      indexes: [payload.event],
+    });
+  } catch {
+    // A misconfigured binding must never turn a click into a failed request.
+  }
 
-  env.ANALYTICS.writeDataPoint({
-    blobs: [
-      validation.event,
-      analyticsMetaToken(validation.meta),
-      payload.device,
-      os,
-      browser,
-    ],
-    indexes: [validation.event],
-  });
-
-  return new Response(null, { status: 204 });
+  return emptyResponse(204);
 }

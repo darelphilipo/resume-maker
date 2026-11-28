@@ -32,6 +32,7 @@ import {
   type ReactNode,
 } from "react";
 
+import type { AnalyticsMeta } from "@/lib/analytics/events";
 import { trackEvent } from "@/lib/analytics/trackEvent";
 import { copyText } from "@/lib/clipboard/copyText";
 import { PDF_IMPORT_ENABLED } from "@/lib/features";
@@ -411,7 +412,6 @@ export function Launcher() {
       return;
     }
 
-    trackEvent("start_pdf_upload");
     setPdfFileName(file.name);
     setPdfError(null);
     setPdfSuggestAi(false);
@@ -496,7 +496,6 @@ export function Launcher() {
 
     setIsPasting(true);
     setPasteError(null);
-    trackEvent("start_paste");
 
     try {
       const doc = parsePastedResume(pastedText);
@@ -529,7 +528,6 @@ export function Launcher() {
   }
 
   async function handleCopyAiPrompt() {
-    trackEvent("start_ai_prompt");
     const copied = await copyText(AI_IMPORT_PROMPT);
 
     if (copied) {
@@ -571,7 +569,6 @@ export function Launcher() {
 
     setCreatingId(BLANK_ACTION_ID);
     setCreateError(null);
-    trackEvent("start_blank");
 
     try {
       const id = await useResumeStore.getState().createResume("onyx");
@@ -591,7 +588,6 @@ export function Launcher() {
 
     setCreatingId(archetype.id);
     setCreateError(null);
-    trackEvent("start_preset", { archetype: archetype.id });
 
     try {
       const id = await useResumeStore.getState().createResume("onyx");
@@ -613,7 +609,6 @@ export function Launcher() {
 
     setOpeningRecentId(row.id);
     setRecentError(null);
-    trackEvent("recent_open");
 
     try {
       const loaded = await useResumeStore.getState().loadResume(row.id);
@@ -710,7 +705,6 @@ export function Launcher() {
 
     setDuplicatingId(row.id);
     setRecentError(null);
-    trackEvent("recent_duplicate");
 
     try {
       const copy = await duplicateResume(row.id);
