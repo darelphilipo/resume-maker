@@ -77,6 +77,8 @@ in control of every line, and your data stays on your device.
   too: shortened ranges such as `2019–21`, seasons such as `Spring 2021`,
   durations such as `3 Months`, year-first dates such as `2023/10` or
   `2023/10/15`, and tight grades such as `CGPA:7.6` or `12th –92.0%`.
+  An open-ended role or project marked **Present** stays current after import,
+  so it still prints as ongoing.
   If a PDF is a scan, an image, or a Canva export with
   no selectable text, the upload error links straight to the AI prompt rescue
   import (pasting the text yourself still works too).
@@ -125,7 +127,8 @@ in control of every line, and your data stays on your device.
   quiet **Export** menu beside **Save PDF** (a **⋮** on phones, **Export ▾** on
   desktop) keeps a full **Resume Maker backup** (layout, design, and hidden
   entries) or downloads the same resume as a portable **JSON Resume** file that
-  other resume tools and sites can read.
+  other resume tools and sites can read. A project marked **Present** exports
+  without an end date, so importing it again keeps it open-ended.
 
 ### Write and organize
 

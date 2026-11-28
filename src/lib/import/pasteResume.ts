@@ -2228,7 +2228,7 @@ function buildProject(block: Line[]): ProjectItem | null {
     url,
     startDate: dates?.startDate ?? "",
     endDate: dates?.endDate ?? "",
-    current: false,
+    current: dates?.current ?? false,
     keywords,
   };
 }

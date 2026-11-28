@@ -2132,6 +2132,37 @@ rediscover.
         carry plain-English `title` tooltips; `Fit 1p` and `ATS` already did.
         `src/app/accessibilityCss.test.ts` guards the CSS baseline.
 
+   131. **PDF regressions read real bytes; `page.pdf()` is Chromium-only.**
+        `e2e/pdf-output.spec.ts` prints the captured `#print-portal` with
+        `page.pdf({ preferCSSPageSize: true, printBackground: true })` and
+        extracts per-page text with `pdfjs-dist/legacy/build/pdf.mjs` (the legacy
+        build keeps the fake worker in-thread under Node, so no `workerSrc` is
+        needed). `page.pdf()` throws outside headless Chromium, so byte-level
+        tests skip non-Chromium projects; the `6s Scan` print-CSS half still runs
+        on WebKit because it only reads print-media computed styles. A headless
+        run never opens a dialog, so the helper suppresses the single 2 s
+        `PRINT_JOB_RELEASE_MS` `setTimeout` and stubs `window.print`; otherwise
+        the portal unmounts and `page.pdf()` captures an empty body. Assert
+        section headings case-insensitively — `.onyx .resume-section-heading`
+        applies `text-transform: uppercase`, and the PDF text layer carries the
+        transformed glyphs (`AWARDS`, not `Awards`). `#print-portal` must never
+        receive `resume-scan`; only the on-screen `PageStack` gets it.
+
+    132. **Every dated builder must propagate `current`, including projects.**
+        `buildProject` (`src/lib/import/pasteResume.ts`) and `importProject`
+        (`src/lib/schema/jsonResume.ts`) both received a `DateRange` with
+        `current: true` for `Jan 2023 - Present` / a missing JSON Resume end
+        date, then hardcoded `current: false`, so Visual/ATS/PDF printed a bare
+        start date and `sortEntriesNewestFirst` ranked the project as closed.
+        All sibling builders (`buildExperience`, `buildEducation`, volunteer,
+        `importWork`, `importEducation`) already use `dates?.current ?? false`;
+        keep projects on that same path. On export, `projectToJson` must mirror
+        `workToJson`/`educationToJson`: a `current: true` item emits
+        `endDate: ""` even when a stale end date is still stored (the Present
+        toggle does not clear it), or the round trip silently flips the project
+        back to closed. `ProjectItemSchema.current` defaults to `false`, so only
+        an explicit `Present` in the source text/JSON should turn it on.
+
 ## Verification and tooling
 
 ```powershell
@@ -2196,6 +2227,27 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-28 — Imported projects keep their Present flag
+- Task: Queue and Inbox were both empty, so this clear import bug was promoted
+  from the codebase into In Progress with a plan and target paths first.
+- Change: `buildProject` (paste/PDF importer) and `importProject` (JSON Resume)
+  now use the `dates.current` value they already parsed instead of hardcoding
+  `current: false`, so `Jan 2023 - Present` / a missing JSON end date prints
+  **Present**, stays in the ATS/PDF, and sorts as current. `projectToJson`
+  copies `workToJson`/`educationToJson` and exports `endDate: ""` for a current
+  project even if a stale end date is still stored. Decision #132; README tour
+  updated with the import/export behaviour in user language.
+- Tests: added `current` assertions to the existing multi-section paste and
+  JSON Resume fixtures, a PDF-lines project with a Present date, a completed
+  project that stays closed, and a current-project export case. `npm run
+  typecheck` clean; `npm test` 1331 pass across 116 files (baseline 1329);
+  `npm run lint` clean.
+- Note: this is pure parser/serializer logic, so no browser verification is
+  needed; Playwright remains sandbox-blocked for the visual/PDF end result.
+- Files: `src/lib/import/pasteResume.ts` (+ test),
+  `src/lib/schema/jsonResume.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 ### 2026-11-28 — iOS Safari print: pages shrink instead of matching the sheet
 - Task: top Queue item (P0), moved to In Progress with a plan first.
@@ -2438,40 +2490,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/components/preview/LiveCanvasViewport.tsx` (+ test),
   `src/components/preview/CanvasZoomControls.tsx` (+ test),
   `src/components/editor/DesignPanel.tsx` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-
-### 2026-11-27 — 6s Scan currencies + exit bar; Trim tips accuracy and calm badge
-- Task: picked the top genuinely open Queue item (P2). The three Queue items
-  above it were stale duplicates already recorded under **Done** (Tidy header,
-  Visual|ATS anchor, desktop 3-column polish), so this run removed them from
-  the Queue and moved the 6s Scan / Trim tips item to In Progress first.
-- Change: `METRIC_PATTERN` now supports `₹`/`€`/`£`, Indian `L`/`Cr`, and a
-  trailing `+`, and its boundary excludes currency symbols so a money figure is
-  one run. `EditorWorkspace` renders a slim `[data-scan-banner]` above the
-  Visual preview while the lens is on, with a **Turn off** button (hidden in
-  ATS). `bulletMetrics` gained `lineTopTolerance(scale)` (threaded from the
-  live canvas transform through `scanBulletLint`), per-line word dedupe by
-  match index, `reclaimableLines` that only promises a line when the bullet
-  runs past three rendered lines, and long-bullet copy split into
-  `240+ characters` vs `4+ lines`. `ReviewMenu` gained `pageCount` and only
-  renders the yellow trim badge when it is `> 1`. Decision #124; README tour
-  updated.
-- Tests: new currency/Indian-shorthand/trailing-plus scan cases plus a
-  number-then-word guard, `lineTopTolerance` cases, a repeated-word line case,
-  updated mixed-summary/reclaim expectations, a 4+ line summary case, a
-  single-page no-badge ReviewMenu case, and the scan-bar/Turn-off assertions in
-  the workspace test. Two first-run failures were expected copy changes
-  (`reclaim 3 lines` → `2`) and the old badge wait on a one-page resume.
-  `npm run typecheck` clean; `npm test` 1253 pass across 109 files;
-  `npm run lint` clean. Item moved to Done.
-- Note: Playwright remains sandbox-blocked, so the 390px banner row and the
-  real scaled line grouping are browser-unverified.
-- Files: `src/lib/preview/scanMetrics.ts` (+ test),
-  `src/lib/lint/bulletMetrics.ts` (+ test),
-  `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/ReviewMenu.tsx` (+ test),
-  `src/components/preview/LiveCanvasViewport.tsx`,
-  `src/components/preview/TrimTipsDialog.test.tsx`, `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar

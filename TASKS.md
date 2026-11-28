@@ -21,20 +21,43 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P1: Add real PDF-output regression suite (`e2e/pdf-output.spec.ts`) and Android `Pixel 7` project (`playwright.config.ts`).
-  1. **Add Android mobile project (`playwright.config.ts`):** Add a `mobile-chrome` project using `devices["Pixel 7"]` alongside existing `chromium` (`Desktop Chrome`) and `mobile-safari` (`iPhone 14` WebKit).
-  2. **Create `e2e/pdf-output.spec.ts` (Chromium `page.pdf()` + `pdfjs-dist` verification):** Write a helper that generates real PDF bytes with `page.pdf({ preferCSSPageSize: true, printBackground: true })` and parses them with `pdfjs-dist` to assert exact `numPages` and per-page extracted text across these 6 scenarios:
-     - **1-page preset parity (`A4` & `Letter`):** Software Engineer preset exports as exact `1` PDF page on both `A4` and `Letter`, with non-empty text containing the candidate's name, Experience, Education, and Skills.
-     - **Cold mobile print from `Content` tab (`390×844`):** Open `/editor` (stay on `Content`, never tap `Preview`), export PDF, and assert exact `1` non-blank PDF page (guarding the blank-PDF bug).
-     - **Multi-page `Studio Sidebar` (`A4` & `Letter`):** Import a dense multi-page resume (including 6+ certifications and Awards), switch to `Studio Sidebar`, export PDF, and assert `pdf.numPages === previewPageCount`, every PDF page has substantial text (no blank Page 1 or alternating blank pages), and `Awards` is present in the PDF text.
-     - **Multi-page single-column (`Engineering Classic` + `Compact 1-Pager`):** Verify exact preview-to-PDF page parity and zero blank trailing pages.
-     - **`Anonymize` PDF check:** Toggle `Anonymize` ON, export PDF, and assert `"Alex Taylor"` and `"Company A"` appear in the PDF text while the real name, email, and employer do **not** appear anywhere in the PDF.
-     - **`6s Scan` print isolation + WebKit print-CSS check:** Toggle `6s Scan` ON, emulate `media: "print"` (runs on both Chromium and `mobile-safari` WebKit), and assert `#print-portal` has no `.resume-scan` class and every `.resume-page` computes to `min-height: 0px` and `height <= pageHeight`.
+
+_empty
 
 
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-28 — Imported projects keep their **Present** flag. Queue and
+  Inbox were both empty, so this clear import bug was promoted from the
+  codebase. `buildProject` (paste/PDF path) and `importProject` (JSON Resume)
+  now propagate the already-parsed `dates.current` instead of hardcoding
+  `false`, so an open-ended project prints **Present** in Visual/ATS/PDF and
+  sorts as current; `projectToJson` mirrors `workToJson`/`educationToJson` by
+  emitting `endDate: ""` for a current project instead of a stale date, closing
+  the round trip. Verified `npm run typecheck`, `npm test` (1331 pass, 116
+  files, up from 1329), `npm run lint`. Files: `src/lib/import/pasteResume.ts`
+  (+ test), `src/lib/schema/jsonResume.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+
+- [x] 2026-11-28 — Real PDF-output regression suite + Android `Pixel 7` project.
+  Added a `mobile-chrome` project (`devices["Pixel 7"]`) beside `chromium` and
+  `mobile-safari`, and new `e2e/pdf-output.spec.ts` that prints the captured
+  `#print-portal` with `page.pdf({ preferCSSPageSize: true, printBackground:
+  true })`, parses the bytes with `pdfjs-dist/legacy/build/pdf.mjs`, and asserts
+  real page counts and per-page text: one-page Software Engineer preset on A4
+  and Letter, cold mobile export from the Content tab at 390×844, dense Studio
+  Sidebar on both paper sizes, dense Engineering Classic and Compact 1-Pager
+  preview/PDF parity with no blank trailing sheet, Anonymize placeholders with
+  no real identity text, and `6s Scan` isolation from the portal plus the
+  print-CSS `min-height: 0` rule (that half also runs on WebKit). The harness
+  suppresses the 2 s `PRINT_JOB_RELEASE_MS` timer and stubs `window.print` so
+  the portal stays mounted; PDF-byte tests skip non-Chromium projects. Verified
+  `npm run typecheck`, `npm test` (1329 pass, 116 files), `npm run lint`. Files:
+  `playwright.config.ts`, `e2e/pdf-output.spec.ts`, `CONTEXT.md`, `TASKS.md`.
+  Playwright remains sandbox-blocked, so the specs and the Pixel 7 project are
+  browser-unverified.
 
 - [x] 2026-11-28 — Fixed iOS Safari's alternating blank print pages. In
   `@media print`, `.resume-page` now sets `min-height: 0 !important` and

@@ -389,6 +389,7 @@ jane.smith@example.com | (555) 987-6543`);
         keywords: ["React", "TypeScript"],
         startDate: "2023-01",
         endDate: "",
+        current: true,
       }),
     ]);
     expect(doc?.sections.projects.items[0]?.description).toContain(
@@ -988,6 +989,7 @@ describe("parsePastedResume with PDF line metadata", () => {
       pdfLine("PROJECTS", { isBold: true, maxFontSize: 14 }),
       pdfLine("Revenue Dashboard", { isBold: true }),
       pdfLine("React | TypeScript | D3", { maxFontSize: 10 }),
+      pdfLine("Jan 2023 - Present", { maxFontSize: 10 }),
       pdfLine(
         "Built the dashboard that tracked pipeline health for the sales team.",
         { maxFontSize: 10 },
@@ -998,11 +1000,35 @@ describe("parsePastedResume with PDF line metadata", () => {
       expect.objectContaining({
         name: "Revenue Dashboard",
         keywords: ["React", "TypeScript", "D3"],
+        startDate: "2023-01",
+        endDate: "",
+        current: true,
       }),
     ]);
     expect(doc?.sections.projects.items[0]?.description).toContain(
       "tracked pipeline health",
     );
+  });
+
+  it("keeps a completed project closed on import", () => {
+    const doc = parsePastedResume(`Ada Kim
+Product Engineer
+ada@example.com
+
+PROJECTS
+Legacy Portal
+Java
+Jan 2020 - Dec 2021
+- Retired the old portal.`);
+
+    expect(doc?.sections.projects.items).toEqual([
+      expect.objectContaining({
+        name: "Legacy Portal",
+        startDate: "2020-01",
+        endDate: "2021-12",
+        current: false,
+      }),
+    ]);
   });
 
   it("recognises title-case Hard Skills and Soft Skills headings", () => {

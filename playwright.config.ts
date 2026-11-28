@@ -22,5 +22,9 @@ export default defineConfig({
       name: "mobile-safari",
       use: { ...devices["iPhone 14"] },
     },
+    {
+      name: "mobile-chrome",
+      use: { ...devices["Pixel 7"] },
+    },
   ],
 });

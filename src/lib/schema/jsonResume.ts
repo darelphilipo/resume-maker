@@ -271,7 +271,7 @@ function importProject(value: unknown): ProjectItem | null {
     url: text(value.url),
     startDate: dates.startDate,
     endDate: dates.endDate,
-    current: false,
+    current: dates.current,
     keywords: textList(value.keywords),
   };
 }
@@ -897,7 +897,7 @@ function projectToJson(item: ProjectItem): JsonResumeProject {
     highlights,
     keywords: [...item.keywords],
     startDate: jsonDate(item.startDate),
-    endDate: jsonDate(item.endDate),
+    endDate: item.current ? "" : jsonDate(item.endDate),
     url: item.url,
   };
 }

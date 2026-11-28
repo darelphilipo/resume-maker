@@ -159,6 +159,8 @@ describe("resumeFromJsonResume", () => {
     expect(doc.sections.projects.items[0]).toMatchObject({
       name: "Compiler",
       startDate: "1952-03",
+      endDate: "",
+      current: true,
       keywords: ["compilers", "COBOL"],
     });
     expect(doc.sections.projects.items[0].description).toContain(
@@ -452,6 +454,29 @@ describe("toJsonResume", () => {
     });
 
     expect(toJsonResume(doc).work?.[0]).toMatchObject({
+      startDate: "2024-02-01",
+      endDate: "",
+    });
+  });
+
+  it("keeps a current project open-ended instead of exporting a stale end date", () => {
+    const doc = docFrom({
+      sections: {
+        projects: {
+          items: [
+            {
+              id: "p1",
+              name: "Open Dashboard",
+              startDate: "2024-02",
+              endDate: "2025-01",
+              current: true,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(toJsonResume(doc).projects?.[0]).toMatchObject({
       startDate: "2024-02-01",
       endDate: "",
     });
