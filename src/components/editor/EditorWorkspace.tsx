@@ -193,9 +193,7 @@ export function EditorWorkspace() {
 
   /** One owner for Fit/Reset fit, whether it starts in the pill or Review. */
   function applyFitScale(scale: number): void {
-    if (scale < 1) {
-      trackEvent("tool_fit_1p");
-    }
+    trackEvent("tool_fit_1p", scale < 1 ? "fit" : "reset");
     patchDoc({ metadata: { page: { fitScale: scale } } });
   }
 
@@ -350,48 +348,6 @@ export function EditorWorkspace() {
       stopAutosave();
     };
   }, [id, loadResume]);
-
-  /**
-   * One anonymous activation signal per editor session: the first document
-   * change that is not just an automatic fit reset. Loading a resume establishes
-   * the baseline, so opening the editor alone is not counted as an edit.
-   */
-  const firstEditRef = useRef(false);
-  const readySeenRef = useRef(false);
-  const lastDocRef = useRef(doc);
-  useEffect(() => {
-    if (status !== "ready") {
-      return;
-    }
-
-    const previous = lastDocRef.current;
-    lastDocRef.current = doc;
-
-    if (!readySeenRef.current) {
-      readySeenRef.current = true;
-      return;
-    }
-
-    if (firstEditRef.current || previous === doc) {
-      return;
-    }
-
-    const fingerprint = (value: typeof doc) =>
-      JSON.stringify({
-        ...value,
-        metadata: {
-          ...value.metadata,
-          page: { ...value.metadata.page, fitScale: 0 },
-        },
-      });
-
-    if (fingerprint(previous) === fingerprint(doc)) {
-      return;
-    }
-
-    firstEditRef.current = true;
-    trackEvent("editor_first_edit");
-  }, [doc, status]);
 
   useEffect(() => {
     function handleUndoShortcut(event: KeyboardEvent): void {
@@ -805,16 +761,14 @@ export function EditorWorkspace() {
                   scan={scanPreview}
                   anonymize={anonymizePreview}
                   onToggleScan={() => {
-                    if (!scanPreview) {
-                      trackEvent("tool_6s_scan");
-                    }
-                    setScanPreview((enabled) => !enabled);
+                    const next = !scanPreview;
+                    setScanPreview(next);
+                    trackEvent("tool_6s_scan", next ? "on" : "off");
                   }}
                   onToggleAnonymize={() => {
-                    if (!anonymizePreview) {
-                      trackEvent("tool_anonymize");
-                    }
-                    setAnonymizePreview((enabled) => !enabled);
+                    const next = !anonymizePreview;
+                    setAnonymizePreview(next);
+                    trackEvent("tool_anonymize", next ? "on" : "off");
                   }}
                   bulletReport={bulletReport}
                   onSelectTrimIssue={revealTrimIssue}

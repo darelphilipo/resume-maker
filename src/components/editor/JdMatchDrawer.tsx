@@ -160,7 +160,6 @@ export function JdMatchDrawer({
   // e.g. a ref-forwarding change under React 19. Native button activation means
   // Space and Enter both go through this same click path.
   function openDrawer() {
-    trackEvent("tool_match_jd");
     setOpen(true);
     trackEvent("tool_match_jd");
   }
