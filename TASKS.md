@@ -21,8 +21,13 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-
-- [ ] p2 revert and remove the footer area "Your resume stays 100% on this device. We count anonymous button clicks (no cookies or personal data) to improve the app. " . It's making the page too tall 
+- [ ] P1: Final v1.0 polish — SVG template thumbnails, contextual `Basics` expansion, `Fit` readability note, desktop zoom `150%+` fix, and stable `ATS` Copy button widths (`src/components/editor/DesignPanel.tsx`, `src/components/editor/BasicsForm.tsx`, `src/components/editor/ReviewMenu.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/AtsTextView.tsx`).
+  1. **Inline SVG template thumbnails (`DesignPanel.tsx`):** Add a crisp, lightweight inline SVG mini-wireframe thumbnail (`~40×54px`, `aria-hidden="true"`, zero external images/layout shift) on the left of each of the 6 template cards visually distinguishing single-column (`Engineering Classic`), centered header (`Ivy/Executive`), accent rule (`Modern Accent`), dense (`Compact 1-Pager`), boxed skills (`Hybrid Skills-First`), and two-column (`Studio Sidebar`).
+  2. **Auto-expand `Basics` on blank resumes only (`BasicsForm.tsx`):** Default `Basics` to **expanded** when `doc.basics.name.trim() === ""` (new blank resume) and **collapsed** when `basics.name` is already populated (PDF imports and role presets).
+  3. **`Fit 1p` readability note (`ReviewMenu.tsx`):** When `fitScale < 0.88`, show a subtle 1-line note next to `Reset fit` inside `Review tools` (e.g., `"Scaled to 84% — check readability before exporting."`) without nagging on minor fits (`>= 88%`).
+  4. **Fix desktop zoom `+` stuck at `125%` & bottom clipping (`LiveCanvasViewport.tsx`):** Ensure `TransformWrapper`'s `maxScale` allows stepping cleanly all the way up to `225%` (`fitScale * 2.25`, stepping `100% → 125% → 150% → 175% → 200% → 225%`), and give the floating bottom-right zoom pill enough bottom clearance (`bottom-5 right-4` inside a non-clipped container) so its bottom border is never clipped.
+  5. **Stable `ATS` `Copy` button widths (`AtsTextView.tsx`):** Give `Copy all plain text` (`min-w-[11.5rem] justify-center`, swapping to `"✓ Copied plain text"`) and per-entry `Copy` buttons (`min-w-[5.5rem] justify-center`) fixed minimum widths so neither button shrinks or shifts under the cursor on click.
+  6. revert and remove the footer area "Your resume stays 100% on this device. We count anonymous button clicks (no cookies or personal data) to improve the app. " . It's making the page too tall 
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
