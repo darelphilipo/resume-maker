@@ -2048,6 +2048,26 @@ rediscover.
        `Awards`/atomic blocks decode with `withHeading: true`, so they never gain
        a spurious repeat.
 
+   126. **Print must start inside the click task, and the page box is 1mm short.**
+        iOS Safari blocks `window.print()` with "blocked from automatically
+        printing" unless it runs synchronously inside the user gesture, so
+        `printResume` no longer awaits fonts, images, or animation frames: it
+        calls `beforePrint`, swaps `document.title`, and calls `print()` in the
+        same task, then only awaits `afterprint`/the title grace. Do not
+        reintroduce `await document.fonts.ready`, `requestAnimationFrame`, or a
+        `setTimeout` before the print call. `PrintTriggerButton` must mount its
+        captured `PrintPortal` with `flushSync` inside `onClick` before calling
+        `printResume`, otherwise React would not have rendered the portal when
+        the browser snapshots the page. The 2 s `PRINT_JOB_RELEASE_MS` fallback is
+        still armed from `beforePrint` and the job releases on `afterprint`.
+        In `print.css`, `.resume-page` is
+        `calc(var(--page-height) - 1mm)` tall with `overflow: hidden`, and
+        `break-after: page` lives only on `:not(:last-child)` (`:last-child` is
+        `auto`); a page box exactly as tall as the physical sheet rounds over by
+        a hair on Safari and inserts a blank sheet between pages. `html, body`
+        also need `min-height: 0` and `overflow: visible` so they never extend
+        the print area.
+
 ## Verification and tooling
 
 ```powershell
@@ -2112,6 +2132,33 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-28 — iOS Safari print: synchronous dialog + exact page count
+- Task: top Queue item (P0), moved to In Progress first.
+- Change: `printResume` now prints synchronously in the caller's task: it runs
+  `beforePrint`, sets the filename title, and calls `window.print()` with no
+  fonts/images/rAF awaits, then only awaits `afterprint` and the coarse-pointer
+  title grace. `PrintTriggerButton` mounts the captured `PrintPortal` with
+  `flushSync` inside `onClick` and starts the job there, so the portal exists at
+  snapshot time and iOS Safari keeps the user gesture (no "blocked from
+  automatically printing"). `print.css` now sizes `.resume-page` at
+  `calc(var(--page-height) - 1mm)` (height/max-height), keeps `overflow: hidden`,
+  moves `break-after: page` to `.resume-page:not(:last-child)` with `auto` on
+  `:last-child`, and gives `html, body` `min-height: 0` + `overflow: visible`.
+  Decision #126.
+- Tests: new `printCss.test.ts` guards the 1mm box, the `:not(:last-child)`
+  break rule, and the html/body reset; `PrintTriggerButton` asserts
+  `window.print()` runs synchronously on click with the portal already mounted;
+  `printResume` asserts a synchronous print call. Removed the obsolete
+  `fontsReady` option from tests. `npm run typecheck` clean; `npm test` 1262 pass
+  across 110 files; `npm run lint` clean.
+- Note: Playwright remains sandbox-blocked, so the real iOS Safari print sheet
+  and physical page count are browser-unverified.
+- Files: `src/lib/print/printDocument.ts` (+ test),
+  `src/components/preview/PrintTriggerButton.tsx` (+ test),
+  `src/styles/print.css`, `src/lib/print/printCss.test.ts` (new),
+  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 ### 2026-11-28 — Header export menu labelled `Export ▾`
 - Task: top Queue item (P2), moved to In Progress first.
@@ -2338,26 +2385,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `npm run typecheck` clean; `npm test` 1198 pass across 107 files;
   `npm run lint` clean.
 - Files: `src/lib/privacy/anonymizeDoc.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
-
-### 2026-11-27 — Bullet-polish period removal + Match JD tokenization tightened
-- Task: top Queue item (P1), moved to In Progress first. All three sub-items
-  were open.
-- Change: `removeTrailingPeriod` now removes only one final period
-  (`(?<!\.)\.`) and keeps the whole trailing closing-tag/hard-break sequence in
-  one capture group, so `<strong><em>Shipped APIs.</em></strong></p>` keeps its
-  tags and `...` stays an ellipsis. `FIRST_PERSON_PATTERN` excludes `i.e.`,
-  `I/O`, and Roman-numeral contexts (`Phase I`, `Part I`, …). `jdMatch` keeps
-  `CI/CD`, `UI/UX`, `TCP/IP`, and `A/B` as single keywords, splits prose pairs
-  like `and/or`, skips plural `s`-stripping on dotted tokens (`node.js`), and
-  drops degree/pay/equal-opportunity boilerplate plus pronoun/`w/o`/`n/a`
-  noise. Decision #116; README feature tour updated.
-- Tests: new nested-tag + ellipsis period cases, first-person exclusion case,
-  slash-tech extraction/matching, prose-pair rejection, dotted-plural guard,
-  and boilerplate-stopword cases. `npm run typecheck` clean; `npm test` 1194
-  pass across 107 files; `npm run lint` clean.
-- Files: `src/lib/lint/resumeLint.ts` (+ test),
-  `src/lib/keywords/jdMatch.ts` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar

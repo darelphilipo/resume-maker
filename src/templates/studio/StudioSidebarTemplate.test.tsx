@@ -681,8 +681,12 @@ describe("StudioSidebarTemplate", () => {
     );
 
     expect(pageRule, "the print page rule must exist").not.toBeNull();
-    expect(pageRule?.[1]).toMatch(/height:\s*var\(--page-height/);
-    expect(pageRule?.[1]).toMatch(/max-height:\s*var\(--page-height/);
+    expect(pageRule?.[1]).toMatch(
+      /height:\s*calc\(var\(--page-height[^)]*\)\s*-\s*1mm\)/,
+    );
+    expect(pageRule?.[1]).toMatch(
+      /max-height:\s*calc\(var\(--page-height[^)]*\)\s*-\s*1mm\)/,
+    );
     expect(pageRule?.[1]).toContain("overflow: hidden;");
     expect(pageRule?.[1]).toContain("box-sizing: border-box;");
   });

@@ -18,6 +18,8 @@
   body {
     width: 100%;
     height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
@@ -62,21 +64,28 @@
      every packed page fits, and a fixed, clipped page box cannot be fragmented
      by Chrome's print layout into an extra page. Without the clamp, a Studio
      Sidebar grid that measured a fraction taller than the paper in print (mm/pt
-     rounding) was pushed whole onto Page 2, leaving Page 1 with only the header. */
+     rounding) was pushed whole onto Page 2, leaving Page 1 with only the header.
+     The `- 1mm` safety margin absorbs subpixel/mm rounding: a page box exactly
+     as tall as the physical sheet can overflow by a hair on iOS Safari, which
+     then inserts an alternating blank page between every real page. */
   .resume-page {
     width: var(--page-width, 210mm);
-    height: var(--page-height, 297mm);
-    min-height: var(--page-height, 297mm);
-    max-height: var(--page-height, 297mm);
+    height: calc(var(--page-height, 297mm) - 1mm);
+    max-height: calc(var(--page-height, 297mm) - 1mm);
     padding: var(--page-margin-y, 12pt) var(--page-margin-x, 14pt);
     box-sizing: border-box;
     overflow: hidden;
-    break-after: page;
-    page-break-after: always;
     box-shadow: none !important;
     border: none !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Force a break only *between* pages. Applying `break-after: page` to the
+     last page too leaves a trailing empty sheet on iOS Safari. */
+  .resume-page:not(:last-child) {
+    break-after: page;
+    page-break-after: always;
   }
 
   .resume-page:last-child {

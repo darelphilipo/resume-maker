@@ -467,7 +467,9 @@ PDF** to see both reminders, or tap the info button beside it on a touch device.
 If the dialog is dismissed without a close event, **Save PDF** becomes available
 again after a moment instead of staying dimmed. Pages are measured in the
 background, so **Save PDF** works straight from Content or Design without
-opening Preview first.
+opening Preview first. On iPhone and iPad Safari the print sheet opens straight
+from your tap, and a multi-page resume prints each page exactly once — no blank
+sheets between pages.
 
 ## Run it locally
 

@@ -27,7 +27,6 @@ export type PrintResumeOptions = {
   date?: Date;
   beforePrint?: () => void | Promise<void>;
   print?: () => void;
-  fontsReady?: () => Promise<unknown>;
 };
 
 export type PrintTitleInput = {
@@ -112,37 +111,6 @@ function waitForTitleRestoreDelay(): Promise<void> {
   });
 }
 
-function defaultFontsReady(): Promise<unknown> {
-  if (typeof document !== "undefined" && document.fonts) {
-    return document.fonts.ready;
-  }
-
-  return Promise.resolve();
-}
-
-function nextFrame(): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof requestAnimationFrame === "function") {
-      requestAnimationFrame(() => resolve());
-      return;
-    }
-
-    setTimeout(resolve, 0);
-  });
-}
-
-async function waitForImages(): Promise<void> {
-  if (typeof document === "undefined") {
-    return;
-  }
-
-  const images = Array.from(
-    document.querySelectorAll<HTMLImageElement>("#print-portal img"),
-  );
-
-  await Promise.all(images.map((image) => image.decode().catch(() => undefined)));
-}
-
 function waitForAfterPrint(): Promise<void> {
   return new Promise((resolve) => {
     let settled = false;
@@ -164,54 +132,57 @@ function waitForAfterPrint(): Promise<void> {
   });
 }
 
-export async function printResume(opts: PrintResumeOptions): Promise<void> {
+/**
+ * Prints the resume and resolves once the browser reports `afterprint` (or the
+ * safety timeout fires).
+ *
+ * `window.print()` is called **synchronously**, in the same task as the caller,
+ * so it still runs inside the user-gesture handler that started it. iOS Safari
+ * treats a deferred `window.print()` (after `await`, `requestAnimationFrame`,
+ * or `setTimeout`) as an unsolicited pop-up and blocks it with the
+ * "blocked from automatically printing" alert. Never await fonts, images, or
+ * frames before the print call; the print portal is already rendered from the
+ * live preview data when this runs.
+ */
+export function printResume(opts: PrintResumeOptions): Promise<void> {
   if (typeof window === "undefined" || typeof document === "undefined") {
-    return;
+    return Promise.resolve();
   }
 
-  const fontsReady = opts.fontsReady ?? defaultFontsReady;
   const print = opts.print ?? (() => window.print());
   const previousTitle = document.title;
 
   try {
-    try {
-      await fontsReady();
-    } catch {
-      // Font loading failures should never block printing.
-    }
-
-    await waitForImages();
-    await nextFrame();
-    await nextFrame();
-
-    try {
-      await opts.beforePrint?.();
-    } catch {
-      // A failing pre-print hook should never block the print dialog.
-    }
-
-    printTitleActive = true;
-    document.title = printTitle({
-      name: opts.name,
-      headline: opts.headline,
-      date: opts.date ?? new Date(),
-    });
-
-    const afterPrint = waitForAfterPrint();
-
-    try {
-      print();
-    } catch {
-      window.dispatchEvent(new Event("afterprint"));
-    }
-
-    await afterPrint;
-  } finally {
-    if (isCoarsePointer()) {
-      await waitForTitleRestoreDelay();
-    }
-
-    document.title = previousTitle;
-    printTitleActive = false;
+    void opts.beforePrint?.();
+  } catch {
+    // A failing pre-print hook should never block the print dialog.
   }
+
+  printTitleActive = true;
+  document.title = printTitle({
+    name: opts.name,
+    headline: opts.headline,
+    date: opts.date ?? new Date(),
+  });
+
+  const afterPrint = waitForAfterPrint();
+
+  try {
+    print();
+  } catch {
+    window.dispatchEvent(new Event("afterprint"));
+  }
+
+  return (async () => {
+    try {
+      await afterPrint;
+    } finally {
+      if (isCoarsePointer()) {
+        await waitForTitleRestoreDelay();
+      }
+
+      document.title = previousTitle;
+      printTitleActive = false;
+    }
+  })();
 }

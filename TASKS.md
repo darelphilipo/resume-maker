@@ -21,11 +21,6 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P0: Fix iOS Safari print blocking dialog and alternating blank pages in PDF export (`src/lib/print/printDocument.ts`, `src/components/preview/PrintTriggerButton.tsx`, `src/styles/print.css`).
-  1. **Eliminate Safari "blocked from automatically printing" alert (`printDocument.ts`, `PrintTriggerButton.tsx`):** Invoke `window.print()` **synchronously** inside the `onClick` user-gesture handler (remove any `await document.fonts.ready`, `requestAnimationFrame`, or `setTimeout` before `window.print()`) so iOS Safari never treats it as an automatic/unsolicited print.
-  2. **Eliminate Safari alternating blank pages (`print.css`):** In `@media print`, size each `.resume-page` with a `1mm` subpixel safety margin (`height: calc(var(--page-height) - 1mm); max-height: calc(var(--page-height) - 1mm); overflow: hidden; box-sizing: border-box;`), apply `break-after: page; page-break-after: always;` **only** to `.resume-page:not(:last-child)` (with `break-after: auto` on `:last-child`), and ensure `html, body` use `height: auto !important; min-height: 0 !important; overflow: visible !important; margin: 0 !important; padding: 0 !important;` so a 3-page resume prints as **exact 3 pages** on iOS Safari, Chrome, and Firefox.
-  3. Add unit tests verifying `window.print()` is called synchronously on click and guarding the `@media print` `:not(:last-child)` and `- 1mm` rules in `print.css`.
-
 - [ ] P2: Add privacy-first, zero-PII aggregate product analytics via a Cloudflare Pages Function (`functions/api/event.ts`, `src/lib/analytics/trackEvent.ts`, `src/components/launcher/Launcher.tsx`, `src/components/editor/EditorWorkspace.tsx`).
   1. **Client beacon (`src/lib/analytics/trackEvent.ts`):** Export a tiny fire-and-forget `trackEvent(event, meta?)` helper using `navigator.sendBeacon("/api/event", ...)` (silently no-oping on `localhost`, when `navigator.doNotTrack === "1"`, or if offline/blocked). Payload contains strictly `{ event, meta, device: "mobile" | "desktop" }` — never any resume text, filename, URL, or user ID.
   2. **Server allowlist endpoint (`functions/api/event.ts`):** Validate `event` and `meta` against a strict TypeScript allowlist (rejecting any unknown event or free-text payload with `400`), strip IP/cookies, and write `{ blobs: [event, meta, device], indexes: [event] }` to a Cloudflare Workers Analytics Engine binding .In functions/api/event.ts, map request.headers.get("user-agent") into coarse non-identifying enums os (android/ios/windows/macos/linux/other) and browser (chrome/safari/edge/firefox/other) without storing the raw User-Agent string, and log blobs: [event, meta, device, os, browser]." (`env.ANALYTICS?.writeDataPoint(...)`, gracefully returning `204` if the binding isn't configured yet).
@@ -35,6 +30,23 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-28 — Fixed iOS Safari's "blocked from automatically printing"
+  alert and the alternating blank PDF pages. `printResume` now calls
+  `window.print()` synchronously in the click task (no font/image/rAF awaits),
+  and `PrintTriggerButton` mounts its captured `PrintPortal` with `flushSync`
+  inside `onClick`, so the gesture is still active and the portal is rendered
+  when the browser snapshots it. In print CSS, each `.resume-page` is
+  `calc(var(--page-height) - 1mm)` tall with `overflow: hidden`,
+  `break-after: page` applies only to `:not(:last-child)`, and `html, body` get
+  `min-height: 0` + `overflow: visible`, so a 3-page resume prints as exactly 3
+  pages. Verified `npm run typecheck`, `npm test` (1262 pass, 110 files),
+  `npm run lint`. Files: `src/lib/print/printDocument.ts` (+ test),
+  `src/components/preview/PrintTriggerButton.tsx` (+ test),
+  `src/styles/print.css`, `src/lib/print/printCss.test.ts` (new),
+  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains sandbox-blocked, so the real iOS
+  Safari print sheet and page count are browser-unverified.
 
 - [x] 2026-11-28 — The header's quiet export menu now reads **Export ▾** on
   desktop while phones keep the compact `⋮`. The trigger gained balanced

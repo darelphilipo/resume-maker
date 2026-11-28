@@ -89,6 +89,23 @@ describe("PrintTriggerButton", () => {
     expect(info).toHaveAttribute("aria-expanded", "false");
   });
 
+  it("calls window.print synchronously with the portal already mounted", () => {
+    let portalAtPrint = false;
+    const print = vi.spyOn(window, "print").mockImplementation(() => {
+      portalAtPrint = document.getElementById("print-portal") !== null;
+      window.dispatchEvent(new Event("afterprint"));
+    });
+
+    render(<PrintTriggerButton doc={createEmptyResume()} pages={PAGES} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Save PDF" }));
+
+    // No await/waitFor here on purpose: iOS Safari blocks a print dialog that
+    // is opened after the click task ends.
+    expect(print).toHaveBeenCalledTimes(1);
+    expect(portalAtPrint).toBe(true);
+  });
+
   it("keeps the captured page snapshot when the live pages collapse", async () => {
     const print = vi.spyOn(window, "print").mockImplementation(() => {});
     const doc = createEmptyResume();

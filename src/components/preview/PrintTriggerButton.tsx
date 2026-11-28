@@ -2,6 +2,7 @@
 
 import { Info, Printer } from "@phosphor-icons/react";
 import { useEffect, useId, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { printPageSizeLabel, printResume } from "@/lib/print/printDocument";
@@ -29,70 +30,74 @@ export function PrintTriggerButton({
 }) {
   const [job, setJob] = useState<PrintJob | null>(null);
   const [tipOpen, setTipOpen] = useState(false);
-  const startedJobRef = useRef<PrintJob | null>(null);
+  const releaseRef = useRef<(() => void) | null>(null);
   const tipContainerRef = useRef<HTMLDivElement | null>(null);
   const tipId = useId();
   const paperSize = printPageSizeLabel(doc.metadata.page.format);
 
+  // Drop the `afterprint` listener and fallback timer if the editor unmounts
+  // mid-print. This path never calls `setJob` (the component is already gone).
   useEffect(() => {
-    if (!job) {
-      startedJobRef.current = null;
-      return;
-    }
+    return () => {
+      releaseRef.current?.();
+      releaseRef.current = null;
+    };
+  }, []);
 
-    if (startedJobRef.current === job) {
-      return;
-    }
-
-    startedJobRef.current = job;
-
-    // Release the button as soon as the dialog closes, or after a short grace
-    // period if no `afterprint` arrives at all. The fallback is armed only once
-    // the pre-print work is done, so a slow font/image load cannot release the
-    // job before `window.print()` has even been called.
+  /**
+   * Mount the captured portal with `flushSync` and start the print job inside
+   * the click handler. Both steps must stay synchronous: iOS Safari only allows
+   * `window.print()` while the user gesture is still active, and the portal has
+   * to be in the DOM before the browser snapshots the page.
+   */
+  const startPrintJob = (next: PrintJob): void => {
     let released = false;
     let fallbackTimer: number | null = null;
 
-    const release = (): void => {
-      if (released) {
-        return;
-      }
-
-      released = true;
+    function clearResources(): void {
       window.removeEventListener("afterprint", release);
 
       if (fallbackTimer !== null) {
         window.clearTimeout(fallbackTimer);
         fallbackTimer = null;
       }
+    }
 
-      startedJobRef.current = null;
-      setJob(null);
-    };
-
-    const armFallback = (): void => {
-      if (!released && fallbackTimer === null) {
-        fallbackTimer = window.setTimeout(release, PRINT_JOB_RELEASE_MS);
+    // Release the button as soon as the dialog closes, or after a short grace
+    // period if no `afterprint` arrives at all.
+    function release(): void {
+      if (released) {
+        return;
       }
+
+      released = true;
+      clearResources();
+      releaseRef.current = null;
+      setJob(null);
+    }
+
+    releaseRef.current = (): void => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      clearResources();
     };
 
     window.addEventListener("afterprint", release);
 
     void printResume({
-      pages: job.pages,
-      name: job.doc.basics.name,
-      headline: job.doc.basics.headline,
-      beforePrint: armFallback,
+      pages: next.pages,
+      name: next.doc.basics.name,
+      headline: next.doc.basics.headline,
+      beforePrint: () => {
+        if (!released && fallbackTimer === null) {
+          fallbackTimer = window.setTimeout(release, PRINT_JOB_RELEASE_MS);
+        }
+      },
     }).then(release, release);
-
-    return () => {
-      window.removeEventListener("afterprint", release);
-
-      if (fallbackTimer !== null) {
-        window.clearTimeout(fallbackTimer);
-      }
-    };
-  }, [job]);
+  };
 
   useEffect(() => {
     if (!tipOpen) {
@@ -137,7 +142,20 @@ export function PrintTriggerButton({
           aria-describedby={tipId}
           disabled={job !== null}
           onClick={() => {
-            setJob((current) => current ?? { doc, pages });
+            if (job) {
+              return;
+            }
+
+            const next: PrintJob = { doc, pages };
+
+            // Mount the captured portal synchronously, then print in the same
+            // task: the browser must snapshot a rendered portal and iOS Safari
+            // must still be inside the user-gesture handler.
+            flushSync(() => {
+              setJob(next);
+            });
+
+            startPrintJob(next);
           }}
           className="editor-chrome inline-flex min-h-11 min-w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-primary bg-primary px-2 py-2 text-sm font-medium text-white transition-colors hover:border-primary/90 hover:bg-primary/90 active:bg-primary/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:opacity-60 sm:min-w-11 sm:px-3"
         >

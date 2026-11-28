@@ -219,7 +219,6 @@ describe("printResume", () => {
       date: new Date(2026, 0, 2),
       beforePrint,
       print,
-      fontsReady: () => Promise.resolve(),
     });
 
     expect(beforePrint).toHaveBeenCalledTimes(1);
@@ -227,6 +226,31 @@ describe("printResume", () => {
     expect(titlesAtPrint).toEqual([
       "ada-lovelace-mathematician-2026-01-02-resume",
     ]);
+    expect(document.title).toBe("Original title");
+  });
+
+  it("calls print synchronously, before any async work", async () => {
+    stubMatchMedia(false);
+
+    const print = vi.fn(() => {
+      // iOS Safari only permits the print dialog inside the original user
+      // gesture, so `print()` must already have run by the time this line
+      // returns to the caller.
+      window.dispatchEvent(new Event("afterprint"));
+    });
+
+    const promise = printResume({
+      pages: [["__header"]],
+      name: "Ada Lovelace",
+      date: new Date(2026, 0, 2),
+      print,
+    });
+
+    expect(print).toHaveBeenCalledTimes(1);
+    expect(document.title).toBe("ada-lovelace-2026-01-02-resume");
+
+    await promise;
+
     expect(document.title).toBe("Original title");
   });
 
@@ -244,7 +268,6 @@ describe("printResume", () => {
       headline: "Mathematician",
       date: new Date(2026, 0, 2),
       print,
-      fontsReady: () => Promise.resolve(),
     });
 
     await flushMicrotasks();
@@ -274,7 +297,6 @@ describe("printResume", () => {
       name: "Ada Lovelace",
       date: new Date(2026, 0, 2),
       print,
-      fontsReady: () => Promise.resolve(),
     });
 
     await flushMicrotasks();
@@ -296,7 +318,6 @@ describe("printResume", () => {
       name: "Ada Lovelace",
       date: new Date(2026, 0, 2),
       print,
-      fontsReady: () => Promise.resolve(),
     });
 
     await flushMicrotasks();
@@ -315,7 +336,6 @@ describe("printResume", () => {
       name: "Ada Lovelace",
       date: new Date(2026, 0, 2),
       print,
-      fontsReady: () => Promise.resolve(),
     });
 
     await vi.runAllTimersAsync();
@@ -336,7 +356,6 @@ describe("printResume", () => {
         name: "Ada Lovelace",
         date: new Date(2026, 0, 2),
         print,
-        fontsReady: () => Promise.resolve(),
       }),
     ).resolves.toBeUndefined();
 
@@ -359,7 +378,6 @@ describe("printResume", () => {
       name: "Ada Lovelace",
       date: new Date(2026, 0, 2),
       print,
-      fontsReady: () => Promise.resolve(),
     });
 
     expect(isPrintTitleActive()).toBe(false);
