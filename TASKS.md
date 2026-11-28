@@ -22,6 +22,11 @@ _empty
 
 ## Queue (Ready for Next Run)
 
+- [ ] P1: Fix desktop zoom `Reset` settling at `107%`, zoom pill bottom clipping, and oval focus ring on `Accent color` swatches (`src/components/preview/LiveCanvasViewport.tsx`, `src/components/editor/DesignPanel.tsx`).
+  1. **Exact `100%` zoom reset & clean 25% steps (`LiveCanvasViewport.tsx`):** Compute desktop `+` / `-` and `Reset` transforms directly from the current live `fitScale` (using `setTransform(fitOffsetX, 0, targetScale, 0)` where `targetScale = fitScale * nextPct / 100`, and `Reset` sets `fitScale` exactly) so `+` always steps `100% → 125% → 150%` and `Reset` always settles at `100%` with `Reset` hidden. Give the floating zoom pill `bottom-4 right-4` inside a non-clipped wrapper so its bottom border is never cut off.
+  2. **Circular swatch focus ring (`DesignPanel.tsx`):** Make each `Accent color` swatch `<label>` a fixed square (`h-10 w-10 rounded-full items-center justify-center`) so `:focus-visible` draws a crisp circle instead of a stretched oval.
+
+
 ### P2 — Parser, Fit Math & Review-Tools Polish
 
 - [ ] P2: Render a section heading when an overflowed `Studio Sidebar` entry spills onto Page 2 beneath a different section (`src/templates/shared/SectionRenderer.tsx`).
