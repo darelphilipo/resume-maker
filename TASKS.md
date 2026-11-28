@@ -30,6 +30,16 @@ _empty
      - Deduplicate `aria-label="Editor panels"` between `<nav>` and `role="tablist"` in `MobileBottomNav.tsx`.
      - Audit `outline-none` usages across `src/components/` to verify every focusable element has a visible `focus-visible:ring` replacement.
      - Add concise plain-English `title` tooltips on `Fit 1p`, `6s Scan`, `Tidy`, and `ATS`.
+       
+- [ ] P0: Fix iOS Safari alternating blank print pages by resetting `min-height` and switching `.resume-page` to `height: auto` in `@media print` (`src/styles/print.css`).
+  1. In `@media print` for `.resume-page`, set `min-height: 0 !important; height: auto !important; max-height: calc(var(--page-height) - 2mm) !important; overflow: hidden;` (overriding `preview.css`'s `min-height: var(--page-height)` which previously neutralized `max-height`), while keeping `break-after: page; page-break-after: always;` strictly on `.resume-page:not(:last-child)` and `break-after: auto` on `:last-child`.
+  2. Update the `print.css` unit test to assert `min-height: 0` and `height: auto` are present in `@media print`.
+  - [ ] P0: Fix iOS Safari alternating blank print pages by resetting `min-height` and switching `.resume-page` to `height: auto` in `@media print` (`src/styles/print.css`).
+  1. In `@media print` for `.resume-page`, set `min-height: 0 !important; height: auto !important; max-height: calc(var(--page-height) - 2mm) !important; overflow: hidden;` (overriding `preview.css`'s `min-height: var(--page-height)` which previously neutralized `max-height`), while keeping `break-after: page; page-break-after: always;` strictly on `.resume-page:not(:last-child)` and `break-after: auto` on `:last-child`.
+  2. Update the `print.css` unit test to assert `min-height: 0` and `height: auto` are present in `@media print`.
+
+    
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
