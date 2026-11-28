@@ -22,14 +22,23 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-### P2 — Parser, Fit Math & Review-Tools Polish
-
-- [ ] P2: Rename `⋮ More` to `Export ▾` on desktop and fix the button's clipped hover/background box (`src/components/editor/EditorWorkspace.tsx`).
-  1. Replace the fixed square width on desktop (`w-11 lg:w-auto lg:px-3 gap-1.5`) so the button's background, focus ring, and hover highlight cleanly wrap the full icon + label with balanced horizontal padding.
-  2. Rename the desktop label from `"More"` to **`"Export"`** (with a subtle chevron `▾` or download/file icon, keeping the compact `⋮` icon on mobile `< lg`), and place a subtle divider above `"Clear sample data"` inside the menu so export actions stay cleanly grouped.
+_empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-28 — The header's quiet export menu now reads **Export ▾** on
+  desktop while phones keep the compact `⋮`. The trigger gained balanced
+  horizontal padding (`px-2`, `lg:px-3`, `lg:gap-1.5`), so its hover highlight
+  and focus ring wrap the full desktop label instead of hugging the text, and
+  the `CaretDown` chevron signals a menu. A hairline `role="separator"`
+  divider now groups **Clear sample data** apart from the two export actions and
+  only renders for sample resumes. Verified `npm run typecheck`, `npm test`
+  (1257 pass, 109 files), `npm run lint`. Files:
+  `src/components/shared/ExportJsonButton.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`. The trigger lives in `ExportJsonButton`, not
+  `EditorWorkspace`, so the header layout needed no change. Playwright remains
+  sandbox-blocked, so the real desktop hover box is browser-unverified.
 
 - [x] 2026-11-28 — A `Studio Sidebar` entry that spills from Page 1's side
   column onto a later page now repeats its section heading there. When

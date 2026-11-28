@@ -48,10 +48,19 @@ describe("ExportJsonButton", () => {
     render(<ExportJsonButton />);
 
     const trigger = screen.getByRole("button", { name: "Export & options" });
+    const label = trigger.querySelector("span");
+    const chevron = trigger.querySelector("[data-export-chevron]");
+    const dots = trigger.querySelector("[data-export-dots]");
 
     expect(trigger).toHaveAttribute("title", "Export & options");
-    expect(trigger).toHaveTextContent("More");
-    expect(trigger.querySelector("span")).toHaveClass("hidden", "lg:inline");
+    expect(trigger).toHaveTextContent("Export");
+    expect(trigger).not.toHaveTextContent("More");
+    expect(label).toHaveClass("hidden", "lg:inline-flex");
+    expect(chevron).not.toBeNull();
+    // The compact dots stay on phones; desktop shows the labelled Export menu.
+    expect(dots).toHaveClass("lg:hidden");
+    // Balanced horizontal padding keeps the hover/focus box around the label.
+    expect(trigger).toHaveClass("px-2", "lg:px-3", "lg:gap-1.5");
   });
 
   it("opens a menu with a backup and a JSON Resume choice", async () => {
@@ -150,6 +159,7 @@ describe("ExportJsonButton", () => {
     expect(
       screen.queryByRole("menuitem", { name: /Clear sample data/ }),
     ).toBeNull();
+    expect(screen.queryByRole("separator")).toBeNull();
   });
 
   it("clears every sample entry in one undoable patch", async () => {
@@ -164,8 +174,15 @@ describe("ExportJsonButton", () => {
 
     const trigger = screen.getByRole("button", { name: "Export & options" });
     const clear = screen.getByRole("menuitem", { name: /Clear sample data/ });
+    const separator = screen.getByRole("separator");
 
     expect(clear).toHaveAttribute("data-clear-sample-data");
+    // The divider groups the sample reset apart from the export actions above.
+    expect(separator).toHaveAttribute("data-export-divider");
+    expect(
+      separator.compareDocumentPosition(clear) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
 
     await user.click(clear);
 

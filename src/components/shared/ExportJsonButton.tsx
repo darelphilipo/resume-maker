@@ -1,6 +1,6 @@
 "use client";
 
-import { DotsThreeVertical } from "@phosphor-icons/react";
+import { CaretDown, DotsThreeVertical } from "@phosphor-icons/react";
 import {
   useEffect,
   useRef,
@@ -131,10 +131,24 @@ export function ExportJsonButton() {
         aria-expanded={open}
         aria-controls={open ? "export-json-menu" : undefined}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex min-h-11 min-w-10 shrink-0 items-center justify-center gap-1 rounded-lg border border-transparent text-muted transition-colors hover:bg-black/5 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-w-11"
+        className="inline-flex min-h-11 min-w-10 shrink-0 items-center justify-center gap-1 rounded-lg border border-transparent px-2 text-muted transition-colors hover:bg-black/5 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:min-w-11 lg:gap-1.5 lg:px-3"
       >
-        <DotsThreeVertical size={20} weight="bold" aria-hidden />
-        <span className="hidden text-xs font-medium lg:inline">More</span>
+        <DotsThreeVertical
+          size={20}
+          weight="bold"
+          aria-hidden
+          data-export-dots=""
+          className="lg:hidden"
+        />
+        <span className="hidden items-center gap-1 text-xs font-medium lg:inline-flex">
+          Export
+          <CaretDown
+            size={10}
+            weight="bold"
+            aria-hidden
+            data-export-chevron=""
+          />
+        </span>
       </button>
 
       {open ? (
@@ -175,20 +189,27 @@ export function ExportJsonButton() {
           </button>
 
           {doc.metadata.sampleData === true ? (
-            <button
-              type="button"
-              role="menuitem"
-              data-clear-sample-data=""
-              onClick={handleClearSampleData}
-              className="flex w-full flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:bg-black/5 focus-visible:outline-none"
-            >
-              <span className="text-sm font-medium text-text">
-                Clear sample data
-              </span>
-              <span className="text-xs leading-snug text-muted">
-                Start from an empty resume. Undo brings the sample back.
-              </span>
-            </button>
+            <>
+              <div
+                role="separator"
+                data-export-divider=""
+                className="my-1 h-px bg-line"
+              />
+              <button
+                type="button"
+                role="menuitem"
+                data-clear-sample-data=""
+                onClick={handleClearSampleData}
+                className="flex w-full flex-col gap-0.5 rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/5 focus-visible:bg-black/5 focus-visible:outline-none"
+              >
+                <span className="text-sm font-medium text-text">
+                  Clear sample data
+                </span>
+                <span className="text-xs leading-snug text-muted">
+                  Start from an empty resume. Undo brings the sample back.
+                </span>
+              </button>
+            </>
           ) : null}
         </div>
       ) : null}

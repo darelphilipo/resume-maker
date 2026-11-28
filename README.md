@@ -106,18 +106,20 @@ in control of every line, and your data stays on your device.
   Finance & Operations, Data Analyst, and Fresh Graduate, each with a complete,
   one-page editable sample including categorized skills you can adapt. The six
   cards fill the two-column grid evenly, so no role sits beside an empty slot.
-  If you started from a preset, **Clear sample data** in the editor's **⋮**
-  menu wipes the example names, summary, and entries across every section in one
-  tap, leaving your layout and design intact — and **Undo** brings it all back.
+  If you started from a preset, **Clear sample data** in the editor's
+  **Export** menu wipes the example names, summary, and entries across every
+  section in one tap, leaving your layout and design intact — and **Undo**
+  brings it all back.
 - **Backup & restore** lives in the **Other ways to import** strip at the bottom
   of the home page as a secondary option: restore a single-resume JSON backup
   you exported earlier, or a resume file from
   another tool in the open **JSON Resume** format, without treating JSON as the
   main way to start.
 - **JSON export** in the editor at any time so you are never locked in: the
-  quiet **⋮** backup menu beside **Save PDF** keeps a full **Resume Maker
-  backup** (layout, design, and hidden entries) or downloads the same resume as
-  a portable **JSON Resume** file that other resume tools and sites can read.
+  quiet **Export** menu beside **Save PDF** (a **⋮** on phones, **Export ▾** on
+  desktop) keeps a full **Resume Maker backup** (layout, design, and hidden
+  entries) or downloads the same resume as a portable **JSON Resume** file that
+  other resume tools and sites can read.
 
 ### Write and organize
 
@@ -441,8 +443,8 @@ in control of every line, and your data stays on your device.
 
 - Automatic local saves while you edit.
 - Undo and redo from the header or with `Ctrl/Cmd+Z` and `Ctrl/Cmd+Shift+Z`.
-- Export from the header's **⋮ Export & options** menu ("More" on desktop)
-  whenever you want a portable copy. Choose **Download backup (.json)** for a
+- Export from the header's **Export & options** menu (**⋮** on phones,
+  **Export ▾** on desktop) whenever you want a portable copy. Choose **Download backup (.json)** for a
   complete file that reopens here with your layout, design,
   and hidden entries intact, or **Export JSON Resume** for the open standard
   format used by other resume tools. JSON Resume exports include the resume you

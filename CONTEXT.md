@@ -2113,6 +2113,26 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
+### 2026-11-28 — Header export menu labelled `Export ▾`
+- Task: top Queue item (P2), moved to In Progress first.
+- Change: the trigger is in `ExportJsonButton`, not `EditorWorkspace`. Desktop
+  now shows **Export** plus a `CaretDown` chevron (`lg:inline-flex`); phones keep
+  the compact `DotsThreeVertical` (`lg:hidden`). The button gained `px-2`,
+  `lg:px-3`, and `lg:gap-1.5`, so the hover background and focus ring wrap the
+  whole label with balanced padding instead of hugging the text edge. A
+  `role="separator"` hairline (`data-export-divider`) sits above **Clear sample
+  data** and renders only for sample resumes; the menu's Arrow-key handler
+  queries `button` only, so it skips the divider. The accessible name stays
+  `Export & options` via `aria-label`, so existing tests/e2e selectors did not
+  change.
+- Tests: updated the trigger label/chevron/padding assertions and added divider
+  presence/absence cases. `npm run typecheck` clean; `npm test` 1257 pass across
+  109 files; `npm run lint` clean.
+- Note: Playwright remains sandbox-blocked, so the real desktop hover box and
+  chevron alignment are browser-unverified.
+- Files: `src/components/shared/ExportJsonButton.tsx` (+ test), `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
+
 ### 2026-11-28 — Spilled sidebar entries repeat their section heading
 - Task: top Queue item (P2), moved to In Progress first.
 - Change: `SectionRenderer.groupBlocks` now flags a group
@@ -2339,22 +2359,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/lib/lint/resumeLint.ts` (+ test),
   `src/lib/keywords/jdMatch.ts` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
-
-### 2026-11-26 — Blank-PDF fix verified and moved to Done
-- Task: continued the lone In Progress item (P0). All four sub-items were
-  already implemented by the prior checkpoint; this run had working shell access
-  and verified them end to end.
-- Change: no code changes. Moved the item to Done in `TASKS.md` with the file
-  list and closed the bookkeeping. Confirmed the measure layer renders once in
-  `EditorWorkspace` outside the mobile-hidden tabpanels,
-  `PrintPortal.printablePages()` falls back to the header plus visible section
-  ids on an empty page list, `resumeDocumentTitle()` emits the underscore slug,
-  and the editor title effect respects `isPrintTitleActive()` (Decision #115).
-- Verification: `npm run typecheck` clean; `npm test` 1186 pass across 107 files;
-  `npm run lint` clean. Playwright still cannot run here, so the 390×844 mobile
-  e2e and the real Android spool filename remain browser-unverified.
-- Files: `TASKS.md`, `CONTEXT.md` (feature code and README were already in the
-  tree from the earlier checkpoint).
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright
