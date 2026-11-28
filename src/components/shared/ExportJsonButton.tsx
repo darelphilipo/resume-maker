@@ -8,6 +8,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 
+import { trackEvent } from "@/lib/analytics/trackEvent";
 import { clearSampleData } from "@/lib/presets/clearSampleData";
 import { serializeJsonResume } from "@/lib/schema/jsonResume";
 import { serializeResume } from "@/lib/schema/serialize";
@@ -73,6 +74,7 @@ export function ExportJsonButton() {
   }, [open]);
 
   function handleExport(format: "backup" | "jsonresume") {
+    trackEvent("json_export", { format });
     const fileName = `${slugFileName(doc.basics.name)}-resume.json`;
 
     if (format === "jsonresume") {

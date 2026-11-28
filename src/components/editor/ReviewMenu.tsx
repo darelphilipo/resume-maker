@@ -13,6 +13,7 @@ import { useId, useState } from "react";
 
 import { TrimTipsDialog } from "@/components/preview/TrimTipsDialog";
 import { CenteredModal } from "@/components/shared/CenteredModal";
+import { trackEvent } from "@/lib/analytics/trackEvent";
 import type { BulletIssue, BulletLintReport } from "@/lib/lint/bulletMetrics";
 import { MAX_LISTED_ISSUES } from "@/lib/lint/bulletMetrics";
 import { fitBlockedCopy } from "@/lib/pagination/fitCopy";
@@ -206,6 +207,7 @@ export function ReviewMenu({
                 marker="data-review-trim"
                 showChevron
                 onClick={() => {
+                  trackEvent("tool_trim_tips");
                   setOpen(false);
                   setTrimOpen(true);
                 }}

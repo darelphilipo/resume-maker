@@ -17,6 +17,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
+import { trackEvent } from "@/lib/analytics/trackEvent";
 import {
   dropTargetForPointer,
   mergeVisibleOrder,
@@ -338,6 +339,11 @@ export function SectionList({
   }
 
   function addOptionalSection(row: SectionRow): void {
+    trackEvent("section_added", {
+      section: SECTION_ID_SET.has(row.id)
+        ? (row.id as (typeof SECTION_IDS)[number])
+        : "custom",
+    });
     setRevealedOptional((current) =>
       current.includes(row.id) ? current : [...current, row.id],
     );
@@ -371,6 +377,10 @@ export function SectionList({
       main: [...DEFAULT_SECTION_ORDER],
       sidebar: [],
     };
+
+    if (order.some((id, index) => id !== firstPage.main[index])) {
+      trackEvent("section_reordered");
+    }
 
     patchDoc({
       metadata: {
@@ -531,6 +541,7 @@ export function SectionList({
     }
 
     const section = CustomSectionSchema.parse({ id: newId(), title });
+    trackEvent("section_added", { section: "custom" });
     const firstPage = doc.metadata.layout.pages[0] ?? {
       fullWidth: false,
       main: [...DEFAULT_SECTION_ORDER],

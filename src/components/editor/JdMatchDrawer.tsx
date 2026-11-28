@@ -5,6 +5,7 @@ import { useId, useMemo, useState } from "react";
 import type { ButtonHTMLAttributes } from "react";
 
 import { CenteredModal } from "@/components/shared/CenteredModal";
+import { trackEvent } from "@/lib/analytics/trackEvent";
 import { buildAtsText } from "@/lib/ats/atsText";
 import { matchJobKeywords } from "@/lib/keywords/jdMatch";
 import { useIsDesktop } from "@/lib/responsive/useIsDesktop";
@@ -159,6 +160,7 @@ export function JdMatchDrawer({
   // e.g. a ref-forwarding change under React 19. Native button activation means
   // Space and Enter both go through this same click path.
   function openDrawer() {
+    trackEvent("tool_match_jd");
     setOpen(true);
   }
 

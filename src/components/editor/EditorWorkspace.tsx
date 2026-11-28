@@ -23,6 +23,7 @@ import { InAppBrowserNotice } from "@/components/preview/InAppBrowserNotice";
 import { PageOverflowBanner } from "@/components/preview/PageOverflowBanner";
 import { PrintTriggerButton } from "@/components/preview/PrintTriggerButton";
 import { ExportJsonButton } from "@/components/shared/ExportJsonButton";
+import { trackEvent } from "@/lib/analytics/trackEvent";
 import type { BulletIssue, BulletLintReport } from "@/lib/lint/bulletMetrics";
 import type { ResumeLintEntryTarget } from "@/lib/lint/resumeLint";
 import { usePageLayout } from "@/lib/pagination/usePageLayout";
@@ -187,6 +188,9 @@ export function EditorWorkspace() {
 
   /** One owner for Fit/Reset fit, whether it starts in the pill or Review. */
   function applyFitScale(scale: number): void {
+    if (scale < 1) {
+      trackEvent("tool_fit_1p");
+    }
     patchDoc({ metadata: { page: { fitScale: scale } } });
   }
 
@@ -320,6 +324,48 @@ export function EditorWorkspace() {
       stopAutosave();
     };
   }, [id, loadResume]);
+
+  /**
+   * One anonymous activation signal per editor session: the first document
+   * change that is not just an automatic fit reset. Loading a resume establishes
+   * the baseline, so opening the editor alone is not counted as an edit.
+   */
+  const firstEditRef = useRef(false);
+  const readySeenRef = useRef(false);
+  const lastDocRef = useRef(doc);
+  useEffect(() => {
+    if (status !== "ready") {
+      return;
+    }
+
+    const previous = lastDocRef.current;
+    lastDocRef.current = doc;
+
+    if (!readySeenRef.current) {
+      readySeenRef.current = true;
+      return;
+    }
+
+    if (firstEditRef.current || previous === doc) {
+      return;
+    }
+
+    const fingerprint = (value: typeof doc) =>
+      JSON.stringify({
+        ...value,
+        metadata: {
+          ...value.metadata,
+          page: { ...value.metadata.page, fitScale: 0 },
+        },
+      });
+
+    if (fingerprint(previous) === fingerprint(doc)) {
+      return;
+    }
+
+    firstEditRef.current = true;
+    trackEvent("editor_first_edit");
+  }, [doc, status]);
 
   useEffect(() => {
     function handleUndoShortcut(event: KeyboardEvent): void {
@@ -733,9 +779,15 @@ export function EditorWorkspace() {
                   scan={scanPreview}
                   anonymize={anonymizePreview}
                   onToggleScan={() => {
+                    if (!scanPreview) {
+                      trackEvent("tool_6s_scan");
+                    }
                     setScanPreview((enabled) => !enabled);
                   }}
                   onToggleAnonymize={() => {
+                    if (!anonymizePreview) {
+                      trackEvent("tool_anonymize");
+                    }
                     setAnonymizePreview((enabled) => !enabled);
                   }}
                   bulletReport={bulletReport}

@@ -2068,6 +2068,25 @@ rediscover.
         also need `min-height: 0` and `overflow: visible` so they never extend
         the print area.
 
+    127. **Anonymous click analytics is allowlist-only and Cloudflare-only.**
+        The 2026-11-28 queue item explicitly asked for a Pages Function, which
+        overrides the general "zero backend" default *for this one endpoint*:
+        `src/lib/analytics/eventAllowlist.ts` is the single vocabulary shared by
+        the browser and `functions/api/event.ts`. Both sides reject unknown
+        events and any meta key/value outside the curated enums, so resume text,
+        filenames, URLs, and ids cannot be encoded as `"meta"`. The endpoint
+        never reads IP or cookies, maps the User-Agent to coarse `os`/`browser`
+        enums (`src/lib/analytics/userAgent.ts`) and discards the raw string,
+        and returns 204 when `ANALYTICS` is unbound. `trackEvent` silently skips
+        localhost, `doNotTrack === "1"`, offline, and missing/blocked beacons;
+        it derives the beacon URL from `window.location.pathname` so the
+        `/resume-maker` base path is preserved (never hardcode `/api/event`).
+        **Deployment gap:** `deploy.yml` still ships only `out/` to GitHub
+        Pages, where `/api/event` returns 404 — the footer's "we count anonymous
+        button clicks" claim is only true if the site also runs on Cloudflare
+        Pages with the `ANALYTICS` binding. Do not extend this allowlist with
+        free-form fields, and do not reuse it for resume data.
+
 ## Verification and tooling
 
 ```powershell
@@ -2132,6 +2151,36 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-28 — Allowlist-only anonymous click analytics
+- Task: top Queue item (P2), moved to In Progress first. The item explicitly
+  requested a Pages Function even though CONTEXT's general "zero backend"
+  constraint says servers are out of scope; with no interactive decision
+  available in this run, the specific later instruction was treated as the
+  override and the conflict was recorded in Decision #127.
+- Change: new `src/lib/analytics/{eventAllowlist,trackEvent,userAgent}.ts` and
+  `functions/api/event.ts` implement a strict event/meta allowlist (21 events),
+  coarse os/browser enums, a 204 response when the binding is absent, and a
+  silent beacon that honours localhost, Do Not Track, offline, and blocked
+  sendBeacon. The events are wired at their source in `Launcher`,
+  `EditorWorkspace`, `ReviewMenu`, `ResumeLintPopover`, `JdMatchDrawer`,
+  `SectionList`, `DesignPanel`, `AtsTextView`, `ExportJsonButton`, and
+  `PrintTriggerButton`; the home page footer states the privacy note.
+- Tests: 18 new unit tests cover the allowlist/free-text rejection, meta token,
+  DNT/offline/localhost opt-outs, base-path URL, coarse device, UA enum mapping,
+  and the endpoint's 400/204/data-point behaviour. `npm run typecheck` clean;
+  `npm test` 1280 pass across 114 files; `npm run lint` clean.
+- Note: `deploy.yml` still deploys only `out/` to GitHub Pages, so `/api/event`
+  404s there and the footer claim depends on a future Cloudflare Pages
+  deployment with an `ANALYTICS` binding. This deployment decision is open.
+- Files: `functions/api/event.ts` (new),
+  `src/lib/analytics/{eventAllowlist,trackEvent,userAgent}.ts` (+ tests),
+  `src/lib/analytics/eventEndpoint.test.ts` (new),
+  `src/components/launcher/Launcher.tsx`,
+  `src/components/editor/{EditorWorkspace,ReviewMenu,ResumeLintPopover,JdMatchDrawer,SectionList,DesignPanel}.tsx`,
+  `src/components/preview/{AtsTextView,PrintTriggerButton}.tsx`,
+  `src/components/shared/ExportJsonButton.tsx`, `src/app/page.tsx`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 ### 2026-11-28 — iOS Safari print: synchronous dialog + exact page count
 - Task: top Queue item (P0), moved to In Progress first.
@@ -2365,27 +2414,6 @@ npx playwright test    # e2e; needs a dev server on :3000
 - Files: `src/lib/import/pdfLayout.ts` (+ test),
   `src/lib/import/pdfResume.test.ts`, `src/lib/import/pasteResume.test.ts`,
   `README.md`, `CONTEXT.md`, `TASKS.md`.
-
-### 2026-11-27 — Anonymize prose scrub + optional-section redaction
-- Task: top Queue item (P1), moved to In Progress first. All three sub-items
-  were open.
-- Change: `anonymizeResumeDoc` now redacts `awards.awarder` (independent
-  `Organization A/B…` namespace), volunteer `organization`, and clears
-  `picture.url` while forcing `hidden: true`. A new longest-first,
-  boundary-aware term map built from the doc's own name/email/phone, employers,
-  schools, volunteer organizations, and award issuers rewrites **text nodes
-  only** in `summary.content` plus every rich-text entry field, so `"at Wells
-  Fargo"` becomes `"at Company A"` without touching tags or attributes.
-  Terms under 3 chars are skipped, matches are case-insensitive and
-  deduplicated, and one combined alternation prevents re-scrubbing an inserted
-  label. Decision #117; README feature tour updated.
-- Tests: new cases for optional-section redaction/picture clearing, prose
-  scrub in summary + entry bullets (including email/phone), ATS output, tag
-  and attribute safety, short-term skipping, and longest-employer precedence.
-  `npm run typecheck` clean; `npm test` 1198 pass across 107 files;
-  `npm run lint` clean.
-- Files: `src/lib/privacy/anonymizeDoc.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

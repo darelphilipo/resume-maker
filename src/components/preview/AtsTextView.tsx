@@ -8,6 +8,7 @@ import {
   type AtsCopyEntry,
   type AtsCopySection,
 } from "@/lib/ats/atsText";
+import { trackEvent } from "@/lib/analytics/trackEvent";
 import { copyText } from "@/lib/clipboard/copyText";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 
@@ -99,6 +100,7 @@ export function AtsTextView({ doc }: { doc: ResumeDocument }) {
         return;
       }
 
+      trackEvent("ats_copy");
       setCopied({ key, label });
 
       if (timerRef.current !== null) {
