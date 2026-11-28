@@ -19,10 +19,10 @@ in control of every line, and your data stays on your device.
   choose; the reply is parsed locally.
 - **Private by design.** Resumes are stored in your browser (IndexedDB). There
   are no accounts, and nothing about your resume content is ever analysed or
-  uploaded. A tiny anonymous counter records only which buttons get used —
-  never your words, filenames, links, or identifiers — and it opts out when you
-  enable Do Not Track or work offline. The home page states this in one quiet
-  line at the bottom.
+  uploaded. Where the site enables its tiny anonymous counter, it records only
+  which buttons get used — never your words, filenames, links, or identifiers —
+  and it opts out when you enable Do Not Track or work offline. The home page
+  states this in one quiet line at the bottom.
 - **Fast on a phone.** The editor is mobile-first, with large touch targets and
   a layout that works at phone width instead of a desktop screen squeezed down.
   The resume name, undo/redo, JSON export, and a solid **Save PDF** button share
@@ -454,11 +454,11 @@ in control of every line, and your data stays on your device.
   format used by other resume tools. JSON Resume exports include the resume you
   see (hidden sections and entries stay out), and importing either format works
   through the same **Backup & restore** picker on the home page.
-- **Anonymous click counts, stated openly.** The home page footer explains that
-  your resume stays on the device and that only anonymous button taps are
-  counted to improve the app. Nothing you type, save, name, or link to is part
-  of that count, and the counter stays quiet on localhost, offline, and when
-  your browser asks not to be tracked.
+- **Anonymous click counts, stated openly.** Where the site's anonymous counter
+  is enabled, the home page footer says so: your resume stays on the device and
+  only anonymous button taps are counted to improve the app. Nothing you type,
+  save, name, or link to is part of that count, and the counter stays quiet on
+  localhost, offline, and when your browser asks not to be tracked.
 
 ## Save a PDF
 

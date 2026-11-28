@@ -3,6 +3,7 @@ import {
   type AnalyticsEvent,
   type AnalyticsMeta,
 } from "./eventAllowlist";
+import { analyticsEnabled } from "./analyticsEnabled";
 
 /** Coarse device class only — no model, screen size, or orientation. */
 export function deviceClass(): "mobile" | "desktop" {
@@ -43,6 +44,8 @@ export type BeaconEnv = {
   onLine: boolean;
   coarse: boolean;
   sendBeacon: ((url: string, body: BodyInit) => boolean) | undefined;
+  /** False on builds that do not deploy the `/api/event` Pages Function. */
+  enabled: boolean;
 };
 
 function browserEnv(): BeaconEnv | null {
@@ -57,6 +60,7 @@ function browserEnv(): BeaconEnv | null {
     onLine: navigator.onLine,
     coarse: deviceClass() === "mobile",
     sendBeacon: navigator.sendBeacon?.bind(navigator),
+    enabled: analyticsEnabled(),
   };
 }
 
@@ -71,8 +75,10 @@ function isLocalhost(hostname: string): boolean {
 
 /**
  * Fire-and-forget, zero-PII click counter. Never sends resume text, filenames,
- * URLs, or identifiers, and silently opts out on localhost, Do Not Track, and
- * offline/blocked beacons. A failed beacon must never affect the UI.
+ * URLs, or identifiers, and silently opts out on localhost, Do Not Track,
+ * offline/blocked beacons, and builds that did not opt in with
+ * `NEXT_PUBLIC_ANALYTICS_ENABLED` (see `analyticsEnabled`). A failed beacon
+ * must never affect the UI.
  */
 export function trackEvent(
   event: AnalyticsEvent,
@@ -81,6 +87,7 @@ export function trackEvent(
 ): void {
   if (
     env === null ||
+    !env.enabled ||
     isLocalhost(env.hostname) ||
     env.doNotTrack === "1" ||
     env.onLine === false ||

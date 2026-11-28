@@ -28,6 +28,25 @@ _empty
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-28 — The anonymous click counter is now opt-in per build instead of
+  firing at a 404 on GitHub Pages. New `src/lib/analytics/analyticsEnabled.ts`
+  owns `parseAnalyticsFlag` (only `1`/`true`/`yes`/`on`, trimmed and
+  case-insensitive) and `analyticsEnabled()` reading
+  `NEXT_PUBLIC_ANALYTICS_ENABLED` inside the function so Next inlines it at
+  build time and tests can toggle it. `BeaconEnv` gained a required `enabled`
+  bit defaulted from that helper, and `trackEvent` returns before validating or
+  beacons when it is false; the GitHub Pages deploy therefore sends nothing.
+  The home page always keeps "Your resume stays 100% on this device." but
+  renders the anonymous-click sentence only on an opted-in build, so the footer
+  never promises counts that cannot land. Decision #128; README privacy tour
+  updated. A Cloudflare Pages build must set the flag (and the `ANALYTICS`
+  binding) itself; `.github/workflows/*` stays human-owned. Verified
+  `npm run typecheck`, `npm test` (1285 pass, 115 files), `npm run lint` (4
+  pre-existing unused-arg warnings in `trackEvent.test.ts`). Files:
+  `src/lib/analytics/analyticsEnabled.ts` (new, + test),
+  `src/lib/analytics/trackEvent.ts` (+ test), `src/app/page.tsx` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+
 - [x] 2026-11-28 — Added privacy-first, zero-PII click analytics: one strict
   allowlist (`src/lib/analytics/eventAllowlist.ts`) is shared by the client
   beacon and the Cloudflare Pages Function, so unknown events or free-text meta

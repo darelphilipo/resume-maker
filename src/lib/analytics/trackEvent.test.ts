@@ -17,6 +17,7 @@ function env(overrides: Partial<BeaconEnv> = {}): BeaconEnv {
     onLine: true,
     coarse: false,
     sendBeacon: beacon,
+    enabled: true,
     ...overrides,
   };
 }
@@ -55,6 +56,14 @@ describe("deviceClass", () => {
 });
 
 describe("trackEvent", () => {
+  it("does nothing unless the deployment opts into the counter", () => {
+    const context = env({ enabled: false });
+
+    trackEvent("start_blank", undefined, context);
+
+    expect(context.sendBeacon).not.toHaveBeenCalled();
+  });
+
   it("does nothing on localhost", () => {
     const context = env({ hostname: "localhost" });
 

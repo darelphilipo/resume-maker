@@ -2082,10 +2082,28 @@ rediscover.
         it derives the beacon URL from `window.location.pathname` so the
         `/resume-maker` base path is preserved (never hardcode `/api/event`).
         **Deployment gap:** `deploy.yml` still ships only `out/` to GitHub
-        Pages, where `/api/event` returns 404 — the footer's "we count anonymous
-        button clicks" claim is only true if the site also runs on Cloudflare
-        Pages with the `ANALYTICS` binding. Do not extend this allowlist with
-        free-form fields, and do not reuse it for resume data.
+        Pages, where `/api/event` returns 404. The beacon and the footer claim
+        are now opt-in per build (#128), so the GitHub Pages site stays quiet.
+        Do not extend this allowlist with free-form fields, and do not reuse it
+        for resume data.
+
+    128. **Anonymous counts are opt-in per build, not on by default.** The
+        `/api/event` Pages Function only exists where the site is hosted with an
+        `ANALYTICS` binding, so `src/lib/analytics/analyticsEnabled.ts` gates the
+        whole client path on `NEXT_PUBLIC_ANALYTICS_ENABLED`. `parseAnalyticsFlag`
+        accepts only `1`/`true`/`yes`/`on` (case-insensitive, trimmed); unset,
+        empty, `0`, `false`, `off`, and anything else are off. `BeaconEnv` carries
+        the resolved `enabled` bit and `trackEvent` returns before validating or
+        beacons when it is false, so the GitHub Pages deployment no longer fires
+        a 404 on every click. The home-page footer renders the "we count
+        anonymous button clicks" sentence only when the same helper is true; the
+        "Your resume stays 100% on this device" promise always renders. Keep the
+        flag read in `readAnalyticsFlag()` **inside the function** (not a
+        module-level const) so Next can inline it at build time and tests can
+        toggle it; its `typeof process === "undefined"` guard makes a
+        non-inlined bundle fall back to off instead of throwing. A Cloudflare
+        Pages build must set the flag to `1`; never make it default-on while
+        GitHub Pages remains the primary deploy.
 
 ## Verification and tooling
 
@@ -2151,6 +2169,34 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-28 — Anonymous click counter is now opt-in per deployment
+- Task: Inbox, Queue, and In Progress were all empty, so this run promoted the
+  one open follow-up recorded in the 2026-11-28 analytics entry and Decision
+  #127: GitHub Pages serves only the static export, so `/api/event` 404s there
+  while every click still fired a beacon and the footer promised counts.
+- Change: new `src/lib/analytics/analyticsEnabled.ts` owns
+  `parseAnalyticsFlag` (only `1`/`true`/`yes`/`on`, trimmed and
+  case-insensitive) and `analyticsEnabled()` reading
+  `NEXT_PUBLIC_ANALYTICS_ENABLED` inside the function so Next inlines it at
+  build time and tests can toggle it. `BeaconEnv` gained a required `enabled`
+  bit defaulted from that helper, and `trackEvent` returns before validation
+  when it is false. The home-page footer always keeps the device-only privacy
+  sentence but renders the anonymous-click sentence only on an opted-in build.
+  Decision #128; README privacy tour updated. No workflow edit
+  (`.github/workflows/*` is human-owned), so the Cloudflare Pages build must set
+  the flag itself.
+- Tests: new `analyticsEnabled.test.ts` (on/off values and env toggle), an
+  `enabled: false` `trackEvent` opt-out case, and a `page.test.tsx` footer
+  on/off regression. `npm run typecheck` clean; `npm test` 1285 pass across 115
+  files; `npm run lint` clean (4 pre-existing unused-arg warnings in
+  `trackEvent.test.ts`).
+- Note: the GitHub Pages deployment now sends no analytics at all. Enabling
+  counts requires a Cloudflare Pages build with both the `ANALYTICS` binding and
+  `NEXT_PUBLIC_ANALYTICS_ENABLED=1`; that hosting decision is still open.
+- Files: `src/lib/analytics/analyticsEnabled.ts` (new, + test),
+  `src/lib/analytics/trackEvent.ts` (+ test), `src/app/page.tsx` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 ### 2026-11-28 — Allowlist-only anonymous click analytics
 - Task: top Queue item (P2), moved to In Progress first. The item explicitly
@@ -2391,30 +2437,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   (+ test), `src/lib/import/pasteResume.ts` (+ test), `README.md`,
   `CONTEXT.md`, `TASKS.md`.
 
-### 2026-11-27 — PDF/paste hardening verified, non-breaking hyphen wrap fixed
-- Task: top Queue item (P2), moved to In Progress first. Sub-items 1–3 were
-  already implemented in the tree from earlier checkpoints (NFKC + smart
-  quotes/dashes/decorative bullets, `joinPhraseSegments`, PDF link annotations,
-  letter-spaced/parenthetical headings, combined `certifications & education`,
-  short year ranges, seasons, durations, tight grades, page-2 bullet folding),
-  but almost none of it had regressions.
-- Change: `normalizePdfText` now normalizes each segment around U+2011 and
-  rejoins the marker, because NFKC decomposed the non-breaking hyphen to U+2010
-  and the typographic-dash pass turned it into `-`, so `Soft\u2011` + `ware`
-  never set `joinNext` and stayed two lines. Decision #118. Added unit coverage
-  for ligatures, smart quotes, dashes, decorative bullets, phrase-gap commas,
-  the non-breaking-hyphen wrap, PDF `Link` annotation extraction (profile hosts
-  only, `unsafeUrl` fallback, dedupe, non-Link skip), letter-spaced and
-  parenthetical headings, `KEY PROJECT`, `ACHIEVEMENTS & EXTRACURRICULARS`,
-  combined `CERTIFICATIONS & EDUCATION` routing, `2019–21`, season dates,
-  `3 Months`, `Senior Engineer –Infosys`, `CGPA:7.6`, `12th –92.0%`, page-2
-  headerless bullets, and skill phrase gaps. README import tour updated.
-- Tests: `npm run typecheck` clean; `npm test` 1220 pass across 107 files;
-  `npm run lint` clean.
-- Files: `src/lib/import/pdfLayout.ts` (+ test),
-  `src/lib/import/pdfResume.test.ts`, `src/lib/import/pasteResume.test.ts`,
-  `README.md`, `CONTEXT.md`, `TASKS.md`.
-
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright
      visual/layout spec (2026-11-17), preview-zoom
@@ -2422,7 +2444,8 @@ npx playwright test    # e2e; needs a dev server on :3000
      + Reset fit + toolbar above the canvas (Decision #36), backup-vs-primary
      entry points, paste-to-parse, fit-to-1-page, standardized month/date, first
      autopilot diagnosis, categorized-skills, custom-section, contact-network
-     detection, and work-auth tag details are captured in Decisions & Gotchas
+     detection, PDF/paste hardening (Decision #118), and work-auth tag details
+     are captured in Decisions & Gotchas
      (#21, #18, #10, #9, #16, #17, #11) and Autopilot failure modes above. -->
 
 
