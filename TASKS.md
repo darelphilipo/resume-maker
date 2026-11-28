@@ -22,7 +22,12 @@ _empty
 
 ## Queue (Ready for Next Run)
 
-_empty
+- [ ] P2: Add privacy-first, zero-PII aggregate product analytics via a Cloudflare Pages Function (`functions/api/event.ts`, `src/lib/analytics/trackEvent.ts`, `src/components/launcher/Launcher.tsx`, `src/components/editor/EditorWorkspace.tsx`).
+  1. **Client beacon (`src/lib/analytics/trackEvent.ts`):** Export a tiny fire-and-forget `trackEvent(event, meta?)` helper using `navigator.sendBeacon("/api/event", ...)` (silently no-oping on `localhost`, when `navigator.doNotTrack === "1"`, or if offline/blocked). Payload contains strictly `{ event, meta, device: "mobile" | "desktop" }` — never any resume text, filename, URL, or user ID.
+  2. **Server allowlist endpoint (`functions/api/event.ts`):** Validate `event` and `meta` against a strict TypeScript allowlist (rejecting any unknown event or free-text payload with `400`), strip IP/cookies, and write `{ blobs: [event, meta, device], indexes: [event] }` to a Cloudflare Workers Analytics Engine binding (`env.ANALYTICS?.writeDataPoint(...)`, gracefully returning `204` if the binding isn't configured yet).
+  3. **Wire the ~16 high-signal events** across onboarding (`start_pdf_upload`, `start_preset`, `start_blank`, `start_paste`, `start_ai_prompt`, `recent_open`, `recent_duplicate`), activation (`editor_first_edit`, `section_added`, `section_reordered`), tools (`tool_tidy`, `tool_match_jd`, `tool_fit_1p`, `tool_6s_scan`, `tool_anonymize`, `tool_trim_tips`, `ats_copy`), design (`template_selected`, `design_changed`), and export (`pdf_export`, `json_export`).
+  4. **Transparent privacy note:** Add one quiet line in the Homepage (`/`) footer stating: *"Your resume stays 100% on this device. We count anonymous button clicks (no cookies or personal data) to improve the app."* Add unit tests for the strict allowlist and `doNotTrack` opt-out.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
