@@ -27,7 +27,27 @@ _empty
   3. **`Fit 1p` readability note (`ReviewMenu.tsx`):** When `fitScale < 0.88`, show a subtle 1-line note next to `Reset fit` inside `Review tools` (e.g., `"Scaled to 84% — check readability before exporting."`) without nagging on minor fits (`>= 88%`).
   4. **Fix desktop zoom `+` stuck at `125%` & bottom clipping (`LiveCanvasViewport.tsx`):** Ensure `TransformWrapper`'s `maxScale` allows stepping cleanly all the way up to `225%` (`fitScale * 2.25`, stepping `100% → 125% → 150% → 175% → 200% → 225%`), and give the floating bottom-right zoom pill enough bottom clearance (`bottom-5 right-4` inside a non-clipped container) so its bottom border is never clipped.
   5. **Stable `ATS` `Copy` button widths (`AtsTextView.tsx`):** Give `Copy all plain text` (`min-w-[11.5rem] justify-center`, swapping to `"✓ Copied plain text"`) and per-entry `Copy` buttons (`min-w-[5.5rem] justify-center`) fixed minimum widths so neither button shrinks or shifts under the cursor on click.
-  6. revert and remove the footer area "Your resume stays 100% on this device. We count anonymous button clicks (no cookies or personal data) to improve the app. " . It's making the page too tall 
+  6. revert and remove the footer area "Your resume stays 100% on this device. We count anonymous button clicks (no cookies or personal data) to improve the app. " . It's making the page too tall
+     
+- [ ] P1: Accessibility & readability polish — placeholder contrast, 12px text floor, 44px touch targets, reduced motion, `color-scheme: light`, and focus rings (`src/components/launcher/Launcher.tsx`, `src/components/editor/DesignPanel.tsx`, `src/components/editor/ReviewMenu.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/preview/TrimTipsDialog.tsx`, `src/components/editor/MobileBottomNav.tsx`, `src/app/globals.css`).
+  1. **Placeholder contrast (`Launcher.tsx`):** Replace `#8a8f94` input placeholders (lines ~101, ~318) with `--brand-muted` (`#5b6a7a`, ~5.5:1 on white) to meet WCAG AA contrast.
+  2. **12px minimum UI text floor:** Replace `text-[10px]` and `text-[11px]` across UI chrome (`ResumeLintPopover`, `TrimTipsDialog`, `ReviewMenu`, mobile editor header) with `text-xs` (`12px`) so helper copy stays legible on phones *(leaving resume template print typography untouched)*.
+  3. **44px touch targets without visual bloat:** Wrap the `28px` Accent color dots (`DesignPanel.tsx`) in `h-11 w-11` (`44×44px`) circular hit targets, ensure each `ReviewMenu` toggle row is fully clickable at `min-h-11` (not just the `h-6` switch), and apply `pointer-coarse:min-h-11` consistently on secondary toolbar/section/lint controls.
+  4. **Accessibility hygiene & plain-language tooltips:**
+     - Add `@media (prefers-reduced-motion: reduce)` in `globals.css` to disable transitions/spinners for reduced-motion users, and declare `color-scheme: light` on `:root` so browsers don't apply dark native controls to the light UI.
+     - Deduplicate `aria-label="Editor panels"` between `<nav>` and `role="tablist"` in `MobileBottomNav.tsx`.
+     - Audit `outline-none` usages across `src/components/` to verify every focusable element has a visible `focus-visible:ring` replacement.
+     - Add concise plain-English `title` tooltips on `Fit 1p`, `6s Scan`, `Tidy`, and `ATS`.
+- [ ] P1: Accessibility & readability polish — placeholder contrast, 12px text floor, 44px touch targets, reduced motion, `color-scheme: light`, and focus rings (`src/components/launcher/Launcher.tsx`, `src/components/editor/DesignPanel.tsx`, `src/components/editor/ReviewMenu.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/preview/TrimTipsDialog.tsx`, `src/components/editor/MobileBottomNav.tsx`, `src/app/globals.css`).
+  1. **Placeholder contrast (`Launcher.tsx`):** Replace `#8a8f94` input placeholders (lines ~101, ~318) with `--brand-muted` (`#5b6a7a`, ~5.5:1 on white) to meet WCAG AA contrast.
+  2. **12px minimum UI text floor:** Replace `text-[10px]` and `text-[11px]` across UI chrome (`ResumeLintPopover`, `TrimTipsDialog`, `ReviewMenu`, mobile editor header) with `text-xs` (`12px`) so helper copy stays legible on phones *(leaving resume template print typography untouched)*.
+  3. **44px touch targets without visual bloat:** Wrap the `28px` Accent color dots (`DesignPanel.tsx`) in `h-11 w-11` (`44×44px`) circular hit targets, ensure each `ReviewMenu` toggle row is fully clickable at `min-h-11` (not just the `h-6` switch), and apply `pointer-coarse:min-h-11` consistently on secondary toolbar/section/lint controls.
+  4. **Accessibility hygiene & plain-language tooltips:**
+     - Add `@media (prefers-reduced-motion: reduce)` in `globals.css` to disable transitions/spinners for reduced-motion users, and declare `color-scheme: light` on `:root` so browsers don't apply dark native controls to the light UI.
+     - Deduplicate `aria-label="Editor panels"` between `<nav>` and `role="tablist"` in `MobileBottomNav.tsx`.
+     - Audit `outline-none` usages across `src/components/` to verify every focusable element has a visible `focus-visible:ring` replacement.
+     - Add concise plain-English `title` tooltips on `Fit 1p`, `6s Scan`, `Tidy`, and `ATS`.
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
