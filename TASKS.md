@@ -38,16 +38,6 @@ _empty
      - Deduplicate `aria-label="Editor panels"` between `<nav>` and `role="tablist"` in `MobileBottomNav.tsx`.
      - Audit `outline-none` usages across `src/components/` to verify every focusable element has a visible `focus-visible:ring` replacement.
      - Add concise plain-English `title` tooltips on `Fit 1p`, `6s Scan`, `Tidy`, and `ATS`.
-- [ ] P1: Accessibility & readability polish — placeholder contrast, 12px text floor, 44px touch targets, reduced motion, `color-scheme: light`, and focus rings (`src/components/launcher/Launcher.tsx`, `src/components/editor/DesignPanel.tsx`, `src/components/editor/ReviewMenu.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/preview/TrimTipsDialog.tsx`, `src/components/editor/MobileBottomNav.tsx`, `src/app/globals.css`).
-  1. **Placeholder contrast (`Launcher.tsx`):** Replace `#8a8f94` input placeholders (lines ~101, ~318) with `--brand-muted` (`#5b6a7a`, ~5.5:1 on white) to meet WCAG AA contrast.
-  2. **12px minimum UI text floor:** Replace `text-[10px]` and `text-[11px]` across UI chrome (`ResumeLintPopover`, `TrimTipsDialog`, `ReviewMenu`, mobile editor header) with `text-xs` (`12px`) so helper copy stays legible on phones *(leaving resume template print typography untouched)*.
-  3. **44px touch targets without visual bloat:** Wrap the `28px` Accent color dots (`DesignPanel.tsx`) in `h-11 w-11` (`44×44px`) circular hit targets, ensure each `ReviewMenu` toggle row is fully clickable at `min-h-11` (not just the `h-6` switch), and apply `pointer-coarse:min-h-11` consistently on secondary toolbar/section/lint controls.
-  4. **Accessibility hygiene & plain-language tooltips:**
-     - Add `@media (prefers-reduced-motion: reduce)` in `globals.css` to disable transitions/spinners for reduced-motion users, and declare `color-scheme: light` on `:root` so browsers don't apply dark native controls to the light UI.
-     - Deduplicate `aria-label="Editor panels"` between `<nav>` and `role="tablist"` in `MobileBottomNav.tsx`.
-     - Audit `outline-none` usages across `src/components/` to verify every focusable element has a visible `focus-visible:ring` replacement.
-     - Add concise plain-English `title` tooltips on `Fit 1p`, `6s Scan`, `Tidy`, and `ATS`.
-
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
