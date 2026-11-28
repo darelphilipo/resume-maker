@@ -2104,6 +2104,36 @@ rediscover.
         non-inlined bundle fall back to off instead of throwing. A Cloudflare
         Pages build must set the flag to `1`; never make it default-on while
         GitHub Pages remains the primary deploy.
+  127. **Anonymous click counts are a closed allowlist, and the endpoint is
+        deploy-gated.** `src/lib/analytics/events.ts` is the single vocabulary:
+        the browser beacon and `functions/api/event.ts` both import it, so an
+        unknown event, unknown meta, an extra key, or free-text meta is rejected
+        (`400` server-side; silently dropped client-side). A payload is exactly
+        `{ event, meta, device }`; `meta` is a fixed per-event id (`null` when
+        unused), and the server maps the raw User-Agent to coarse `os`/`browser`
+        enums and never stores it. `trackEvent` is best-effort: it no-ops on
+        localhost, when `navigator.doNotTrack === "1"` (or
+        `window.doNotTrack`), and while offline; it prefers `sendBeacon` with a
+        `keepalive` fetch fallback and swallows every error. `functions/` is
+        outside the Next static export, so `next build` and GitHub Pages ignore
+        it — `/api/event` is only live when the same `out/` is served by
+        Cloudflare Pages with an `ANALYTICS` Analytics Engine binding. Keep new
+        events and their meta values in `events.ts` and update the parity tests;
+        `start_preset` casts `Archetype.id` (a plain `string`), so adding a
+        preset without an allowlist entry fails `events.test.ts` instead of
+        shipping silently.
+
+   128. **`parseMonthInput` owns year-first slash dates, not `toMonthValue`.**
+        The helper's doc always claimed `2023/10` was accepted, but only
+        month-first numeric forms (`10/2023`, `10-2023`) were parsed, so JSON
+        Resume's `importMonth` fallback and `pasteResume` dropped the date
+        entirely. A year-first branch (`YYYY / M`, optionally `/ D`, with
+        whitespace allowed) now normalizes through `toMonthValue`, so
+        `2023/10`, `2023/1`, and `2023/10/15` become `2023-10` / `2023-01`
+        while `2023/13` and `2023/00` return `null`. Keep this in the
+        human-input helper: `toMonthValue` stays an ISO-only stored-date
+        normalizer and `formatMonth` is untouched, so every importer and
+        `MonthInput` inherit the rule without new callers.
 
 ## Verification and tooling
 

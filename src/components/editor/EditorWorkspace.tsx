@@ -29,6 +29,7 @@ import type { ResumeLintEntryTarget } from "@/lib/lint/resumeLint";
 import { usePageLayout } from "@/lib/pagination/usePageLayout";
 import { anonymizeResumeDoc } from "@/lib/privacy/anonymizeDoc";
 import { isPrintTitleActive, resumeDocumentTitle } from "@/lib/print/printDocument";
+import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { resumeDisplayName } from "@/lib/schema/resumeName";
 import {
   canRedo,
@@ -55,9 +56,7 @@ import {
 } from "./MobileBottomNav";
 import { SectionList, type SectionListEntry } from "./SectionList";
 
-type LoadStatus = "loading" | "ready" | "notfound" | "missing";
-
-type LoadResult = {
+type LoadStatus = "loading" | "ready" | "notfound" | "missing";type LoadResult = {
   id: string;
   found: boolean;
 };
@@ -153,6 +152,12 @@ export function EditorWorkspace() {
     null,
   );
   const canvasRef = useRef<LiveCanvasViewportHandle>(null);
+  /**
+   * First-edit tracking baseline: captured once the resume is ready, so the
+   * initial load and an automatic fit reset do not look like user edits.
+   */
+  const loadedDocRef = useRef<typeof doc | null>(null);
+  const firstEditTrackedRef = useRef(false);
   const [drawerSection, setDrawerSection] =
     useState<SectionListEntry | null>(null);
   /**
@@ -270,6 +275,27 @@ export function EditorWorkspace() {
         ? "ready"
         : "notfound"
       : "loading";
+
+  /**
+   * Count only the first document change after a resume loads. The baseline is
+   * the doc the editor first sees as `ready`, so loading (and an auto-fit
+   * reset) never looks like a user edit. Fires at most once per mount.
+   */
+  useEffect(() => {
+    if (status !== "ready") {
+      return;
+    }
+
+    if (loadedDocRef.current === null) {
+      loadedDocRef.current = doc;
+      return;
+    }
+
+    if (!firstEditTrackedRef.current && doc !== loadedDocRef.current) {
+      firstEditTrackedRef.current = true;
+      trackEvent("editor_first_edit");
+    }
+  }, [doc, status]);
 
   /**
    * Keep the browser tab named after the current resume. The print routine

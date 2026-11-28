@@ -447,6 +447,7 @@ export function Launcher() {
     try {
       const safeDoc = sanitizeResumeDocument(doc);
       const id = await useResumeStore.getState().importResume(safeDoc);
+      trackEvent("start_pdf_upload");
       router.push(`/editor?id=${id}`);
     } catch {
       setPdfError(CREATE_RESUME_MESSAGE);
@@ -507,6 +508,7 @@ export function Launcher() {
 
       const safeDoc = sanitizeResumeDocument(doc);
       const id = await useResumeStore.getState().importResume(safeDoc);
+      trackEvent("start_paste");
       router.push(`/editor?id=${id}`);
     } catch {
       setPasteError(CREATE_RESUME_MESSAGE);
@@ -553,6 +555,7 @@ export function Launcher() {
 
       const safeDoc = sanitizeResumeDocument(parsed.doc);
       const id = await useResumeStore.getState().importResume(safeDoc);
+      trackEvent("start_ai_prompt");
       router.push(`/editor?id=${id}`);
     } catch {
       setAiError(CREATE_RESUME_MESSAGE);
@@ -572,6 +575,7 @@ export function Launcher() {
 
     try {
       const id = await useResumeStore.getState().createResume("onyx");
+      trackEvent("start_blank");
       router.push(`/editor?id=${id}`);
     } catch {
       setCreateError(CREATE_RESUME_MESSAGE);
@@ -593,6 +597,7 @@ export function Launcher() {
       const id = await useResumeStore.getState().createResume("onyx");
       useResumeStore.getState().setDoc(archetype.build());
       await useResumeStore.getState().saveNow();
+      trackEvent("start_preset", archetype.id as AnalyticsMeta);
       router.push(`/editor?id=${id}`);
     } catch {
       setCreateError(CREATE_RESUME_MESSAGE);
@@ -619,6 +624,7 @@ export function Launcher() {
         return;
       }
 
+      trackEvent("recent_open");
       router.push(`/editor?id=${row.id}`);
     } catch {
       setRecentError(RECENT_ERROR_MESSAGE);
@@ -626,7 +632,6 @@ export function Launcher() {
       setOpeningRecentId(null);
     }
   }
-
   function handleRecentRowClick(
     event: MouseEvent<HTMLLIElement>,
     row: ResumeRow,
@@ -712,6 +717,8 @@ export function Launcher() {
 
       if (!copy) {
         setRecentError(RECENT_MISSING_MESSAGE);
+      } else {
+        trackEvent("recent_duplicate");
       }
 
       await refreshRecent();

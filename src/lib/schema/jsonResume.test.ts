@@ -166,6 +166,36 @@ describe("resumeFromJsonResume", () => {
     );
   });
 
+  it("keeps year-first slash dates when importing entries", () => {
+    const doc = resumeFromJsonResume({
+      work: [
+        {
+          name: "Acme",
+          position: "Engineer",
+          startDate: "2023/10/15",
+          endDate: "2024/3",
+        },
+      ],
+      education: [
+        {
+          institution: "University",
+          area: "CS",
+          startDate: "2019/9",
+          endDate: "2023/6/30",
+        },
+      ],
+    });
+
+    expect(doc.sections.experience.items[0]).toMatchObject({
+      startDate: "2023-10",
+      endDate: "2024-03",
+    });
+    expect(doc.sections.education.items[0]).toMatchObject({
+      startDate: "2019-09",
+      endDate: "2023-06",
+    });
+  });
+
   it("maps education, skills, awards, certificates, languages, interests, publications, and references", () => {
     const doc = resumeFromJsonResume({
       education: [

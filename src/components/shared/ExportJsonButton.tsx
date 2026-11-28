@@ -77,6 +77,8 @@ export function ExportJsonButton() {
     trackEvent("json_export", { format });
     const fileName = `${slugFileName(doc.basics.name)}-resume.json`;
 
+    trackEvent("json_export", format);
+
     if (format === "jsonresume") {
       downloadJson(
         serializeJsonResume(doc),

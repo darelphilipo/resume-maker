@@ -162,6 +162,7 @@ export function JdMatchDrawer({
   function openDrawer() {
     trackEvent("tool_match_jd");
     setOpen(true);
+    trackEvent("tool_match_jd");
   }
 
   // Both triggers keep the same accessible name and visual treatment; only the

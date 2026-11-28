@@ -7,7 +7,6 @@ import { flushSync } from "react-dom";
 import { trackEvent } from "@/lib/analytics/trackEvent";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { printPageSizeLabel, printResume } from "@/lib/print/printDocument";
-
 import { PrintPortal } from "./PrintPortal";
 
 type PrintJob = {
@@ -149,6 +148,8 @@ export function PrintTriggerButton({
 
             const next: PrintJob = { doc, pages };
             trackEvent("pdf_export");
+
+            trackEvent("pdf_export", doc.metadata.page.format);
 
             // Mount the captured portal synchronously, then print in the same
             // task: the browser must snapshot a rendered portal and iOS Safari

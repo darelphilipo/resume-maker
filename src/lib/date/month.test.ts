@@ -69,6 +69,10 @@ describe("parseMonthInput", () => {
     ["2023-10", "2023-10"],
     ["2023-1", "2023-01"],
     ["2023-10-15", "2023-10"],
+    ["2023/10", "2023-10"],
+    ["2023/1", "2023-01"],
+    ["2023/10/15", "2023-10"],
+    [" 2023 / 10 ", "2023-10"],
     ["10/2023", "2023-10"],
     ["1-2023", "2023-01"],
     ["Oct 2023", "2023-10"],
@@ -81,7 +85,7 @@ describe("parseMonthInput", () => {
     expect(parseMonthInput(input)).toBe(expected);
   });
 
-  it.each(["Spring 2023", "13/2023", "Junk 2023"])(
+  it.each(["Spring 2023", "13/2023", "2023/13", "2023/00", "Junk 2023"])(
     "returns null for %j",
     (input) => {
       expect(parseMonthInput(input)).toBeNull();
