@@ -29,6 +29,16 @@ _empty
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-28 — JSON Resume export no longer turns education prose into
+  course bullets. Queue and Inbox were both empty, so this clear round-trip bug
+  was promoted from the codebase. `educationToJson` now uses the shared
+  `splitRichText` helper like `workToJson`/`projectToJson`, emitting `summary`
+  for prose and `courses: highlights` for bullets, and `JsonResumeEducation`
+  gained the standard `summary?: string` key. Verified `npm run typecheck`,
+  `npm test` (1332 pass, 116 files, up from 1331). Files:
+  `src/lib/schema/jsonResume.ts` (+ test), `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
+
 - [x] 2026-11-28 — Imported projects keep their **Present** flag. Queue and
   Inbox were both empty, so this clear import bug was promoted from the
   codebase. `buildProject` (paste/PDF path) and `importProject` (JSON Resume)

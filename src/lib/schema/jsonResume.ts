@@ -651,6 +651,7 @@ export type JsonResumeEducation = {
   startDate?: string;
   endDate?: string;
   score?: string;
+  summary?: string;
   courses?: string[];
 };
 
@@ -809,6 +810,8 @@ function workToJson(
 }
 
 function educationToJson(item: EducationItem): JsonResumeEducation {
+  const { summary, highlights } = splitRichText(item.summary);
+
   return {
     institution: item.school,
     location: item.location,
@@ -818,9 +821,8 @@ function educationToJson(item: EducationItem): JsonResumeEducation {
     startDate: jsonDate(item.startDate),
     endDate: item.current ? "" : jsonDate(item.endDate),
     score: item.grade,
-    courses: plainTextLines(item.summary).map((line) =>
-      line.startsWith("- ") ? line.slice(2).trim() : line,
-    ),
+    summary,
+    courses: highlights,
   };
 }
 

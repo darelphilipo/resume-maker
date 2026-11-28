@@ -481,6 +481,32 @@ describe("toJsonResume", () => {
       endDate: "",
     });
   });
+
+  it("keeps education prose out of courses", () => {
+    const doc = docFrom({
+      sections: {
+        education: {
+          items: [
+            {
+              id: "ed1",
+              school: "Yale University",
+              degree: "PhD",
+              grade: "4.0",
+              summary:
+                "<p>Focused on algorithms.</p><ul><li>Algebra</li><li>Number theory</li></ul>",
+            },
+          ],
+        },
+      },
+    });
+
+    expect(toJsonResume(doc).education?.[0]).toMatchObject({
+      institution: "Yale University",
+      score: "4.0",
+      summary: "Focused on algorithms.",
+      courses: ["Algebra", "Number theory"],
+    });
+  });
 });
 
 describe("round trip", () => {
@@ -514,6 +540,8 @@ describe("round trip", () => {
               degree: "PhD",
               area: "Mathematics",
               grade: "4.0",
+              summary:
+                "<p>Focused on algorithms.</p><ul><li>Algebra</li></ul>",
             },
           ],
         },
@@ -546,6 +574,7 @@ describe("round trip", () => {
       degree: "PhD",
       area: "Mathematics",
       grade: "4.0",
+      summary: "<p>Focused on algorithms.</p><ul><li>Algebra</li></ul>",
     });
     expect(roundTripped.sections.skills.items[0]).toMatchObject({
       name: "Languages",

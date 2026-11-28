@@ -128,7 +128,9 @@ in control of every line, and your data stays on your device.
   desktop) keeps a full **Resume Maker backup** (layout, design, and hidden
   entries) or downloads the same resume as a portable **JSON Resume** file that
   other resume tools and sites can read. A project marked **Present** exports
-  without an end date, so importing it again keeps it open-ended.
+  without an end date, so importing it again keeps it open-ended. Education
+  notes keep their shape too: prose stays prose and course bullets stay course
+  bullets, so importing the file again never turns a sentence into a bullet.
 
 ### Write and organize
 

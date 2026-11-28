@@ -2163,6 +2163,17 @@ rediscover.
         back to closed. `ProjectItemSchema.current` defaults to `false`, so only
         an explicit `Present` in the source text/JSON should turn it on.
 
+    133. **Education export separates prose from courses, like work/projects.**
+        `importEducation` reads both `summary` and `courses` through
+        `entrySummary`, but `educationToJson` used to map *every* line of the
+        stored rich text into `courses` and never wrote `summary`, so a round
+        trip turned a sentence such as "Focused on algorithms." into a bullet.
+        It now calls `splitRichText(item.summary)` exactly like `workToJson`
+        and `projectToJson`, emitting `summary` for prose and
+        `courses: highlights` for list items; `JsonResumeEducation` carries the
+        standard `summary?: string` key. Keep all three builders on that shared
+        helper — do not hand-roll line stripping in one of them.
+
 ## Verification and tooling
 
 ```powershell
@@ -2228,25 +2239,20 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
-### 2026-11-28 — Imported projects keep their Present flag
-- Task: Queue and Inbox were both empty, so this clear import bug was promoted
-  from the codebase into In Progress with a plan and target paths first.
-- Change: `buildProject` (paste/PDF importer) and `importProject` (JSON Resume)
-  now use the `dates.current` value they already parsed instead of hardcoding
-  `current: false`, so `Jan 2023 - Present` / a missing JSON end date prints
-  **Present**, stays in the ATS/PDF, and sorts as current. `projectToJson`
-  copies `workToJson`/`educationToJson` and exports `endDate: ""` for a current
-  project even if a stale end date is still stored. Decision #132; README tour
-  updated with the import/export behaviour in user language.
-- Tests: added `current` assertions to the existing multi-section paste and
-  JSON Resume fixtures, a PDF-lines project with a Present date, a completed
-  project that stays closed, and a current-project export case. `npm run
-  typecheck` clean; `npm test` 1331 pass across 116 files (baseline 1329);
-  `npm run lint` clean.
-- Note: this is pure parser/serializer logic, so no browser verification is
-  needed; Playwright remains sandbox-blocked for the visual/PDF end result.
-- Files: `src/lib/import/pasteResume.ts` (+ test),
-  `src/lib/schema/jsonResume.ts` (+ test), `README.md`, `CONTEXT.md`,
+### 2026-11-28 — Education prose stays prose in JSON Resume export
+- Task: Queue and Inbox were both empty, so this clear round-trip bug was
+  promoted from the codebase into In Progress with a plan and target paths.
+- Change: `educationToJson` now calls `splitRichText(item.summary)` like
+  `workToJson`/`projectToJson`, writing `summary` for prose and
+  `courses: highlights` for list items, and `JsonResumeEducation` gained
+  `summary?: string`. Previously every line went into `courses` and no
+  `summary` was emitted, so a re-import turned a sentence into a bullet.
+  Decision #133; README tour updated.
+- Tests: new export regression (prose vs. courses) plus a round-trip assertion
+  that the education summary keeps its `<p>` and `<ul>` structure. `npm run
+  typecheck` clean; `npm test` 1332 pass across 116 files (baseline 1331).
+- Note: pure serializer logic, so no browser verification was needed.
+- Files: `src/lib/schema/jsonResume.ts` (+ test), `README.md`, `CONTEXT.md`,
   `TASKS.md`.
 
 ### 2026-11-28 — iOS Safari print: pages shrink instead of matching the sheet
