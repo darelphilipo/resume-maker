@@ -291,6 +291,141 @@ describe("StudioSidebarTemplate", () => {
     expect(second.queryByText("Cloud Architect")).toBeNull();
   });
 
+  it("labels a fifth certification that spills below Awards on Page 2", () => {
+    const doc = createEmptyResume("gengar");
+    doc.metadata.page.gapY = 0;
+    doc.summary.content = "<p>Impact-driven engineer.</p>";
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "exp-1",
+        company: "Analytical Engines",
+        position: "Engineer",
+      }),
+    ];
+    doc.sections.education.items = [
+      EducationItemSchema.parse({
+        id: "edu-1",
+        school: "Analytical University",
+        degree: "BSc",
+      }),
+    ];
+    doc.sections.skills.items = [
+      SkillItemSchema.parse({
+        id: "skill-1",
+        name: "Languages",
+        keywords: ["TypeScript"],
+      }),
+    ];
+    doc.sections.certifications.items = [
+      CertificationItemSchema.parse({
+        id: "cert-1",
+        name: "Cloud Architect",
+        issuer: "Example Institute",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-2",
+        name: "Cloud Developer",
+        issuer: "Example Institute",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-3",
+        name: "Cloud Security",
+        issuer: "Example Institute",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-4",
+        name: "Cloud Network",
+        issuer: "Example Institute",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-5",
+        name: "Certification Five",
+        issuer: "Example Institute",
+      }),
+    ];
+    doc.sections.awards.items = [
+      AwardItemSchema.parse({
+        id: "award-1",
+        title: "Best Paper",
+        awarder: "ACM",
+      }),
+    ];
+
+    const order = doc.metadata.layout.pages[0].main;
+    const plans = getSectionPlans(doc, order);
+    const certPlan = plans.find((plan) => plan.sectionId === "certifications");
+
+    expect(certPlan).toBeDefined();
+
+    const certKeys = planBlockKeys(certPlan!);
+
+    expect(certKeys).toHaveLength(5);
+
+    const heights: Record<string, number> = {};
+
+    heights.summary = 350;
+    heights.experience = 400;
+    heights.education = 300;
+    heights.awards = 200;
+    heights.skills = 200;
+
+    for (const key of certKeys) {
+      heights[key] = 190;
+    }
+
+    const measure: MeasureFn = () => ({
+      headerHeightPx: 100,
+      heights,
+    });
+    const { result } = renderHook(() => usePageLayout(doc, { measure }));
+    const pages = result.current.pages;
+
+    // Page 1's side column holds four certifications; the fifth spills into
+    // the full-width main flow after Awards on Page 2.
+    expect(pages).toHaveLength(2);
+    for (const key of certKeys.slice(0, 4)) {
+      expect(pages[0]).toContain(key);
+    }
+    expect(pages[0]).not.toContain(certKeys[4]);
+    expect(pages[1]).toEqual(["education", "awards", certKeys[4]]);
+
+    const second = render(
+      <StudioSidebarTemplate doc={doc} pages={pages} pageIndex={1} />,
+    );
+    const secondMain =
+      second.container.querySelector<HTMLElement>(".studio-main");
+
+    expect(secondMain).not.toBeNull();
+
+    const awardsSection = secondMain?.querySelector<HTMLElement>(
+      '[data-section-id="awards"]',
+    );
+    const certSection = secondMain?.querySelector<HTMLElement>(
+      '[data-section-id="certifications"]',
+    );
+
+    expect(awardsSection).not.toBeNull();
+    expect(certSection).not.toBeNull();
+    expect(
+      within(awardsSection as HTMLElement).getByRole("heading", {
+        name: "Awards",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(awardsSection as HTMLElement).queryByText("Certification Five"),
+    ).toBeNull();
+    // The spilled continuation repeats its section heading, so it never reads
+    // as another Awards entry.
+    expect(
+      within(certSection as HTMLElement).getByRole("heading", {
+        name: "Certifications (cont.)",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(certSection as HTMLElement).getByText("Certification Five"),
+    ).toBeInTheDocument();
+  });
+
   it("renders a two-item Awards section on Page 2 without dropping a block", () => {
     const doc = createEmptyResume("gengar");
     doc.metadata.page.gapY = 0;

@@ -244,7 +244,10 @@ in control of every line, and your data stays on your device.
   sections use their own Page 1 budget, so they never eat into the space that
   later main sections need — trailing sections such as Awards stay on the page
   with room instead of being pushed onto a nearly empty extra page, and a resume
-  whose main column already fits on Page 1 never grows a blank second page.
+  whose main column already fits on Page 1 never grows a blank second page. A
+  side-column section that spills onto a later page repeats its own heading
+  there (for example **Certifications (cont.)**), so a moved entry never reads
+  as if it belonged to the section printed above it.
   Page 1 is measured in the two-column shape you see, while later pages are
   measured at the full page width they actually use — so a section that only
   clears the page once the sidebar is gone is not pushed to an extra page.

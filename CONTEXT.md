@@ -2033,6 +2033,21 @@ rediscover.
        `4+ lines`). The yellow `[data-review-trim-badge]` only renders when
        `pageCount > 1`; the count and jump targets stay in Review.
 
+  125. **A continuation block that resumes a section mid-page repeats its
+       heading.** `SectionRenderer.groupBlocks` marks a new group
+       `continuationHeading` only when its first block carries no heading
+       (`withHeading === false`) **and** the immediately preceding group on that
+       page belongs to a different section. That is the Studio Sidebar spill
+       shape: a fifth certification pushed off Page 1's side column lands in the
+       full-width main flow after `awards`, and without this it rendered under
+       the Awards heading as if it were another award. The renderer prints
+       `${config.title} (cont.)` for such a group (still gated by `showHeading`
+       and a non-blank title) and keeps `aria-label` off the section. A
+       continuation that starts a page keeps no heading, because it reads as the
+       natural overflow of the previous page; do not print `(cont.)` there.
+       `Awards`/atomic blocks decode with `withHeading: true`, so they never gain
+       a spurious repeat.
+
 ## Verification and tooling
 
 ```powershell
@@ -2097,6 +2112,26 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-28 — Spilled sidebar entries repeat their section heading
+- Task: top Queue item (P2), moved to In Progress first.
+- Change: `SectionRenderer.groupBlocks` now flags a group
+  `continuationHeading` when its first block has no heading and the preceding
+  group on the page is a different section. The renderer prints
+  `${title} (cont.)` for it, so a fifth Certification that spills from Studio
+  Sidebar Page 1 onto Page 2 after Awards no longer appears to be an award. A
+  continuation that starts the page still prints no heading. Decision #125;
+  README Studio Sidebar tour updated.
+- Tests: new `SectionRenderer` case (Awards + `certifications:entry` block) and
+  a `StudioSidebarTemplate` packing case with five certifications where Page 1's
+  side column keeps four and the fifth lands after Awards on Page 2.
+  `npm run typecheck` clean; `npm test` 1257 pass across 109 files;
+  `npm run lint` clean.
+- Note: Playwright remains sandbox-blocked, so the real Studio Sidebar spill
+  geometry is browser-unverified.
+- Files: `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`.
 
 ### 2026-11-28 — Exact 100% zoom reset, unclipped zoom pill, circular swatch focus
 - Task: top Queue item (P1), moved to In Progress first. Both sub-items were
@@ -2320,26 +2355,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   e2e and the real Android spool filename remain browser-unverified.
 - Files: `TASKS.md`, `CONTEXT.md` (feature code and README were already in the
   tree from the earlier checkpoint).
-
-### 2026-11-26 — Blank-PDF fix checkpoint: implementation complete, verification blocked
-- Task: continued the lone In Progress item (P0). Source inspection confirmed
-  all four sub-items were already implemented by the prior checkpoint: the
-  measure layer is lifted into `EditorWorkspace` outside the hidden mobile tab,
-  `PrintPortal.printablePages()` fills an empty page list from visible section
-  ids, `resumeDocumentTitle()` emits an underscore slug guarded by
-  `isPrintTitleActive()`, and the unit + 390×844 mobile e2e regressions are in
-  place (Decision #115; README/CONTEXT already updated).
-- Change: no code changes. Added a checkpoint + exact next steps to the item in
-  `TASKS.md` and left it In Progress.
-- Verification: **not run.** This runner denies shell permission on every path:
-  direct `shell`, a spawned `general` subagent, and an `automation` shell action
-  all returned `Permission denied: shell`. `npm run typecheck`, `npm test`,
-  `npm run lint`, and Playwright could not be executed, so no pass/fail counts
-  are available and the item must NOT be moved to Done until a run with shell
-  access executes them.
-- Next run: run `npm run typecheck && npm test` (and lint); if green, move the
-  item to Done dated 2026-11-26 with the existing file list. No new code changes
-  are expected unless a check fails.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

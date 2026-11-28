@@ -570,6 +570,13 @@ type BlockGroup = {
   /** `null` means every visible entry (a plain, atomic section id). */
   entryIds: string[] | null;
   withHeading: boolean;
+  /**
+   * A continuation block that resumes its section mid-page after a different
+   * section. It carries no heading of its own, so the renderer supplies a
+   * `(cont.)` heading; otherwise a spilled Studio Sidebar entry would read as
+   * part of the section printed above it.
+   */
+  continuationHeading: boolean;
   /** Inclusive bullet range owned by this page for a split entry. */
   fragments: Record<string, BlockFragment>;
 };
@@ -628,11 +635,17 @@ function groupBlocks(
       continue;
     }
 
+    const previous = groups[groups.length - 1];
+
     groups.push({
       sectionId: block.sectionId,
       resolved,
       entryIds: block.entryIds ? [...block.entryIds] : null,
       withHeading: block.withHeading,
+      continuationHeading:
+        !block.withHeading &&
+        previous !== undefined &&
+        previous.sectionId !== block.sectionId,
       fragments: block.fragment
         ? { [block.fragment.entryId]: { ...block.fragment } }
         : {},
@@ -669,8 +682,18 @@ export function SectionRenderer({
           return null;
         }
 
-        const hasHeading =
+        const hasSectionHeading =
           group.withHeading && config.showHeading && config.title.trim() !== "";
+        // A continuation block that starts after a different section gets its
+        // own `(cont.)` heading. A continuation that starts the page does not:
+        // it reads as the natural overflow of the previous page's section.
+        const headingText = hasSectionHeading
+          ? config.title
+          : group.continuationHeading &&
+              config.showHeading &&
+              config.title.trim() !== ""
+            ? `${config.title} (cont.)`
+            : null;
         const items =
           resolved.kind === "summary"
             ? []
@@ -687,10 +710,10 @@ export function SectionRenderer({
             data-section-id={group.sectionId}
             data-keep-together={config.keepTogether ? "true" : undefined}
             data-start-new-page={config.startOnNewPage ? "true" : undefined}
-            aria-label={hasHeading ? undefined : config.title || undefined}
+            aria-label={headingText ? undefined : config.title || undefined}
           >
-            {hasHeading ? (
-              <h2 className="resume-section-heading">{config.title}</h2>
+            {headingText ? (
+              <h2 className="resume-section-heading">{headingText}</h2>
             ) : null}
             {resolved.kind === "summary" ? (
               <div

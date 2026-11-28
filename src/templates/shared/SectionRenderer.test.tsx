@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { parsePastedResume } from "@/lib/import/pasteResume";
@@ -9,6 +9,8 @@ import {
 } from "@/lib/pagination/blockIds";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import {
+  AwardItemSchema,
+  CertificationItemSchema,
   CustomSectionSchema,
   ExperienceItemSchema,
   ProfileItemSchema,
@@ -325,6 +327,86 @@ describe("SectionRenderer", () => {
     ).toBeNull();
     expect(screen.getByText("Initech")).toBeInTheDocument();
     expect(screen.queryByText("Acme")).toBeNull();
+  });
+
+  it("repeats a section heading when a continuation entry follows another section", () => {
+    const doc = createEmptyResume();
+    doc.sections.awards.items = [
+      AwardItemSchema.parse({
+        id: "award-1",
+        title: "Best Paper",
+        awarder: "ACM",
+      }),
+    ];
+    doc.sections.certifications.items = [
+      CertificationItemSchema.parse({
+        id: "cert-1",
+        name: "Cloud Architect",
+        issuer: "Example Institute",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-2",
+        name: "Cloud Developer",
+        issuer: "Example Institute",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-3",
+        name: "Cloud Security",
+        issuer: "Example Institute",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-4",
+        name: "Cloud Network",
+        issuer: "Example Institute",
+      }),
+      CertificationItemSchema.parse({
+        id: "cert-5",
+        name: "Certification Five",
+        issuer: "Example Institute",
+      }),
+    ];
+
+    const { container } = render(
+      <SectionRenderer
+        doc={doc}
+        pageSectionIds={[
+          "awards",
+          encodeEntryBlock("certifications", "cert-5", false),
+        ]}
+      />,
+    );
+
+    expect(container.querySelectorAll(".resume-section")).toHaveLength(2);
+
+    const awardsSection = container.querySelector<HTMLElement>(
+      '[data-section-id="awards"]',
+    );
+    const certSection = container.querySelector<HTMLElement>(
+      '[data-section-id="certifications"]',
+    );
+
+    expect(awardsSection).not.toBeNull();
+    expect(certSection).not.toBeNull();
+    expect(
+      within(awardsSection as HTMLElement).getByRole("heading", {
+        level: 2,
+        name: "Awards",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(awardsSection as HTMLElement).queryByText("Certification Five"),
+    ).toBeNull();
+    // The continuation block carries no heading of its own, so the renderer
+    // repeats one to keep the spilled entry out of the Awards section.
+    expect(
+      within(certSection as HTMLElement).getByRole("heading", {
+        level: 2,
+        name: "Certifications (cont.)",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(certSection as HTMLElement).getByText("Certification Five"),
+    ).toBeInTheDocument();
   });
 
   it("renders keyword-only skills without a blank category heading", () => {

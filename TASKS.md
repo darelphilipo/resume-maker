@@ -24,15 +24,26 @@ _empty
 
 ### P2 — Parser, Fit Math & Review-Tools Polish
 
-- [ ] P2: Render a section heading when an overflowed `Studio Sidebar` entry spills onto Page 2 beneath a different section (`src/templates/shared/SectionRenderer.tsx`).
-  1. When rendering a continuation entry block (e.g. `certifications:entry:4` spilling from Page 1's sidebar onto Page 2 after `awards`) whose `sectionId` differs from the immediately preceding block on that page, render its section heading (e.g. `Certifications` or `Certifications (cont.)`) so overflowed sidebar items never appear as entries under the previous section (`Awards`). Add a unit test covering a 5th certification overflowing from `Studio Sidebar` Page 1 onto Page 2 below `Awards`.
-
 - [ ] P2: Rename `⋮ More` to `Export ▾` on desktop and fix the button's clipped hover/background box (`src/components/editor/EditorWorkspace.tsx`).
   1. Replace the fixed square width on desktop (`w-11 lg:w-auto lg:px-3 gap-1.5`) so the button's background, focus ring, and hover highlight cleanly wrap the full icon + label with balanced horizontal padding.
   2. Rename the desktop label from `"More"` to **`"Export"`** (with a subtle chevron `▾` or download/file icon, keeping the compact `⋮` icon on mobile `< lg`), and place a subtle divider above `"Clear sample data"` inside the menu so export actions stay cleanly grouped.
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-28 — A `Studio Sidebar` entry that spills from Page 1's side
+  column onto a later page now repeats its section heading there. When
+  `SectionRenderer` starts a group whose first block is a continuation
+  (`withHeading === false`) and the preceding group on that page belongs to a
+  different section, it prints `<title> (cont.)` (still gated by `showHeading`
+  and a non-blank title). A fifth certification packed after `Awards` on Page 2
+  therefore reads **Certifications (cont.)** instead of looking like another
+  award, while a continuation that starts a page keeps its quiet headingless
+  overflow. Verified `npm run typecheck`, `npm test` (1257 pass, 109 files),
+  `npm run lint`. Files: `src/templates/shared/SectionRenderer.tsx` (+ test),
+  `src/templates/studio/StudioSidebarTemplate.test.tsx`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains sandbox-blocked, so the real
+  Studio Sidebar spill geometry is browser-unverified.
 
 - [x] 2026-11-28 — Desktop zoom now resets to exactly `100%` and steps in clean
   25% jumps. `zoomBy` and `resetZoom` apply a zero-duration
