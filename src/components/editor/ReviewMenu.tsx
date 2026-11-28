@@ -207,6 +207,7 @@ export function ReviewMenu({
                 marker="data-review-trim"
                 showChevron
                 onClick={() => {
+                  trackEvent("tool_trim_tips");
                   setOpen(false);
                   setTrimOpen(true);
                   trackEvent("tool_trim_tips");

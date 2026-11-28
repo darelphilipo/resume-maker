@@ -2068,6 +2068,42 @@ rediscover.
         also need `min-height: 0` and `overflow: visible` so they never extend
         the print area.
 
+    127. **Anonymous click analytics is allowlist-only and Cloudflare-only.**
+        The 2026-11-28 queue item explicitly asked for a Pages Function, which
+        overrides the general "zero backend" default *for this one endpoint*:
+        `src/lib/analytics/eventAllowlist.ts` is the single vocabulary shared by
+        the browser and `functions/api/event.ts`. Both sides reject unknown
+        events and any meta key/value outside the curated enums, so resume text,
+        filenames, URLs, and ids cannot be encoded as `"meta"`. The endpoint
+        never reads IP or cookies, maps the User-Agent to coarse `os`/`browser`
+        enums (`src/lib/analytics/userAgent.ts`) and discards the raw string,
+        and returns 204 when `ANALYTICS` is unbound. `trackEvent` silently skips
+        localhost, `doNotTrack === "1"`, offline, and missing/blocked beacons;
+        it derives the beacon URL from `window.location.pathname` so the
+        `/resume-maker` base path is preserved (never hardcode `/api/event`).
+        **Deployment gap:** `deploy.yml` still ships only `out/` to GitHub
+        Pages, where `/api/event` returns 404. The beacon and the footer claim
+        are now opt-in per build (#128), so the GitHub Pages site stays quiet.
+        Do not extend this allowlist with free-form fields, and do not reuse it
+        for resume data.
+
+    128. **Anonymous counts are opt-in per build, not on by default.** The
+        `/api/event` Pages Function only exists where the site is hosted with an
+        `ANALYTICS` binding, so `src/lib/analytics/analyticsEnabled.ts` gates the
+        whole client path on `NEXT_PUBLIC_ANALYTICS_ENABLED`. `parseAnalyticsFlag`
+        accepts only `1`/`true`/`yes`/`on` (case-insensitive, trimmed); unset,
+        empty, `0`, `false`, `off`, and anything else are off. `BeaconEnv` carries
+        the resolved `enabled` bit and `trackEvent` returns before validating or
+        beacons when it is false, so the GitHub Pages deployment no longer fires
+        a 404 on every click. The home-page footer renders the "we count
+        anonymous button clicks" sentence only when the same helper is true; the
+        "Your resume stays 100% on this device" promise always renders. Keep the
+        flag read in `readAnalyticsFlag()` **inside the function** (not a
+        module-level const) so Next can inline it at build time and tests can
+        toggle it; its `typeof process === "undefined"` guard makes a
+        non-inlined bundle fall back to off instead of throwing. A Cloudflare
+        Pages build must set the flag to `1`; never make it default-on while
+        GitHub Pages remains the primary deploy.
   127. **Anonymous click counts are a closed allowlist, and the endpoint is
         deploy-gated.** `src/lib/analytics/events.ts` is the single vocabulary:
         the browser beacon and `functions/api/event.ts` both import it, so an
@@ -2164,62 +2200,63 @@ npx playwright test    # e2e; needs a dev server on :3000
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
 
-### 2026-11-28 — Year-first slash dates keep their month on import
-- Task: Queue and Inbox were both empty, so this run promoted one clear import
-  bug into In Progress first (Decision #128).
-- Change: `parseMonthInput` now recognizes `YYYY/M` and `YYYY/M/D` (with
-  optional spaces) and normalizes them through `toMonthValue`, matching its
-  long-standing doc comment. JSON Resume import and paste-to-parse inherit the
-  fix because both call the helper; `toMonthValue` stays ISO-only.
-- Tests: helper cases for `2023/10`, `2023/1`, `2023/10/15`, spaced input, and
-  invalid `2023/13` / `2023/00`, plus a JSON Resume import case with work and
-  education slash dates. `npm run typecheck` clean; `npm test` 1317 pass
-  across 114 files (baseline 1310).
-- Files: `src/lib/date/month.ts` (+ test), `src/lib/schema/jsonResume.test.ts`,
+### 2026-11-28 — Anonymous click counter is now opt-in per deployment
+- Task: Inbox, Queue, and In Progress were all empty, so this run promoted the
+  one open follow-up recorded in the 2026-11-28 analytics entry and Decision
+  #127: GitHub Pages serves only the static export, so `/api/event` 404s there
+  while every click still fired a beacon and the footer promised counts.
+- Change: new `src/lib/analytics/analyticsEnabled.ts` owns
+  `parseAnalyticsFlag` (only `1`/`true`/`yes`/`on`, trimmed and
+  case-insensitive) and `analyticsEnabled()` reading
+  `NEXT_PUBLIC_ANALYTICS_ENABLED` inside the function so Next inlines it at
+  build time and tests can toggle it. `BeaconEnv` gained a required `enabled`
+  bit defaulted from that helper, and `trackEvent` returns before validation
+  when it is false. The home-page footer always keeps the device-only privacy
+  sentence but renders the anonymous-click sentence only on an opted-in build.
+  Decision #128; README privacy tour updated. No workflow edit
+  (`.github/workflows/*` is human-owned), so the Cloudflare Pages build must set
+  the flag itself.
+- Tests: new `analyticsEnabled.test.ts` (on/off values and env toggle), an
+  `enabled: false` `trackEvent` opt-out case, and a `page.test.tsx` footer
+  on/off regression. `npm run typecheck` clean; `npm test` 1285 pass across 115
+  files; `npm run lint` clean (4 pre-existing unused-arg warnings in
+  `trackEvent.test.ts`).
+- Note: the GitHub Pages deployment now sends no analytics at all. Enabling
+  counts requires a Cloudflare Pages build with both the `ANALYTICS` binding and
+  `NEXT_PUBLIC_ANALYTICS_ENABLED=1`; that hosting decision is still open.
+- Files: `src/lib/analytics/analyticsEnabled.ts` (new, + test),
+  `src/lib/analytics/trackEvent.ts` (+ test), `src/app/page.tsx` (+ test),
   `README.md`, `CONTEXT.md`, `TASKS.md`.
 
-### 2026-11-28 — Privacy-first anonymous click analytics
-- Task: top Queue item (P2), moved to In Progress first.
-- Change: new `src/lib/analytics/events.ts` is the closed event/meta allowlist
-  plus a strict payload parser (`{ event, meta, device }` only, extra keys
-  rejected). `trackEvent` sends through `navigator.sendBeacon("/api/event")`
-  with a `keepalive` fetch fallback and no-ops on localhost, Do Not Track, and
-  offline. `functions/api/event.ts` validates the same allowlist, maps the raw
-  User-Agent to coarse `os`/`browser` enums, writes
-  `blobs: [event, meta, device, os, browser]` + `indexes: [event]` to Analytics
-  Engine, and returns `204` even when the binding is absent. Wired onboarding
-  (`start_*`, `recent_*`), activation (`editor_first_edit`, `section_added`,
-  `section_reordered`), tools (`tool_*`, `ats_copy`), design
-  (`template_selected`, `design_changed`), and export (`pdf_export`,
-  `json_export`). The home footer now carries the one-line privacy note.
-  Decision #127.
-- Tests: new `events.test.ts` (strict allowlist, extra-key rejection, template
-  and preset parity), `userAgent.test.ts` (iOS/Android/desktop UA families),
-  `trackEvent.test.ts` (DNT/localhost/offline opt-outs, exact payload, transport
-  failure), and `eventFunction.test.ts` (204/400, coarse blobs, missing or
-  broken binding). `npm run typecheck` clean; `npm test` 1310 pass across 114
-  files; `npm run lint` clean.
-- Note: the GitHub Pages workflow has no Functions runtime, so the beacon is
-  inert (silently dropped) until the static output is also served by Cloudflare
-  Pages with the `ANALYTICS` binding. The runner has no delete tool, so a
-  one-shot self-deleting test moved the handler test out of `functions/` (a
-  `.test.ts` there would be bundled as a Pages route).
-- Files: `src/lib/analytics/events.ts` (new, + test),
-  `src/lib/analytics/trackEvent.ts` (new, + test),
-  `src/lib/analytics/userAgent.ts` (new, + test),
-  `src/lib/analytics/eventFunction.test.ts` (new),
-  `functions/api/event.ts` (new), `src/app/page.tsx`,
+### 2026-11-28 — Allowlist-only anonymous click analytics
+- Task: top Queue item (P2), moved to In Progress first. The item explicitly
+  requested a Pages Function even though CONTEXT's general "zero backend"
+  constraint says servers are out of scope; with no interactive decision
+  available in this run, the specific later instruction was treated as the
+  override and the conflict was recorded in Decision #127.
+- Change: new `src/lib/analytics/{eventAllowlist,trackEvent,userAgent}.ts` and
+  `functions/api/event.ts` implement a strict event/meta allowlist (21 events),
+  coarse os/browser enums, a 204 response when the binding is absent, and a
+  silent beacon that honours localhost, Do Not Track, offline, and blocked
+  sendBeacon. The events are wired at their source in `Launcher`,
+  `EditorWorkspace`, `ReviewMenu`, `ResumeLintPopover`, `JdMatchDrawer`,
+  `SectionList`, `DesignPanel`, `AtsTextView`, `ExportJsonButton`, and
+  `PrintTriggerButton`; the home page footer states the privacy note.
+- Tests: 18 new unit tests cover the allowlist/free-text rejection, meta token,
+  DNT/offline/localhost opt-outs, base-path URL, coarse device, UA enum mapping,
+  and the endpoint's 400/204/data-point behaviour. `npm run typecheck` clean;
+  `npm test` 1280 pass across 114 files; `npm run lint` clean.
+- Note: `deploy.yml` still deploys only `out/` to GitHub Pages, so `/api/event`
+  404s there and the footer claim depends on a future Cloudflare Pages
+  deployment with an `ANALYTICS` binding. This deployment decision is open.
+- Files: `functions/api/event.ts` (new),
+  `src/lib/analytics/{eventAllowlist,trackEvent,userAgent}.ts` (+ tests),
+  `src/lib/analytics/eventEndpoint.test.ts` (new),
   `src/components/launcher/Launcher.tsx`,
-  `src/components/editor/EditorWorkspace.tsx`,
-  `src/components/editor/SectionList.tsx`,
-  `src/components/editor/DesignPanel.tsx`,
-  `src/components/editor/ReviewMenu.tsx`,
-  `src/components/editor/ResumeLintPopover.tsx`,
-  `src/components/editor/JdMatchDrawer.tsx`,
-  `src/components/preview/AtsTextView.tsx`,
-  `src/components/preview/PrintTriggerButton.tsx`,
-  `src/components/shared/ExportJsonButton.tsx`, `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
+  `src/components/editor/{EditorWorkspace,ReviewMenu,ResumeLintPopover,JdMatchDrawer,SectionList,DesignPanel}.tsx`,
+  `src/components/preview/{AtsTextView,PrintTriggerButton}.tsx`,
+  `src/components/shared/ExportJsonButton.tsx`, `src/app/page.tsx`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 ### 2026-11-28 — iOS Safari print: synchronous dialog + exact page count
 - Task: top Queue item (P0), moved to In Progress first.
@@ -2437,7 +2474,8 @@ npx playwright test    # e2e; needs a dev server on :3000
      + Reset fit + toolbar above the canvas (Decision #36), backup-vs-primary
      entry points, paste-to-parse, fit-to-1-page, standardized month/date, first
      autopilot diagnosis, categorized-skills, custom-section, contact-network
-     detection, and work-auth tag details are captured in Decisions & Gotchas
+     detection, PDF/paste hardening (Decision #118), and work-auth tag details
+     are captured in Decisions & Gotchas
      (#21, #18, #10, #9, #16, #17, #11) and Autopilot failure modes above. -->
 
 

@@ -123,10 +123,8 @@ export function DesignPanel() {
                   value={pageFormat.id}
                   checked={isCurrent}
                   onChange={() => {
-                    trackEvent("design_changed", "paper");
-                    patchDoc({
-                      metadata: { page: { format: pageFormat.id } },
-                    });
+                    trackEvent("design_changed", { setting: "paper" });
+                    patchDoc({ metadata: { page: { format: pageFormat.id } } });
                   }}
                   className="sr-only"
                 />
@@ -162,7 +160,7 @@ export function DesignPanel() {
                   value={template.id}
                   checked={isCurrent}
                   onChange={() => {
-                    trackEvent("template_selected", template.id);
+                    trackEvent("template_selected", { template: template.id });
                     patchDoc({ metadata: { template: template.id } });
                   }}
                   className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
@@ -222,7 +220,7 @@ export function DesignPanel() {
                   aria-label={swatch.label}
                   checked={isCurrent}
                   onChange={() => {
-                    trackEvent("design_changed", "accent");
+                    trackEvent("design_changed", { setting: "accent" });
                     patchDoc({
                       metadata: { design: { colors: { primary: swatch.hex } } },
                     });
@@ -275,7 +273,7 @@ export function DesignPanel() {
                   value={pairing.id}
                   checked={isCurrent}
                   onChange={() => {
-                    trackEvent("design_changed", "font");
+                    trackEvent("design_changed", { setting: "fonts" });
                     patchDoc({
                       metadata: {
                         typography: {
@@ -326,7 +324,7 @@ export function DesignPanel() {
                   value={preset.id}
                   checked={isCurrent}
                   onChange={() => {
-                    trackEvent("design_changed", "density");
+                    trackEvent("design_changed", { setting: "density" });
                     patchDoc({
                       metadata: {
                         design: { density: preset.id },

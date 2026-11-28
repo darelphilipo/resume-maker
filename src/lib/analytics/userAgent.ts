@@ -1,109 +1,46 @@
 /**
- * Coarse, non-identifying device hints for the aggregate analytics endpoint.
- *
- * The raw User-Agent string is read once inside the Pages Function and is
- * never stored, logged, or returned. Only these small enums reach Analytics
- * Engine.
+ * Map a raw User-Agent to two coarse, non-identifying enums. The original
+ * string is deliberately never returned, logged, or written to a data point.
  */
 
-export const COARSE_OS_VALUES = [
-  "android",
-  "ios",
-  "windows",
-  "macos",
-  "linux",
-  "other",
-] as const;
+export type AnalyticsOs = "android" | "ios" | "windows" | "macos" | "linux" | "other";
+export type AnalyticsBrowser =
+  | "chrome"
+  | "safari"
+  | "edge"
+  | "firefox"
+  | "other";
 
-export type CoarseOs = (typeof COARSE_OS_VALUES)[number];
+export type CoarseUserAgent = { os: AnalyticsOs; browser: AnalyticsBrowser };
 
-export const COARSE_BROWSER_VALUES = [
-  "chrome",
-  "safari",
-  "edge",
-  "firefox",
-  "other",
-] as const;
+export function coarseUserAgent(userAgent: string | null): CoarseUserAgent {
+  const ua = userAgent ?? "";
 
-export type CoarseBrowser = (typeof COARSE_BROWSER_VALUES)[number];
+  let os: AnalyticsOs = "other";
 
-/**
- * Order matters: Android UAs contain `Linux`, iPhone/iPad UAs contain
- * `like Mac OS X`, and Chrome/Safari share tokens. Check the narrower signal
- * first so a phone never reports as a desktop.
- */
-export function coarseOsFromUserAgent(
-  userAgent: string | null | undefined,
-): CoarseOs {
-  const ua = (userAgent ?? "").toLowerCase();
-
-  if (ua === "") {
-    return "other";
+  if (/iPhone|iPad|iPod|CPU (iPhone )?OS/i.test(ua)) {
+    os = "ios";
+  } else if (/Android/i.test(ua)) {
+    os = "android";
+  } else if (/Windows/i.test(ua)) {
+    os = "windows";
+  } else if (/Mac(intosh| OS X)/i.test(ua)) {
+    os = "macos";
+  } else if (/Linux|X11/i.test(ua)) {
+    os = "linux";
   }
 
-  if (ua.includes("android")) {
-    return "android";
+  let browser: AnalyticsBrowser = "other";
+
+  if (/Edg\/|EdgA\/|EdgiOS\//i.test(ua)) {
+    browser = "edge";
+  } else if (/Firefox\/|FxiOS\//i.test(ua)) {
+    browser = "firefox";
+  } else if (/Chrome\/|CriOS\//i.test(ua)) {
+    browser = "chrome";
+  } else if (/Safari\//i.test(ua)) {
+    browser = "safari";
   }
 
-  if (
-    ua.includes("iphone") ||
-    ua.includes("ipad") ||
-    ua.includes("ipod")
-  ) {
-    return "ios";
-  }
-
-  if (ua.includes("windows")) {
-    return "windows";
-  }
-
-  if (ua.includes("mac os x") || ua.includes("macintosh")) {
-    return "macos";
-  }
-
-  if (ua.includes("linux") || ua.includes("x11")) {
-    return "linux";
-  }
-
-  return "other";
-}
-
-/**
- * Edge first (its UA also says Chrome and Safari), then Firefox, then Chrome
- * (its UA also says Safari), then Safari. iOS variants (CriOS, EdgiOS, FxiOS)
- * map to the same families.
- */
-export function coarseBrowserFromUserAgent(
-  userAgent: string | null | undefined,
-): CoarseBrowser {
-  const ua = (userAgent ?? "").toLowerCase();
-
-  if (ua === "") {
-    return "other";
-  }
-
-  if (
-    ua.includes("edg/") ||
-    ua.includes("edga/") ||
-    ua.includes("edgios/")
-  ) {
-    return "edge";
-  }
-
-  if (ua.includes("firefox/") || ua.includes("fxios/")) {
-    return "firefox";
-  }
-
-  if (
-    (ua.includes("chrome/") || ua.includes("crios/")) &&
-    !ua.includes("opr/")
-  ) {
-    return "chrome";
-  }
-
-  if (ua.includes("safari/")) {
-    return "safari";
-  }
-
-  return "other";
+  return { os, browser };
 }

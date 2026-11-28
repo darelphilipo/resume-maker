@@ -21,27 +21,53 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P1: Final v1.0 polish — SVG template thumbnails, contextual `Basics` expansion, `Fit` readability note, desktop zoom `150%+` fix, and stable `ATS` Copy button widths (`src/components/editor/DesignPanel.tsx`, `src/components/editor/BasicsForm.tsx`, `src/components/editor/ReviewMenu.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/AtsTextView.tsx`).
-  1. **Inline SVG template thumbnails (`DesignPanel.tsx`):** Add a crisp, lightweight inline SVG mini-wireframe thumbnail (`~40×54px`, `aria-hidden="true"`, zero external images/layout shift) on the left of each of the 6 template cards visually distinguishing single-column (`Engineering Classic`), centered header (`Ivy/Executive`), accent rule (`Modern Accent`), dense (`Compact 1-Pager`), boxed skills (`Hybrid Skills-First`), and two-column (`Studio Sidebar`).
-  2. **Auto-expand `Basics` on blank resumes only (`BasicsForm.tsx`):** Default `Basics` to **expanded** when `doc.basics.name.trim() === ""` (new blank resume) and **collapsed** when `basics.name` is already populated (PDF imports and role presets).
-  3. **`Fit 1p` readability note (`ReviewMenu.tsx`):** When `fitScale < 0.88`, show a subtle 1-line note next to `Reset fit` inside `Review tools` (e.g., `"Scaled to 84% — check readability before exporting."`) without nagging on minor fits (`>= 88%`).
-  4. **Fix desktop zoom `+` stuck at `125%` & bottom clipping (`LiveCanvasViewport.tsx`):** Ensure `TransformWrapper`'s `maxScale` allows stepping cleanly all the way up to `225%` (`fitScale * 2.25`, stepping `100% → 125% → 150% → 175% → 200% → 225%`), and give the floating bottom-right zoom pill enough bottom clearance (`bottom-5 right-4` inside a non-clipped container) so its bottom border is never clipped.
-  5. **Stable `ATS` `Copy` button widths (`AtsTextView.tsx`):** Give `Copy all plain text` (`min-w-[11.5rem] justify-center`, swapping to `"✓ Copied plain text"`) and per-entry `Copy` buttons (`min-w-[5.5rem] justify-center`) fixed minimum widths so neither button shrinks or shifts under the cursor on click.
-  6. revert and remove the footer area "Your resume stays 100% on this device. We count anonymous button clicks (no cookies or personal data) to improve the app. " . It's making the page too tall
-     
-- [ ] P1: Accessibility & readability polish — placeholder contrast, 12px text floor, 44px touch targets, reduced motion, `color-scheme: light`, and focus rings (`src/components/launcher/Launcher.tsx`, `src/components/editor/DesignPanel.tsx`, `src/components/editor/ReviewMenu.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/preview/TrimTipsDialog.tsx`, `src/components/editor/MobileBottomNav.tsx`, `src/app/globals.css`).
-  1. **Placeholder contrast (`Launcher.tsx`):** Replace `#8a8f94` input placeholders (lines ~101, ~318) with `--brand-muted` (`#5b6a7a`, ~5.5:1 on white) to meet WCAG AA contrast.
-  2. **12px minimum UI text floor:** Replace `text-[10px]` and `text-[11px]` across UI chrome (`ResumeLintPopover`, `TrimTipsDialog`, `ReviewMenu`, mobile editor header) with `text-xs` (`12px`) so helper copy stays legible on phones *(leaving resume template print typography untouched)*.
-  3. **44px touch targets without visual bloat:** Wrap the `28px` Accent color dots (`DesignPanel.tsx`) in `h-11 w-11` (`44×44px`) circular hit targets, ensure each `ReviewMenu` toggle row is fully clickable at `min-h-11` (not just the `h-6` switch), and apply `pointer-coarse:min-h-11` consistently on secondary toolbar/section/lint controls.
-  4. **Accessibility hygiene & plain-language tooltips:**
-     - Add `@media (prefers-reduced-motion: reduce)` in `globals.css` to disable transitions/spinners for reduced-motion users, and declare `color-scheme: light` on `:root` so browsers don't apply dark native controls to the light UI.
-     - Deduplicate `aria-label="Editor panels"` between `<nav>` and `role="tablist"` in `MobileBottomNav.tsx`.
-     - Audit `outline-none` usages across `src/components/` to verify every focusable element has a visible `focus-visible:ring` replacement.
-     - Add concise plain-English `title` tooltips on `Fit 1p`, `6s Scan`, `Tidy`, and `ATS`.
+
+_empty
+
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
 
+- [x] 2026-11-28 — The anonymous click counter is now opt-in per build instead of
+  firing at a 404 on GitHub Pages. New `src/lib/analytics/analyticsEnabled.ts`
+  owns `parseAnalyticsFlag` (only `1`/`true`/`yes`/`on`, trimmed and
+  case-insensitive) and `analyticsEnabled()` reading
+  `NEXT_PUBLIC_ANALYTICS_ENABLED` inside the function so Next inlines it at
+  build time and tests can toggle it. `BeaconEnv` gained a required `enabled`
+  bit defaulted from that helper, and `trackEvent` returns before validating or
+  beacons when it is false; the GitHub Pages deploy therefore sends nothing.
+  The home page always keeps "Your resume stays 100% on this device." but
+  renders the anonymous-click sentence only on an opted-in build, so the footer
+  never promises counts that cannot land. Decision #128; README privacy tour
+  updated. A Cloudflare Pages build must set the flag (and the `ANALYTICS`
+  binding) itself; `.github/workflows/*` stays human-owned. Verified
+  `npm run typecheck`, `npm test` (1285 pass, 115 files), `npm run lint` (4
+  pre-existing unused-arg warnings in `trackEvent.test.ts`). Files:
+  `src/lib/analytics/analyticsEnabled.ts` (new, + test),
+  `src/lib/analytics/trackEvent.ts` (+ test), `src/app/page.tsx` (+ test),
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+
+- [x] 2026-11-28 — Added privacy-first, zero-PII click analytics: one strict
+  allowlist (`src/lib/analytics/eventAllowlist.ts`) is shared by the client
+  beacon and the Cloudflare Pages Function, so unknown events or free-text meta
+  get 400s and no resume text, filename, URL, or id can be logged. The endpoint
+  drops IP/cookies, maps the User-Agent to coarse os/browser enums (never the
+  raw string), and returns 204 with no `ANALYTICS` binding; `trackEvent` opts
+  out on localhost, Do Not Track, offline, and blocked beacons and derives the
+  URL from the live pathname so the `/resume-maker` base path survives. Wired
+  21 high-signal events across onboarding, activation, tools, design, and
+  export, plus the home-page privacy line. Verified `npm run typecheck`,
+  `npm test` (1280 pass, 114 files), `npm run lint`. Files:
+  `functions/api/event.ts` (new), `src/lib/analytics/{eventAllowlist,trackEvent,userAgent}.ts`
+  (new, + tests), `src/lib/analytics/eventEndpoint.test.ts` (new),
+  `src/components/launcher/Launcher.tsx`,
+  `src/components/editor/{EditorWorkspace,ReviewMenu,ResumeLintPopover,JdMatchDrawer,SectionList,DesignPanel}.tsx`,
+  `src/components/preview/{AtsTextView,PrintTriggerButton}.tsx`,
+  `src/components/shared/ExportJsonButton.tsx`, `src/app/page.tsx`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`. Open follow-up: `deploy.yml` still
+  deploys only static `out/` to GitHub Pages, so `/api/event` is not reachable
+  there until the site is also hosted on Cloudflare Pages with the binding;
+  Decision #127.
 - [x] 2026-11-28 — Year-first slash dates (`2023/10`, `2023/10/15`) no longer
   vanish on import: `parseMonthInput` normalizes `YYYY/M` and `YYYY/M/D`
   (spaces allowed) through `toMonthValue`, so JSON Resume and pasted resumes

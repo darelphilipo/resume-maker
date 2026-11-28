@@ -1,191 +1,131 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+
 import {
-  ANALYTICS_ENDPOINT,
-  isLocalHostname,
-  resolveDevice,
-  shouldTrack,
+  analyticsEndpoint,
+  deviceClass,
   trackEvent,
-  type TrackEnvironment,
+  type BeaconEnv,
 } from "./trackEvent";
 
-function environment(
-  overrides: Partial<TrackEnvironment> = {},
-): TrackEnvironment & { sent: string[] } {
-  const sent: string[] = [];
+function env(overrides: Partial<BeaconEnv> = {}): BeaconEnv {
+  const beacon = vi.fn((_url: string, _body: BodyInit | null | undefined) => true);
 
   return {
-    doNotTrack: null,
-    globalDoNotTrack: null,
+    hostname: "resume.example",
+    pathname: "/",
+    doNotTrack: undefined,
     onLine: true,
-    hostname: "resume.example.com",
-    device: "mobile",
-    send(body: string) {
-      sent.push(body);
-    },
-    sent,
+    coarse: false,
+    sendBeacon: beacon,
+    enabled: true,
     ...overrides,
   };
 }
 
-describe("shouldTrack", () => {
-  it("tracks on a normal online page", () => {
-    expect(
-      shouldTrack({
-        doNotTrack: null,
-        globalDoNotTrack: null,
-        onLine: true,
-        hostname: "resume.example.com",
-      }),
-    ).toBe(true);
-  });
+const originalTouchPoints = navigator.maxTouchPoints;
 
-  it("honours Do Not Track from navigator or window", () => {
-    expect(
-      shouldTrack({
-        doNotTrack: "1",
-        globalDoNotTrack: null,
-        onLine: true,
-        hostname: "resume.example.com",
-      }),
-    ).toBe(false);
-
-    expect(
-      shouldTrack({
-        doNotTrack: null,
-        globalDoNotTrack: "1",
-        onLine: true,
-        hostname: "resume.example.com",
-      }),
-    ).toBe(false);
-  });
-
-  it("does not track while offline", () => {
-    expect(
-      shouldTrack({
-        doNotTrack: null,
-        globalDoNotTrack: null,
-        onLine: false,
-        hostname: "resume.example.com",
-      }),
-    ).toBe(false);
-  });
-
-  it("does not track on local development hosts", () => {
-    for (const hostname of [
-      "localhost",
-      "127.0.0.1",
-      "0.0.0.0",
-      "::1",
-      "[::1]",
-      "app.localhost",
-    ]) {
-      expect(isLocalHostname(hostname)).toBe(true);
-      expect(
-        shouldTrack({
-          doNotTrack: null,
-          globalDoNotTrack: null,
-          onLine: true,
-          hostname,
-        }),
-      ).toBe(false);
-    }
-
-    expect(isLocalHostname("resume.example.com")).toBe(false);
+afterEach(() => {
+  Object.defineProperty(navigator, "maxTouchPoints", {
+    configurable: true,
+    value: originalTouchPoints,
   });
 });
 
-describe("resolveDevice", () => {
-  it("uses the pointer type first, then the viewport width", () => {
-    expect(resolveDevice(true, 1440)).toBe("mobile");
-    expect(resolveDevice(false, 390)).toBe("mobile");
-    expect(resolveDevice(false, 1024)).toBe("desktop");
-    expect(resolveDevice(false, 1440)).toBe("desktop");
+describe("analyticsEndpoint", () => {
+  it("respects the GitHub Pages base path and the editor route", () => {
+    expect(analyticsEndpoint("/")).toBe("/api/event");
+    expect(analyticsEndpoint("/resume-maker/")).toBe(
+      "/resume-maker/api/event",
+    );
+    expect(analyticsEndpoint("/resume-maker/editor/")).toBe(
+      "/resume-maker/api/event",
+    );
+  });
+});
+
+describe("deviceClass", () => {
+  it("maps coarse pointers to mobile and fine pointers to desktop", () => {
+    expect(deviceClass()).toBe("desktop");
+
+    Object.defineProperty(navigator, "maxTouchPoints", {
+      configurable: true,
+      value: 5,
+    });
+    expect(deviceClass()).toBe("mobile");
   });
 });
 
 describe("trackEvent", () => {
-  it("sends exactly the closed event/meta/device payload", () => {
-    const env = environment({ device: "desktop" });
+  it("does nothing unless the deployment opts into the counter", () => {
+    const context = env({ enabled: false });
 
-    trackEvent("pdf_export", "a4", env);
+    trackEvent("start_blank", undefined, context);
 
-    expect(env.sent).toHaveLength(1);
-    expect(JSON.parse(env.sent[0])).toEqual({
-      event: "pdf_export",
-      meta: "a4",
-      device: "desktop",
-    });
-    expect(Object.keys(JSON.parse(env.sent[0]))).toEqual([
-      "event",
-      "meta",
-      "device",
-    ]);
+    expect(context.sendBeacon).not.toHaveBeenCalled();
   });
 
-  it("sends a null meta for events that carry none", () => {
-    const env = environment();
+  it("does nothing on localhost", () => {
+    const context = env({ hostname: "localhost" });
 
-    trackEvent("editor_first_edit", undefined, env);
+    trackEvent("start_blank", undefined, context);
 
-    expect(JSON.parse(env.sent[0])).toEqual({
-      event: "editor_first_edit",
-      meta: null,
+    expect(context.sendBeacon).not.toHaveBeenCalled();
+  });
+
+  it("honours Do Not Track and offline mode", () => {
+    const dnt = env({ doNotTrack: "1" });
+    trackEvent("start_pdf_upload", undefined, dnt);
+    expect(dnt.sendBeacon).not.toHaveBeenCalled();
+
+    const offline = env({ onLine: false });
+    trackEvent("start_pdf_upload", undefined, offline);
+    expect(offline.sendBeacon).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when sendBeacon is unavailable or no browser exists", () => {
+    expect(() =>
+      trackEvent("start_blank", undefined, env({ sendBeacon: undefined })),
+    ).not.toThrow();
+    expect(() => trackEvent("start_blank", undefined, null)).not.toThrow();
+  });
+
+  it("sends only the allowlisted event, meta, and coarse device", async () => {
+    const beacon = vi.fn((_url: string, _body: BodyInit | null | undefined) => true);
+    const context = env({
+      pathname: "/resume-maker/editor/?id=1",
+      coarse: true,
+      sendBeacon: beacon,
+    });
+
+    trackEvent("start_preset", { archetype: "data-analyst" }, context);
+
+    expect(beacon).toHaveBeenCalledTimes(1);
+    const [url, payload] = beacon.mock.calls[0];
+    expect(url).toBe("/resume-maker/api/event");
+    expect(typeof payload).toBe("string");
+    expect(JSON.parse(String(payload))).toEqual({
+      event: "start_preset",
+      meta: { archetype: "data-analyst" },
       device: "mobile",
     });
   });
 
-  it("does not send when Do Not Track is on", () => {
-    const env = environment({ doNotTrack: "1" });
+  it("drops unknown events and free-text meta client-side", () => {
+    const context = env();
 
-    trackEvent("ats_copy", "all", env);
+    trackEvent("resume_text" as "start_blank", undefined, context);
+    trackEvent("start_preset", { archetype: "Ada Lovelace" }, context);
 
-    expect(env.sent).toHaveLength(0);
+    expect(context.sendBeacon).not.toHaveBeenCalled();
   });
 
-  it("does not send from localhost", () => {
-    const env = environment({ hostname: "localhost" });
-
-    trackEvent("ats_copy", "all", env);
-
-    expect(env.sent).toHaveLength(0);
-  });
-
-  it("does not send while offline", () => {
-    const env = environment({ onLine: false });
-
-    trackEvent("ats_copy", "all", env);
-
-    expect(env.sent).toHaveLength(0);
-  });
-
-  it("rejects an unknown event or an unowned meta at runtime", () => {
-    const env = environment();
-
-    trackEvent(
-      "start_pdf_upload" as never,
-      "Ada Lovelace" as never,
-      env,
-    );
-    trackEvent("template_selected", "resume.pdf" as never, env);
-    trackEvent("start_blank", "custom" as never, env);
-
-    expect(env.sent).toHaveLength(0);
-  });
-
-  it("never throws when the transport fails", () => {
-    const env = environment({
-      send() {
-        throw new Error("blocked by an extension");
+  it("never throws when a blocked beacon rejects", () => {
+    const context = env({
+      sendBeacon: () => {
+        throw new Error("blocked");
       },
     });
 
-    expect(() => trackEvent("json_export", "backup", env)).not.toThrow();
-  });
-
-  it("no-ops when no browser environment exists", () => {
-    expect(() => trackEvent("json_export", "backup", null)).not.toThrow();
-  });
-
-  it("posts to the Cloudflare Pages route", () => {
-    expect(ANALYTICS_ENDPOINT).toBe("/api/event");
+    expect(() => trackEvent("start_blank", undefined, context)).not.toThrow();
   });
 });

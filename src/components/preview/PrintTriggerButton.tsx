@@ -147,6 +147,7 @@ export function PrintTriggerButton({
             }
 
             const next: PrintJob = { doc, pages };
+            trackEvent("pdf_export");
 
             trackEvent("pdf_export", doc.metadata.page.format);
 

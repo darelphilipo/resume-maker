@@ -1,6 +1,9 @@
 import { Launcher } from "@/components/launcher/Launcher";
+import { analyticsEnabled } from "@/lib/analytics/analyticsEnabled";
 
 export default function Home() {
+  const showClickNote = analyticsEnabled();
+
   return (
     <main className="min-h-dvh bg-background text-text">
       <div className="mx-auto flex w-full max-w-5xl flex-col px-4 pb-16 pt-5 sm:px-6 sm:pt-8 lg:px-8">
@@ -57,10 +60,16 @@ export default function Home() {
 
         <Launcher />
 
-        <footer className="mt-8 border-t border-line pt-4">
+        <footer className="mt-10 border-t border-line pt-4">
           <p className="text-xs leading-relaxed text-muted">
-            Your resume stays 100% on this device. We count anonymous button
-            clicks (no cookies or personal data) to improve the app.
+            Your resume stays 100% on this device.
+            {showClickNote ? (
+              <>
+                {" "}
+                We count anonymous button clicks (no cookies or personal data)
+                to improve the app.
+              </>
+            ) : null}
           </p>
         </footer>
       </div>
