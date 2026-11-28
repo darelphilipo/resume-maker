@@ -129,9 +129,9 @@ export function formatMonth(value: string): string {
 
 /**
  * Parses human input into `YYYY-MM`, or a bare `YYYY` when only a year is
- * given. Accepts `2023-10`, `2023/10`, `10/2023`, `10-2023`, `Oct 2023`,
- * `October 2023`, and `2023`. Returns `null` for input that cannot be
- * interpreted, so callers can decide how to handle invalid text.
+ * given. Accepts `2023-10`, `2023/10`, `2023/10/15`, `10/2023`, `10-2023`,
+ * `Oct 2023`, `October 2023`, and `2023`. Returns `null` for input that cannot
+ * be interpreted, so callers can decide how to handle invalid text.
  */
 export function parseMonthInput(value: string): string | null {
   const trimmed = value.trim();
@@ -148,6 +148,20 @@ export function parseMonthInput(value: string): string | null {
 
   if (isoValue !== "") {
     return isoValue;
+  }
+
+  // Some exporters write `2023/10` or `2023/10/15`; toMonthValue only accepts
+  // hyphenated ISO dates, so normalize those here before the month-first forms.
+  const yearFirstMatch = /^(\d{4})\s*\/\s*(\d{1,2})(?:\s*\/\s*\d{1,2})?$/.exec(
+    trimmed,
+  );
+
+  if (yearFirstMatch) {
+    const monthValue = toMonthValue(
+      `${yearFirstMatch[1]}-${yearFirstMatch[2]}`,
+    );
+
+    return monthValue === "" ? null : monthValue;
   }
 
   const nameMatch = /^([A-Za-z]{3,9})\.?,?\s+(\d{4})$/.exec(trimmed);

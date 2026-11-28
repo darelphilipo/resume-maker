@@ -18,7 +18,8 @@ in control of every line, and your data stays on your device.
   import** only copies a ready-made prompt so you can use a chat assistant you
   choose; the reply is parsed locally.
 - **Private by design.** Resumes are stored in your browser (IndexedDB). The app
-  has no backend, accounts, or analytics on your resume content.
+  has no accounts, and no analytics ever touch your resume content — at most it
+  counts anonymous button clicks, with no cookies or personal data.
 - **Fast on a phone.** The editor is mobile-first, with large touch targets and
   a layout that works at phone width instead of a desktop screen squeezed down.
   The resume name, undo/redo, JSON export, and a solid **Save PDF** button share
@@ -37,6 +38,10 @@ in control of every line, and your data stays on your device.
   line covers free, no-sign-up, and offline use once, so the first choice stays
   near the top of a phone screen. Pasting text, AI prompt rescue, and JSON
   restore live in a quiet **Other ways to import** strip at the bottom.
+- **A one-line privacy promise**: the home page footer says plainly that your
+  resume stays on this device and that only anonymous button counts — no
+  cookies or personal data — are used to improve the app. Turning on Do Not
+  Track, working offline, or running locally turns the counter off entirely.
 - **Start blank or from a role sample**: choose **Start with a blank resume**
   when you would rather type from an empty page, or pick a role preset for a
   complete editable example. Every preset opens as a clean one-page starter, so
@@ -70,8 +75,9 @@ in control of every line, and your data stays on your device.
   names apart, so an unbulleted paragraph stays in the description instead of
   turning into a job title. Real-world date and grade formats are understood
   too: shortened ranges such as `2019–21`, seasons such as `Spring 2021`,
-  durations such as `3 Months`, and tight grades such as `CGPA:7.6` or
-  `12th –92.0%`. If a PDF is a scan, an image, or a Canva export with
+  durations such as `3 Months`, year-first dates such as `2023/10` or
+  `2023/10/15`, and tight grades such as `CGPA:7.6` or `12th –92.0%`.
+  If a PDF is a scan, an image, or a Canva export with
   no selectable text, the upload error links straight to the AI prompt rescue
   import (pasting the text yourself still works too).
 - **AI prompt rescue import** for scanned or Canva PDFs: open **Import via AI

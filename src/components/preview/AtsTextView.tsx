@@ -3,6 +3,7 @@
 import { Check, Copy } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { trackEvent } from "@/lib/analytics/trackEvent";
 import {
   buildAtsCopyBlocks,
   type AtsCopyEntry,
@@ -100,6 +101,14 @@ export function AtsTextView({ doc }: { doc: ResumeDocument }) {
       }
 
       setCopied({ key, label });
+
+      const kind =
+        key === "all" || key === "header"
+          ? key
+          : key.includes(":")
+            ? "entry"
+            : "section";
+      trackEvent("ats_copy", kind);
 
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current);

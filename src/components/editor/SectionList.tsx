@@ -17,6 +17,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
+import { trackEvent } from "@/lib/analytics/trackEvent";
 import {
   dropTargetForPointer,
   mergeVisibleOrder,
@@ -343,6 +344,7 @@ export function SectionList({
     );
     expandRow(row.id);
     setOptionalMenuOpen(false);
+    trackEvent("section_added", "optional");
   }
 
   function toggleVisibility(row: SectionRow): void {
@@ -385,7 +387,11 @@ export function SectionList({
   }
 
   /** Writes a new visible order back to the layout, preserving tucked slots. */
-  function reorderVisible(dragId: string, targetId: string): void {
+  function reorderVisible(
+    dragId: string,
+    targetId: string,
+    source: "drag" | "keyboard",
+  ): void {
     const visibleIds = visibleRows.map((row) => row.id);
     const nextVisible = reorderVisibleIds(visibleIds, dragId, targetId);
 
@@ -400,6 +406,7 @@ export function SectionList({
         nextVisible,
       ),
     );
+    trackEvent("section_reordered", source);
   }
 
   function moveRow(row: SectionRow, direction: -1 | 1): void {
@@ -411,7 +418,7 @@ export function SectionList({
       return;
     }
 
-    reorderVisible(row.id, visibleIds[nextIndex]);
+    reorderVisible(row.id, visibleIds[nextIndex], "keyboard");
   }
 
   function startRowDrag(
@@ -471,7 +478,7 @@ export function SectionList({
     setDragState(null);
 
     if (drag.overId && drag.overId !== drag.id) {
-      reorderVisible(drag.id, drag.overId);
+      reorderVisible(drag.id, drag.overId, "drag");
     }
   }
 
@@ -552,6 +559,7 @@ export function SectionList({
     setCustomTitle("");
     setCustomFormOpen(false);
     expandRow(section.id);
+    trackEvent("section_added", "custom");
   }
 
   function deleteCustomSection(row: SectionRow): void {

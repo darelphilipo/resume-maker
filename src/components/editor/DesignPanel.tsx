@@ -2,6 +2,7 @@
 
 import { Check } from "@phosphor-icons/react";
 
+import { trackEvent } from "@/lib/analytics/trackEvent";
 import {
   ACCENT_SWATCHES,
   DENSITY_PRESETS,
@@ -121,11 +122,12 @@ export function DesignPanel() {
                   name="page-format"
                   value={pageFormat.id}
                   checked={isCurrent}
-                  onChange={() =>
+                  onChange={() => {
+                    trackEvent("design_changed", "paper");
                     patchDoc({
                       metadata: { page: { format: pageFormat.id } },
-                    })
-                  }
+                    });
+                  }}
                   className="sr-only"
                 />
                 <span className="whitespace-nowrap">{pageFormat.label}</span>
@@ -159,9 +161,10 @@ export function DesignPanel() {
                   name="resume-template"
                   value={template.id}
                   checked={isCurrent}
-                  onChange={() =>
-                    patchDoc({ metadata: { template: template.id } })
-                  }
+                  onChange={() => {
+                    trackEvent("template_selected", template.id);
+                    patchDoc({ metadata: { template: template.id } });
+                  }}
                   className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
                 />
                 <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -218,11 +221,12 @@ export function DesignPanel() {
                   value={swatch.id}
                   aria-label={swatch.label}
                   checked={isCurrent}
-                  onChange={() =>
+                  onChange={() => {
+                    trackEvent("design_changed", "accent");
                     patchDoc({
                       metadata: { design: { colors: { primary: swatch.hex } } },
-                    })
-                  }
+                    });
+                  }}
                   className="sr-only"
                 />
                 <span
@@ -270,7 +274,8 @@ export function DesignPanel() {
                   name="font-pairing"
                   value={pairing.id}
                   checked={isCurrent}
-                  onChange={() =>
+                  onChange={() => {
+                    trackEvent("design_changed", "font");
                     patchDoc({
                       metadata: {
                         typography: {
@@ -278,8 +283,8 @@ export function DesignPanel() {
                           heading: { fontFamily: pairing.heading },
                         },
                       },
-                    })
-                  }
+                    });
+                  }}
                   className="sr-only"
                 />
                 <span
@@ -320,15 +325,16 @@ export function DesignPanel() {
                   name="density"
                   value={preset.id}
                   checked={isCurrent}
-                  onChange={() =>
+                  onChange={() => {
+                    trackEvent("design_changed", "density");
                     patchDoc({
                       metadata: {
                         design: { density: preset.id },
                         page: { gapX: preset.gapX, gapY: preset.gapY },
                         typography: { body: { lineHeight: preset.lineHeight } },
                       },
-                    })
-                  }
+                    });
+                  }}
                   className="sr-only"
                 />
                 <span className="whitespace-nowrap">{preset.label}</span>

@@ -2068,6 +2068,37 @@ rediscover.
         also need `min-height: 0` and `overflow: visible` so they never extend
         the print area.
 
+  127. **Anonymous click counts are a closed allowlist, and the endpoint is
+        deploy-gated.** `src/lib/analytics/events.ts` is the single vocabulary:
+        the browser beacon and `functions/api/event.ts` both import it, so an
+        unknown event, unknown meta, an extra key, or free-text meta is rejected
+        (`400` server-side; silently dropped client-side). A payload is exactly
+        `{ event, meta, device }`; `meta` is a fixed per-event id (`null` when
+        unused), and the server maps the raw User-Agent to coarse `os`/`browser`
+        enums and never stores it. `trackEvent` is best-effort: it no-ops on
+        localhost, when `navigator.doNotTrack === "1"` (or
+        `window.doNotTrack`), and while offline; it prefers `sendBeacon` with a
+        `keepalive` fetch fallback and swallows every error. `functions/` is
+        outside the Next static export, so `next build` and GitHub Pages ignore
+        it — `/api/event` is only live when the same `out/` is served by
+        Cloudflare Pages with an `ANALYTICS` Analytics Engine binding. Keep new
+        events and their meta values in `events.ts` and update the parity tests;
+        `start_preset` casts `Archetype.id` (a plain `string`), so adding a
+        preset without an allowlist entry fails `events.test.ts` instead of
+        shipping silently.
+
+   128. **`parseMonthInput` owns year-first slash dates, not `toMonthValue`.**
+        The helper's doc always claimed `2023/10` was accepted, but only
+        month-first numeric forms (`10/2023`, `10-2023`) were parsed, so JSON
+        Resume's `importMonth` fallback and `pasteResume` dropped the date
+        entirely. A year-first branch (`YYYY / M`, optionally `/ D`, with
+        whitespace allowed) now normalizes through `toMonthValue`, so
+        `2023/10`, `2023/1`, and `2023/10/15` become `2023-10` / `2023-01`
+        while `2023/13` and `2023/00` return `null`. Keep this in the
+        human-input helper: `toMonthValue` stays an ISO-only stored-date
+        normalizer and `formatMonth` is untouched, so every importer and
+        `MonthInput` inherit the rule without new callers.
+
 ## Verification and tooling
 
 ```powershell
@@ -2132,6 +2163,63 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-28 — Year-first slash dates keep their month on import
+- Task: Queue and Inbox were both empty, so this run promoted one clear import
+  bug into In Progress first (Decision #128).
+- Change: `parseMonthInput` now recognizes `YYYY/M` and `YYYY/M/D` (with
+  optional spaces) and normalizes them through `toMonthValue`, matching its
+  long-standing doc comment. JSON Resume import and paste-to-parse inherit the
+  fix because both call the helper; `toMonthValue` stays ISO-only.
+- Tests: helper cases for `2023/10`, `2023/1`, `2023/10/15`, spaced input, and
+  invalid `2023/13` / `2023/00`, plus a JSON Resume import case with work and
+  education slash dates. `npm run typecheck` clean; `npm test` 1317 pass
+  across 114 files (baseline 1310).
+- Files: `src/lib/date/month.ts` (+ test), `src/lib/schema/jsonResume.test.ts`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+
+### 2026-11-28 — Privacy-first anonymous click analytics
+- Task: top Queue item (P2), moved to In Progress first.
+- Change: new `src/lib/analytics/events.ts` is the closed event/meta allowlist
+  plus a strict payload parser (`{ event, meta, device }` only, extra keys
+  rejected). `trackEvent` sends through `navigator.sendBeacon("/api/event")`
+  with a `keepalive` fetch fallback and no-ops on localhost, Do Not Track, and
+  offline. `functions/api/event.ts` validates the same allowlist, maps the raw
+  User-Agent to coarse `os`/`browser` enums, writes
+  `blobs: [event, meta, device, os, browser]` + `indexes: [event]` to Analytics
+  Engine, and returns `204` even when the binding is absent. Wired onboarding
+  (`start_*`, `recent_*`), activation (`editor_first_edit`, `section_added`,
+  `section_reordered`), tools (`tool_*`, `ats_copy`), design
+  (`template_selected`, `design_changed`), and export (`pdf_export`,
+  `json_export`). The home footer now carries the one-line privacy note.
+  Decision #127.
+- Tests: new `events.test.ts` (strict allowlist, extra-key rejection, template
+  and preset parity), `userAgent.test.ts` (iOS/Android/desktop UA families),
+  `trackEvent.test.ts` (DNT/localhost/offline opt-outs, exact payload, transport
+  failure), and `eventFunction.test.ts` (204/400, coarse blobs, missing or
+  broken binding). `npm run typecheck` clean; `npm test` 1310 pass across 114
+  files; `npm run lint` clean.
+- Note: the GitHub Pages workflow has no Functions runtime, so the beacon is
+  inert (silently dropped) until the static output is also served by Cloudflare
+  Pages with the `ANALYTICS` binding. The runner has no delete tool, so a
+  one-shot self-deleting test moved the handler test out of `functions/` (a
+  `.test.ts` there would be bundled as a Pages route).
+- Files: `src/lib/analytics/events.ts` (new, + test),
+  `src/lib/analytics/trackEvent.ts` (new, + test),
+  `src/lib/analytics/userAgent.ts` (new, + test),
+  `src/lib/analytics/eventFunction.test.ts` (new),
+  `functions/api/event.ts` (new), `src/app/page.tsx`,
+  `src/components/launcher/Launcher.tsx`,
+  `src/components/editor/EditorWorkspace.tsx`,
+  `src/components/editor/SectionList.tsx`,
+  `src/components/editor/DesignPanel.tsx`,
+  `src/components/editor/ReviewMenu.tsx`,
+  `src/components/editor/ResumeLintPopover.tsx`,
+  `src/components/editor/JdMatchDrawer.tsx`,
+  `src/components/preview/AtsTextView.tsx`,
+  `src/components/preview/PrintTriggerButton.tsx`,
+  `src/components/shared/ExportJsonButton.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`.
 
 ### 2026-11-28 — iOS Safari print: synchronous dialog + exact page count
 - Task: top Queue item (P0), moved to In Progress first.
@@ -2341,51 +2429,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `src/components/shared/CenteredModal.tsx`, `src/lib/lint/resumeLint.ts`
   (+ test), `src/lib/import/pasteResume.ts` (+ test), `README.md`,
   `CONTEXT.md`, `TASKS.md`.
-
-### 2026-11-27 — PDF/paste hardening verified, non-breaking hyphen wrap fixed
-- Task: top Queue item (P2), moved to In Progress first. Sub-items 1–3 were
-  already implemented in the tree from earlier checkpoints (NFKC + smart
-  quotes/dashes/decorative bullets, `joinPhraseSegments`, PDF link annotations,
-  letter-spaced/parenthetical headings, combined `certifications & education`,
-  short year ranges, seasons, durations, tight grades, page-2 bullet folding),
-  but almost none of it had regressions.
-- Change: `normalizePdfText` now normalizes each segment around U+2011 and
-  rejoins the marker, because NFKC decomposed the non-breaking hyphen to U+2010
-  and the typographic-dash pass turned it into `-`, so `Soft\u2011` + `ware`
-  never set `joinNext` and stayed two lines. Decision #118. Added unit coverage
-  for ligatures, smart quotes, dashes, decorative bullets, phrase-gap commas,
-  the non-breaking-hyphen wrap, PDF `Link` annotation extraction (profile hosts
-  only, `unsafeUrl` fallback, dedupe, non-Link skip), letter-spaced and
-  parenthetical headings, `KEY PROJECT`, `ACHIEVEMENTS & EXTRACURRICULARS`,
-  combined `CERTIFICATIONS & EDUCATION` routing, `2019–21`, season dates,
-  `3 Months`, `Senior Engineer –Infosys`, `CGPA:7.6`, `12th –92.0%`, page-2
-  headerless bullets, and skill phrase gaps. README import tour updated.
-- Tests: `npm run typecheck` clean; `npm test` 1220 pass across 107 files;
-  `npm run lint` clean.
-- Files: `src/lib/import/pdfLayout.ts` (+ test),
-  `src/lib/import/pdfResume.test.ts`, `src/lib/import/pasteResume.test.ts`,
-  `README.md`, `CONTEXT.md`, `TASKS.md`.
-
-### 2026-11-27 — Anonymize prose scrub + optional-section redaction
-- Task: top Queue item (P1), moved to In Progress first. All three sub-items
-  were open.
-- Change: `anonymizeResumeDoc` now redacts `awards.awarder` (independent
-  `Organization A/B…` namespace), volunteer `organization`, and clears
-  `picture.url` while forcing `hidden: true`. A new longest-first,
-  boundary-aware term map built from the doc's own name/email/phone, employers,
-  schools, volunteer organizations, and award issuers rewrites **text nodes
-  only** in `summary.content` plus every rich-text entry field, so `"at Wells
-  Fargo"` becomes `"at Company A"` without touching tags or attributes.
-  Terms under 3 chars are skipped, matches are case-insensitive and
-  deduplicated, and one combined alternation prevents re-scrubbing an inserted
-  label. Decision #117; README feature tour updated.
-- Tests: new cases for optional-section redaction/picture clearing, prose
-  scrub in summary + entry bullets (including email/phone), ATS output, tag
-  and attribute safety, short-term skipping, and longest-employer precedence.
-  `npm run typecheck` clean; `npm test` 1198 pass across 107 files;
-  `npm run lint` clean.
-- Files: `src/lib/privacy/anonymizeDoc.ts` (+ test), `README.md`, `CONTEXT.md`,
-  `TASKS.md`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

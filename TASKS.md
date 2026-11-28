@@ -21,15 +21,49 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P2: Add privacy-first, zero-PII aggregate product analytics via a Cloudflare Pages Function (`functions/api/event.ts`, `src/lib/analytics/trackEvent.ts`, `src/components/launcher/Launcher.tsx`, `src/components/editor/EditorWorkspace.tsx`).
-  1. **Client beacon (`src/lib/analytics/trackEvent.ts`):** Export a tiny fire-and-forget `trackEvent(event, meta?)` helper using `navigator.sendBeacon("/api/event", ...)` (silently no-oping on `localhost`, when `navigator.doNotTrack === "1"`, or if offline/blocked). Payload contains strictly `{ event, meta, device: "mobile" | "desktop" }` — never any resume text, filename, URL, or user ID.
-  2. **Server allowlist endpoint (`functions/api/event.ts`):** Validate `event` and `meta` against a strict TypeScript allowlist (rejecting any unknown event or free-text payload with `400`), strip IP/cookies, and write `{ blobs: [event, meta, device], indexes: [event] }` to a Cloudflare Workers Analytics Engine binding .In functions/api/event.ts, map request.headers.get("user-agent") into coarse non-identifying enums os (android/ios/windows/macos/linux/other) and browser (chrome/safari/edge/firefox/other) without storing the raw User-Agent string, and log blobs: [event, meta, device, os, browser]." (`env.ANALYTICS?.writeDataPoint(...)`, gracefully returning `204` if the binding isn't configured yet).
-  3. **Wire the ~16 high-signal events** across onboarding (`start_pdf_upload`, `start_preset`, `start_blank`, `start_paste`, `start_ai_prompt`, `recent_open`, `recent_duplicate`), activation (`editor_first_edit`, `section_added`, `section_reordered`), tools (`tool_tidy`, `tool_match_jd`, `tool_fit_1p`, `tool_6s_scan`, `tool_anonymize`, `tool_trim_tips`, `ats_copy`), design (`template_selected`, `design_changed`), and export (`pdf_export`, `json_export`).
-  4. **Transparent privacy note:** Add one quiet line in the Homepage (`/`) footer stating: *"Your resume stays 100% on this device. We count anonymous button clicks (no cookies or personal data) to improve the app."* Add unit tests for the strict allowlist and `doNotTrack` opt-out.
+
+_empty
 
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-28 — Year-first slash dates (`2023/10`, `2023/10/15`) no longer
+  vanish on import: `parseMonthInput` normalizes `YYYY/M` and `YYYY/M/D`
+  (spaces allowed) through `toMonthValue`, so JSON Resume and pasted resumes
+  keep the month while invalid months return `null`. Queue and Inbox were both
+  empty, so this clear import bug was promoted from the codebase. Verified
+  `npm run typecheck`, `npm test` (1317 pass, 114 files, up from 1310). Files:
+  `src/lib/date/month.ts` (+ test), `src/lib/schema/jsonResume.test.ts`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
+
+- [x] 2026-11-28 — Privacy-first, zero-PII aggregate analytics: a closed
+  event/meta allowlist (`src/lib/analytics/events.ts`) is shared by the
+  fire-and-forget `trackEvent` beacon (sendBeacon + keepalive fetch; no-ops on
+  localhost, Do Not Track, and offline) and a Cloudflare Pages Function
+  (`functions/api/event.ts`) that rejects unknown events, free-text meta, or
+  extra keys with `400`, maps the raw User-Agent to coarse `os`/`browser` enums,
+  and writes `[event, meta, device, os, browser]` to Analytics Engine (`204`
+  when the binding is absent). Wired the onboarding, activation, tool, design,
+  and export events, and the home footer now carries the one-line privacy
+  promise. Verified `npm run typecheck`, `npm test` (1310 pass, 114 files),
+  `npm run lint`. Files: `src/lib/analytics/events.ts` (new, + test),
+  `src/lib/analytics/trackEvent.ts` (new, + test),
+  `src/lib/analytics/userAgent.ts` (new, + test),
+  `src/lib/analytics/eventFunction.test.ts` (new), `functions/api/event.ts`
+  (new), `src/app/page.tsx`, `src/components/launcher/Launcher.tsx`,
+  `src/components/editor/EditorWorkspace.tsx`,
+  `src/components/editor/SectionList.tsx`,
+  `src/components/editor/DesignPanel.tsx`,
+  `src/components/editor/ReviewMenu.tsx`,
+  `src/components/editor/ResumeLintPopover.tsx`,
+  `src/components/editor/JdMatchDrawer.tsx`,
+  `src/components/preview/AtsTextView.tsx`,
+  `src/components/preview/PrintTriggerButton.tsx`,
+  `src/components/shared/ExportJsonButton.tsx`, `README.md`, `CONTEXT.md`,
+  `TASKS.md`. GitHub Pages has no Functions runtime, so `/api/event` stays inert
+  until the static output is also served by Cloudflare Pages with the
+  `ANALYTICS` binding.
 
 - [x] 2026-11-28 — Fixed iOS Safari's "blocked from automatically printing"
   alert and the alternating blank PDF pages. `printResume` now calls

@@ -56,6 +56,13 @@ export default function Home() {
         </section>
 
         <Launcher />
+
+        <footer className="mt-8 border-t border-line pt-4">
+          <p className="text-xs leading-relaxed text-muted">
+            Your resume stays 100% on this device. We count anonymous button
+            clicks (no cookies or personal data) to improve the app.
+          </p>
+        </footer>
       </div>
     </main>
   );

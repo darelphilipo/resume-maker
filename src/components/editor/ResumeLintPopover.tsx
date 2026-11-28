@@ -4,6 +4,7 @@ import { CheckCircle, WarningCircle, X } from "@phosphor-icons/react";
 import { useId, useMemo, useState } from "react";
 
 import { CenteredModal } from "@/components/shared/CenteredModal";
+import { trackEvent } from "@/lib/analytics/trackEvent";
 import {
   analyzeResumeLint,
   standardizeBulletPeriods,
@@ -139,6 +140,10 @@ export function ResumeLintPopover({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => {
+          if (!open) {
+            trackEvent("tool_tidy");
+          }
+
           setOpen((current) => !current);
         }}
         className={`${CONTENT_HEADER_ACTION_CLASS} ${
