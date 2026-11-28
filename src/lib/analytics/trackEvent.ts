@@ -1,3 +1,4 @@
+import { analyticsEnabled } from "./analyticsEnabled";
 import {
   isAllowedMetaValue,
   isAnalyticsEvent,
@@ -118,9 +119,11 @@ export function browserEnvironment(): TrackEnvironment | null {
 /**
  * Fire-and-forget anonymous click counting.
  *
- * Never throws, never blocks the UI, and never sends anything except the
- * closed `{ event, meta, device }` payload. Resume content cannot reach it:
- * `meta` is validated against the fixed per-event allowlist first.
+ * Off by default: a build must set `NEXT_PUBLIC_ANALYTICS_ENABLED` to `1`/`true`
+ * before any beacon is sent. Never throws, never blocks the UI, and never sends
+ * anything except the closed `{ event, meta, device }` payload. Resume content
+ * cannot reach it: `meta` is validated against the fixed per-event allowlist
+ * first.
  */
 export function trackEvent(
   event: AnalyticsEvent,
@@ -128,7 +131,12 @@ export function trackEvent(
   environment: TrackEnvironment | null = browserEnvironment(),
 ): void {
   try {
-    if (!environment || !shouldTrack(environment) || !isAnalyticsEvent(event)) {
+    if (
+      !analyticsEnabled() ||
+      !environment ||
+      !shouldTrack(environment) ||
+      !isAnalyticsEvent(event)
+    ) {
       return;
     }
 

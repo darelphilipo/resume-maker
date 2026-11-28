@@ -2099,6 +2099,19 @@ rediscover.
         normalizer and `formatMonth` is untouched, so every importer and
         `MonthInput` inherit the rule without new callers.
 
+   129. **Anonymous analytics are off unless the build opts in.**
+        `parseAnalyticsFlag` / `analyticsEnabled()` in
+        `src/lib/analytics/analyticsEnabled.ts` read
+        `process.env.NEXT_PUBLIC_ANALYTICS_ENABLED` and accept only `1` / `true`
+        (case- and whitespace-tolerant). `trackEvent` checks the flag before it
+        builds a payload, so the GitHub Pages static export never fires the
+        `/api/event` route it cannot serve, and the home footer disclosure was
+        removed with it. A Cloudflare-hosted build must set the env var
+        explicitly; `functions/api/event.ts` keeps validating and dropping
+        beacons regardless. Tests that expect a send must
+        `vi.stubEnv("NEXT_PUBLIC_ANALYTICS_ENABLED", "true")`; the default test
+        environment is off.
+
 ## Verification and tooling
 
 ```powershell
@@ -2163,6 +2176,40 @@ npx playwright test    # e2e; needs a dev server on :3000
 ## Session Log
 
 <!-- Newest first. One entry per run. Keep the 10 most recent. -->
+
+### 2026-11-28 — Final v1.0 polish: thumbnails, Basics context, fit note, zoom, copy widths
+- Task: top Queue item (P1), moved to In Progress first; all seven sub-items.
+- Change: each Design template card now leads with a 40×54 inline SVG
+  wireframe (`TemplateThumbnail`, `aria-hidden`, no images) for single-column,
+  centered-header, accent-rule, dense, skills-box, and two-column layouts.
+  `EditorWorkspace` decides `basicsOpen` once the saved row loads: blank
+  starters open it, named resumes stay collapsed. `ReviewMenu` adds a quiet
+  `Scaled to N% — check readability before exporting.` note below **Reset fit**
+  only under 88%. The desktop zoom pill moved to `bottom-5 right-4` and the
+  existing `maxScale = max(2, fitScale × 2.25)` keeps the 225% stop reachable.
+  ATS **Copy all plain text** / compact **Copy** buttons gained fixed
+  `min-w-[11.5rem]` / `min-w-[5.5rem]` widths so **Copied** cannot shift them.
+  Removed the home footer privacy note, and `trackEvent` now no-ops unless
+  `NEXT_PUBLIC_ANALYTICS_ENABLED` is `1`/`true`. Decision #129; README tour
+  updated.
+- Tests: new thumbnail, auto-open/collapsed Basics, fit-note, copy-width, and
+  analytics-flag cases. `npm run typecheck` clean; `npm test` 1325 pass across
+  115 files (baseline 1317/114); `npm run lint` clean. One first-run failure was
+  the drawer test clicking an already-open Basics card; it now opens only when
+  collapsed.
+- Note: Playwright remains sandbox-blocked, so the real 390px card geometry,
+  thumbnail crispness, and pill corner clearance are browser-unverified.
+- Files: `src/components/editor/TemplateThumbnail.tsx` (new),
+  `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test),
+  `src/components/preview/CanvasZoomControls.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.test.tsx`,
+  `src/components/editor/sectionEditorDrawer.test.tsx`,
+  `src/lib/analytics/analyticsEnabled.ts` (new, + test),
+  `src/lib/analytics/trackEvent.ts` (+ test), `src/app/page.tsx`,
+  `README.md`, `CONTEXT.md`, `TASKS.md`.
 
 ### 2026-11-28 — Year-first slash dates keep their month on import
 - Task: Queue and Inbox were both empty, so this run promoted one clear import
@@ -2394,41 +2441,6 @@ npx playwright test    # e2e; needs a dev server on :3000
   `e2e/layout-consistency.spec.ts`, `README.md`, `CONTEXT.md`, `TASKS.md`.
 - Note: Playwright remains sandbox-blocked, so the real switch x-position at
   both viewports is browser-unverified.
-
-### 2026-11-27 — Tidy header row, card modal, Indian 5+5 phone
-- Task: top Queue item (P1), moved to In Progress first. All three sub-items
-  were open.
-- Change: `Bullet polish` is now **Tidy** with a compact `N` badge; the shared
-  `CONTENT_HEADER_ACTION_CLASS` is `h-8 px-2.5 text-xs whitespace-nowrap`
-  (`pointer-coarse:h-11`) and the Content header's action group is
-  `flex-nowrap`, so Content / Tidy / Match JD share one row at 390px. The modal
-  is titled **Tidy bullets**, opens with "Quick local checks to tidy your
-  bullets.", and renders bordered finding cards: period actions now live in
-  the `Mixed bullet periods` card, repeated verbs are one card of `Verb ×N`
-  jump chips, and other cards show at most two snippets. `ResumeLintFinding`
-  gained `verb` and a `target` (`sectionId`/`entryId`) wired from
-  `collectResumeBullets` through `ResumeLintPopover.onJumpToEntry` to
-  `EditorWorkspace.revealEntry`. `PHONE_PATTERN` now tries a `+91` 5+5 branch
-  first, so `+91 63699 40501` no longer leaks a trailing `1` into the headline.
-  Decision #120; README feature tour updated.
-- Tests: rewritten `ResumeLintPopover` tests (trigger classes/badge, card
-  classes, in-card period buttons, grouped verb chip + jump spy, copy), new
-  `EditorWorkspace` one-row/jump integration cases, a lint target assertion,
-  and a paste-parser regression for the Indian number. One first-run failure
-  came from asserting on the component's inner wrapper instead of the header's
-  action group; selecting `titleRow.lastElementChild` fixed it. `npm run
-  typecheck` clean; `npm test` 1236 pass across 107 files; `npm run lint`
-  clean. Item moved to Done.
-- Note: direct `shell` and an automation `shell` action were denied early in
-  this run but direct shell worked on retry, so a blocked probe is not proof
-  that verification is impossible in a later run. Playwright remains blocked,
-  so the 390px row geometry and real jump scroll are browser-unverified.
-- Files: `src/components/editor/EditorWorkspace.tsx` (+ test),
-  `src/components/editor/ResumeLintPopover.tsx` (+ test),
-  `src/components/editor/contentHeaderAction.ts`,
-  `src/components/shared/CenteredModal.tsx`, `src/lib/lint/resumeLint.ts`
-  (+ test), `src/lib/import/pasteResume.ts` (+ test), `README.md`,
-  `CONTEXT.md`, `TASKS.md`.
 
 <!-- Older entries are trimmed to keep the 10 most recent. The formatting-toolbar
      guard (Decision #39), Playwright

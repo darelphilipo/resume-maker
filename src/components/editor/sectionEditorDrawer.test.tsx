@@ -130,9 +130,12 @@ describe("section editor drawer", () => {
     try {
       render(<EditorWorkspace />);
       await screen.findByRole("heading", { name: "Untitled resume" });
-      // Basics starts collapsed, and its optional fields sit behind one more
-      // disclosure, so open both before reaching the Profiles shortcut.
-      await user.click(screen.getByRole("button", { name: /^Basics/ }));
+      // A blank resume opens Basics automatically; its optional fields sit
+      // behind one more disclosure, so open both before reaching Profiles.
+      const basicsToggle = screen.getByRole("button", { name: /^Basics/ });
+      if (basicsToggle.getAttribute("aria-expanded") !== "true") {
+        await user.click(basicsToggle);
+      }
       await user.click(
         screen.getByRole("button", { name: "More contact details" }),
       );

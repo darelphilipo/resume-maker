@@ -17,10 +17,10 @@ const COPIED_STATE_MS = 1500;
 type CopiedState = { key: string; label: string } | null;
 
 const COMPACT_BUTTON_CLASS =
-  "inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-2 py-1 text-xs font-medium text-primary transition-colors hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:min-h-11 pointer-coarse:min-w-11";
+  "inline-flex min-h-9 min-w-[5.5rem] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-2 py-1 text-xs font-medium text-primary transition-colors hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 pointer-coarse:min-h-11 pointer-coarse:min-w-11";
 
 const PRIMARY_BUTTON_CLASS =
-  "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex min-h-11 min-w-[11.5rem] shrink-0 items-center justify-center gap-2 rounded-xl border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 interface CopyButtonProps {
   ariaLabel: string;

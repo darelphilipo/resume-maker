@@ -120,9 +120,13 @@ async function renderReadyWorkspace() {
   return view;
 }
 
-/** Basics starts collapsed; editing its fields requires opening the card. */
+/** Blank resumes start with Basics open; this only opens it when collapsed. */
 function expandBasics(): void {
-  fireEvent.click(screen.getByRole("button", { name: /Basics/ }));
+  const toggle = screen.getByRole("button", { name: /Basics/ });
+
+  if (toggle.getAttribute("aria-expanded") !== "true") {
+    fireEvent.click(toggle);
+  }
 }
 
 /** The two review lenses now live behind the single Review pill in the bar. */
@@ -465,27 +469,49 @@ describe("EditorWorkspace", () => {
     expect(header.parentElement).not.toHaveClass("gap-3");
   });
 
-  it("starts with Basics collapsed so the section list is visible", async () => {
+  it("opens Basics on a blank resume so the name field is ready", async () => {
     await renderReadyWorkspace();
 
     const toggle = screen.getByRole("button", { name: /^Basics/ });
     const body = document.getElementById("basics-body");
 
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(body).toHaveAttribute("hidden");
-    // Summary and the standard sections are the first thing in Content.
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(body).not.toHaveAttribute("hidden");
+    expect(screen.getByLabelText("Name")).toBeVisible();
+    // The rest of the section list still follows directly below.
     expect(
       screen.getByRole("button", { name: /^Summary/ }),
     ).toBeInTheDocument();
   });
 
-  it("expands Basics from its header and keeps the live name path working", async () => {
+  it("keeps Basics collapsed when the resume already has a name", async () => {
+    const doc = createEmptyResume();
+    doc.basics.name = "Ada Lovelace";
+    useResumeStore.setState({ doc });
+
+    render(<EditorWorkspace />);
+
+    await screen.findByRole("heading", { name: "Ada Lovelace" });
+
+    const toggle = screen.getByRole("button", { name: /^Basics/ });
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(document.getElementById("basics-body")).toHaveAttribute("hidden");
+  });
+
+  it("toggles Basics from its header and keeps the live name path working", async () => {
     const user = userEvent.setup();
 
     await renderReadyWorkspace();
 
     const toggle = screen.getByRole("button", { name: /^Basics/ });
     const body = document.getElementById("basics-body");
+
+    // A blank resume opens Basics by default; the header still closes and
+    // reopens it without unmounting the form.
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
 
     await user.click(toggle);
 
@@ -498,7 +524,7 @@ describe("EditorWorkspace", () => {
     await renderReadyWorkspace();
 
     const basics = screen.getByRole("button", { name: /^Basics/ });
-    fireEvent.click(basics);
+    expect(basics).toHaveAttribute("aria-expanded", "true");
     fireEvent.click(screen.getByRole("button", { name: /^Summary/ }));
 
     const collapseAll = screen.getByRole("button", { name: "Collapse all" });

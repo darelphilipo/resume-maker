@@ -5,6 +5,7 @@ import { ACCENT_SWATCHES } from "@/lib/design/designOptions";
 import { createEmptyResume } from "@/lib/schema/defaults";
 import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { resetResumeStore, useResumeStore } from "@/lib/store/useResumeStore";
+import { TEMPLATE_LIST } from "@/templates/registry";
 
 import { DesignPanel } from "./DesignPanel";
 
@@ -101,8 +102,35 @@ describe("DesignPanel", () => {
     expect(input.closest("label")).toHaveClass("w-full", "min-h-11");
   });
 
-  it("puts every template badge in the same top-right title slot", () => {
+  it("shows a distinct inline wireframe thumbnail on every template card", () => {
     render(<DesignPanel />);
+
+    const thumbs = document.querySelectorAll("[data-template-thumb]");
+    expect(thumbs).toHaveLength(TEMPLATE_LIST.length);
+
+    const layouts = new Set<string>();
+
+    for (const template of TEMPLATE_LIST) {
+      const thumb = document.querySelector(
+        `[data-template-thumb="${template.id}"]`,
+      ) as SVGElement;
+
+      expect(thumb).not.toBeNull();
+      expect(thumb).toHaveAttribute("aria-hidden", "true");
+      expect(thumb).toHaveAttribute("width", "40");
+      expect(thumb).toHaveAttribute("height", "54");
+      // The thumbnail is the first thing in the card, ahead of the radio.
+      expect(thumb.closest("label")?.firstElementChild).toBe(thumb);
+      layouts.add(thumb.getAttribute("data-thumb-layout") ?? "");
+    }
+
+    // Each layout family gets its own wireframe instead of six identical boxes.
+    expect(layouts.size).toBe(TEMPLATE_LIST.length);
+    expect(layouts.has("two-column")).toBe(true);
+    expect(layouts.has("centered-header")).toBe(true);
+  });
+
+  it("puts every template badge in the same top-right title slot", () => {    render(<DesignPanel />);
 
     const badges = [
       ...screen.getAllByText("ATS-Safe"),

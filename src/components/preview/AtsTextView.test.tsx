@@ -45,6 +45,29 @@ describe("AtsTextView", () => {
     expect(preview).toHaveTextContent("Acme");
   });
 
+  it("keeps copy button widths fixed so labels cannot shift on click", () => {
+    const doc = createEmptyResume();
+
+    doc.basics.name = "Ada Lovelace";
+    doc.sections.experience.items = [
+      ExperienceItemSchema.parse({
+        id: "exp-1",
+        company: "Acme",
+        position: "Senior Engineer",
+      }),
+    ];
+
+    render(<AtsTextView doc={doc} />);
+
+    const all = screen.getByRole("button", { name: "Copy all plain text" });
+    const compact = screen.getByRole("button", {
+      name: "Copy contact details",
+    });
+
+    expect(all).toHaveClass("min-w-[11.5rem]", "justify-center");
+    expect(compact).toHaveClass("min-w-[5.5rem]", "justify-center");
+  });
+
   it("explains how to populate an empty view and disables copy all", () => {
     render(<AtsTextView doc={createEmptyResume()} />);
 

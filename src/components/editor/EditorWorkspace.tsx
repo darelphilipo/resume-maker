@@ -29,7 +29,6 @@ import type { ResumeLintEntryTarget } from "@/lib/lint/resumeLint";
 import { usePageLayout } from "@/lib/pagination/usePageLayout";
 import { anonymizeResumeDoc } from "@/lib/privacy/anonymizeDoc";
 import { isPrintTitleActive, resumeDocumentTitle } from "@/lib/print/printDocument";
-import type { ResumeDocument } from "@/lib/schema/resume.schema";
 import { resumeDisplayName } from "@/lib/schema/resumeName";
 import {
   canRedo,
@@ -136,9 +135,11 @@ export function EditorWorkspace() {
   const [activeTab, setActiveTab] = useState<EditorTab>("content");
   const [previewMode, setPreviewMode] = useState<PreviewMode>("canvas");
   /**
-   * Basics starts collapsed so Summary, Experience, Projects, Education, and
-   * Skills are visible on first load. The form stays mounted behind a `hidden`
-   * body, so its values and live-name subscription survive a toggle.
+   * Basics starts collapsed on a populated resume so Summary, Experience,
+   * Projects, Education, and Skills are visible on first load. A brand-new
+   * blank resume opens it instead, because the name is the first thing to fill
+   * in. The form stays mounted behind a `hidden` body, so its values and
+   * live-name subscription survive a toggle.
    */
   const [basicsOpen, setBasicsOpen] = useState(false);
   const [anonymizePreview, setAnonymizePreview] = useState(false);
@@ -274,6 +275,7 @@ export function EditorWorkspace() {
         : "notfound"
       : "loading";
 
+
   /**
    * Count only the first document change after a resume loads. The baseline is
    * the doc the editor first sees as `ready`, so loading (and an auto-fit
@@ -333,6 +335,11 @@ export function EditorWorkspace() {
 
         if (found) {
           startAutosave();
+          // A blank starter should land with its first field ready; an imported
+          // or preset resume already has a name, so its section list stays first.
+          setBasicsOpen(
+            useResumeStore.getState().doc.basics.name.trim() === "",
+          );
         }
 
         setLoadResult({ id, found });

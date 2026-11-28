@@ -257,12 +257,23 @@ describe("ReviewMenu", () => {
 
     openMenu();
     const reset = screen.getByRole("button", { name: /^Reset fit/ });
+    const note = document.querySelector("[data-review-fit-note]");
 
     expect(reset).toHaveAttribute("title", "Reset fit (85% → 100%)");
+    expect(note).toHaveTextContent(
+      "Scaled to 85% — check readability before exporting.",
+    );
 
     fireEvent.click(reset);
 
     expect(onResetFit).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the readability note quiet on a minor fit", () => {
+    renderMenu({ appliedFitScale: 0.9, onResetFit: vi.fn() });
+    openMenu();
+
+    expect(document.querySelector("[data-review-fit-note]")).toBeNull();
   });
 
   it("moves a blocked fit's plain-English reason under the disabled control", () => {

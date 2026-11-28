@@ -73,6 +73,7 @@ export function ReviewMenu({
   const canFit = fitTarget !== null && onFit !== undefined;
   const canResetFit = appliedFitScale < 1 && onResetFit !== undefined;
   const appliedFitPercent = Math.round(appliedFitScale * 100);
+  const showFitReadabilityNote = canResetFit && appliedFitScale < 0.88;
   const blockedCopy =
     fitBlockedReason && !canFit ? fitBlockedCopy(fitBlockedReason) : null;
   const hasUtilities =
@@ -225,6 +226,15 @@ export function ReviewMenu({
                   onResetFit?.();
                 }}
               />
+            ) : null}
+            {showFitReadabilityNote ? (
+              <p
+                data-review-fit-note=""
+                className="pl-1 text-xs leading-snug text-muted"
+              >
+                Scaled to {appliedFitPercent}% — check readability before
+                exporting.
+              </p>
             ) : null}
             {canFit ? (
               <ReviewAction

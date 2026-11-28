@@ -18,8 +18,9 @@ in control of every line, and your data stays on your device.
   import** only copies a ready-made prompt so you can use a chat assistant you
   choose; the reply is parsed locally.
 - **Private by design.** Resumes are stored in your browser (IndexedDB). The app
-  has no accounts, and no analytics ever touch your resume content — at most it
-  counts anonymous button clicks, with no cookies or personal data.
+  has no accounts, and no analytics ever touch your resume content. Anonymous
+  button counts are opt-in per build and off by default; when a build enables
+  them they use no cookies and no personal data.
 - **Fast on a phone.** The editor is mobile-first, with large touch targets and
   a layout that works at phone width instead of a desktop screen squeezed down.
   The resume name, undo/redo, JSON export, and a solid **Save PDF** button share
@@ -38,10 +39,6 @@ in control of every line, and your data stays on your device.
   line covers free, no-sign-up, and offline use once, so the first choice stays
   near the top of a phone screen. Pasting text, AI prompt rescue, and JSON
   restore live in a quiet **Other ways to import** strip at the bottom.
-- **A one-line privacy promise**: the home page footer says plainly that your
-  resume stays on this device and that only anonymous button counts — no
-  cookies or personal data — are used to improve the app. Turning on Do Not
-  Track, working offline, or running locally turns the counter off entirely.
 - **Start blank or from a role sample**: choose **Start with a blank resume**
   when you would rather type from an empty page, or pick a role preset for a
   complete editable example. Every preset opens as a clean one-page starter, so
@@ -132,9 +129,11 @@ in control of every line, and your data stays on your device.
 - Basics: name, headline, email, phone, and location stay up front, with website,
   an optional one-line work authorization or notice period tag (for example
   `Authorized to work in US` or `Immediate Joiner`), and profile links tucked
-  behind one **More contact details** disclosure. The **Basics** card starts
-  collapsed, so Summary, Experience, Projects, Education, and Skills are the
-  first sections you see. The top header title and center resume preview follow
+  behind one **More contact details** disclosure. The **Basics** card opens
+  automatically on a brand-new blank resume, with the name field ready, and
+  starts collapsed when a resume already has a name, so Summary, Experience,
+  Projects, Education, and Skills are the first sections you see. The top header
+  title and center resume preview follow
   every keystroke, so there is no second name preview to scan past — no need to
   leave the field. Paste a photo URL and a live thumbnail appears; if the image
   cannot load, the editor says so instead of showing a broken picture, and the
@@ -244,6 +243,9 @@ in control of every line, and your data stays on your device.
   top-to-bottom flow. **Studio Sidebar** is a two-column option badged
   **Human review**. Pick one by tapping its card — your content, page
   size, and saves are unchanged, and the preview and PDF use the same layout.
+  Each card leads with a small inline wireframe of its layout, so single-column,
+  centered-header, accent-rule, dense, skills-first, and two-column choices are
+  easy to tell apart before you switch.
   Its narrow side column (Skills, Certifications, Languages, Interests) stays
   anchored on Page 1 and is capped at that page's remaining height; anything
   that does not fit moves into the full-width main flow on later pages, so the
@@ -348,7 +350,9 @@ in control of every line, and your data stays on your device.
   little breathing room at the right edge, so right-aligned dates never lose
   their last pixels. Whenever a reduced fit is active, a tinted **Reset** pill
   beside the `1 page` label — or **Reset fit** inside **Review** — returns the
-  page to 100% and shows the current size in its tooltip. If you trim enough
+  page to 100% and shows the current size in its tooltip. When a fit drops below
+  88%, **Review** also adds a quiet reminder to check readability before
+  exporting, while a minor fit stays silent. If you trim enough
   content to fit at full size, the page grows back on its own.
 - **A calm page count.** A resume that fits on one page just shows quiet
   **1 page** status text in the top bar, with no extra row or pill stealing
@@ -391,7 +395,9 @@ in control of every line, and your data stays on your device.
   apply. **Copy all plain text** grabs the whole resume for Workday, Greenhouse,
   or Lever in one tap, and compact **Copy** buttons let you paste just one
   section or one role. A single-block **Summary** shows only its section button,
-  heading or not, so two Copy buttons never stack together. The copy bar and every section scroll together as one smooth page,
+  heading or not, so two Copy buttons never stack together. Every copy button
+  keeps a fixed width as it changes to **Copied**, so nothing shifts under your
+  finger. The copy bar and every section scroll together as one smooth page,
   with no nested box to fight against on a phone.
 - **Anonymize for review**: open **Review** in the preview bar and switch on
   **Anonymize** to replace your name, contact details, website, profile links,

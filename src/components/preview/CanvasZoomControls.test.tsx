@@ -31,11 +31,11 @@ describe("CanvasZoomControls", () => {
     );
 
     expect(wrapper).not.toBeNull();
-    // The pill sits 16px inside the preview's rounded `overflow-clip` corner
+    // The pill sits 20px inside the preview's rounded `overflow-clip` corner
     // and its wrapper stays unclipped, so the bottom border is never shaved.
     expect(wrapper).toHaveClass(
       "absolute",
-      "bottom-4",
+      "bottom-5",
       "right-4",
       "z-20",
       "overflow-visible",
@@ -43,7 +43,7 @@ describe("CanvasZoomControls", () => {
       "hidden",
       "lg:flex",
     );
-    expect(wrapper).not.toHaveClass("bottom-3", "right-3");
+    expect(wrapper).not.toHaveClass("bottom-3", "bottom-4", "right-3");
     expect(screen.getByRole("group", { name: "Preview zoom" })).toBeVisible();
   });
 

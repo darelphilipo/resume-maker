@@ -1,3 +1,5 @@
+import { afterEach, beforeEach, vi } from "vitest";
+
 import {
   ANALYTICS_ENDPOINT,
   isLocalHostname,
@@ -103,6 +105,14 @@ describe("resolveDevice", () => {
 });
 
 describe("trackEvent", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_ANALYTICS_ENABLED", "true");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("sends exactly the closed event/meta/device payload", () => {
     const env = environment({ device: "desktop" });
 
@@ -131,6 +141,15 @@ describe("trackEvent", () => {
       meta: null,
       device: "mobile",
     });
+  });
+
+  it("does not send unless the build explicitly enables analytics", () => {
+    vi.stubEnv("NEXT_PUBLIC_ANALYTICS_ENABLED", "0");
+    const env = environment();
+
+    trackEvent("ats_copy", "all", env);
+
+    expect(env.sent).toHaveLength(0);
   });
 
   it("does not send when Do Not Track is on", () => {

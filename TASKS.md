@@ -21,17 +21,6 @@ _empty
 _empty
 
 ## Queue (Ready for Next Run)
-- [ ] P1: Final v1.0 polish — SVG template thumbnails, contextual `Basics` expansion, `Fit` readability note, desktop zoom `150%+` fix, and stable `ATS` Copy button widths (`src/components/editor/DesignPanel.tsx`, `src/components/editor/BasicsForm.tsx`, `src/components/editor/ReviewMenu.tsx`, `src/components/preview/LiveCanvasViewport.tsx`, `src/components/preview/AtsTextView.tsx`).
-  1. **Inline SVG template thumbnails (`DesignPanel.tsx`):** Add a crisp, lightweight inline SVG mini-wireframe thumbnail (`~40×54px`, `aria-hidden="true"`, zero external images/layout shift) on the left of each of the 6 template cards visually distinguishing single-column (`Engineering Classic`), centered header (`Ivy/Executive`), accent rule (`Modern Accent`), dense (`Compact 1-Pager`), boxed skills (`Hybrid Skills-First`), and two-column (`Studio Sidebar`).
-  2. **Auto-expand `Basics` on blank resumes only (`BasicsForm.tsx`):** Default `Basics` to **expanded** when `doc.basics.name.trim() === ""` (new blank resume) and **collapsed** when `basics.name` is already populated (PDF imports and role presets).
-  3. **`Fit 1p` readability note (`ReviewMenu.tsx`):** When `fitScale < 0.88`, show a subtle 1-line note next to `Reset fit` inside `Review tools` (e.g., `"Scaled to 84% — check readability before exporting."`) without nagging on minor fits (`>= 88%`).
-  4. **Fix desktop zoom `+` stuck at `125%` & bottom clipping (`LiveCanvasViewport.tsx`):** Ensure `TransformWrapper`'s `maxScale` allows stepping cleanly all the way up to `225%` (`fitScale * 2.25`, stepping `100% → 125% → 150% → 175% → 200% → 225%`), and give the floating bottom-right zoom pill enough bottom clearance (`bottom-5 right-4` inside a non-clipped container) so its bottom border is never clipped.
-  5. **Stable `ATS` `Copy` button widths (`AtsTextView.tsx`):** Give `Copy all plain text` (`min-w-[11.5rem] justify-center`, swapping to `"✓ Copied plain text"`) and per-entry `Copy` buttons (`min-w-[5.5rem] justify-center`) fixed minimum widths so neither button shrinks or shifts under the cursor on click.
-  6. revert and remove the footer area "Your resume stays 100% on this device. We count anonymous button clicks (no cookies or personal data) to improve the app. " . It's making the page too tall
-  7. Make anonymous click analytics opt-in per build (`NEXT_PUBLIC_ANALYTICS_ENABLED`) so GitHub Pages never fires `/api/event` 404s.**
-  Add `src/lib/analytics/analyticsEnabled.ts` (`parseAnalyticsFlag` / `analyticsEnabled()`) so `trackEvent` in `src/lib/analytics/trackEvent.ts` is a no-op unless `NEXT_PUBLIC_ANALYTICS_ENABLED` is truthy (`"1"` / `"true"`). Keep `main`'s existing `src/lib/analytics/events.ts` and `functions/api/event.ts` intact, and gate any analytics disclosure note on the same flag. Add unit tests in `src/lib/analytics/analyticsEnabled.test.ts` and verify `npm run typecheck`, `npm test`, and `npm run lint`.
-
-     
 - [ ] P1: Accessibility & readability polish — placeholder contrast, 12px text floor, 44px touch targets, reduced motion, `color-scheme: light`, and focus rings (`src/components/launcher/Launcher.tsx`, `src/components/editor/DesignPanel.tsx`, `src/components/editor/ReviewMenu.tsx`, `src/components/editor/ResumeLintPopover.tsx`, `src/components/preview/TrimTipsDialog.tsx`, `src/components/editor/MobileBottomNav.tsx`, `src/app/globals.css`).
   1. **Placeholder contrast (`Launcher.tsx`):** Replace `#8a8f94` input placeholders (lines ~101, ~318) with `--brand-muted` (`#5b6a7a`, ~5.5:1 on white) to meet WCAG AA contrast.
   2. **12px minimum UI text floor:** Replace `text-[10px]` and `text-[11px]` across UI chrome (`ResumeLintPopover`, `TrimTipsDialog`, `ReviewMenu`, mobile editor header) with `text-xs` (`12px`) so helper copy stays legible on phones *(leaving resume template print typography untouched)*.
@@ -44,6 +33,30 @@ _empty
 
 ## Done
 <!-- Move completed items here with YYYY-MM-DD, 1-line summary, and files touched -->
+
+- [x] 2026-11-28 — Final v1.0 polish: each Design template card leads with a
+  40×54 inline SVG wireframe (single-column, centered header, accent rule,
+  dense, skills box, two columns); Basics opens automatically only on a blank
+  resume and stays collapsed once a name exists; **Review** shows a
+  `Scaled to N% — check readability before exporting.` note below **Reset fit**
+  only under 88%; the desktop zoom pill moved to `bottom-5 right-4` while the
+  existing `maxScale` keeps the 225% stop reachable; ATS copy buttons hold fixed
+  `min-w-[11.5rem]` / `min-w-[5.5rem]` widths; the home footer privacy note is
+  gone; and `trackEvent` is a no-op unless
+  `NEXT_PUBLIC_ANALYTICS_ENABLED` is `1`/`true`. Verified `npm run typecheck`,
+  `npm test` (1325 pass, 115 files, up from 1317), `npm run lint`. Files:
+  `src/components/editor/TemplateThumbnail.tsx` (new),
+  `src/components/editor/DesignPanel.tsx` (+ test),
+  `src/components/editor/EditorWorkspace.tsx` (+ test),
+  `src/components/editor/ReviewMenu.tsx` (+ test),
+  `src/components/preview/AtsTextView.tsx` (+ test),
+  `src/components/preview/CanvasZoomControls.tsx` (+ test),
+  `src/components/preview/LiveCanvasViewport.test.tsx`,
+  `src/components/editor/sectionEditorDrawer.test.tsx`,
+  `src/lib/analytics/analyticsEnabled.ts` (new, + test),
+  `src/lib/analytics/trackEvent.ts` (+ test), `src/app/page.tsx`, `README.md`,
+  `CONTEXT.md`, `TASKS.md`. Playwright remains sandbox-blocked, so the real
+  390px card geometry and pill corner clearance are browser-unverified.
 
 - [x] 2026-11-28 — Year-first slash dates (`2023/10`, `2023/10/15`) no longer
   vanish on import: `parseMonthInput` normalizes `YYYY/M` and `YYYY/M/D`

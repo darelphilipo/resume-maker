@@ -352,7 +352,7 @@ describe("LiveCanvasViewport", () => {
     );
 
     expect(zoomControls).not.toBeNull();
-    expect(zoomControls).toHaveClass("absolute", "bottom-4", "right-4");
+    expect(zoomControls).toHaveClass("absolute", "bottom-5", "right-4");
     expect(
       screen.queryByRole("button", { name: "Reset preview zoom" }),
     ).not.toBeInTheDocument();

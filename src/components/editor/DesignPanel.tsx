@@ -16,6 +16,8 @@ import { useResumeStore } from "@/lib/store/useResumeStore";
 import { TemplateBadge } from "@/templates/shared/TemplateBadge";
 import { getTemplate, TEMPLATE_LIST } from "@/templates/registry";
 
+import { TemplateThumbnail } from "./TemplateThumbnail";
+
 type PageFormat = ResumeDocument["metadata"]["page"]["format"];
 
 const PAGE_FORMATS: readonly { id: PageFormat; label: string; detail: string }[] =
@@ -155,6 +157,7 @@ export function DesignPanel() {
                 htmlFor={inputId}
                 className={`${cardClass(isCurrent)} items-start`}
               >
+                <TemplateThumbnail id={template.id} />
                 <input
                   id={inputId}
                   type="radio"
